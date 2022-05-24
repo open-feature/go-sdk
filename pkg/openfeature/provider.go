@@ -1,15 +1,12 @@
 package openfeature
 
 const (
-	DISABLED string = "disabled" // variant returned because feature is disabled
+	DISABLED        string = "disabled"     // variant returned because feature is disabled
 	TARGETING_MATCH string = "target match" // variant returned because matched target rule
-	DEFAULT string = "default" // variant returned the default
-	UNKNOWN string = "unknown" //variant returned for unknown reason
-	ERROR string = "error" // variant returned due to error
+	DEFAULT         string = "default"      // variant returned the default
+	UNKNOWN         string = "unknown"      //variant returned for unknown reason
+	ERROR           string = "error"        // variant returned due to error
 )
-
-
-
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
 // vendors should implement
@@ -27,10 +24,10 @@ type FeatureProvider interface {
 // N.B we could use generics but to support older versions of golang for now we will have type specific resolution
 // detail
 type ResolutionDetail struct {
-	Value interface{}
+	Value     interface{}
 	ErrorCode string
-	Reason string
-	Variant string
+	Reason    string
+	Variant   string
 }
 
 // BoolResolutionDetail provides a resolution detail with boolean type
@@ -50,5 +47,3 @@ type NumberResolutionDetail struct {
 	Value int64
 	ResolutionDetail
 }
-
-
