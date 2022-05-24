@@ -20,13 +20,7 @@ func init() {
 }
 
 // EvaluationOption should contain a list of hooks to be executed for a flag evaluation
-<<<<<<< Updated upstream
 type EvaluationOption interface {}
-
-
-
-=======
-type EvaluationOption interface{}
 
 func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.Lock()
@@ -38,4 +32,3 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 func SetProvider(provider FeatureProvider) {
 	api.setProvider(provider)
 }
->>>>>>> Stashed changes
