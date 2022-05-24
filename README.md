@@ -1,3 +1,4 @@
-# CNCF Open Feature golang-sdk
+# OpenFeature SDK for Golang 
 
-The Golang SDK for Openfeature implements the Evaluation API.  This SDK is currently under development.
+> :warning: This repository is a placeholder for a future SDK implementation.
+> It is not ready for evaluation
