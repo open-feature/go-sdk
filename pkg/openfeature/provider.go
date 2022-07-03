@@ -1,5 +1,7 @@
 package openfeature
 
+import "errors"
+
 const (
 	DISABLED        string = "disabled"     // variant returned because feature is disabled
 	TARGETING_MATCH string = "target match" // variant returned because matched target rule
@@ -14,7 +16,7 @@ type FeatureProvider interface {
 	Name() string
 	GetBooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) BoolResolutionDetail
 	GetStringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) StringResolutionDetail
-	GetNumberEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOption) NumberResolutionDetail
+	GetNumberEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) NumberResolutionDetail
 	GetObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) ResolutionDetail
 }
 
@@ -30,6 +32,13 @@ type ResolutionDetail struct {
 	Variant   string
 }
 
+func (resolution ResolutionDetail) Error() error {
+	if resolution.ErrorCode == "" {
+		return nil
+	}
+	return errors.New(resolution.ErrorCode)
+}
+
 // BoolResolutionDetail provides a resolution detail with boolean type
 type BoolResolutionDetail struct {
 	Value bool
@@ -42,8 +51,8 @@ type StringResolutionDetail struct {
 	ResolutionDetail
 }
 
-// NumberResolutionDetail provides a resolution detail with in64 type
+// NumberResolutionDetail provides a resolution detail with float64 type
 type NumberResolutionDetail struct {
-	Value int64
+	Value float64
 	ResolutionDetail
 }
