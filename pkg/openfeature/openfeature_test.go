@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestRequirement1_1_2(t *testing.T) {
+func TestRequirement_1_1_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
@@ -19,7 +19,21 @@ func TestRequirement1_1_2(t *testing.T) {
 	}
 }
 
-func TestRequirement1_1_4(t *testing.T) {
+func TestRequirement_1_1_3(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockHook := NewMockHook(ctrl)
+
+	AddHooks(mockHook)
+	AddHooks(mockHook, mockHook)
+
+	if len(api.hooks) != 3 {
+		t.Errorf("AddHooks didn't append the list of hooks to the existing collection of hooks")
+	}
+}
+
+func TestRequirement_1_1_4(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	defaultProvider := NoopProvider{}
 	if ProviderMetadata() != defaultProvider.Metadata() {

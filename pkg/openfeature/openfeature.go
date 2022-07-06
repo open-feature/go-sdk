@@ -6,6 +6,7 @@ import (
 
 type evaluationAPI struct {
 	provider FeatureProvider
+	hooks []Hook
 	sync.RWMutex
 }
 
@@ -20,6 +21,7 @@ func init() {
 func initSingleton() {
 	api = evaluationAPI{
 		provider: NoopProvider{},
+		hooks: []Hook{},
 	}
 }
 
@@ -40,4 +42,11 @@ func SetProvider(provider FeatureProvider) {
 // ProviderMetadata returns the global provider's metadata
 func ProviderMetadata() Metadata {
 	return api.provider.Metadata()
+}
+
+// AddHooks appends to the collection of any previously added hooks
+func AddHooks(hooks ...Hook) {
+	api.Lock()
+	defer api.Unlock()
+	api.hooks = append(api.hooks, hooks...)
 }
