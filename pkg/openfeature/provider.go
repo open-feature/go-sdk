@@ -13,7 +13,7 @@ const (
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
 // vendors should implement
 type FeatureProvider interface {
-	Name() string
+	Metadata() Metadata
 	GetBooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) BoolResolutionDetail
 	GetStringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) StringResolutionDetail
 	GetNumberEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) NumberResolutionDetail
@@ -55,4 +55,9 @@ type StringResolutionDetail struct {
 type NumberResolutionDetail struct {
 	Value float64
 	ResolutionDetail
+}
+
+// Metadata provides metadata
+type Metadata struct {
+	Name string
 }

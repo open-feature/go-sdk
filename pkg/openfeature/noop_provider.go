@@ -3,9 +3,9 @@ package openfeature
 // NoopProvider implements the FeatureProvider interface and provides functions for evaluating flags
 type NoopProvider struct{}
 
-// Name returns the name of the provider
-func (e NoopProvider) Name() string {
-	return "NoopProvider"
+// Metadata returns the metadata of the provider
+func (e NoopProvider) Metadata() Metadata {
+	return Metadata{Name: "NoopProvider"}
 }
 
 // GetBooleanEvaluation returns a boolean flag.

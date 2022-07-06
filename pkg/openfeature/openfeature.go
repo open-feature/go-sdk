@@ -32,3 +32,8 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 func SetProvider(provider FeatureProvider) {
 	api.setProvider(provider)
 }
+
+// ProviderMetadata returns the global provider's metadata
+func ProviderMetadata() Metadata {
+	return api.provider.Metadata()
+}
