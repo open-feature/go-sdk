@@ -14,6 +14,10 @@ var api evaluationAPI
 
 // init initializes the openfeature evaluation API
 func init() {
+	initSingleton()
+}
+
+func initSingleton() {
 	api = evaluationAPI{
 		provider: NoopProvider{},
 	}
