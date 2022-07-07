@@ -5,6 +5,19 @@ import (
 	"testing"
 )
 
+func TestRequirement_1_1_1(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	ctrl := gomock.NewController(t)
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	SetProvider(mockProvider)
+
+	if api.provider != mockProvider {
+		t.Error("func SetProvider hasn't set the provider to the singleton")
+	}
+}
+
 func TestRequirement_1_1_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -43,15 +56,21 @@ func TestRequirement_1_1_4(t *testing.T) {
 
 func TestRequirement_1_1_5(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	clientName := "test-client"
-	client := GetClient(clientName)
+	GetClient("test-client")
+}
 
-	if client.Metadata().Name() != clientName {
-		t.Errorf("client name not initiated as expected, got %s, want %s", client.Metadata().Name(), clientName)
-	}
+func TestRequirement_1_1_6(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	type clientCreationFunc func(name string)*Client
 
-	var clientI interface{} = client
-	if _, ok := clientI.(IClient); !ok {
-		t.Error("client returned by GetClient doesn't implement the IClient interface")
+	var f clientCreationFunc
+	f = GetClient // asserting that our GetClient method matches this signature is enough to deduce that no error is returned
+
+	use(f) // to avoid the declared and not used error
+}
+
+func use(vals ...interface{}) {
+	for _, val := range vals {
+		_ = val
 	}
 }
