@@ -10,7 +10,7 @@ import (
 
 func ExampleGetClient() {
 	client := openfeature.GetClient("example-client")
-	fmt.Printf("Client Name: %s", client.Name)
+	fmt.Printf("Client Name: %s", client.Metadata().Name())
 	// Output: Client Name: example-client
 }
 

@@ -1,12 +1,41 @@
 package openfeature
 
-type Client struct {
-	Name string
+// IClient defines the behaviour required of an openfeature client
+type IClient interface {
+	Metadata() ClientMetadata
+	GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error)
+	GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error)
+	GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error)
+	GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error)
+	GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
 }
 
-// GetClient returns a new Client.  Name is a unique identifier for this client
-func GetClient(name string) Client {
-	return Client{Name: name}
+// ClientMetadata provides a client's metadata
+type ClientMetadata struct {
+	name string
+}
+
+// Name returns the client's name
+func (cm ClientMetadata) Name() string {
+	return cm.name
+}
+
+// Client implements the behaviour required of an openfeature client
+type Client struct {
+	metadata ClientMetadata
+}
+
+// GetClient returns a new Client. Name is a unique identifier for this client
+func GetClient(name string) IClient {
+	return Client{metadata: ClientMetadata{name: name}}
+}
+
+// Metadata returns the client's metadata
+func (c Client) Metadata() ClientMetadata {
+	return c.metadata
 }
 
 // AddHooks adds one or more hooks to the client
