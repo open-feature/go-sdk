@@ -57,7 +57,7 @@ type NumberResolutionDetail struct {
 	ResolutionDetail
 }
 
-// Metadata provides provider metadata
+// Metadata provides provider name
 type Metadata struct {
 	Name string
 }

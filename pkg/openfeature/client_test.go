@@ -137,12 +137,151 @@ func TestRequirement_1_4_4(t *testing.T) {
 
 // Requirement_1_4_8 has no suitable test as the provider implementation populates the EvaluationDetails reason field
 
-// Requirement_1_4_9 is satisfied by the error included in the return signatures, as is idiomatic in Go. Errors aren't
-// fatal, the operations won't terminate as a result of an error.
+// TestRequirement_1_4_9 tests that the flag evaluation calls return the default value in the event of abnormal execution.
+// The MUST NOT abnormally terminate clause of this requirement is satisfied by the error included in the return
+// signatures, as is idiomatic in Go. Errors aren't fatal, the operations won't terminate as a result of an error.
+func TestRequirement_1_4_9(t *testing.T) {
+	client := GetClient("test-client")
+	flagKey := "flag-key"
+
+	ctrl := gomock.NewController(t)
+
+	t.Run("Boolean", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := true
+		mockProvider.EXPECT().GetBooleanEvaluation(flagKey, defaultValue, nil).Return(BoolResolutionDetail{
+			Value:            false,
+			ResolutionDetail: ResolutionDetail{
+				Value: false,
+				ErrorCode: "GENERAL",
+				Reason: "forced test error",
+			},
+		}).Times(2)
+		SetProvider(mockProvider)
+
+		value, err := client.GetBooleanValue(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetBooleanValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from GetBooleanValue, got %v", value)
+		}
+
+		valueDetails, err := client.GetBooleanValueDetails(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetBooleanValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(bool) != defaultValue {
+			t.Errorf("expected default value from GetBooleanValueDetails, got %v", value)
+		}
+	})
+
+	t.Run("String", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := "default"
+		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, nil).Return(StringResolutionDetail{
+			Value:            "foo",
+			ResolutionDetail: ResolutionDetail{
+				Value: "foo",
+				ErrorCode: "GENERAL",
+				Reason: "forced test error",
+			},
+		}).Times(2)
+		SetProvider(mockProvider)
+
+		value, err := client.GetStringValue(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetStringValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from GetStringValue, got %v", value)
+		}
+
+		valueDetails, err := client.GetStringValueDetails(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetStringValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(string) != defaultValue {
+			t.Errorf("expected default value from GetStringValueDetails, got %v", value)
+		}
+	})
+
+	t.Run("Number", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := 3.14159
+		mockProvider.EXPECT().GetNumberEvaluation(flagKey, defaultValue, nil).Return(NumberResolutionDetail{
+			Value:            0,
+			ResolutionDetail: ResolutionDetail{
+				Value: 0,
+				ErrorCode: "GENERAL",
+				Reason: "forced test error",
+			},
+		}).Times(2)
+		SetProvider(mockProvider)
+
+		value, err := client.GetNumberValue(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetNumberValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from GetNumberValue, got %v", value)
+		}
+
+		valueDetails, err := client.GetNumberValueDetails(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetNumberValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(float64) != defaultValue {
+			t.Errorf("expected default value from GetNumberValueDetails, got %v", value)
+		}
+	})
+
+	t.Run("Object", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		type obj struct {
+			foo string
+		}
+		defaultValue := obj{foo: "bar"}
+		mockProvider.EXPECT().GetObjectEvaluation(flagKey, defaultValue, nil).Return(ResolutionDetail{
+			Value: obj{foo: "foo"},
+			ErrorCode: "GENERAL",
+			Reason: "forced test error",
+		}).Times(2)
+		SetProvider(mockProvider)
+
+		value, err := client.GetObjectValue(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetObjectValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from GetObjectValue, got %v", value)
+		}
+
+		valueDetails, err := client.GetObjectValueDetails(flagKey, defaultValue, nil)
+		if err == nil {
+			t.Error("expected GetObjectValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(obj) != defaultValue {
+			t.Errorf("expected default value from GetObjectValueDetails, got %v", value)
+		}
+	})
+}
 
 // TODO Requirement_1_4_10
 
-// TODO Requirement_1_4_11
+// Requirement_1_4_11 is satisfied by goroutines.
 
 // TODO Requirement_1_5_1
 
