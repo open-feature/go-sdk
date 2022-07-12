@@ -1,21 +1,22 @@
-package openfeature
+package openfeature_test
 
 import (
+	"github.com/open-feature/golang-sdk/pkg/openfeature"
 	"testing"
 )
 
-func TestNoopProvider_Name(t *testing.T) {
+func TestNoopProvider_Metadata(t *testing.T) {
 	tests := map[string]struct {
-		want string
+		want openfeature.Metadata
 	}{
-		"Given a NOOP provider, then Name() will return NoopProvider": {
-			want: "NoopProvider",
+		"Given a NOOP provider, then Metadata() will return NoopProvider": {
+			want: openfeature.Metadata{Name: "NoopProvider"},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := NoopProvider{}
-			if got := e.Name(); got != tt.want {
+			e := openfeature.NoopProvider{}
+			if got := e.Metadata(); got != tt.want {
 				t.Errorf("Name() = %v, want %v", got, tt.want)
 			}
 		})

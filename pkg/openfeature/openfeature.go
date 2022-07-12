@@ -6,6 +6,7 @@ import (
 
 type evaluationAPI struct {
 	provider FeatureProvider
+	hooks []Hook
 	sync.RWMutex
 }
 
@@ -14,8 +15,13 @@ var api evaluationAPI
 
 // init initializes the openfeature evaluation API
 func init() {
+	initSingleton()
+}
+
+func initSingleton() {
 	api = evaluationAPI{
 		provider: NoopProvider{},
+		hooks: []Hook{},
 	}
 }
 
@@ -31,4 +37,16 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 // SetProvider sets the global provider.
 func SetProvider(provider FeatureProvider) {
 	api.setProvider(provider)
+}
+
+// ProviderMetadata returns the global provider's metadata
+func ProviderMetadata() Metadata {
+	return api.provider.Metadata()
+}
+
+// AddHooks appends to the collection of any previously added hooks
+func AddHooks(hooks ...Hook) {
+	api.Lock()
+	defer api.Unlock()
+	api.hooks = append(api.hooks, hooks...)
 }
