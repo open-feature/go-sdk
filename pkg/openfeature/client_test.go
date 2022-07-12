@@ -1,8 +1,9 @@
 package openfeature
 
 import (
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 func TestRequirement_1_2_1(t *testing.T) {
@@ -37,10 +38,10 @@ func TestRequirements_1_3(t *testing.T) {
 	client := GetClient("test-client")
 
 	type requirements interface {
-		GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error)
-		GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error)
-		GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error)
-		GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error)
+		GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
+		GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
+		GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+		GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
 	}
 
 	var clientI interface{} = client
@@ -54,10 +55,10 @@ func TestRequirement_1_4_1(t *testing.T) {
 	client := GetClient("test-client")
 
 	type requirements interface {
-		GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-		GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-		GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-		GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+		GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+		GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+		GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+		GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 	}
 
 	var clientI interface{} = client
@@ -77,7 +78,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	flagKey := "foo"
 
 	t.Run("GetBooleanValueDetails", func(t *testing.T) {
-		evDetails, err := client.GetBooleanValueDetails(flagKey, true, nil)
+		evDetails, err := client.GetBooleanValueDetails(flagKey, true, EvaluationContext{}, EvaluationOptions{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -90,7 +91,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("GetStringValueDetails", func(t *testing.T) {
-		evDetails, err := client.GetStringValueDetails(flagKey, "", nil)
+		evDetails, err := client.GetStringValueDetails(flagKey, "", EvaluationContext{}, EvaluationOptions{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -103,7 +104,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("GetNumberValueDetails", func(t *testing.T) {
-		evDetails, err := client.GetNumberValueDetails(flagKey, 1, nil)
+		evDetails, err := client.GetNumberValueDetails(flagKey, 1, EvaluationContext{}, EvaluationOptions{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -116,7 +117,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("GetObjectValueDetails", func(t *testing.T) {
-		evDetails, err := client.GetObjectValueDetails(flagKey, 1, nil)
+		evDetails, err := client.GetObjectValueDetails(flagKey, 1, EvaluationContext{}, EvaluationOptions{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -150,17 +151,19 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
-		mockProvider.EXPECT().GetBooleanEvaluation(flagKey, defaultValue, nil).Return(BoolResolutionDetail{
-			Value:            false,
-			ResolutionDetail: ResolutionDetail{
+		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().GetBooleanEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(BoolResolutionDetail{
 				Value: false,
-				ErrorCode: "GENERAL",
-				Reason: "forced test error",
-			},
-		}).Times(2)
+				ResolutionDetail: ResolutionDetail{
+					Value:     false,
+					ErrorCode: "GENERAL",
+					Reason:    "forced test error",
+				},
+			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.GetBooleanValue(flagKey, defaultValue, nil)
+		value, err := client.GetBooleanValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetBooleanValue to return an error, got nil")
 		}
@@ -169,7 +172,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from GetBooleanValue, got %v", value)
 		}
 
-		valueDetails, err := client.GetBooleanValueDetails(flagKey, defaultValue, nil)
+		valueDetails, err := client.GetBooleanValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetBooleanValueDetails to return an error, got nil")
 		}
@@ -183,17 +186,19 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := "default"
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, nil).Return(StringResolutionDetail{
-			Value:            "foo",
-			ResolutionDetail: ResolutionDetail{
+		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(StringResolutionDetail{
 				Value: "foo",
-				ErrorCode: "GENERAL",
-				Reason: "forced test error",
-			},
-		}).Times(2)
+				ResolutionDetail: ResolutionDetail{
+					Value:     "foo",
+					ErrorCode: "GENERAL",
+					Reason:    "forced test error",
+				},
+			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.GetStringValue(flagKey, defaultValue, nil)
+		value, err := client.GetStringValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetStringValue to return an error, got nil")
 		}
@@ -202,7 +207,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from GetStringValue, got %v", value)
 		}
 
-		valueDetails, err := client.GetStringValueDetails(flagKey, defaultValue, nil)
+		valueDetails, err := client.GetStringValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetStringValueDetails to return an error, got nil")
 		}
@@ -216,17 +221,19 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := 3.14159
-		mockProvider.EXPECT().GetNumberEvaluation(flagKey, defaultValue, nil).Return(NumberResolutionDetail{
-			Value:            0,
-			ResolutionDetail: ResolutionDetail{
+		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().GetNumberEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(NumberResolutionDetail{
 				Value: 0,
-				ErrorCode: "GENERAL",
-				Reason: "forced test error",
-			},
-		}).Times(2)
+				ResolutionDetail: ResolutionDetail{
+					Value:     0,
+					ErrorCode: "GENERAL",
+					Reason:    "forced test error",
+				},
+			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.GetNumberValue(flagKey, defaultValue, nil)
+		value, err := client.GetNumberValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetNumberValue to return an error, got nil")
 		}
@@ -235,7 +242,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from GetNumberValue, got %v", value)
 		}
 
-		valueDetails, err := client.GetNumberValueDetails(flagKey, defaultValue, nil)
+		valueDetails, err := client.GetNumberValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetNumberValueDetails to return an error, got nil")
 		}
@@ -252,14 +259,16 @@ func TestRequirement_1_4_9(t *testing.T) {
 			foo string
 		}
 		defaultValue := obj{foo: "bar"}
-		mockProvider.EXPECT().GetObjectEvaluation(flagKey, defaultValue, nil).Return(ResolutionDetail{
-			Value: obj{foo: "foo"},
-			ErrorCode: "GENERAL",
-			Reason: "forced test error",
-		}).Times(2)
+		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().GetObjectEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(ResolutionDetail{
+				Value:     obj{foo: "foo"},
+				ErrorCode: "GENERAL",
+				Reason:    "forced test error",
+			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.GetObjectValue(flagKey, defaultValue, nil)
+		value, err := client.GetObjectValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetObjectValue to return an error, got nil")
 		}
@@ -268,7 +277,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from GetObjectValue, got %v", value)
 		}
 
-		valueDetails, err := client.GetObjectValueDetails(flagKey, defaultValue, nil)
+		valueDetails, err := client.GetObjectValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected GetObjectValueDetails to return an error, got nil")
 		}

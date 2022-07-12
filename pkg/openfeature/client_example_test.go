@@ -16,7 +16,9 @@ func ExampleGetClient() {
 
 func ExampleClient_GetBooleanValue() {
 	client := openfeature.GetClient("example-client")
-	value, err := client.GetBooleanValue("test-flag", true, nil)
+	value, err := client.GetBooleanValue(
+		"test-flag", true, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
+	)
 	if err != nil {
 		log.Fatal("error while getting boolean value : ", err)
 	}
@@ -27,7 +29,9 @@ func ExampleClient_GetBooleanValue() {
 
 func ExampleClient_GetStringValue() {
 	client := openfeature.GetClient("example-client")
-	value, err := client.GetStringValue("test-flag", "openfeature", nil)
+	value, err := client.GetStringValue(
+		"test-flag", "openfeature", openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
+	)
 	if err != nil {
 		log.Fatal("error while getting string value : ", err)
 	}
@@ -38,7 +42,9 @@ func ExampleClient_GetStringValue() {
 
 func ExampleClient_GetNumberValue() {
 	client := openfeature.GetClient("example-client")
-	value, err := client.GetNumberValue("test-flag", 0.55, nil)
+	value, err := client.GetNumberValue(
+		"test-flag", 0.55, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
+	)
 	if err != nil {
 		log.Fatal("error while getting number value : ", err)
 	}
@@ -49,7 +55,9 @@ func ExampleClient_GetNumberValue() {
 
 func ExampleClient_GetObjectValue() {
 	client := openfeature.GetClient("example-client")
-	value, err := client.GetObjectValue("test-flag", map[string]string{"foo": "bar"}, nil)
+	value, err := client.GetObjectValue(
+		"test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
+	)
 	if err != nil {
 		log.Fatal("error while getting object value : ", err)
 	}
