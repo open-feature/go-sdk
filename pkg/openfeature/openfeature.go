@@ -6,7 +6,7 @@ import (
 
 type evaluationAPI struct {
 	provider FeatureProvider
-	hooks []Hook
+	hooks    []Hook
 	sync.RWMutex
 }
 
@@ -21,12 +21,33 @@ func init() {
 func initSingleton() {
 	api = evaluationAPI{
 		provider: NoopProvider{},
-		hooks: []Hook{},
+		hooks:    []Hook{},
 	}
 }
 
-// EvaluationOption should contain a list of hooks to be executed for a flag evaluation
-type EvaluationOption interface {}
+// EvaluationOptions should contain a list of hooks to be executed for a flag evaluation
+type EvaluationOptions struct {
+	hooks     []Hook
+	hookHints HookHints
+}
+
+// NewEvaluationOptions constructs an EvaluationOptions
+func NewEvaluationOptions(hooks []Hook, hookHints HookHints) EvaluationOptions {
+	return EvaluationOptions{
+		hooks:     hooks,
+		hookHints: hookHints,
+	}
+}
+
+// HookHints returns evaluation options' hook hints
+func (e EvaluationOptions) HookHints() HookHints {
+	return e.hookHints
+}
+
+// Hooks returns evaluation options' hooks
+func (e EvaluationOptions) Hooks() []Hook {
+	return e.hooks
+}
 
 func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.Lock()

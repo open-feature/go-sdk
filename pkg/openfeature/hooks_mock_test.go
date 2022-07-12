@@ -5,6 +5,8 @@
 package openfeature
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -29,4 +31,57 @@ func NewMockHook(ctrl *gomock.Controller) *MockHook {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHook) EXPECT() *MockHookMockRecorder {
 	return m.recorder
+}
+
+// After mocks base method.
+func (m *MockHook) After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "After", hookContext, flagEvaluationDetails, hookHints)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// After indicates an expected call of After.
+func (mr *MockHookMockRecorder) After(hookContext, flagEvaluationDetails, hookHints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "After", reflect.TypeOf((*MockHook)(nil).After), hookContext, flagEvaluationDetails, hookHints)
+}
+
+// Before mocks base method.
+func (m *MockHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Before", hookContext, hookHints)
+	ret0, _ := ret[0].(*EvaluationContext)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Before indicates an expected call of Before.
+func (mr *MockHookMockRecorder) Before(hookContext, hookHints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Before", reflect.TypeOf((*MockHook)(nil).Before), hookContext, hookHints)
+}
+
+// Error mocks base method.
+func (m *MockHook) Error(hookContext HookContext, err error, hookHints HookHints) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Error", hookContext, err, hookHints)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockHookMockRecorder) Error(hookContext, err, hookHints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockHook)(nil).Error), hookContext, err, hookHints)
+}
+
+// Finally mocks base method.
+func (m *MockHook) Finally(hookContext HookContext, hookHints HookHints) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Finally", hookContext, hookHints)
+}
+
+// Finally indicates an expected call of Finally.
+func (mr *MockHookMockRecorder) Finally(hookContext, hookHints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Finally", reflect.TypeOf((*MockHook)(nil).Finally), hookContext, hookHints)
 }
