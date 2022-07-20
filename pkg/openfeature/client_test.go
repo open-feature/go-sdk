@@ -292,6 +292,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 // Requirement_1_4_11 is satisfied by goroutines.
 
-// TODO Requirement_1_5_1
+// Requirement_1_5_1 is tested by TestRequirement_4_4_2.
 
 // TODO Requirement_1_6_1
