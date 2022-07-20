@@ -1,8 +1,9 @@
 package openfeature
 
 import (
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 func TestRequirement_1_1_1(t *testing.T) {
@@ -61,10 +62,10 @@ func TestRequirement_1_1_5(t *testing.T) {
 
 func TestRequirement_1_1_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	type clientCreationFunc func(name string)*Client
+	type clientCreationFunc func(name string) *Client
 
-	var f clientCreationFunc
-	f = GetClient // asserting that our GetClient method matches this signature is enough to deduce that no error is returned
+	// asserting that our GetClient method matches this signature is enough to deduce that no error is returned
+	var f clientCreationFunc = GetClient
 
 	use(f) // to avoid the declared and not used error
 }
