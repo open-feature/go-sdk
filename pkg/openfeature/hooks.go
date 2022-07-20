@@ -9,8 +9,21 @@ type Hook interface {
 	Finally(hookContext HookContext, hookHints HookHints)
 }
 
-// HookHints is a map of hints for hooks
-type HookHints map[string]interface{}
+// HookHints contains a map of hints for hooks
+type HookHints struct {
+	mapOfHints map[string]interface{}
+}
+
+// NewHookHints constructs HookHints
+func NewHookHints(mapOfHints map[string]interface{}) HookHints {
+	return HookHints{mapOfHints: mapOfHints}
+}
+
+// Value returns the value at the given key in the underlying map.
+// Maintains immutability of the map.
+func (h HookHints) Value(key string) interface{} {
+	return h.mapOfHints[key]
+}
 
 // HookContext defines the base level fields of a hook context
 type HookContext struct {
