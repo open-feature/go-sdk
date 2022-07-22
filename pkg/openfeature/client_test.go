@@ -295,3 +295,52 @@ func TestRequirement_1_4_9(t *testing.T) {
 // Requirement_1_5_1 is tested by TestRequirement_4_4_2.
 
 // TODO Requirement_1_6_1
+
+func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
+	client := NewClient("test-client")
+
+	t.Run("Boolean", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		ctrl := gomock.NewController(t)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		SetProvider(mockProvider)
+		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().GetBooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(BoolResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
+
+		_, err := client.GetBooleanValue("", false, EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected GetBooleanValue to return an error, got nil")
+		}
+	})
+
+	t.Run("String", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		ctrl := gomock.NewController(t)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		SetProvider(mockProvider)
+		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().GetStringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
+
+		_, err := client.GetStringValue("", "", EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected GetStringValue to return an error, got nil")
+		}
+	})
+
+	t.Run("Number", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		ctrl := gomock.NewController(t)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		SetProvider(mockProvider)
+		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().GetNumberEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(NumberResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
+
+		_, err := client.GetNumberValue("", 3, EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected GetNumberValue to return an error, got nil")
+		}
+	})
+}
