@@ -136,7 +136,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 
 	t.Run("before stage MUST run before flag resolution occurs", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 
@@ -181,7 +181,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	SetProvider(mockProvider)
 	mockHook1 := NewMockHook(ctrl)
 	mockHook2 := NewMockHook(ctrl)
-	client := GetClient("test")
+	client := NewClient("test")
 
 	flagKey := "foo"
 	defaultValue := "bar"
@@ -225,7 +225,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	SetProvider(mockProvider)
 	mockHook := NewMockHook(ctrl)
-	client := GetClient("test")
+	client := NewClient("test")
 
 	flagKey := "foo"
 	defaultValue := "bar"
@@ -271,7 +271,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 
 	t.Run("after hook MUST run after flag resolution occurs", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 
@@ -318,7 +318,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 
 	t.Run("error hook MUST run when errors are encountered in the before stage", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -338,7 +338,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 
 	t.Run("error hook MUST run when errors are encountered during flag evaluation", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -362,7 +362,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 
 	t.Run("error hook MUST run when errors are encountered during flag evaluation", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -406,7 +406,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 
 	t.Run("finally hook MUST run after the before & after stages", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -427,7 +427,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 
 	t.Run("finally hook MUST run after the error stage", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -471,7 +471,7 @@ func TestRequirement_4_4_1(t *testing.T) {
 
 	t.Run("client MUST have a method for registering hooks", func(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		client.AddHooks(mockHook)
 
 		type requirement interface {
@@ -485,7 +485,7 @@ func TestRequirement_4_4_1(t *testing.T) {
 	})
 
 	t.Run("invocation MUST have a method for registering hooks", func(t *testing.T) {
-		client := GetClient("test")
+		client := NewClient("test")
 
 		// EvaluationOptions contains the hooks registered at invocation
 		type requirement interface {
@@ -519,7 +519,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockAPIHook := NewMockHook(ctrl)
 		AddHooks(mockAPIHook)
 		mockClientHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		client.AddHooks(mockClientHook)
 		mockInvocationHook := NewMockHook(ctrl)
 		evalOptions := NewEvaluationOptions([]Hook{mockInvocationHook}, HookHints{})
@@ -557,7 +557,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockAPIHook := NewMockHook(ctrl)
 		AddHooks(mockAPIHook)
 		mockClientHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		client.AddHooks(mockClientHook)
 		mockInvocationHook := NewMockHook(ctrl)
 		evalOptions := NewEvaluationOptions([]Hook{mockInvocationHook}, HookHints{})
@@ -603,7 +603,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 		func(t *testing.T) {
 			mockHook1 := NewMockHook(ctrl)
 			mockHook2 := NewMockHook(ctrl)
-			client := GetClient("test")
+			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
 			SetProvider(mockProvider)
 			evalOptions := NewEvaluationOptions([]Hook{mockHook1, mockHook2}, HookHints{})
@@ -629,7 +629,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 		func(t *testing.T) {
 			mockHook1 := NewMockHook(ctrl)
 			mockHook2 := NewMockHook(ctrl)
-			client := GetClient("test")
+			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
 			SetProvider(mockProvider)
 			evalOptions := NewEvaluationOptions([]Hook{mockHook1, mockHook2}, HookHints{})
@@ -664,7 +664,7 @@ func TestRequirement_4_4_7(t *testing.T) {
 	evalCtx := EvaluationContext{}
 
 	mockHook := NewMockHook(ctrl)
-	client := GetClient("test")
+	client := NewClient("test")
 	mockProvider := NewMockFeatureProvider(ctrl)
 	SetProvider(mockProvider)
 	evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -700,7 +700,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 	t.Run("hook hints must be passed to before, after & finally hooks", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
@@ -723,7 +723,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 	t.Run("hook hints must be passed to error hooks", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockHook := NewMockHook(ctrl)
-		client := GetClient("test")
+		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()

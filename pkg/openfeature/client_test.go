@@ -12,7 +12,7 @@ func TestRequirement_1_2_1(t *testing.T) {
 
 	mockHook := NewMockHook(ctrl)
 
-	client := GetClient("test-client")
+	client := NewClient("test-client")
 	client.AddHooks(mockHook)
 	client.AddHooks(mockHook, mockHook)
 
@@ -24,7 +24,7 @@ func TestRequirement_1_2_1(t *testing.T) {
 func TestRequirement_1_2_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	clientName := "test-client"
-	client := GetClient(clientName)
+	client := NewClient(clientName)
 
 	if client.Metadata().Name() != clientName {
 		t.Errorf("client name not initiated as expected, got %s, want %s", client.Metadata().Name(), clientName)
@@ -35,7 +35,7 @@ func TestRequirement_1_2_2(t *testing.T) {
 // defined by the 1.3.* requirements
 func TestRequirements_1_3(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := GetClient("test-client")
+	client := NewClient("test-client")
 
 	type requirements interface {
 		GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
@@ -46,13 +46,13 @@ func TestRequirements_1_3(t *testing.T) {
 
 	var clientI interface{} = client
 	if _, ok := clientI.(requirements); !ok {
-		t.Error("client returned by GetClient doesn't implement the 1.3.* requirements interface")
+		t.Error("client returned by NewClient doesn't implement the 1.3.* requirements interface")
 	}
 }
 
 func TestRequirement_1_4_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := GetClient("test-client")
+	client := NewClient("test-client")
 
 	type requirements interface {
 		GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
@@ -63,7 +63,7 @@ func TestRequirement_1_4_1(t *testing.T) {
 
 	var clientI interface{} = client
 	if _, ok := clientI.(requirements); !ok {
-		t.Error("client returned by GetClient doesn't implement the 1.4.1 requirements interface")
+		t.Error("client returned by NewClient doesn't implement the 1.4.1 requirements interface")
 	}
 }
 
@@ -73,7 +73,7 @@ func TestRequirement_1_4_1(t *testing.T) {
 
 func TestRequirement_1_4_4(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := GetClient("test-client")
+	client := NewClient("test-client")
 
 	flagKey := "foo"
 
@@ -142,7 +142,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 // The MUST NOT abnormally terminate clause of this requirement is satisfied by the error included in the return
 // signatures, as is idiomatic in Go. Errors aren't fatal, the operations won't terminate as a result of an error.
 func TestRequirement_1_4_9(t *testing.T) {
-	client := GetClient("test-client")
+	client := NewClient("test-client")
 	flagKey := "flag-key"
 
 	ctrl := gomock.NewController(t)

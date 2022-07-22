@@ -8,14 +8,14 @@ import (
 	"github.com/open-feature/golang-sdk/pkg/openfeature"
 )
 
-func ExampleGetClient() {
-	client := openfeature.GetClient("example-client")
+func ExampleNewClient() {
+	client := openfeature.NewClient("example-client")
 	fmt.Printf("Client Name: %s", client.Metadata().Name())
 	// Output: Client Name: example-client
 }
 
 func ExampleClient_GetBooleanValue() {
-	client := openfeature.GetClient("example-client")
+	client := openfeature.NewClient("example-client")
 	value, err := client.GetBooleanValue(
 		"test-flag", true, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
@@ -28,7 +28,7 @@ func ExampleClient_GetBooleanValue() {
 }
 
 func ExampleClient_GetStringValue() {
-	client := openfeature.GetClient("example-client")
+	client := openfeature.NewClient("example-client")
 	value, err := client.GetStringValue(
 		"test-flag", "openfeature", openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
@@ -41,7 +41,7 @@ func ExampleClient_GetStringValue() {
 }
 
 func ExampleClient_GetNumberValue() {
-	client := openfeature.GetClient("example-client")
+	client := openfeature.NewClient("example-client")
 	value, err := client.GetNumberValue(
 		"test-flag", 0.55, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
@@ -54,7 +54,7 @@ func ExampleClient_GetNumberValue() {
 }
 
 func ExampleClient_GetObjectValue() {
-	client := openfeature.GetClient("example-client")
+	client := openfeature.NewClient("example-client")
 	value, err := client.GetObjectValue(
 		"test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
