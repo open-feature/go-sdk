@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -34,8 +35,8 @@ type Client struct {
 	hooks    []Hook
 }
 
-// GetClient returns a new Client. Name is a unique identifier for this client
-func GetClient(name string) *Client {
+// NewClient returns a new Client. Name is a unique identifier for this client
+func NewClient(name string) *Client {
 	return &Client{
 		metadata: ClientMetadata{name: name},
 		hooks:    []Hook{},
@@ -71,19 +72,46 @@ type EvaluationDetails struct {
 // GetBooleanValue return boolean evaluation for flag
 func (c Client) GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
 	evalDetails, err := c.evaluate(flag, Boolean, defaultValue, evalCtx, options)
-	return evalDetails.Value.(bool), err
+	if err != nil {
+		return defaultValue, fmt.Errorf("evaluate: %w", err)
+	}
+
+	value, ok := evalDetails.Value.(bool)
+	if !ok {
+		return defaultValue, errors.New("evaluated value is not a boolean")
+	}
+
+	return value, nil
 }
 
 // GetStringValue return string evaluation for flag
 func (c Client) GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
 	evalDetails, err := c.evaluate(flag, String, defaultValue, evalCtx, options)
-	return evalDetails.Value.(string), err
+	if err != nil {
+		return defaultValue, fmt.Errorf("evaluate: %w", err)
+	}
+
+	value, ok := evalDetails.Value.(string)
+	if !ok {
+		return defaultValue, errors.New("evaluated value is not a string")
+	}
+
+	return value, nil
 }
 
 // GetNumberValue return number evaluation for flag
 func (c Client) GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
 	evalDetails, err := c.evaluate(flag, Number, defaultValue, evalCtx, options)
-	return evalDetails.Value.(float64), err
+	if err != nil {
+		return defaultValue, fmt.Errorf("evaluate: %w", err)
+	}
+
+	value, ok := evalDetails.Value.(float64)
+	if !ok {
+		return defaultValue, errors.New("evaluated value is not a float64")
+	}
+
+	return value, nil
 }
 
 // GetObjectValue return object evaluation for flag
@@ -141,7 +169,7 @@ func (c Client) evaluate(
 	evalCtx, err = c.beforeHooks(hookCtx, apiClientInvocationHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
-		err = fmt.Errorf("failed to execute before hook: %w", err)
+		err = fmt.Errorf("execute before hook: %w", err)
 		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
@@ -166,7 +194,7 @@ func (c Client) evaluate(
 
 	err = resolution.Error()
 	if err != nil {
-		err = fmt.Errorf("failed to evaluate the flag: %w", err)
+		err = fmt.Errorf("evaluate the flag: %w", err)
 		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
@@ -175,7 +203,7 @@ func (c Client) evaluate(
 	}
 
 	if err := c.afterHooks(hookCtx, invocationClientApiHooks, evalDetails, options); err != nil {
-		err = fmt.Errorf("failed to execute after hook: %w", err)
+		err = fmt.Errorf("execute after hook: %w", err)
 		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
 		return evalDetails, err
 	}

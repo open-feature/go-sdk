@@ -57,15 +57,15 @@ func TestRequirement_1_1_4(t *testing.T) {
 
 func TestRequirement_1_1_5(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	GetClient("test-client")
+	NewClient("test-client")
 }
 
 func TestRequirement_1_1_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	type clientCreationFunc func(name string) *Client
 
-	// asserting that our GetClient method matches this signature is enough to deduce that no error is returned
-	var f clientCreationFunc = GetClient
+	// asserting that our NewClient method matches this signature is enough to deduce that no error is returned
+	var f clientCreationFunc = NewClient
 
 	use(f) // to avoid the declared and not used error
 }
