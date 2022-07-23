@@ -4,14 +4,14 @@ package openfeature
 type IClient interface {
 	Metadata() ClientMetadata
 	AddHooks(hooks ...Hook)
-	GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error)
-	GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error)
-	GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error)
-	GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error)
-	GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-	GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-	GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
-	GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error)
+	StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error)
+	NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error)
+	ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error)
+	BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
+	ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error)
 }
 
 // ClientMetadata provides a client's metadata
@@ -27,14 +27,14 @@ func (cm ClientMetadata) Name() string {
 // Client implements the behaviour required of an openfeature client
 type Client struct {
 	metadata ClientMetadata
-	hooks []Hook
+	hooks    []Hook
 }
 
 // GetClient returns a new Client. Name is a unique identifier for this client
 func GetClient(name string) *Client {
 	return &Client{
 		metadata: ClientMetadata{name: name},
-		hooks: []Hook{},
+		hooks:    []Hook{},
 	}
 }
 
@@ -64,9 +64,9 @@ type EvaluationDetails struct {
 	ResolutionDetail
 }
 
-// GetBooleanValue return boolean evaluation for flag
-func (c Client) GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error) {
-	resolution := api.provider.GetBooleanEvaluation(flag, defaultValue, evalCtx, options...)
+// BooleanValue return boolean evaluation for flag
+func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (bool, error) {
+	resolution := api.provider.BooleanEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
@@ -75,9 +75,9 @@ func (c Client) GetBooleanValue(flag string, defaultValue bool, evalCtx Evaluati
 	return value, err
 }
 
-// GetStringValue return string evaluation for flag
-func (c Client) GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error) {
-	resolution := api.provider.GetStringEvaluation(flag, defaultValue, evalCtx, options...)
+// StringValue return string evaluation for flag
+func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (string, error) {
+	resolution := api.provider.StringEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
@@ -86,9 +86,9 @@ func (c Client) GetStringValue(flag string, defaultValue string, evalCtx Evaluat
 	return value, err
 }
 
-// GetNumberValue return number evaluation for flag
-func (c Client) GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error) {
-	resolution := api.provider.GetNumberEvaluation(flag, defaultValue, evalCtx, options...)
+// NumberValue return number evaluation for flag
+func (c Client) NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (float64, error) {
+	resolution := api.provider.NumberEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
@@ -97,9 +97,9 @@ func (c Client) GetNumberValue(flag string, defaultValue float64, evalCtx Evalua
 	return value, err
 }
 
-// GetObjectValue return object evaluation for flag
-func (c Client) GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error) {
-	resolution := api.provider.GetObjectEvaluation(flag, defaultValue, evalCtx, options...)
+// ObjectValue return object evaluation for flag
+func (c Client) ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (interface{}, error) {
+	resolution := api.provider.ObjectEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
@@ -108,17 +108,17 @@ func (c Client) GetObjectValue(flag string, defaultValue interface{}, evalCtx Ev
 	return value, err
 }
 
-// GetBooleanValueDetails return boolean evaluation for flag
-func (c Client) GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
-	resolution := api.provider.GetBooleanEvaluation(flag, defaultValue, evalCtx, options...)
+// BooleanValueDetails return boolean evaluation for flag
+func (c Client) BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
+	resolution := api.provider.BooleanEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
 		value = defaultValue
 	}
 	return EvaluationDetails{
-		FlagKey:          flag,
-		FlagType:         Boolean,
+		FlagKey:  flag,
+		FlagType: Boolean,
 		ResolutionDetail: ResolutionDetail{
 			Value:     value,
 			ErrorCode: resolution.ErrorCode,
@@ -129,17 +129,17 @@ func (c Client) GetBooleanValueDetails(flag string, defaultValue bool, evalCtx E
 
 }
 
-// GetStringValueDetails return string evaluation for flag
-func (c Client) GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
-	resolution := api.provider.GetStringEvaluation(flag, defaultValue, evalCtx, options...)
+// StringValueDetails return string evaluation for flag
+func (c Client) StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
+	resolution := api.provider.StringEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
 		value = defaultValue
 	}
 	return EvaluationDetails{
-		FlagKey:          flag,
-		FlagType:         String,
+		FlagKey:  flag,
+		FlagType: String,
 		ResolutionDetail: ResolutionDetail{
 			Value:     value,
 			ErrorCode: resolution.ErrorCode,
@@ -149,17 +149,17 @@ func (c Client) GetStringValueDetails(flag string, defaultValue string, evalCtx 
 	}, err
 }
 
-// GetNumberValueDetails return number evaluation for flag
-func (c Client) GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
-	resolution := api.provider.GetNumberEvaluation(flag, defaultValue, evalCtx, options...)
+// NumberValueDetails return number evaluation for flag
+func (c Client) NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
+	resolution := api.provider.NumberEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
 		value = defaultValue
 	}
 	return EvaluationDetails{
-		FlagKey:          flag,
-		FlagType:         Number,
+		FlagKey:  flag,
+		FlagType: Number,
 		ResolutionDetail: ResolutionDetail{
 			Value:     value,
 			ErrorCode: resolution.ErrorCode,
@@ -169,17 +169,17 @@ func (c Client) GetNumberValueDetails(flag string, defaultValue float64, evalCtx
 	}, err
 }
 
-// GetObjectValueDetails return object evaluation for flag
-func (c Client) GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
-	resolution := api.provider.GetObjectEvaluation(flag, defaultValue, evalCtx, options...)
+// ObjectValueDetails return object evaluation for flag
+func (c Client) ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOption) (EvaluationDetails, error) {
+	resolution := api.provider.ObjectEvaluation(flag, defaultValue, evalCtx, options...)
 	value := resolution.Value
 	err := resolution.Error()
 	if err != nil {
 		value = defaultValue
 	}
 	return EvaluationDetails{
-		FlagKey:          flag,
-		FlagType:         Object,
+		FlagKey:  flag,
+		FlagType: Object,
 		ResolutionDetail: ResolutionDetail{
 			Value:     value,
 			ErrorCode: resolution.ErrorCode,
