@@ -148,12 +148,12 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockProvider.EXPECT().Metadata()
 
 		// assert that the Before hooks are executed prior to the flag evaluation
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions).
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions).
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any()))
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -189,7 +189,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	evalOptions := NewEvaluationOptions([]Hook{mockHook1, mockHook2}, HookHints{})
 
 	mockProvider.EXPECT().Metadata().Times(2)
-	mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
 	hook1Ctx := HookContext{
 		flagKey:           flagKey,
@@ -212,7 +212,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	mockHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-	_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+	_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}
@@ -255,11 +255,11 @@ func TestRequirement_4_3_4(t *testing.T) {
 			"on":         true,
 		},
 	}
-	mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, expectedMergedContext, evalOptions)
+	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, expectedMergedContext, evalOptions)
 	mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-	_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+	_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}
@@ -285,10 +285,10 @@ func TestRequirement_4_3_5(t *testing.T) {
 		mockHook.EXPECT().Before(gomock.Any(), gomock.Any())
 		// assert that the After hooks are executed after the flag evaluation
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any()).
-			After(mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions))
+			After(mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -330,7 +330,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any()).Return(nil, errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -349,12 +349,12 @@ func TestRequirement_4_3_6(t *testing.T) {
 		// assert that the Error hooks are executed after the failed flag evaluation
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).
 			After(
-				mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions).
+				mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions).
 					Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{ErrorCode: "forced"}}),
 			)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -370,13 +370,13 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockProvider.EXPECT().Metadata()
 
 		mockHook.EXPECT().Before(gomock.Any(), gomock.Any())
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 		// assert that the Error hooks are executed after the failed After hooks
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).
 			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -417,9 +417,9 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any()).
 			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any()))
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -439,7 +439,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any()).
 			After(mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()))
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -489,14 +489,14 @@ func TestRequirement_4_4_1(t *testing.T) {
 
 		// EvaluationOptions contains the hooks registered at invocation
 		type requirement interface {
-			GetBooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
-			GetStringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-			GetNumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
-			GetObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
-			GetBooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			GetStringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			GetNumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			GetObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+			BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
+			StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
+			NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+			ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
+			BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+			StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+			NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+			ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 		}
 
 		var clientI interface{} = client
@@ -543,9 +543,9 @@ func TestRequirement_4_4_2(t *testing.T) {
 			After(mockClientHook.EXPECT().Finally(gomock.Any(), gomock.Any())).
 			After(mockInvocationHook.EXPECT().Finally(gomock.Any(), gomock.Any()))
 
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -577,7 +577,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockClientHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 		mockAPIHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -617,7 +617,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 			mockHook2.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-			_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+			_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 			if err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -645,9 +645,9 @@ func TestRequirement_4_4_6(t *testing.T) {
 			mockHook2.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-			mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+			mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
-			_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+			_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 			if err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -675,7 +675,7 @@ func TestRequirement_4_4_7(t *testing.T) {
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-	res, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+	res, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -712,9 +712,9 @@ func TestRequirement_4_5_2(t *testing.T) {
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), hookHints)
 		mockHook.EXPECT().Finally(gomock.Any(), hookHints)
 
-		mockProvider.EXPECT().GetStringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -735,7 +735,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), hookHints)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-		_, err := client.GetStringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+		_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
