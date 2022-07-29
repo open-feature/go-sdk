@@ -14,9 +14,9 @@ func ExampleNewClient() {
 	// Output: Client Name: example-client
 }
 
-func ExampleClient_GetBooleanValue() {
+func ExampleClient_BooleanValue() {
 	client := openfeature.NewClient("example-client")
-	value, err := client.GetBooleanValue(
+	value, err := client.BooleanValue(
 		"test-flag", true, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
 	if err != nil {
@@ -27,9 +27,9 @@ func ExampleClient_GetBooleanValue() {
 	// Output: test-flag value: true
 }
 
-func ExampleClient_GetStringValue() {
+func ExampleClient_StringValue() {
 	client := openfeature.NewClient("example-client")
-	value, err := client.GetStringValue(
+	value, err := client.StringValue(
 		"test-flag", "openfeature", openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
 	if err != nil {
@@ -40,9 +40,9 @@ func ExampleClient_GetStringValue() {
 	// Output: test-flag value: openfeature
 }
 
-func ExampleClient_GetNumberValue() {
+func ExampleClient_NumberValue() {
 	client := openfeature.NewClient("example-client")
-	value, err := client.GetNumberValue(
+	value, err := client.NumberValue(
 		"test-flag", 0.55, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
 	if err != nil {
@@ -53,9 +53,9 @@ func ExampleClient_GetNumberValue() {
 	// Output: test-flag value: 0.55
 }
 
-func ExampleClient_GetObjectValue() {
+func ExampleClient_ObjectValue() {
 	client := openfeature.NewClient("example-client")
-	value, err := client.GetObjectValue(
+	value, err := client.ObjectValue(
 		"test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
 	if err != nil {

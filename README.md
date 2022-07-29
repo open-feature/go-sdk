@@ -28,7 +28,7 @@ import (
 func main() {
 	openfeature.SetProvider(openfeature.NoopProvider{})
 	client := openfeature.GetClient("app")
-	value, err := client.GetBooleanValue("v2_enabled", false, nil)
+	value, err := client.BooleanValue("v2_enabled", false, nil)
 }
 ```
 
