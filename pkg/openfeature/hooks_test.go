@@ -11,6 +11,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Hook context MUST provide: the `flag key`, `flag value type`, `evaluation context`, and the `default value`.
 func TestRequirement_4_1_1(t *testing.T) {
 	hookCtx := new(HookContext)
 
@@ -24,6 +25,7 @@ func TestRequirement_4_1_1(t *testing.T) {
 	}
 }
 
+// The `hook context` SHOULD provide: access to the `client metadata` and the `provider metadata` fields.
 func TestRequirement_4_1_2(t *testing.T) {
 	hookCtx := HookContext{}
 
@@ -38,6 +40,8 @@ func TestRequirement_4_1_2(t *testing.T) {
 	}
 }
 
+// The `flag key`, `flag type`, and `default value` properties MUST be immutable.
+// If the language does not support immutability, the hook MUST NOT modify these properties.
 func TestRequirement_4_1_3(t *testing.T) {
 	hookCtx := new(HookContext)
 
@@ -57,9 +61,14 @@ func TestRequirement_4_1_3(t *testing.T) {
 	}
 }
 
-// Requirement_4_1_4 is satisfied by the evaluation context being immutable within the HookContext struct itself
+// Requirement_4_1_4
+// The evaluation context MUST be mutable only within the `before` hook.
+//
+// Is satisfied by the evaluation context being immutable within the HookContext struct itself
 // and by the Before signature returning an evaluation context that is used to mutate the HookContext directly.
 
+// `hook hints` MUST be a structure supports definition of arbitrary properties,
+// with keys of type `string`, and values of type `boolean | string | number | datetime | structure`..
 func TestRequirement_4_2_1(t *testing.T) {
 	hookHints := HookHints{}
 
@@ -75,6 +84,7 @@ func TestRequirement_4_2_1(t *testing.T) {
 	}
 }
 
+// Condition: `Hook hints` MUST be immutable.
 func TestRequirement_4_2_2_1(t *testing.T) {
 	hookHints := new(HookHints)
 
@@ -92,6 +102,7 @@ func TestRequirement_4_2_2_1(t *testing.T) {
 	}
 }
 
+// Condition: The client `metadata` field in the `hook context` MUST be immutable.
 func TestRequirement_4_2_2_2(t *testing.T) {
 	hookCtx := new(HookContext)
 
@@ -109,6 +120,7 @@ func TestRequirement_4_2_2_2(t *testing.T) {
 	}
 }
 
+// Condition: The provider `metadata` field in the `hook context` MUST be immutable.
 func TestRequirement_4_2_2_3(t *testing.T) {
 	hookCtx := new(HookContext)
 
@@ -126,10 +138,15 @@ func TestRequirement_4_2_2_3(t *testing.T) {
 	}
 }
 
-// Requirement_4_3_1 has no suitable test as a Hook satisfies the interface by implementing the required functions.
+// Requirement_4_3_1
+// Hooks MUST specify at least one stage.
+//
+// Has no suitable test as a Hook satisfies the interface by implementing the required functions.
 // We can't be sure whether the function of each hook (before, after, error, finally) is empty or not, nor do we care
 // as an empty function won't affect anything.
 
+// The `before` stage MUST run before flag resolution occurs. It accepts a `hook context` (required) and
+// `hook hints` (optional) as parameters and returns either an `evaluation context` or nothing.
 func TestRequirement_4_3_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -173,6 +190,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 	})
 }
 
+// Any `evaluation context` returned from a `before` hook MUST be passed to subsequent `before` hooks (via `HookContext`).
 func TestRequirement_4_3_3(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -218,6 +236,8 @@ func TestRequirement_4_3_3(t *testing.T) {
 	}
 }
 
+// When `before` hooks have finished executing, any resulting `evaluation context` MUST be merged with the invocation
+// `evaluation context` with the invocation `evaluation context` taking precedence in the case of any conflicts.
 func TestRequirement_4_3_4(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -265,6 +285,8 @@ func TestRequirement_4_3_4(t *testing.T) {
 	}
 }
 
+// The `after` stage MUST run after flag resolution occurs. It accepts a `hook context` (required),
+// `flag evaluation details` (required) and `hook hints` (optional). It has no return value.
 func TestRequirement_4_3_5(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -308,6 +330,9 @@ func TestRequirement_4_3_5(t *testing.T) {
 	})
 }
 
+// The `error` hook MUST run when errors are encountered in the `before` stage, the `after` stage or during flag
+// resolution. It accepts `hook context` (required), `exception` representing what went wrong (required),
+// and `hook hints` (optional). It has no return value.
 func TestRequirement_4_3_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -396,6 +421,8 @@ func TestRequirement_4_3_6(t *testing.T) {
 	})
 }
 
+// The `finally` hook MUST run after the `before`, `after`, and `error` stages. It accepts a `hook context` (required)
+// and `hook hints` (optional). There is no return value.
 func TestRequirement_4_3_7(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -459,6 +486,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 	})
 }
 
+// The API, Client and invocation MUST have a method for registering hooks which accepts `flag evaluation options`
 func TestRequirement_4_4_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -506,6 +534,8 @@ func TestRequirement_4_4_1(t *testing.T) {
 	})
 }
 
+// Hooks MUST be evaluated in the following order:  - before: API, Client, Invocation - after: Invocation, Client, API
+// - error (if applicable): Invocation, Client, API - finally: Invocation, Client, API
 func TestRequirement_4_4_2(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -584,12 +614,25 @@ func TestRequirement_4_4_2(t *testing.T) {
 	})
 }
 
-// Requirement_4_4_3 is satisfied by the Finally hook func signature not returning an error.
+// Requirement_4_4_3
+// If a `finally` hook abnormally terminates, evaluation MUST proceed, including the execution of any
+// remaining `finally` hooks.
+//
+// Is satisfied by the Finally hook func signature not returning an error.
 
-// Requirement_4_4_4 is satisfied by the Error hook func signature not returning an error.
+// Requirement_4_4_4
+// If an `error` hook abnormally terminates, evaluation MUST proceed, including the execution of any remaining
+// `error` hooks.
+//
+// Is satisfied by the Error hook func signature not returning an error.
 
-// Requirement_4_4_5 is satisfied by TestRequirement_4_3_6.
+// Requirement_4_4_5
+// If an error occurs in the `before` or `after` hooks, the `error` hooks MUST be invoked.
+//
+// Is satisfied by TestRequirement_4_3_6.
 
+// If an error occurs during the evaluation of `before` or `after` hooks, any remaining hooks in the `before` or `after`
+// stages MUST NOT be invoked.
 func TestRequirement_4_4_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -655,6 +698,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 	)
 }
 
+// If an error occurs in the `before` hooks, the default value MUST be returned.
 func TestRequirement_4_4_7(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -686,10 +730,12 @@ func TestRequirement_4_4_7(t *testing.T) {
 	}
 }
 
+// `Flag evaluation options` MAY contain `hook hints`, a map of data to be provided to hook invocations.
 func TestRequirement_4_5_1(t *testing.T) {
 	NewEvaluationOptions(nil, NewHookHints(map[string]interface{}{"foo": "bar"}))
 }
 
+// `hook hints` MUST be passed to each hook.
 func TestRequirement_4_5_2(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -742,6 +788,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 	})
 }
 
+// The hook MUST NOT alter the `hook hints` structure.
 func TestRequirement_4_5_3(t *testing.T) {
 	hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
 
