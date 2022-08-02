@@ -40,7 +40,8 @@ func TestRequirements_1_3(t *testing.T) {
 	type requirements interface {
 		BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
 		StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-		NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+		FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+		IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
 		ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
 	}
 
@@ -57,7 +58,8 @@ func TestRequirement_1_4_1(t *testing.T) {
 	type requirements interface {
 		BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 		StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-		NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+		FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+		IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 		ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 	}
 
@@ -103,8 +105,21 @@ func TestRequirement_1_4_4(t *testing.T) {
 		}
 	})
 
-	t.Run("NumberValueDetails", func(t *testing.T) {
-		evDetails, err := client.NumberValueDetails(flagKey, 1, EvaluationContext{}, EvaluationOptions{})
+	t.Run("FloatValueDetails", func(t *testing.T) {
+		evDetails, err := client.FloatValueDetails(flagKey, 1, EvaluationContext{}, EvaluationOptions{})
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.FlagKey != flagKey {
+			t.Errorf(
+				"flag key isn't as expected in EvaluationDetail, got %s, expected %s",
+				evDetails.FlagKey, flagKey,
+			)
+		}
+	})
+
+	t.Run("IntValueDetails", func(t *testing.T) {
+		evDetails, err := client.IntValueDetails(flagKey, 1, EvaluationContext{}, EvaluationOptions{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -217,13 +232,13 @@ func TestRequirement_1_4_9(t *testing.T) {
 		}
 	})
 
-	t.Run("Number", func(t *testing.T) {
+	t.Run("Float", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := 3.14159
 		mockProvider.EXPECT().Metadata().Times(2)
-		mockProvider.EXPECT().NumberEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
-			Return(NumberResolutionDetail{
+		mockProvider.EXPECT().FloatEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(FloatResolutionDetail{
 				Value: 0,
 				ResolutionDetail: ResolutionDetail{
 					Value:     0,
@@ -233,22 +248,57 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.NumberValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
+		value, err := client.FloatValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
-			t.Error("expected NumberValue to return an error, got nil")
+			t.Error("expected FloatValue to return an error, got nil")
 		}
 
 		if value != defaultValue {
-			t.Errorf("expected default value from NumberValue, got %v", value)
+			t.Errorf("expected default value from FloatValue, got %v", value)
 		}
 
-		valueDetails, err := client.NumberValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
+		valueDetails, err := client.FloatValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
-			t.Error("expected NumberValueDetails to return an error, got nil")
+			t.Error("expected FloatValueDetails to return an error, got nil")
 		}
 
 		if valueDetails.Value.(float64) != defaultValue {
-			t.Errorf("expected default value from NumberValueDetails, got %v", value)
+			t.Errorf("expected default value from FloatValueDetails, got %v", value)
+		}
+	})
+
+	t.Run("Int", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		var defaultValue int64 = 3
+		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().IntEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+			Return(IntResolutionDetail{
+				Value: 0,
+				ResolutionDetail: ResolutionDetail{
+					Value:     0,
+					ErrorCode: "GENERAL",
+					Reason:    "forced test error",
+				},
+			}).Times(2)
+		SetProvider(mockProvider)
+
+		value, err := client.IntValue(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected IntValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from IntValue, got %v", value)
+		}
+
+		valueDetails, err := client.IntValueDetails(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected FloatValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(int64) != defaultValue {
+			t.Errorf("expected default value from IntValueDetails, got %v", value)
 		}
 	})
 
@@ -329,18 +379,33 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		}
 	})
 
-	t.Run("Number", func(t *testing.T) {
+	t.Run("Float", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		ctrl := gomock.NewController(t)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
-		mockProvider.EXPECT().NumberEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(NumberResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
+		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(FloatResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
 
-		_, err := client.NumberValue("", 3, EvaluationContext{}, EvaluationOptions{})
+		_, err := client.FloatValue("", 3, EvaluationContext{}, EvaluationOptions{})
 		if err == nil {
-			t.Error("expected NumberValue to return an error, got nil")
+			t.Error("expected FloatValue to return an error, got nil")
+		}
+	})
+
+	t.Run("Int", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		ctrl := gomock.NewController(t)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		SetProvider(mockProvider)
+		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(IntResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
+
+		_, err := client.IntValue("", 3, EvaluationContext{}, EvaluationOptions{})
+		if err == nil {
+			t.Error("expected IntValue to return an error, got nil")
 		}
 	})
 }

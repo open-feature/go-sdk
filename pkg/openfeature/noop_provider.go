@@ -30,9 +30,20 @@ func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx
 	}
 }
 
-// NumberEvaluation returns a number flag.
-func (e NoopProvider) NumberEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) NumberResolutionDetail {
-	return NumberResolutionDetail{
+// FloatEvaluation returns a float flag.
+func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail {
+	return FloatResolutionDetail{
+		Value: defaultValue,
+		ResolutionDetail: ResolutionDetail{
+			Variant: "default-variant",
+			Reason:  DEFAULT,
+		},
+	}
+}
+
+// IntEvaluation returns an int flag.
+func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail {
+	return IntResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
 			Variant: "default-variant",

@@ -40,17 +40,30 @@ func ExampleClient_StringValue() {
 	// Output: test-flag value: openfeature
 }
 
-func ExampleClient_NumberValue() {
+func ExampleClient_FloatValue() {
 	client := openfeature.NewClient("example-client")
-	value, err := client.NumberValue(
+	value, err := client.FloatValue(
 		"test-flag", 0.55, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
 	)
 	if err != nil {
-		log.Fatal("error while getting number value : ", err)
+		log.Fatalf("error while getting float value: %v", err)
 	}
 
 	fmt.Printf("test-flag value: %v", value)
 	// Output: test-flag value: 0.55
+}
+
+func ExampleClient_IntValue() {
+	client := openfeature.NewClient("example-client")
+	value, err := client.IntValue(
+		"test-flag", 3, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{},
+	)
+	if err != nil {
+		log.Fatalf("error while getting int value: %v", err)
+	}
+
+	fmt.Printf("test-flag value: %v", value)
+	// Output: test-flag value: 3
 }
 
 func ExampleClient_ObjectValue() {
