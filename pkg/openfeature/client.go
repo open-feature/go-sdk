@@ -11,11 +11,13 @@ type IClient interface {
 	AddHooks(hooks ...Hook)
 	BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
 	StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-	NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+	FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
+	IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
 	ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
 	BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 	StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-	NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+	FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+	IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 	ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 }
 
@@ -59,7 +61,8 @@ type Type int64
 const (
 	Boolean Type = iota
 	String
-	Number
+	Float
+	Int
 	Object
 )
 
@@ -99,9 +102,9 @@ func (c Client) StringValue(flag string, defaultValue string, evalCtx Evaluation
 	return value, nil
 }
 
-// NumberValue return number evaluation for flag
-func (c Client) NumberValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
-	evalDetails, err := c.evaluate(flag, Number, defaultValue, evalCtx, options)
+// FloatValue return float evaluation for flag
+func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
+	evalDetails, err := c.evaluate(flag, Float, defaultValue, evalCtx, options)
 	if err != nil {
 		return defaultValue, fmt.Errorf("evaluate: %w", err)
 	}
@@ -109,6 +112,21 @@ func (c Client) NumberValue(flag string, defaultValue float64, evalCtx Evaluatio
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
 		return defaultValue, errors.New("evaluated value is not a float64")
+	}
+
+	return value, nil
+}
+
+// IntValue return int evaluation for flag
+func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
+	evalDetails, err := c.evaluate(flag, Int, defaultValue, evalCtx, options)
+	if err != nil {
+		return defaultValue, fmt.Errorf("evaluate: %w", err)
+	}
+
+	value, ok := evalDetails.Value.(int64)
+	if !ok {
+		return defaultValue, errors.New("evaluated value is not an int64")
 	}
 
 	return value, nil
@@ -130,9 +148,14 @@ func (c Client) StringValueDetails(flag string, defaultValue string, evalCtx Eva
 	return c.evaluate(flag, String, defaultValue, evalCtx, options)
 }
 
-// NumberValueDetails return number evaluation for flag
-func (c Client) NumberValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, Number, defaultValue, evalCtx, options)
+// FloatValueDetails return float evaluation for flag
+func (c Client) FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
+	return c.evaluate(flag, Float, defaultValue, evalCtx, options)
+}
+
+// IntValueDetails return int evaluation for flag
+func (c Client) IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
+	return c.evaluate(flag, Int, defaultValue, evalCtx, options)
 }
 
 // ObjectValueDetails return object evaluation for flag
@@ -186,9 +209,13 @@ func (c Client) evaluate(
 		defValue := defaultValue.(string)
 		res := api.provider.StringEvaluation(flag, defValue, evalCtx, options)
 		resolution = res.ResolutionDetail
-	case Number:
+	case Float:
 		defValue := defaultValue.(float64)
-		res := api.provider.NumberEvaluation(flag, defValue, evalCtx, options)
+		res := api.provider.FloatEvaluation(flag, defValue, evalCtx, options)
+		resolution = res.ResolutionDetail
+	case Int:
+		defValue := defaultValue.(int64)
+		res := api.provider.IntEvaluation(flag, defValue, evalCtx, options)
 		resolution = res.ResolutionDetail
 	}
 

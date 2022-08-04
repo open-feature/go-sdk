@@ -16,7 +16,8 @@ type FeatureProvider interface {
 	Metadata() Metadata
 	BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) BoolResolutionDetail
 	StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) StringResolutionDetail
-	NumberEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) NumberResolutionDetail
+	FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail
+	IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail
 	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) ResolutionDetail
 }
 
@@ -51,9 +52,15 @@ type StringResolutionDetail struct {
 	ResolutionDetail
 }
 
-// NumberResolutionDetail provides a resolution detail with float64 type
-type NumberResolutionDetail struct {
+// FloatResolutionDetail provides a resolution detail with float64 type
+type FloatResolutionDetail struct {
 	Value float64
+	ResolutionDetail
+}
+
+// IntResolutionDetail provides a resolution detail with int64 type
+type IntResolutionDetail struct {
+	Value int64
 	ResolutionDetail
 }
 
