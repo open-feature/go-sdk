@@ -9,6 +9,8 @@ import (
 type IClient interface {
 	Metadata() ClientMetadata
 	AddHooks(hooks ...Hook)
+	SetEvaluationContext(evalCtx EvaluationContext)
+	EvaluationContext() EvaluationContext
 	BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
 	StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
 	FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
@@ -33,15 +35,17 @@ func (cm ClientMetadata) Name() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
-	metadata ClientMetadata
-	hooks    []Hook
+	metadata          ClientMetadata
+	hooks             []Hook
+	evaluationContext EvaluationContext
 }
 
 // NewClient returns a new Client. Name is a unique identifier for this client
 func NewClient(name string) *Client {
 	return &Client{
-		metadata: ClientMetadata{name: name},
-		hooks:    []Hook{},
+		metadata:          ClientMetadata{name: name},
+		hooks:             []Hook{},
+		evaluationContext: EvaluationContext{},
 	}
 }
 
@@ -53,6 +57,16 @@ func (c Client) Metadata() ClientMetadata {
 // AddHooks appends to the client's collection of any previously added hooks
 func (c *Client) AddHooks(hooks ...Hook) {
 	c.hooks = append(c.hooks, hooks...)
+}
+
+// SetEvaluationContext sets the client's evaluation context
+func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
+	c.evaluationContext = evalCtx
+}
+
+// EvaluationContext returns the client's evaluation context
+func (c *Client) EvaluationContext() EvaluationContext {
+	return c.evaluationContext
 }
 
 // Type represents the type of a flag
@@ -166,6 +180,8 @@ func (c Client) ObjectValueDetails(flag string, defaultValue interface{}, evalCt
 func (c Client) evaluate(
 	flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationDetails, error) {
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, api.evaluationContext) // API (global) -> client -> invocation
+
 	var err error
 	hookCtx := HookContext{
 		flagKey:           flag,
@@ -278,15 +294,21 @@ func (c Client) finallyHooks(hookCtx HookContext, hooks []Hook, options Evaluati
 	}
 }
 
-// merges attributes from the given EvaluationContexts with the primary EvaluationContext taking precedence in case
-// of any conflicts
-func mergeContexts(primary, secondary EvaluationContext) EvaluationContext {
-	mergedCtx := primary
+// merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in case
+// of any conflicts with the (n+1)th EvaluationContext
+func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
+	if len(evaluationContexts) == 0 {
+		return EvaluationContext{}
+	}
 
-	for k, v := range secondary.Attributes {
-		_, ok := primary.Attributes[k]
-		if !ok {
-			mergedCtx.Attributes[k] = v
+	mergedCtx := evaluationContexts[0]
+
+	for i := 1; i < len(evaluationContexts); i++ {
+		for k, v := range evaluationContexts[i].Attributes {
+			_, ok := mergedCtx.Attributes[k]
+			if !ok {
+				mergedCtx.Attributes[k] = v
+			}
 		}
 	}
 

@@ -5,8 +5,9 @@ import (
 )
 
 type evaluationAPI struct {
-	provider FeatureProvider
-	hooks    []Hook
+	provider          FeatureProvider
+	hooks             []Hook
+	evaluationContext EvaluationContext
 	sync.RWMutex
 }
 
@@ -20,8 +21,9 @@ func init() {
 
 func initSingleton() {
 	api = evaluationAPI{
-		provider: NoopProvider{},
-		hooks:    []Hook{},
+		provider:          NoopProvider{},
+		hooks:             []Hook{},
+		evaluationContext: EvaluationContext{},
 	}
 }
 
@@ -55,9 +57,20 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.provider = provider
 }
 
+func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
+	api.Lock()
+	defer api.Unlock()
+	api.evaluationContext = evalCtx
+}
+
 // SetProvider sets the global provider.
 func SetProvider(provider FeatureProvider) {
 	api.setProvider(provider)
+}
+
+// SetEvaluationContext sets the global evaluation context.
+func SetEvaluationContext(evalCtx EvaluationContext) {
+	api.setEvaluationContext(evalCtx)
 }
 
 // ProviderMetadata returns the global provider's metadata
