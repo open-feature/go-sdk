@@ -19,6 +19,7 @@ type FeatureProvider interface {
 	FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail
 	IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail
 	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) ResolutionDetail
+	Hooks() []Hook
 }
 
 // ResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,

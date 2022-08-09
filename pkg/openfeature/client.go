@@ -183,17 +183,17 @@ func (c Client) evaluate(
 		},
 	}
 
-	apiClientInvocationHooks := append(append(api.hooks, c.hooks...), options.hooks...) // API, Client, Invocation
-	invocationClientApiHooks := append(append(options.hooks, c.hooks...), api.hooks...) // Invocation, Client, API
+	apiClientInvocationProviderHooks := append(append(append(api.hooks, c.hooks...), options.hooks...), api.provider.Hooks()...) // API, Client, Invocation, Provider
+	providerInvocationClientApiHooks := append(append(append(api.provider.Hooks(), options.hooks...), c.hooks...), api.hooks...) // Provider, Invocation, Client, API
 	defer func() {
-		c.finallyHooks(hookCtx, invocationClientApiHooks, options)
+		c.finallyHooks(hookCtx, providerInvocationClientApiHooks, options)
 	}()
 
-	evalCtx, err = c.beforeHooks(hookCtx, apiClientInvocationHooks, evalCtx, options)
+	evalCtx, err = c.beforeHooks(hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("execute before hook: %w", err)
-		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
+		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 
@@ -222,16 +222,16 @@ func (c Client) evaluate(
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("evaluate the flag: %w", err)
-		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
+		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
 		evalDetails.ResolutionDetail = resolution
 	}
 
-	if err := c.afterHooks(hookCtx, invocationClientApiHooks, evalDetails, options); err != nil {
+	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("execute after hook: %w", err)
-		c.errorHooks(hookCtx, invocationClientApiHooks, err, options)
+		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 
