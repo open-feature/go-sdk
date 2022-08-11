@@ -61,6 +61,20 @@ func (mr *MockFeatureProviderMockRecorder) FloatEvaluation(flag, defaultValue, e
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FloatEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).FloatEvaluation), flag, defaultValue, evalCtx, options)
 }
 
+// Hooks mocks base method.
+func (m *MockFeatureProvider) Hooks() []Hook {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Hooks")
+	ret0, _ := ret[0].([]Hook)
+	return ret0
+}
+
+// Hooks indicates an expected call of Hooks.
+func (mr *MockFeatureProviderMockRecorder) Hooks() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Hooks", reflect.TypeOf((*MockFeatureProvider)(nil).Hooks))
+}
+
 // IntEvaluation mocks base method.
 func (m *MockFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail {
 	m.ctrl.T.Helper()

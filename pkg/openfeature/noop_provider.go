@@ -60,3 +60,8 @@ func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, ev
 		Reason:  DEFAULT,
 	}
 }
+
+// Hooks returns hooks
+func (e NoopProvider) Hooks() []Hook {
+	return []Hook{}
+}

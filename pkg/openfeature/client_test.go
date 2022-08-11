@@ -216,6 +216,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().BooleanEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
 			Return(BoolResolutionDetail{
 				Value: false,
@@ -251,6 +252,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := "default"
 		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
 			Return(StringResolutionDetail{
 				Value: "foo",
@@ -286,6 +288,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := 3.14159
 		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().FloatEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
 			Return(FloatResolutionDetail{
 				Value: 0,
@@ -321,6 +324,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		var defaultValue int64 = 3
 		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().IntEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
 			Return(IntResolutionDetail{
 				Value: 0,
@@ -359,6 +363,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		}
 		defaultValue := obj{foo: "bar"}
 		mockProvider.EXPECT().Metadata().Times(2)
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().ObjectEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
 			Return(ResolutionDetail{
 				Value:     obj{foo: "foo"},
@@ -414,6 +419,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(BoolResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
 
@@ -429,6 +435,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
 
@@ -444,6 +451,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(FloatResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
 
@@ -459,6 +467,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		mockProvider := NewMockFeatureProvider(ctrl)
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
+		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(IntResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
 
