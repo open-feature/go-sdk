@@ -209,7 +209,6 @@ func TestRequirement_4_3_3(t *testing.T) {
 
 	mockProvider.EXPECT().Metadata().Times(2)
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx, evalOptions)
 
 	hook1Ctx := HookContext{
 		flagKey:           flagKey,
@@ -221,6 +220,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	}
 	hook1EvalCtxResult := &EvaluationContext{TargetingKey: "mockHook1"}
 	mockHook1.EXPECT().Before(hook1Ctx, gomock.Any()).Return(hook1EvalCtxResult, nil)
+	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, *hook1EvalCtxResult, evalOptions)
 
 	// assert that the evaluation context returned by the first hook is passed into the second hook
 	hook2Ctx := hook1Ctx
@@ -238,8 +238,9 @@ func TestRequirement_4_3_3(t *testing.T) {
 	}
 }
 
-// When `before` hooks have finished executing, any resulting `evaluation context` MUST be merged with the invocation
-// `evaluation context` with the invocation `evaluation context` taking precedence in the case of any conflicts.
+// When `before` hooks have finished executing, any resulting `evaluation context` MUST be merged with the existing
+// `evaluation context` in the following order:
+// before-hook (highest precedence), invocation, client, api (lowest precedence).
 func TestRequirement_4_3_4(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
@@ -249,12 +250,30 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
 
+	apiEvalCtx := EvaluationContext{
+		Attributes: map[string]interface{}{
+			"key":            "api context",
+			"lowestPriority": true,
+		},
+	}
+	SetEvaluationContext(apiEvalCtx)
+
+	clientEvalCtx := EvaluationContext{
+		Attributes: map[string]interface{}{
+			"key":            "client context",
+			"lowestPriority": false,
+			"beatsClient":    false,
+		},
+	}
+	client.SetEvaluationContext(clientEvalCtx)
+
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{
+	invEvalCtx := EvaluationContext{
 		Attributes: map[string]interface{}{
-			"key": "initial value",
-			"on":  true,
+			"key":         "invocation context",
+			"on":          true,
+			"beatsClient": true,
 		},
 	}
 	evalOptions := NewEvaluationOptions([]Hook{mockHook}, HookHints{})
@@ -273,16 +292,18 @@ func TestRequirement_4_3_4(t *testing.T) {
 	// assert that the EvaluationContext returned by Before hooks is merged with the invocation EvaluationContext
 	expectedMergedContext := EvaluationContext{
 		Attributes: map[string]interface{}{
-			"key":        "initial value", // invocation takes precedence
-			"multiplier": 3,
-			"on":         true,
+			"key":            "hook value", // hook takes precedence
+			"multiplier":     3,
+			"on":             true,
+			"lowestPriority": false,
+			"beatsClient":    true,
 		},
 	}
 	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, expectedMergedContext, evalOptions)
 	mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 
-	_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+	_, err := client.StringValueDetails(flagKey, defaultValue, invEvalCtx, evalOptions)
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}

@@ -263,11 +263,11 @@ func (c Client) beforeHooks(
 			hookCtx.evaluationContext = *resultEvalCtx
 		}
 		if err != nil {
-			return mergeContexts(evalCtx, hookCtx.evaluationContext), err
+			return mergeContexts(hookCtx.evaluationContext, evalCtx), err
 		}
 	}
 
-	return mergeContexts(evalCtx, hookCtx.evaluationContext), nil
+	return mergeContexts(hookCtx.evaluationContext, evalCtx), nil
 }
 
 func (c Client) afterHooks(
