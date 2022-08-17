@@ -113,7 +113,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	client.SetEvaluationContext(clientEvalCtx)
 
 	invocationEvalCtx := EvaluationContext{
-		TargetingKey: "Invocation",
+		TargetingKey: "",
 		Attributes: map[string]interface{}{
 			"apiEvalCtx": true,
 			"foo":        "bar",
@@ -123,7 +123,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 	expectedMergedEvalCtx := EvaluationContext{
-		TargetingKey: "Invocation",
+		TargetingKey: "Client",
 		Attributes: map[string]interface{}{
 			"apiEvalCtx":        true,
 			"invocationEvalCtx": true,

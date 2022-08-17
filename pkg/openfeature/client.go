@@ -304,6 +304,10 @@ func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 	mergedCtx := evaluationContexts[0]
 
 	for i := 1; i < len(evaluationContexts); i++ {
+		if mergedCtx.TargetingKey == "" && evaluationContexts[i].TargetingKey != "" {
+			mergedCtx.TargetingKey = evaluationContexts[i].TargetingKey
+		}
+
 		for k, v := range evaluationContexts[i].Attributes {
 			_, ok := mergedCtx.Attributes[k]
 			if !ok {
