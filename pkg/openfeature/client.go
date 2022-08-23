@@ -263,11 +263,11 @@ func (c Client) beforeHooks(
 			hookCtx.evaluationContext = *resultEvalCtx
 		}
 		if err != nil {
-			return mergeContexts(evalCtx, hookCtx.evaluationContext), err
+			return mergeContexts(hookCtx.evaluationContext, evalCtx), err
 		}
 	}
 
-	return mergeContexts(evalCtx, hookCtx.evaluationContext), nil
+	return mergeContexts(hookCtx.evaluationContext, evalCtx), nil
 }
 
 func (c Client) afterHooks(
@@ -304,6 +304,10 @@ func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 	mergedCtx := evaluationContexts[0]
 
 	for i := 1; i < len(evaluationContexts); i++ {
+		if mergedCtx.TargetingKey == "" && evaluationContexts[i].TargetingKey != "" {
+			mergedCtx.TargetingKey = evaluationContexts[i].TargetingKey
+		}
+
 		for k, v := range evaluationContexts[i].Attributes {
 			_, ok := mergedCtx.Attributes[k]
 			if !ok {
