@@ -3,6 +3,7 @@
 [![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-feature/golang-sdk)](https://goreportcard.com/report/github.com/open-feature/golang-sdk)
 [![codecov](https://codecov.io/gh/open-feature/golang-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5)](https://codecov.io/gh/open-feature/golang-sdk)
+[![Specification](https://img.shields.io/static/v1?label=Specification&message=v0.4.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.4.0)
 
 This is the Golang implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
 

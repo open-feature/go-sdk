@@ -9,7 +9,7 @@ func (e NoopProvider) Metadata() Metadata {
 }
 
 // BooleanEvaluation returns a boolean flag.
-func (e NoopProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) BoolResolutionDetail {
+func (e NoopProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -20,7 +20,7 @@ func (e NoopProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx 
 }
 
 // StringEvaluation returns a string flag.
-func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) StringResolutionDetail {
+func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail {
 	return StringResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -31,7 +31,7 @@ func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx
 }
 
 // FloatEvaluation returns a float flag.
-func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail {
+func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail {
 	return FloatResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -42,7 +42,7 @@ func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx
 }
 
 // IntEvaluation returns an int flag.
-func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail {
+func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail {
 	return IntResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -53,7 +53,7 @@ func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx Eva
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) ResolutionDetail {
+func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail {
 	return ResolutionDetail{
 		Value:   defaultValue,
 		Variant: "default-variant",

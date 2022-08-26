@@ -216,22 +216,22 @@ func (c Client) evaluate(
 	var resolution ResolutionDetail
 	switch flagType {
 	case Object:
-		resolution = api.provider.ObjectEvaluation(flag, defaultValue, evalCtx, options)
+		resolution = api.provider.ObjectEvaluation(flag, defaultValue, evalCtx)
 	case Boolean:
 		defValue := defaultValue.(bool)
-		res := api.provider.BooleanEvaluation(flag, defValue, evalCtx, options)
+		res := api.provider.BooleanEvaluation(flag, defValue, evalCtx)
 		resolution = res.ResolutionDetail
 	case String:
 		defValue := defaultValue.(string)
-		res := api.provider.StringEvaluation(flag, defValue, evalCtx, options)
+		res := api.provider.StringEvaluation(flag, defValue, evalCtx)
 		resolution = res.ResolutionDetail
 	case Float:
 		defValue := defaultValue.(float64)
-		res := api.provider.FloatEvaluation(flag, defValue, evalCtx, options)
+		res := api.provider.FloatEvaluation(flag, defValue, evalCtx)
 		resolution = res.ResolutionDetail
 	case Int:
 		defValue := defaultValue.(int64)
-		res := api.provider.IntEvaluation(flag, defValue, evalCtx, options)
+		res := api.provider.IntEvaluation(flag, defValue, evalCtx)
 		resolution = res.ResolutionDetail
 	}
 
