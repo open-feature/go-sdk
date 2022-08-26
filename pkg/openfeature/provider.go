@@ -14,11 +14,11 @@ const (
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) BoolResolutionDetail
-	StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) StringResolutionDetail
-	FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail
-	IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) ResolutionDetail
+	BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail
+	StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail
+	FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail
+	IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail
+	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail
 	Hooks() []Hook
 }
 

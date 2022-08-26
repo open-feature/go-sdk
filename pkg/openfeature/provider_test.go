@@ -34,18 +34,18 @@ func TestRequirement_2_1(t *testing.T) {
 }
 
 // The `feature provider` interface MUST define methods to resolve flag values,
-// with parameters `flag key` (string, required), `default value` (boolean | number | string | structure, required),
-// `evaluation context` (optional), and `evaluation options` (optional), which returns a `flag resolution` structure.
+// with parameters `flag key` (string, required), `default value` (boolean | number | string | structure, required)
+// and `evaluation context` (optional), which returns a `flag resolution` structure.
 func TestRequirement_2_2(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
 	type requirements interface {
-		BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) BoolResolutionDetail
-		StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) StringResolutionDetail
-		FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) FloatResolutionDetail
-		IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) IntResolutionDetail
-		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) ResolutionDetail
+		BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail
+		StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail
+		FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail
+		IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail
+		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail
 	}
 
 	var mockProviderI interface{} = mockProvider

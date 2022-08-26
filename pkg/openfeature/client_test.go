@@ -217,7 +217,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().Times(2)
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().BooleanEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+		mockProvider.EXPECT().BooleanEvaluation(flagKey, defaultValue, EvaluationContext{}).
 			Return(BoolResolutionDetail{
 				Value: false,
 				ResolutionDetail: ResolutionDetail{
@@ -253,7 +253,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defaultValue := "default"
 		mockProvider.EXPECT().Metadata().Times(2)
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+		mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, EvaluationContext{}).
 			Return(StringResolutionDetail{
 				Value: "foo",
 				ResolutionDetail: ResolutionDetail{
@@ -289,7 +289,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defaultValue := 3.14159
 		mockProvider.EXPECT().Metadata().Times(2)
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().FloatEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+		mockProvider.EXPECT().FloatEvaluation(flagKey, defaultValue, EvaluationContext{}).
 			Return(FloatResolutionDetail{
 				Value: 0,
 				ResolutionDetail: ResolutionDetail{
@@ -325,7 +325,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		var defaultValue int64 = 3
 		mockProvider.EXPECT().Metadata().Times(2)
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().IntEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+		mockProvider.EXPECT().IntEvaluation(flagKey, defaultValue, EvaluationContext{}).
 			Return(IntResolutionDetail{
 				Value: 0,
 				ResolutionDetail: ResolutionDetail{
@@ -364,7 +364,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defaultValue := obj{foo: "bar"}
 		mockProvider.EXPECT().Metadata().Times(2)
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().ObjectEvaluation(flagKey, defaultValue, EvaluationContext{}, EvaluationOptions{}).
+		mockProvider.EXPECT().ObjectEvaluation(flagKey, defaultValue, EvaluationContext{}).
 			Return(ResolutionDetail{
 				Value:     obj{foo: "foo"},
 				ErrorCode: "GENERAL",
@@ -420,7 +420,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(BoolResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
 
 		_, err := client.BooleanValue("", false, EvaluationContext{}, EvaluationOptions{})
@@ -436,7 +436,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
 
 		_, err := client.StringValue("", "", EvaluationContext{}, EvaluationOptions{})
@@ -452,7 +452,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(FloatResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
 
 		_, err := client.FloatValue("", 3, EvaluationContext{}, EvaluationOptions{})
@@ -468,7 +468,7 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 		SetProvider(mockProvider)
 		mockProvider.EXPECT().Metadata()
 		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(IntResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
 
 		_, err := client.IntValue("", 3, EvaluationContext{}, EvaluationOptions{})
