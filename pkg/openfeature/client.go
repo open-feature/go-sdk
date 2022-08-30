@@ -213,25 +213,26 @@ func (c Client) evaluate(
 		return evalDetails, err
 	}
 
+	flatCtx := flattenContext(evalCtx)
 	var resolution ResolutionDetail
 	switch flagType {
 	case Object:
-		resolution = api.provider.ObjectEvaluation(flag, defaultValue, evalCtx)
+		resolution = api.provider.ObjectEvaluation(flag, defaultValue, flatCtx)
 	case Boolean:
 		defValue := defaultValue.(bool)
-		res := api.provider.BooleanEvaluation(flag, defValue, evalCtx)
+		res := api.provider.BooleanEvaluation(flag, defValue, flatCtx)
 		resolution = res.ResolutionDetail
 	case String:
 		defValue := defaultValue.(string)
-		res := api.provider.StringEvaluation(flag, defValue, evalCtx)
+		res := api.provider.StringEvaluation(flag, defValue, flatCtx)
 		resolution = res.ResolutionDetail
 	case Float:
 		defValue := defaultValue.(float64)
-		res := api.provider.FloatEvaluation(flag, defValue, evalCtx)
+		res := api.provider.FloatEvaluation(flag, defValue, flatCtx)
 		resolution = res.ResolutionDetail
 	case Int:
 		defValue := defaultValue.(int64)
-		res := api.provider.IntEvaluation(flag, defValue, evalCtx)
+		res := api.provider.IntEvaluation(flag, defValue, flatCtx)
 		resolution = res.ResolutionDetail
 	}
 
@@ -252,6 +253,17 @@ func (c Client) evaluate(
 	}
 
 	return evalDetails, nil
+}
+
+func flattenContext(evalCtx EvaluationContext) map[string]interface{} {
+	flatCtx := map[string]interface{}{}
+	if evalCtx.Attributes != nil {
+		flatCtx = evalCtx.Attributes
+	}
+	if evalCtx.TargetingKey != "" {
+		flatCtx["targetingKey"] = evalCtx.TargetingKey
+	}
+	return flatCtx
 }
 
 func (c Client) beforeHooks(

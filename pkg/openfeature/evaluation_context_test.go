@@ -132,7 +132,8 @@ func TestRequirement_3_2_2(t *testing.T) {
 			"user":              1,
 		},
 	}
-	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), expectedMergedEvalCtx)
+	flatCtx := flattenContext(expectedMergedEvalCtx)
+	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), flatCtx)
 
 	_, err := client.StringValue("foo", "bar", invocationEvalCtx, EvaluationOptions{})
 	if err != nil {
