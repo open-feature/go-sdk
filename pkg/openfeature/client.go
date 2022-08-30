@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+const (
+	TARGETING_KEY string = "targetingKey" // flattened evaluation context key for the TargetingKey field
+)
+
 // IClient defines the behaviour required of an openfeature client
 type IClient interface {
 	Metadata() ClientMetadata
@@ -261,7 +265,7 @@ func flattenContext(evalCtx EvaluationContext) map[string]interface{} {
 		flatCtx = evalCtx.Attributes
 	}
 	if evalCtx.TargetingKey != "" {
-		flatCtx["targetingKey"] = evalCtx.TargetingKey
+		flatCtx[TARGETING_KEY] = evalCtx.TargetingKey
 	}
 	return flatCtx
 }

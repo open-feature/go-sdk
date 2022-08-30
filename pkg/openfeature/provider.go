@@ -6,7 +6,7 @@ const (
 	DISABLED        string = "disabled"     // variant returned because feature is disabled
 	TARGETING_MATCH string = "target match" // variant returned because matched target rule
 	DEFAULT         string = "default"      // variant returned the default
-	UNKNOWN         string = "unknown"      //variant returned for unknown reason
+	UNKNOWN         string = "unknown"      // variant returned for unknown reason
 	ERROR           string = "error"        // variant returned due to error
 )
 
