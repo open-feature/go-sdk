@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	TARGETING_KEY string = "TargetingKey" // flattened evaluation context key for the TargetingKey field
+	TARGETING_KEY string = "targetingKey" // flattened evaluation context key for the TargetingKey field
 )
 
 // IClient defines the behaviour required of an openfeature client
