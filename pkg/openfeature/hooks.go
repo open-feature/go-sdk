@@ -4,10 +4,10 @@ package openfeature
 // They operate similarly to middleware in many web frameworks.
 // https://github.com/open-feature/spec/blob/main/specification/hooks.md
 type Hook interface {
-	Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
-	After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
-	Error(hookContext HookContext, err error, hookHints HookHints)
-	Finally(hookContext HookContext, hookHints HookHints)
+	Before(hookContext *HookContext, hookHints HookHints) (*EvaluationContext, error)
+	After(hookContext *HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
+	Error(hookContext *HookContext, err error, hookHints HookHints)
+	Finally(hookContext *HookContext, hookHints HookHints)
 }
 
 // HookHints contains a map of hints for hooks
@@ -34,6 +34,9 @@ type HookContext struct {
 	clientMetadata    ClientMetadata
 	providerMetadata  Metadata
 	evaluationContext EvaluationContext
+	// Store provides a persistent state across Hook methods (Before, After, Finally, Error).
+	// This is shared between all hooks so it is strongly advised to use a hook specific prefix.
+	Store map[string]interface{}
 }
 
 // FlagKey returns the hook context's flag key

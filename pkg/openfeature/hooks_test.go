@@ -181,7 +181,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
+			Before(hookContext *HookContext, hookHints HookHints) (*EvaluationContext, error)
 		}
 
 		var hookI interface{} = mockHook
@@ -207,25 +207,25 @@ func TestRequirement_4_3_3(t *testing.T) {
 	evalCtx := EvaluationContext{}
 	evalOptions := NewEvaluationOptions([]Hook{mockHook1, mockHook2}, HookHints{})
 
-	mockProvider.EXPECT().Metadata().Times(2)
+	mockProvider.EXPECT().Metadata().Times(1)
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	hook1Ctx := HookContext{
-		flagKey:           flagKey,
-		flagType:          String,
-		defaultValue:      defaultValue,
-		clientMetadata:    client.metadata,
-		providerMetadata:  mockProvider.Metadata(),
-		evaluationContext: evalCtx,
-	}
 	hook1EvalCtxResult := &EvaluationContext{TargetingKey: "mockHook1"}
-	mockHook1.EXPECT().Before(hook1Ctx, gomock.Any()).Return(hook1EvalCtxResult, nil)
+	mockHook1.EXPECT().Before(gomock.Any(), gomock.Any()).Return(hook1EvalCtxResult, nil)
 	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, *hook1EvalCtxResult)
 
 	// assert that the evaluation context returned by the first hook is passed into the second hook
-	hook2Ctx := hook1Ctx
-	hook2Ctx.evaluationContext = *hook1EvalCtxResult
-	mockHook2.EXPECT().Before(hook2Ctx, gomock.Any())
+	mockHook2.EXPECT().Before(gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ HookHints) {
+			if !reflect.DeepEqual(*hook1EvalCtxResult, hookContext.EvaluationContext()) {
+				t.Fatalf(
+					"evaluation context returned by the first hook is not passed into the second hook, got %v, want %v",
+					hookContext.EvaluationContext(),
+					*hook1EvalCtxResult,
+				)
+			}
+		},
+	)
 
 	mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook1.EXPECT().Finally(gomock.Any(), gomock.Any())
@@ -345,7 +345,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
+			After(hookContext *HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
 		}
 
 		var hookI interface{} = mockHook
@@ -439,7 +439,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			Error(hookContext HookContext, err error, hookHints HookHints)
+			Error(hookContext *HookContext, err error, hookHints HookHints)
 		}
 
 		var hookI interface{} = mockHook
@@ -506,7 +506,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			Finally(hookContext HookContext, hookHints HookHints)
+			Finally(hookContext *HookContext, hookHints HookHints)
 		}
 
 		var hookI interface{} = mockHook
@@ -864,5 +864,72 @@ func TestRequirement_4_5_3(t *testing.T) {
 
 	if hookHints.Value("foo") != hookHints.mapOfHints["foo"] {
 		t.Errorf("expected to retrieve the hint from the underlying map")
+	}
+}
+
+func TestHookStore(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	SetProvider(mockProvider)
+	mockHook1 := NewMockHook(ctrl)
+	mockHook2 := NewMockHook(ctrl)
+	client := NewClient("test")
+
+	flagKey := "foo"
+	defaultValue := "bar"
+	evalCtx := EvaluationContext{}
+	evalOptions := NewEvaluationOptions([]Hook{mockHook1, mockHook2}, HookHints{})
+
+	mockProvider.EXPECT().Metadata().Times(1)
+	mockProvider.EXPECT().Hooks().AnyTimes()
+
+	mockHook1.EXPECT().Before(gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, hookHints HookHints) {
+			hookContext.Store["foo"] = "bar"
+		},
+	).Return(&evalCtx, nil)
+	mockProvider.EXPECT().StringEvaluation(flagKey, defaultValue, evalCtx)
+	// assert that the updated hookContext maintained + passed to the remaining
+	mockHook2.EXPECT().Before(gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ HookHints) {
+			if hookContext.Store == nil || hookContext.Store["foo"] != "bar" {
+				t.Fatal("hook context does not contain foo bar key value pair")
+			}
+		},
+	)
+	mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ EvaluationDetails, _ HookHints) {
+			if hookContext.Store == nil || hookContext.Store["foo"] != "bar" {
+				t.Fatal("hook context does not contain foo bar key value pair")
+			}
+		},
+	)
+	mockHook1.EXPECT().Finally(gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ HookHints) {
+			if hookContext.Store == nil || hookContext.Store["foo"] != "bar" {
+				t.Fatal("hook context does not contain foo bar key value pair")
+			}
+		},
+	)
+	mockHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ EvaluationDetails, _ HookHints) {
+			if hookContext.Store == nil || hookContext.Store["foo"] != "bar" {
+				t.Fatal("hook context does not contain foo bar key value pair")
+			}
+		},
+	)
+	mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any()).Do(
+		func(hookContext *HookContext, _ HookHints) {
+			if hookContext.Store == nil || hookContext.Store["foo"] != "bar" {
+				t.Fatal("hook context does not contain foo bar key value pair")
+			}
+		},
+	)
+
+	_, err := client.StringValueDetails(flagKey, defaultValue, evalCtx, evalOptions)
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
 	}
 }

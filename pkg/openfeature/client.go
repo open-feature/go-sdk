@@ -190,6 +190,7 @@ func (c Client) evaluate(
 		clientMetadata:    c.metadata,
 		providerMetadata:  api.provider.Metadata(),
 		evaluationContext: evalCtx,
+		Store:             map[string]interface{}{},
 	}
 	evalDetails := EvaluationDetails{
 		FlagKey:  flag,
@@ -202,14 +203,14 @@ func (c Client) evaluate(
 	apiClientInvocationProviderHooks := append(append(append(api.hooks, c.hooks...), options.hooks...), api.provider.Hooks()...) // API, Client, Invocation, Provider
 	providerInvocationClientApiHooks := append(append(append(api.provider.Hooks(), options.hooks...), c.hooks...), api.hooks...) // Provider, Invocation, Client, API
 	defer func() {
-		c.finallyHooks(hookCtx, providerInvocationClientApiHooks, options)
+		c.finallyHooks(&hookCtx, providerInvocationClientApiHooks, options)
 	}()
 
-	evalCtx, err = c.beforeHooks(hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
+	evalCtx, err = c.beforeHooks(&hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("execute before hook: %w", err)
-		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(&hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 
@@ -238,16 +239,16 @@ func (c Client) evaluate(
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("evaluate the flag: %w", err)
-		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(&hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
 		evalDetails.ResolutionDetail = resolution
 	}
 
-	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
+	if err := c.afterHooks(&hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("execute after hook: %w", err)
-		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(&hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 
@@ -255,7 +256,7 @@ func (c Client) evaluate(
 }
 
 func (c Client) beforeHooks(
-	hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
+	hookCtx *HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(hookCtx, options.hookHints)
@@ -271,7 +272,7 @@ func (c Client) beforeHooks(
 }
 
 func (c Client) afterHooks(
-	hookCtx HookContext, hooks []Hook, evalDetails EvaluationDetails, options EvaluationOptions,
+	hookCtx *HookContext, hooks []Hook, evalDetails EvaluationDetails, options EvaluationOptions,
 ) error {
 	for _, hook := range hooks {
 		if err := hook.After(hookCtx, evalDetails, options.hookHints); err != nil {
@@ -282,13 +283,13 @@ func (c Client) afterHooks(
 	return nil
 }
 
-func (c Client) errorHooks(hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
+func (c Client) errorHooks(hookCtx *HookContext, hooks []Hook, err error, options EvaluationOptions) {
 	for _, hook := range hooks {
 		hook.Error(hookCtx, err, options.hookHints)
 	}
 }
 
-func (c Client) finallyHooks(hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
+func (c Client) finallyHooks(hookCtx *HookContext, hooks []Hook, options EvaluationOptions) {
 	for _, hook := range hooks {
 		hook.Finally(hookCtx, options.hookHints)
 	}

@@ -34,7 +34,7 @@ func (m *MockHook) EXPECT() *MockHookMockRecorder {
 }
 
 // After mocks base method.
-func (m *MockHook) After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
+func (m *MockHook) After(hookContext *HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "After", hookContext, flagEvaluationDetails, hookHints)
 	ret0, _ := ret[0].(error)
@@ -48,7 +48,7 @@ func (mr *MockHookMockRecorder) After(hookContext, flagEvaluationDetails, hookHi
 }
 
 // Before mocks base method.
-func (m *MockHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+func (m *MockHook) Before(hookContext *HookContext, hookHints HookHints) (*EvaluationContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Before", hookContext, hookHints)
 	ret0, _ := ret[0].(*EvaluationContext)
@@ -63,7 +63,7 @@ func (mr *MockHookMockRecorder) Before(hookContext, hookHints interface{}) *gomo
 }
 
 // Error mocks base method.
-func (m *MockHook) Error(hookContext HookContext, err error, hookHints HookHints) {
+func (m *MockHook) Error(hookContext *HookContext, err error, hookHints HookHints) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Error", hookContext, err, hookHints)
 }
@@ -75,7 +75,7 @@ func (mr *MockHookMockRecorder) Error(hookContext, err, hookHints interface{}) *
 }
 
 // Finally mocks base method.
-func (m *MockHook) Finally(hookContext HookContext, hookHints HookHints) {
+func (m *MockHook) Finally(hookContext *HookContext, hookHints HookHints) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Finally", hookContext, hookHints)
 }
