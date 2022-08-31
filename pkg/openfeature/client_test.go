@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -478,4 +479,81 @@ func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
 			t.Error("expected IntValue to return an error, got nil")
 		}
 	})
+}
+
+func TestFlattenContext(t *testing.T) {
+	tests := map[string]struct {
+		inCtx  EvaluationContext
+		outCtx map[string]interface{}
+	}{
+		"happy path": {
+			inCtx: EvaluationContext{
+				Attributes: map[string]interface{}{
+					"1": "string",
+					"2": 0.01,
+					"3": false,
+				},
+				TargetingKey: "user",
+			},
+			outCtx: map[string]interface{}{
+				TargetingKey: "user",
+				"1":          "string",
+				"2":          0.01,
+				"3":          false,
+			},
+		},
+		"no targeting key": {
+			inCtx: EvaluationContext{
+				Attributes: map[string]interface{}{
+					"1": "string",
+					"2": 0.01,
+					"3": false,
+				},
+			},
+			outCtx: map[string]interface{}{
+				"1": "string",
+				"2": 0.01,
+				"3": false,
+			},
+		},
+		"duplicated key": {
+			inCtx: EvaluationContext{
+				TargetingKey: "user",
+				Attributes: map[string]interface{}{
+					TargetingKey: "not user",
+					"1":          "string",
+					"2":          0.01,
+					"3":          false,
+				},
+			},
+			outCtx: map[string]interface{}{
+				TargetingKey: "user",
+				"1":          "string",
+				"2":          0.01,
+				"3":          false,
+			},
+		},
+		"no attributes": {
+			inCtx: EvaluationContext{
+				TargetingKey: "user",
+			},
+			outCtx: map[string]interface{}{
+				TargetingKey: "user",
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			out := flattenContext(test.inCtx)
+			if !reflect.DeepEqual(test.outCtx, out) {
+				t.Fatalf(
+					"%s, unexpected value received from flatten context, expected %v got %v",
+					name,
+					test.outCtx,
+					out,
+				)
+			}
+		})
+	}
 }

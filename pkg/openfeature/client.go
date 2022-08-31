@@ -5,10 +5,6 @@ import (
 	"fmt"
 )
 
-const (
-	TargetingKey string = "targetingKey" // flattened evaluation context key for the TargetingKey field
-)
-
 // IClient defines the behaviour required of an openfeature client
 type IClient interface {
 	Metadata() ClientMetadata

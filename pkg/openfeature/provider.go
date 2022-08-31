@@ -8,6 +8,8 @@ const (
 	DEFAULT         string = "default"      // variant returned the default
 	UNKNOWN         string = "unknown"      // variant returned for unknown reason
 	ERROR           string = "error"        // variant returned due to error
+
+	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
