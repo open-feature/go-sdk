@@ -6,19 +6,21 @@ const (
 	DISABLED        string = "disabled"     // variant returned because feature is disabled
 	TARGETING_MATCH string = "target match" // variant returned because matched target rule
 	DEFAULT         string = "default"      // variant returned the default
-	UNKNOWN         string = "unknown"      //variant returned for unknown reason
+	UNKNOWN         string = "unknown"      // variant returned for unknown reason
 	ERROR           string = "error"        // variant returned due to error
+
+	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail
-	StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail
-	FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail
-	IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail
+	BooleanEvaluation(flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
+	StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
+	FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
+	IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
+	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) ResolutionDetail
 	Hooks() []Hook
 }
 
