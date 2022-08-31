@@ -28,10 +28,34 @@ import (
 
 func main() {
 	openfeature.SetProvider(openfeature.NoopProvider{})
-	client := openfeature.GetClient("app")
-	value, err := client.BooleanValue("v2_enabled", false, nil)
+	client := openfeature.NewClient("app")
+	value, err := client.BooleanValue("v2_enabled", false, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{})
 }
 ```
+
+## Configuration
+
+### Logging
+
+If not configured, the logger falls back to the standard Go log package at error level only.
+
+In order to avoid coupling to any particular logging implementation the sdk uses the structured logging [logr](https://github.com/go-logr/logr)
+API. In theory this allows integration to any package that implements the layer between their logger and
+this API. Thankfully there is already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive)
+for many of the popular logger packages.
+
+```go
+var l logr.Logger
+l = integratedlogr.New() // replace with your chose integrator
+
+openfeature.SetLogger(l) // set the logger at global level
+
+c := openfeature.NewClient("log").WithLogger(l) // set the logger at client level
+
+```
+
+[logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
+The sdk logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
 
 ## Development
 

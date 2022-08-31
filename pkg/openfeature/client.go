@@ -3,6 +3,8 @@ package openfeature
 import (
 	"errors"
 	"fmt"
+
+	"github.com/go-logr/logr"
 )
 
 // IClient defines the behaviour required of an openfeature client
@@ -38,6 +40,7 @@ type Client struct {
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
+	logger            logr.Logger
 }
 
 // NewClient returns a new Client. Name is a unique identifier for this client
@@ -46,7 +49,14 @@ func NewClient(name string) *Client {
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
+		logger:            api.logger,
 	}
+}
+
+// WithLogger sets the logger of the client
+func (c *Client) WithLogger(l logr.Logger) *Client {
+	c.logger = l
+	return c
 }
 
 // Metadata returns the client's metadata
@@ -57,11 +67,15 @@ func (c Client) Metadata() ClientMetadata {
 // AddHooks appends to the client's collection of any previously added hooks
 func (c *Client) AddHooks(hooks ...Hook) {
 	c.hooks = append(c.hooks, hooks...)
+	c.logger.V(info).Info("appended hooks to client", "client", c.Metadata().name, "hooks", hooks)
 }
 
 // SetEvaluationContext sets the client's evaluation context
 func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
 	c.evaluationContext = evalCtx
+	c.logger.V(info).Info(
+		"set client evaluation context", "client", c.Metadata().name, "evaluationContext", evalCtx,
+	)
 }
 
 // EvaluationContext returns the client's evaluation context
@@ -80,6 +94,18 @@ const (
 	Object
 )
 
+func (t Type) String() string {
+	return typeToString[t]
+}
+
+var typeToString = map[Type]string{
+	Boolean: "bool",
+	String:  "string",
+	Float:   "float",
+	Int:     "int",
+	Object:  "object",
+}
+
 type EvaluationDetails struct {
 	FlagKey  string
 	FlagType Type
@@ -88,14 +114,20 @@ type EvaluationDetails struct {
 
 // BooleanValue return boolean evaluation for flag
 func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
+
 	evalDetails, err := c.evaluate(flag, Boolean, defaultValue, evalCtx, options)
 	if err != nil {
-		return defaultValue, fmt.Errorf("evaluate: %w", err)
+		return defaultValue, err
 	}
 
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
-		return defaultValue, errors.New("evaluated value is not a boolean")
+		err := errors.New("evaluated value is not a boolean")
+		c.logger.Error(
+			err, "invalid flag resolution type", "expectedType", "bool",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return defaultValue, err
 	}
 
 	return value, nil
@@ -105,12 +137,17 @@ func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationC
 func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
 	evalDetails, err := c.evaluate(flag, String, defaultValue, evalCtx, options)
 	if err != nil {
-		return defaultValue, fmt.Errorf("evaluate: %w", err)
+		return defaultValue, err
 	}
 
 	value, ok := evalDetails.Value.(string)
 	if !ok {
-		return defaultValue, errors.New("evaluated value is not a string")
+		err := errors.New("evaluated value is not a string")
+		c.logger.Error(
+			err, "invalid flag resolution type", "expectedType", "string",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return defaultValue, err
 	}
 
 	return value, nil
@@ -120,12 +157,17 @@ func (c Client) StringValue(flag string, defaultValue string, evalCtx Evaluation
 func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
 	evalDetails, err := c.evaluate(flag, Float, defaultValue, evalCtx, options)
 	if err != nil {
-		return defaultValue, fmt.Errorf("evaluate: %w", err)
+		return defaultValue, err
 	}
 
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
-		return defaultValue, errors.New("evaluated value is not a float64")
+		err := errors.New("evaluated value is not a float64")
+		c.logger.Error(
+			err, "invalid flag resolution type", "expectedType", "float64",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return defaultValue, err
 	}
 
 	return value, nil
@@ -135,12 +177,17 @@ func (c Client) FloatValue(flag string, defaultValue float64, evalCtx Evaluation
 func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
 	evalDetails, err := c.evaluate(flag, Int, defaultValue, evalCtx, options)
 	if err != nil {
-		return defaultValue, fmt.Errorf("evaluate: %w", err)
+		return defaultValue, err
 	}
 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
-		return defaultValue, errors.New("evaluated value is not an int64")
+		err := errors.New("evaluated value is not an int64")
+		c.logger.Error(
+			err, "invalid flag resolution type", "expectedType", "int64",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return defaultValue, err
 	}
 
 	return value, nil
@@ -180,6 +227,10 @@ func (c Client) ObjectValueDetails(flag string, defaultValue interface{}, evalCt
 func (c Client) evaluate(
 	flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationDetails, error) {
+	c.logger.V(debug).Info(
+		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
+		"evaluationContext", evalCtx, "evaluationOptions", options,
+	)
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, api.evaluationContext) // API (global) -> client -> invocation
 
 	var err error
@@ -208,7 +259,11 @@ func (c Client) evaluate(
 	evalCtx, err = c.beforeHooks(hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
-		err = fmt.Errorf("execute before hook: %w", err)
+		c.logger.Error(
+			err, "before hook", "flag", flag, "defaultValue", defaultValue,
+			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
+		)
+		err = fmt.Errorf("before hook: %w", err)
 		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
@@ -238,7 +293,11 @@ func (c Client) evaluate(
 
 	err = resolution.Error()
 	if err != nil {
-		err = fmt.Errorf("evaluate the flag: %w", err)
+		c.logger.Error(
+			err, "flag resolution", "flag", flag, "defaultValue", defaultValue,
+			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(), "errorCode", err,
+		)
+		err = fmt.Errorf("error code: %w", err)
 		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
@@ -247,11 +306,16 @@ func (c Client) evaluate(
 	}
 
 	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
-		err = fmt.Errorf("execute after hook: %w", err)
+		c.logger.Error(
+			err, "after hook", "flag", flag, "defaultValue", defaultValue,
+			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
+		)
+		err = fmt.Errorf("after hook: %w", err)
 		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
 
+	c.logger.V(debug).Info("evaluated flag", "flag", flag, "details", evalDetails, "type", flagType)
 	return evalDetails, nil
 }
 
@@ -269,6 +333,9 @@ func flattenContext(evalCtx EvaluationContext) map[string]interface{} {
 func (c Client) beforeHooks(
 	hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
+	c.logger.V(debug).Info("executing before hooks")
+	defer c.logger.V(debug).Info("executed before hooks")
+
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(hookCtx, options.hookHints)
 		if resultEvalCtx != nil {
@@ -285,6 +352,9 @@ func (c Client) beforeHooks(
 func (c Client) afterHooks(
 	hookCtx HookContext, hooks []Hook, evalDetails EvaluationDetails, options EvaluationOptions,
 ) error {
+	c.logger.V(debug).Info("executing after hooks")
+	defer c.logger.V(debug).Info("executed after hooks")
+
 	for _, hook := range hooks {
 		if err := hook.After(hookCtx, evalDetails, options.hookHints); err != nil {
 			return err
@@ -295,12 +365,18 @@ func (c Client) afterHooks(
 }
 
 func (c Client) errorHooks(hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
+	c.logger.V(debug).Info("executing error hooks")
+	defer c.logger.V(debug).Info("executed error hooks")
+
 	for _, hook := range hooks {
 		hook.Error(hookCtx, err, options.hookHints)
 	}
 }
 
 func (c Client) finallyHooks(hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
+	c.logger.V(debug).Info("executing finally hooks")
+	defer c.logger.V(debug).Info("executed finally hooks")
+
 	for _, hook := range hooks {
 		hook.Finally(hookCtx, options.hookHints)
 	}
