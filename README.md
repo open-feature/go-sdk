@@ -40,8 +40,8 @@ func main() {
 If not configured, the logger falls back to the standard Go log package at error level only.
 
 In order to avoid coupling to any particular logging implementation the sdk uses the structured logging [logr](https://github.com/go-logr/logr)
-API. In theory this allows integration to any package that implements the layer between their logger and
-this API. Thankfully there is already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive)
+API. This allows integration to any package that implements the layer between their logger and this API.
+Thankfully there is already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive)
 for many of the popular logger packages.
 
 ```go
