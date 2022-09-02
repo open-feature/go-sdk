@@ -46,7 +46,7 @@ for many of the popular logger packages.
 
 ```go
 var l logr.Logger
-l = integratedlogr.New() // replace with your chose integrator
+l = integratedlogr.New() // replace with your chosen integrator
 
 openfeature.SetLogger(l) // set the logger at global level
 
