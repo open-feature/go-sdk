@@ -33,6 +33,26 @@ func main() {
 }
 ```
 
+### Hooks
+
+Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
+
+To satisfy the interface all methods (`Before`/`After`/`Finally`/`Error`) need to be defined. To avoid defining empty functions
+make use of the `UnimplementedHook` struct (which already implements all the empty functions).
+
+```go
+type MyHook struct {
+  openfeature.UnimplementedHook
+}
+
+// overrides UnimplementedHook's Error function
+func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints openfeature.HookHints) {
+	log.Println(err)
+}
+```
+
+Register the hook at global, client or invocation level.
+
 ## Configuration
 
 ### Logging
