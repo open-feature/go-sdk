@@ -557,3 +557,29 @@ func TestFlattenContext(t *testing.T) {
 		})
 	}
 }
+
+// TestBeforeHookNilContext asserts that when a Before hook returns a nil EvaluationContext it doesn't overwrite the
+// existing EvaluationContext
+func TestBeforeHookNilContext(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+
+	hookNilContext := UnimplementedHook{}
+
+	client := NewClient("test")
+	attributes := map[string]interface{}{"should": "persist"}
+	evalCtx := EvaluationContext{Attributes: attributes}
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), attributes)
+
+	_, err := client.BooleanValue(
+		"foo", false, evalCtx, NewEvaluationOptions([]Hook{hookNilContext}, HookHints{}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
