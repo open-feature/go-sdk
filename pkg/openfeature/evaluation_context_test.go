@@ -99,6 +99,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	SetEvaluationContext(apiEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
 	SetProvider(mockProvider)
 
 	client := NewClient("test")
@@ -120,7 +121,6 @@ func TestRequirement_3_2_2(t *testing.T) {
 		},
 	}
 
-	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 	expectedMergedEvalCtx := EvaluationContext{
 		TargetingKey: "Client",

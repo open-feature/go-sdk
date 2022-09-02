@@ -2,12 +2,15 @@ package openfeature
 
 import (
 	"sync"
+
+	"github.com/go-logr/logr"
 )
 
 type evaluationAPI struct {
 	provider          FeatureProvider
 	hooks             []Hook
 	evaluationContext EvaluationContext
+	logger            logr.Logger
 	sync.RWMutex
 }
 
@@ -24,6 +27,7 @@ func initSingleton() {
 		provider:          NoopProvider{},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
+		logger:            logr.New(logger{}),
 	}
 }
 
@@ -55,12 +59,21 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.Lock()
 	defer api.Unlock()
 	api.provider = provider
+	api.logger.V(info).Info("set global provider", "name", provider.Metadata().Name)
 }
 
 func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
 	api.Lock()
 	defer api.Unlock()
 	api.evaluationContext = evalCtx
+	api.logger.V(info).Info("set global evaluation context", "evaluationContext", evalCtx)
+}
+
+func (api *evaluationAPI) setLogger(l logr.Logger) {
+	api.Lock()
+	defer api.Unlock()
+	api.logger = l
+	api.logger.V(info).Info("set global logger")
 }
 
 // SetProvider sets the global provider.
@@ -73,6 +86,11 @@ func SetEvaluationContext(evalCtx EvaluationContext) {
 	api.setEvaluationContext(evalCtx)
 }
 
+// SetLogger sets the global logger.
+func SetLogger(l logr.Logger) {
+	api.setLogger(l)
+}
+
 // ProviderMetadata returns the global provider's metadata
 func ProviderMetadata() Metadata {
 	return api.provider.Metadata()
@@ -83,4 +101,5 @@ func AddHooks(hooks ...Hook) {
 	api.Lock()
 	defer api.Unlock()
 	api.hooks = append(api.hooks, hooks...)
+	api.logger.V(info).Info("appended hooks to the global singleton", "hooks", hooks)
 }

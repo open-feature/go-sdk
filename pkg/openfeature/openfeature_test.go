@@ -14,6 +14,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
 	SetProvider(mockProvider)
 
 	if api.provider != mockProvider {
@@ -29,8 +30,8 @@ func TestRequirement_1_1_2(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProviderName := "mock-provider"
+	mockProvider.EXPECT().Metadata().Return(Metadata{Name: mockProviderName}).AnyTimes()
 	SetProvider(mockProvider)
-	mockProvider.EXPECT().Metadata().Return(Metadata{Name: mockProviderName}).Times(2)
 
 	if ProviderMetadata() != mockProvider.Metadata() {
 		t.Error("globally set provider's metadata doesn't match the mock provider's metadata")
