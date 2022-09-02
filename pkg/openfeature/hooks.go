@@ -65,3 +65,26 @@ func (h HookContext) ProviderMetadata() Metadata {
 func (h HookContext) EvaluationContext() EvaluationContext {
 	return h.evaluationContext
 }
+
+// check at compile time that UnimplementedHook implements the Hook interface
+var _ Hook = UnimplementedHook{}
+
+// UnimplementedHook implements all hook methods with empty functions
+// Include UnimplementedHook in your hook struct to avoid defining empty functions
+// e.g.
+// type MyHook struct {
+//   UnimplementedHook
+// }
+type UnimplementedHook struct{}
+
+func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+	return nil, nil
+}
+
+func (u UnimplementedHook) After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
+	return nil
+}
+
+func (u UnimplementedHook) Error(hookContext HookContext, err error, hookHints HookHints) {}
+
+func (u UnimplementedHook) Finally(hookContext HookContext, hookHints HookHints) {}
