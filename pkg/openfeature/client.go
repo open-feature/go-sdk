@@ -109,7 +109,7 @@ var typeToString = map[Type]string{
 type EvaluationDetails struct {
 	FlagKey  string
 	FlagType Type
-	ResolutionDetail
+	InterfaceResolutionDetail
 }
 
 // BooleanValue return boolean evaluation for flag
@@ -245,7 +245,7 @@ func (c Client) evaluate(
 	evalDetails := EvaluationDetails{
 		FlagKey:  flag,
 		FlagType: flagType,
-		ResolutionDetail: ResolutionDetail{
+		InterfaceResolutionDetail: InterfaceResolutionDetail{
 			Value: defaultValue,
 		},
 	}
@@ -269,26 +269,30 @@ func (c Client) evaluate(
 	}
 
 	flatCtx := flattenContext(evalCtx)
-	var resolution ResolutionDetail
+	var resolution InterfaceResolutionDetail
 	switch flagType {
 	case Object:
 		resolution = api.provider.ObjectEvaluation(flag, defaultValue, flatCtx)
 	case Boolean:
 		defValue := defaultValue.(bool)
 		res := api.provider.BooleanEvaluation(flag, defValue, flatCtx)
-		resolution = res.ResolutionDetail
+		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.Value = res.Value
 	case String:
 		defValue := defaultValue.(string)
 		res := api.provider.StringEvaluation(flag, defValue, flatCtx)
-		resolution = res.ResolutionDetail
+		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.Value = res.Value
 	case Float:
 		defValue := defaultValue.(float64)
 		res := api.provider.FloatEvaluation(flag, defValue, flatCtx)
-		resolution = res.ResolutionDetail
+		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.Value = res.Value
 	case Int:
 		defValue := defaultValue.(int64)
 		res := api.provider.IntEvaluation(flag, defValue, flatCtx)
-		resolution = res.ResolutionDetail
+		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.Value = res.Value
 	}
 
 	err = resolution.Error()
@@ -302,7 +306,7 @@ func (c Client) evaluate(
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
-		evalDetails.ResolutionDetail = resolution
+		evalDetails.InterfaceResolutionDetail = resolution
 	}
 
 	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {

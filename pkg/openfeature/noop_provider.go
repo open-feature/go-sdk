@@ -53,11 +53,13 @@ func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx map
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) ResolutionDetail {
-	return ResolutionDetail{
-		Value:   defaultValue,
-		Variant: "default-variant",
-		Reason:  DEFAULT,
+func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail {
+	return InterfaceResolutionDetail{
+		Value: defaultValue,
+		ResolutionDetail: ResolutionDetail{
+			Variant: "default-variant",
+			Reason:  DEFAULT,
+		},
 	}
 }
 
