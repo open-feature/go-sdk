@@ -224,7 +224,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 			Return(BoolResolutionDetail{
 				Value: false,
 				ResolutionDetail: ResolutionDetail{
-					Value:     false,
 					ErrorCode: "GENERAL",
 					Reason:    "forced test error",
 				},
@@ -260,7 +259,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 			Return(StringResolutionDetail{
 				Value: "foo",
 				ResolutionDetail: ResolutionDetail{
-					Value:     "foo",
 					ErrorCode: "GENERAL",
 					Reason:    "forced test error",
 				},
@@ -296,7 +294,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 			Return(FloatResolutionDetail{
 				Value: 0,
 				ResolutionDetail: ResolutionDetail{
-					Value:     0,
 					ErrorCode: "GENERAL",
 					Reason:    "forced test error",
 				},
@@ -332,7 +329,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 			Return(IntResolutionDetail{
 				Value: 0,
 				ResolutionDetail: ResolutionDetail{
-					Value:     0,
 					ErrorCode: "GENERAL",
 					Reason:    "forced test error",
 				},
@@ -368,10 +364,11 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().Metadata().AnyTimes()
 		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().ObjectEvaluation(flagKey, defaultValue, flatCtx).
-			Return(ResolutionDetail{
-				Value:     obj{foo: "foo"},
-				ErrorCode: "GENERAL",
-				Reason:    "forced test error",
+			Return(InterfaceResolutionDetail{
+				ResolutionDetail: ResolutionDetail{
+					ErrorCode: "GENERAL",
+					Reason:    "forced test error",
+				},
 			}).Times(2)
 		SetProvider(mockProvider)
 
@@ -412,74 +409,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 // TODO Requirement_1_6_1
 // The `client` SHOULD transform the `evaluation context` using the `provider's` `context transformer` function
 // if one is defined, before passing the result of the transformation to the provider's flag resolution functions.
-
-func TestClient_ProviderEvaluationReturnsUnexpectedType(t *testing.T) {
-	client := NewClient("test-client")
-
-	t.Run("Boolean", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
-		ctrl := gomock.NewController(t)
-		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
-		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(BoolResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
-
-		_, err := client.BooleanValue("", false, EvaluationContext{}, EvaluationOptions{})
-		if err == nil {
-			t.Error("expected BooleanValue to return an error, got nil")
-		}
-	})
-
-	t.Run("String", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
-		ctrl := gomock.NewController(t)
-		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
-		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{Value: 3}})
-
-		_, err := client.StringValue("", "", EvaluationContext{}, EvaluationOptions{})
-		if err == nil {
-			t.Error("expected StringValue to return an error, got nil")
-		}
-	})
-
-	t.Run("Float", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
-		ctrl := gomock.NewController(t)
-		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
-		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(FloatResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
-
-		_, err := client.FloatValue("", 3, EvaluationContext{}, EvaluationOptions{})
-		if err == nil {
-			t.Error("expected FloatValue to return an error, got nil")
-		}
-	})
-
-	t.Run("Int", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
-		ctrl := gomock.NewController(t)
-		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
-		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(IntResolutionDetail{ResolutionDetail: ResolutionDetail{Value: false}})
-
-		_, err := client.IntValue("", 3, EvaluationContext{}, EvaluationOptions{})
-		if err == nil {
-			t.Error("expected IntValue to return an error, got nil")
-		}
-	})
-}
 
 func TestFlattenContext(t *testing.T) {
 	tests := map[string]struct {

@@ -20,7 +20,7 @@ type FeatureProvider interface {
 	StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
 	FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
 	IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) ResolutionDetail
+	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 
@@ -30,7 +30,6 @@ type FeatureProvider interface {
 // N.B we could use generics but to support older versions of golang for now we will have type specific resolution
 // detail
 type ResolutionDetail struct {
-	Value     interface{}
 	ErrorCode string
 	Reason    string
 	Variant   string
@@ -64,6 +63,12 @@ type FloatResolutionDetail struct {
 // IntResolutionDetail provides a resolution detail with int64 type
 type IntResolutionDetail struct {
 	Value int64
+	ResolutionDetail
+}
+
+// InterfaceResolutionDetail provides a resolution detail with interface{} type
+type InterfaceResolutionDetail struct {
+	Value interface{}
 	ResolutionDetail
 }
 

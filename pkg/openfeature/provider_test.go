@@ -45,7 +45,7 @@ func TestRequirement_2_2(t *testing.T) {
 		StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
 		FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
 		IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) ResolutionDetail
+		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
 	}
 
 	var mockProviderI interface{} = mockProvider

@@ -104,10 +104,10 @@ func (mr *MockFeatureProviderMockRecorder) Metadata() *gomock.Call {
 }
 
 // ObjectEvaluation mocks base method.
-func (m *MockFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) ResolutionDetail {
+func (m *MockFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ObjectEvaluation", flag, defaultValue, evalCtx)
-	ret0, _ := ret[0].(ResolutionDetail)
+	ret0, _ := ret[0].(InterfaceResolutionDetail)
 	return ret0
 }
 
