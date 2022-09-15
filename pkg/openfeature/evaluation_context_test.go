@@ -63,11 +63,11 @@ func TestRequirement_3_2_1(t *testing.T) {
 		client := NewClient("test")
 
 		type requirement interface {
-			BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
-			StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-			FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
-			IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
-			ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
+			BooleanValueWithContext(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (bool, error)
+			StringValueWithContext(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (string, error)
+			FloatValueWithContext(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (float64, error)
+			IntValueWithContext(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (int64, error)
+			ObjectValueWithContext(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (interface{}, error)
 			BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 			StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
 			FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
@@ -135,7 +135,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	flatCtx := flattenContext(expectedMergedEvalCtx)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), flatCtx)
 
-	_, err := client.StringValue("foo", "bar", invocationEvalCtx, EvaluationOptions{})
+	_, err := client.stringValue("foo", "bar", invocationEvalCtx, EvaluationOptions{})
 	if err != nil {
 		t.Error(err)
 	}

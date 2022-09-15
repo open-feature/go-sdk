@@ -58,11 +58,16 @@ func TestRequirements_1_3(t *testing.T) {
 	client := NewClient("test-client")
 
 	type requirements interface {
-		BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
-		StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-		FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
-		IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
-		ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
+		BooleanValue(flag string, defaultValue bool, options ...EvaluationOptions) (bool, error)
+		StringValue(flag string, defaultValue string, options ...EvaluationOptions) (string, error)
+		FloatValue(flag string, defaultValue float64, options ...EvaluationOptions) (float64, error)
+		IntValue(flag string, defaultValue int64, options ...EvaluationOptions) (int64, error)
+		ObjectValue(flag string, defaultValue interface{}, options ...EvaluationOptions) (interface{}, error)
+		BooleanValueWithContext(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (bool, error)
+		StringValueWithContext(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (string, error)
+		FloatValueWithContext(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (float64, error)
+		IntValueWithContext(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (int64, error)
+		ObjectValueWithContext(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (interface{}, error)
 	}
 
 	var clientI interface{} = client
@@ -230,7 +235,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.BooleanValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
+		value, err := client.booleanValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected BooleanValue to return an error, got nil")
 		}
@@ -265,7 +270,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.StringValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
+		value, err := client.stringValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected StringValue to return an error, got nil")
 		}
@@ -300,7 +305,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.FloatValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
+		value, err := client.floatValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected FloatValue to return an error, got nil")
 		}
@@ -335,7 +340,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.IntValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
+		value, err := client.intValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected IntValue to return an error, got nil")
 		}
@@ -372,7 +377,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			}).Times(2)
 		SetProvider(mockProvider)
 
-		value, err := client.ObjectValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
+		value, err := client.objectValue(flagKey, defaultValue, evalCtx, EvaluationOptions{})
 		if err == nil {
 			t.Error("expected ObjectValue to return an error, got nil")
 		}
@@ -505,7 +510,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 	evalCtx := EvaluationContext{Attributes: attributes}
 	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), attributes)
 
-	_, err := client.BooleanValue(
+	_, err := client.booleanValue(
 		"foo", false, evalCtx, NewEvaluationOptions([]Hook{hookNilContext}, HookHints{}),
 	)
 	if err != nil {
