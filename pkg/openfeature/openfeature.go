@@ -103,3 +103,7 @@ func AddHooks(hooks ...Hook) {
 	api.hooks = append(api.hooks, hooks...)
 	api.logger.V(info).Info("appended hooks to the global singleton", "hooks", hooks)
 }
+
+func globalLogger() logr.Logger {
+	return api.logger
+}
