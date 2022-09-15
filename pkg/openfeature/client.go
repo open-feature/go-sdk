@@ -79,7 +79,7 @@ func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
 }
 
 // EvaluationContext returns the client's evaluation context
-func (c *Client) EvaluationContext() EvaluationContext {
+func (c Client) EvaluationContext() EvaluationContext {
 	return c.evaluationContext
 }
 
@@ -112,9 +112,17 @@ type EvaluationDetails struct {
 	InterfaceResolutionDetail
 }
 
-// BooleanValue return boolean evaluation for flag
-func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
+// BooleanValue returns boolean evaluation for flag
+func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext) (bool, error) {
+	return c.booleanValue(flag, defaultValue, evalCtx, EvaluationOptions{})
+}
 
+// BooleanValueWithOptions returns boolean evaluation for flag with options
+func (c Client) BooleanValueWithOptions(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
+	return c.booleanValue(flag, defaultValue, evalCtx, options)
+}
+
+func (c Client) booleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
 	evalDetails, err := c.evaluate(flag, Boolean, defaultValue, evalCtx, options)
 	if err != nil {
 		return defaultValue, err
@@ -133,8 +141,17 @@ func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationC
 	return value, nil
 }
 
-// StringValue return string evaluation for flag
-func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
+// StringValue returns string evaluation for flag
+func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext) (string, error) {
+	return c.stringValue(flag, defaultValue, evalCtx, EvaluationOptions{})
+}
+
+// StringValueWithOptions returns string evaluation for flag with options
+func (c Client) StringValueWithOptions(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
+	return c.stringValue(flag, defaultValue, evalCtx, options)
+}
+
+func (c Client) stringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
 	evalDetails, err := c.evaluate(flag, String, defaultValue, evalCtx, options)
 	if err != nil {
 		return defaultValue, err
@@ -153,8 +170,17 @@ func (c Client) StringValue(flag string, defaultValue string, evalCtx Evaluation
 	return value, nil
 }
 
-// FloatValue return float evaluation for flag
-func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
+// FloatValue returns float evaluation for flag
+func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext) (float64, error) {
+	return c.floatValue(flag, defaultValue, evalCtx, EvaluationOptions{})
+}
+
+// FloatValueWithOptions returns float evaluation for flag with options
+func (c Client) FloatValueWithOptions(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
+	return c.floatValue(flag, defaultValue, evalCtx, options)
+}
+
+func (c Client) floatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
 	evalDetails, err := c.evaluate(flag, Float, defaultValue, evalCtx, options)
 	if err != nil {
 		return defaultValue, err
@@ -173,8 +199,17 @@ func (c Client) FloatValue(flag string, defaultValue float64, evalCtx Evaluation
 	return value, nil
 }
 
-// IntValue return int evaluation for flag
-func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
+// IntValue returns int evaluation for flag
+func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext) (int64, error) {
+	return c.intValue(flag, defaultValue, evalCtx, EvaluationOptions{})
+}
+
+// IntValueWithOptions returns int evaluation for flag with options
+func (c Client) IntValueWithOptions(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
+	return c.intValue(flag, defaultValue, evalCtx, options)
+}
+
+func (c Client) intValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
 	evalDetails, err := c.evaluate(flag, Int, defaultValue, evalCtx, options)
 	if err != nil {
 		return defaultValue, err
@@ -193,8 +228,14 @@ func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationCont
 	return value, nil
 }
 
-// ObjectValue return object evaluation for flag
-func (c Client) ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error) {
+// ObjectValue returns object evaluation for flag
+func (c Client) ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext) (interface{}, error) {
+	evalDetails, err := c.evaluate(flag, Object, defaultValue, evalCtx, EvaluationOptions{})
+	return evalDetails.Value, err
+}
+
+// ObjectValueWithOptions returns object evaluation for flag with options
+func (c Client) ObjectValueWithOptions(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error) {
 	evalDetails, err := c.evaluate(flag, Object, defaultValue, evalCtx, options)
 	return evalDetails.Value, err
 }
