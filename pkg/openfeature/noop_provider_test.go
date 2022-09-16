@@ -1,8 +1,9 @@
 package openfeature_test
 
 import (
-	"github.com/open-feature/golang-sdk/pkg/openfeature"
 	"testing"
+
+	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
 
 func TestNoopProvider_Metadata(t *testing.T) {
