@@ -303,6 +303,7 @@ func (c Client) evaluate(
 		)
 		err = fmt.Errorf("error code: %w", err)
 		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
+		evalDetails.InterfaceResolutionDetail.ResolutionDetail = resolution.ResolutionDetail
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
