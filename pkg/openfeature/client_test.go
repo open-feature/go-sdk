@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-logr/logr"
+
 	"github.com/golang/mock/gomock"
 )
 
@@ -510,5 +512,34 @@ func TestBeforeHookNilContext(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+type lr struct {
+	callback func()
+	logger
+}
+
+func (l lr) Info(level int, msg string, keysAndValues ...interface{}) {
+	l.callback()
+}
+
+func TestClientLoggerUsesLatestGlobalLogger(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	called := false
+	l := lr{callback: func() {
+		called = true
+	}}
+
+	client := NewClient("test")
+	SetLogger(logr.New(l))
+	_, err := client.BooleanValue("foo", false, EvaluationContext{}, EvaluationOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !called {
+		t.Error("client didn't use the updated global logger")
 	}
 }
