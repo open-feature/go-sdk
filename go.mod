@@ -1,4 +1,4 @@
-module github.com/open-feature/golang-sdk
+module github.com/open-feature/go-sdk
 
 go 1.17
 

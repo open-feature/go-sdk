@@ -27,7 +27,7 @@ type FeatureProvider interface {
 // ResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
 // representing the result of the provider's flag resolution process
 // see https://github.com/open-feature/spec/blob/main/specification/types.md#resolution-details
-// N.B we could use generics but to support older versions of golang for now we will have type specific resolution
+// N.B we could use generics but to support older versions of go for now we will have type specific resolution
 // detail
 type ResolutionDetail struct {
 	ErrorCode string
