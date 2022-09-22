@@ -12,6 +12,8 @@ const (
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
+// TransformedContext contains metadata for a given flag evaluation in a flattened structure.
+// TargetingKey ("targetingKey") is stored as a string value if provided in the evaluation context.
 type TransformedContext map[string]interface{}
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
