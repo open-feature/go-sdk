@@ -13,16 +13,16 @@ type IClient interface {
 	AddHooks(hooks ...Hook)
 	SetEvaluationContext(evalCtx EvaluationContext)
 	EvaluationContext() EvaluationContext
-	BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
-	StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-	FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
-	IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
-	ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
-	BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-	StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-	FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-	IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-	ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+	BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (bool, error)
+	StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (string, error)
+	FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (float64, error)
+	IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (int64, error)
+	ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (interface{}, error)
+	BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error)
+	StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error)
+	FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error)
+	IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error)
+	ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error)
 }
 
 // ClientMetadata provides a client's metadata
@@ -112,10 +112,12 @@ type EvaluationDetails struct {
 	InterfaceResolutionDetail
 }
 
-// BooleanValue return boolean evaluation for flag
-func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error) {
+// BooleanValue returns boolean evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (bool, error) {
+	optns := c.firstEvaluationOptions(options...)
 
-	evalDetails, err := c.evaluate(flag, Boolean, defaultValue, evalCtx, options)
+	evalDetails, err := c.evaluate(flag, Boolean, defaultValue, evalCtx, optns)
 	if err != nil {
 		return defaultValue, err
 	}
@@ -133,9 +135,12 @@ func (c Client) BooleanValue(flag string, defaultValue bool, evalCtx EvaluationC
 	return value, nil
 }
 
-// StringValue return string evaluation for flag
-func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error) {
-	evalDetails, err := c.evaluate(flag, String, defaultValue, evalCtx, options)
+// StringValue returns string evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) StringValue(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (string, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	evalDetails, err := c.evaluate(flag, String, defaultValue, evalCtx, optns)
 	if err != nil {
 		return defaultValue, err
 	}
@@ -153,9 +158,12 @@ func (c Client) StringValue(flag string, defaultValue string, evalCtx Evaluation
 	return value, nil
 }
 
-// FloatValue return float evaluation for flag
-func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error) {
-	evalDetails, err := c.evaluate(flag, Float, defaultValue, evalCtx, options)
+// FloatValue returns float evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) FloatValue(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (float64, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	evalDetails, err := c.evaluate(flag, Float, defaultValue, evalCtx, optns)
 	if err != nil {
 		return defaultValue, err
 	}
@@ -173,9 +181,12 @@ func (c Client) FloatValue(flag string, defaultValue float64, evalCtx Evaluation
 	return value, nil
 }
 
-// IntValue return int evaluation for flag
-func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error) {
-	evalDetails, err := c.evaluate(flag, Int, defaultValue, evalCtx, options)
+// IntValue returns int evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (int64, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	evalDetails, err := c.evaluate(flag, Int, defaultValue, evalCtx, optns)
 	if err != nil {
 		return defaultValue, err
 	}
@@ -193,35 +204,53 @@ func (c Client) IntValue(flag string, defaultValue int64, evalCtx EvaluationCont
 	return value, nil
 }
 
-// ObjectValue return object evaluation for flag
-func (c Client) ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error) {
-	evalDetails, err := c.evaluate(flag, Object, defaultValue, evalCtx, options)
+// ObjectValue returns object evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) ObjectValue(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (interface{}, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	evalDetails, err := c.evaluate(flag, Object, defaultValue, evalCtx, optns)
 	return evalDetails.Value, err
 }
 
-// BooleanValueDetails return boolean evaluation for flag
-func (c Client) BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, Boolean, defaultValue, evalCtx, options)
+// BooleanValueDetails return boolean evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) BooleanValueDetails(flag string, defaultValue bool, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	return c.evaluate(flag, Boolean, defaultValue, evalCtx, optns)
 }
 
-// StringValueDetails return string evaluation for flag
-func (c Client) StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, String, defaultValue, evalCtx, options)
+// StringValueDetails return string evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) StringValueDetails(flag string, defaultValue string, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	return c.evaluate(flag, String, defaultValue, evalCtx, optns)
 }
 
-// FloatValueDetails return float evaluation for flag
-func (c Client) FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, Float, defaultValue, evalCtx, options)
+// FloatValueDetails return float evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) FloatValueDetails(flag string, defaultValue float64, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	return c.evaluate(flag, Float, defaultValue, evalCtx, optns)
 }
 
-// IntValueDetails return int evaluation for flag
-func (c Client) IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, Int, defaultValue, evalCtx, options)
+// IntValueDetails return int evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) IntValueDetails(flag string, defaultValue int64, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	return c.evaluate(flag, Int, defaultValue, evalCtx, optns)
 }
 
-// ObjectValueDetails return object evaluation for flag
-func (c Client) ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error) {
-	return c.evaluate(flag, Object, defaultValue, evalCtx, options)
+// ObjectValueDetails return object evaluation for flag.
+// If options are provided, only first given is used.
+func (c Client) ObjectValueDetails(flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...EvaluationOptions) (EvaluationDetails, error) {
+	optns := c.firstEvaluationOptions(options...)
+
+	return c.evaluate(flag, Object, defaultValue, evalCtx, optns)
 }
 
 func (c Client) evaluate(
@@ -410,4 +439,13 @@ func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 	}
 
 	return mergedCtx
+}
+
+func (c Client) firstEvaluationOptions(evalOpts ...EvaluationOptions) EvaluationOptions {
+	options := EvaluationOptions{}
+	if len(evalOpts) > 0 {
+		options = evalOpts[0]
+	}
+
+	return options
 }

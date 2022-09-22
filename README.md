@@ -29,7 +29,7 @@ import (
 func main() {
 	openfeature.SetProvider(openfeature.NoopProvider{})
 	client := openfeature.NewClient("app")
-	value, err := client.BooleanValue("v2_enabled", false, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{})
+	value, err := client.BooleanValue("v2_enabled", false, openfeature.EvaluationContext{})
 }
 ```
 
