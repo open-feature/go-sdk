@@ -543,3 +543,37 @@ func TestClientLoggerUsesLatestGlobalLogger(t *testing.T) {
 		t.Error("client didn't use the updated global logger")
 	}
 }
+
+func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	const errorCode = "TIMEOUT"
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: true,
+			ResolutionDetail: ResolutionDetail{
+				ErrorCode: errorCode,
+				Reason:    "",
+				Variant:   "",
+			},
+		})
+
+	client := NewClient("test")
+	evalDetails, err := client.evaluate("foo", Boolean, true, EvaluationContext{}, EvaluationOptions{})
+	if err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	if evalDetails.ErrorCode != errorCode {
+		t.Errorf(
+			"expected evaluation details to contain error code '%s', got '%s'",
+			errorCode, evalDetails.ErrorCode,
+		)
+	}
+}
