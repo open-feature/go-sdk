@@ -12,15 +12,17 @@ const (
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
+type TransformedContext map[string]interface{}
+
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
-	StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
-	FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
-	IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
+	BooleanEvaluation(flag string, defaultValue bool, evalCtx TransformedContext) BoolResolutionDetail
+	StringEvaluation(flag string, defaultValue string, evalCtx TransformedContext) StringResolutionDetail
+	FloatEvaluation(flag string, defaultValue float64, evalCtx TransformedContext) FloatResolutionDetail
+	IntEvaluation(flag string, defaultValue int64, evalCtx TransformedContext) IntResolutionDetail
+	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx TransformedContext) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 

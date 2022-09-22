@@ -41,11 +41,11 @@ func TestRequirement_2_2(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 
 	type requirements interface {
-		BooleanEvaluation(flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
-		StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
-		FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
-		IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
+		BooleanEvaluation(flag string, defaultValue bool, evalCtx TransformedContext) BoolResolutionDetail
+		StringEvaluation(flag string, defaultValue string, evalCtx TransformedContext) StringResolutionDetail
+		FloatEvaluation(flag string, defaultValue float64, evalCtx TransformedContext) FloatResolutionDetail
+		IntEvaluation(flag string, defaultValue int64, evalCtx TransformedContext) IntResolutionDetail
+		ObjectEvaluation(flag string, defaultValue interface{}, evalCtx TransformedContext) InterfaceResolutionDetail
 	}
 
 	var mockProviderI interface{} = mockProvider

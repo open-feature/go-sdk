@@ -7,4 +7,4 @@ require (
 	golang.org/x/text v0.3.7
 )
 
-require github.com/go-logr/logr v1.2.3 // indirect
+require github.com/go-logr/logr v1.2.3
