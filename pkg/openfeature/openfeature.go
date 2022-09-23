@@ -37,14 +37,6 @@ type EvaluationOptions struct {
 	hookHints HookHints
 }
 
-// NewEvaluationOptions constructs an EvaluationOptions
-func NewEvaluationOptions(hooks []Hook, hookHints HookHints) EvaluationOptions {
-	return EvaluationOptions{
-		hooks:     hooks,
-		hookHints: hookHints,
-	}
-}
-
 // HookHints returns evaluation options' hook hints
 func (e EvaluationOptions) HookHints() HookHints {
 	return e.hookHints
