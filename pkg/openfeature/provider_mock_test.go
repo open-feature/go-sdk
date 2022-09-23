@@ -34,7 +34,7 @@ func (m *MockFeatureProvider) EXPECT() *MockFeatureProviderMockRecorder {
 }
 
 // BooleanEvaluation mocks base method.
-func (m *MockFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx TransformedContext) BoolResolutionDetail {
+func (m *MockFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BooleanEvaluation", flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(BoolResolutionDetail)
@@ -48,7 +48,7 @@ func (mr *MockFeatureProviderMockRecorder) BooleanEvaluation(flag, defaultValue,
 }
 
 // FloatEvaluation mocks base method.
-func (m *MockFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx TransformedContext) FloatResolutionDetail {
+func (m *MockFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FloatEvaluation", flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(FloatResolutionDetail)
@@ -76,7 +76,7 @@ func (mr *MockFeatureProviderMockRecorder) Hooks() *gomock.Call {
 }
 
 // IntEvaluation mocks base method.
-func (m *MockFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx TransformedContext) IntResolutionDetail {
+func (m *MockFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IntEvaluation", flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(IntResolutionDetail)
@@ -104,7 +104,7 @@ func (mr *MockFeatureProviderMockRecorder) Metadata() *gomock.Call {
 }
 
 // ObjectEvaluation mocks base method.
-func (m *MockFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx TransformedContext) InterfaceResolutionDetail {
+func (m *MockFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ObjectEvaluation", flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(InterfaceResolutionDetail)
@@ -118,7 +118,7 @@ func (mr *MockFeatureProviderMockRecorder) ObjectEvaluation(flag, defaultValue, 
 }
 
 // StringEvaluation mocks base method.
-func (m *MockFeatureProvider) StringEvaluation(flag, defaultValue string, evalCtx TransformedContext) StringResolutionDetail {
+func (m *MockFeatureProvider) StringEvaluation(flag, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StringEvaluation", flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(StringResolutionDetail)
