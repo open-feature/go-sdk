@@ -137,7 +137,7 @@ func WithHookHints(hookHints HookHints) Option {
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -169,7 +169,7 @@ func (c Client) BooleanValue(ctx context.Context, flag string, defaultValue bool
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -201,7 +201,7 @@ func (c Client) StringValue(ctx context.Context, flag string, defaultValue strin
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -233,7 +233,7 @@ func (c Client) FloatValue(ctx context.Context, flag string, defaultValue float6
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -265,7 +265,7 @@ func (c Client) IntValue(ctx context.Context, flag string, defaultValue int64, e
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -283,7 +283,7 @@ func (c Client) ObjectValue(ctx context.Context, flag string, defaultValue inter
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -300,7 +300,7 @@ func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultVal
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -317,7 +317,7 @@ func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValu
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -334,7 +334,7 @@ func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
@@ -351,7 +351,7 @@ func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue i
 // - flag is the key that uniquely identifies a particular flag
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
-// - options are optional additional evaluation options
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
