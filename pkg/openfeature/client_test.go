@@ -555,7 +555,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 	SetProvider(mockProvider)
-	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any()).
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
 			Value: true,
 			ResolutionDetail: ResolutionDetail{
@@ -566,7 +566,9 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 		})
 
 	client := NewClient("test")
-	evalDetails, err := client.evaluate("foo", Boolean, true, EvaluationContext{}, EvaluationOptions{})
+	evalDetails, err := client.evaluate(
+		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+	)
 	if err == nil {
 		t.Error("expected err, got nil")
 	}
