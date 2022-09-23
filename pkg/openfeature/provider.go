@@ -1,6 +1,9 @@
 package openfeature
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 const (
 	DISABLED        string = "disabled"     // variant returned because feature is disabled
@@ -17,11 +20,11 @@ const (
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
-	StringEvaluation(flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
-	FloatEvaluation(flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
-	IntEvaluation(flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
+	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
+	StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
+	FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
+	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
+	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 
