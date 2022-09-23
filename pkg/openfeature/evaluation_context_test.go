@@ -64,16 +64,16 @@ func TestRequirement_3_2_1(t *testing.T) {
 		client := NewClient("test")
 
 		type requirement interface {
-			BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (bool, error)
-			StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (string, error)
-			FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (float64, error)
-			IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (int64, error)
-			ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (interface{}, error)
-			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
-			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions) (EvaluationDetails, error)
+			BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error)
+			StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
+			FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
+			IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
+			ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
+			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
 		}
 
 		var clientI interface{} = client
@@ -136,7 +136,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	flatCtx := flattenContext(expectedMergedEvalCtx)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), flatCtx)
 
-	_, err := client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx, EvaluationOptions{})
+	_, err := client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx)
 	if err != nil {
 		t.Error(err)
 	}
