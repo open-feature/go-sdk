@@ -1,5 +1,7 @@
 package openfeature
 
+import "context"
+
 // NoopProvider implements the FeatureProvider interface and provides functions for evaluating flags
 type NoopProvider struct{}
 
@@ -9,7 +11,7 @@ func (e NoopProvider) Metadata() Metadata {
 }
 
 // BooleanEvaluation returns a boolean flag.
-func (e NoopProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
+func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -20,7 +22,7 @@ func (e NoopProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx 
 }
 
 // StringEvaluation returns a string flag.
-func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
+func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
 	return StringResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -31,7 +33,7 @@ func (e NoopProvider) StringEvaluation(flag string, defaultValue string, evalCtx
 }
 
 // FloatEvaluation returns a float flag.
-func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
+func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
 	return FloatResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -42,7 +44,7 @@ func (e NoopProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx
 }
 
 // IntEvaluation returns an int flag.
-func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
+func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	return IntResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{
@@ -53,7 +55,7 @@ func (e NoopProvider) IntEvaluation(flag string, defaultValue int64, evalCtx Fla
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
+func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	return InterfaceResolutionDetail{
 		Value: defaultValue,
 		ResolutionDetail: ResolutionDetail{

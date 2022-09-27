@@ -1,10 +1,14 @@
 package openfeature
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 const (
 	DISABLED        string = "disabled"     // variant returned because feature is disabled
 	TARGETING_MATCH string = "target match" // variant returned because matched target rule
+	SPLIT           string = "split"        // variant returned because of pseudorandom assignment
 	DEFAULT         string = "default"      // variant returned the default
 	UNKNOWN         string = "unknown"      // variant returned for unknown reason
 	ERROR           string = "error"        // variant returned due to error
@@ -20,11 +24,11 @@ type FlattenedContext map[string]interface{}
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail
-	StringEvaluation(flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail
-	FloatEvaluation(flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail
-	IntEvaluation(flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
-	ObjectEvaluation(flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
+	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail
+	StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail
+	FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail
+	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
+	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 

@@ -5,6 +5,7 @@
 package openfeature
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,31 +35,31 @@ func (m *MockFeatureProvider) EXPECT() *MockFeatureProviderMockRecorder {
 }
 
 // BooleanEvaluation mocks base method.
-func (m *MockFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
+func (m *MockFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BooleanEvaluation", flag, defaultValue, evalCtx)
+	ret := m.ctrl.Call(m, "BooleanEvaluation", ctx, flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(BoolResolutionDetail)
 	return ret0
 }
 
 // BooleanEvaluation indicates an expected call of BooleanEvaluation.
-func (mr *MockFeatureProviderMockRecorder) BooleanEvaluation(flag, defaultValue, evalCtx interface{}) *gomock.Call {
+func (mr *MockFeatureProviderMockRecorder) BooleanEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BooleanEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).BooleanEvaluation), flag, defaultValue, evalCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BooleanEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).BooleanEvaluation), ctx, flag, defaultValue, evalCtx)
 }
 
 // FloatEvaluation mocks base method.
-func (m *MockFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
+func (m *MockFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FloatEvaluation", flag, defaultValue, evalCtx)
+	ret := m.ctrl.Call(m, "FloatEvaluation", ctx, flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(FloatResolutionDetail)
 	return ret0
 }
 
 // FloatEvaluation indicates an expected call of FloatEvaluation.
-func (mr *MockFeatureProviderMockRecorder) FloatEvaluation(flag, defaultValue, evalCtx interface{}) *gomock.Call {
+func (mr *MockFeatureProviderMockRecorder) FloatEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FloatEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).FloatEvaluation), flag, defaultValue, evalCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FloatEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).FloatEvaluation), ctx, flag, defaultValue, evalCtx)
 }
 
 // Hooks mocks base method.
@@ -76,17 +77,17 @@ func (mr *MockFeatureProviderMockRecorder) Hooks() *gomock.Call {
 }
 
 // IntEvaluation mocks base method.
-func (m *MockFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
+func (m *MockFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IntEvaluation", flag, defaultValue, evalCtx)
+	ret := m.ctrl.Call(m, "IntEvaluation", ctx, flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(IntResolutionDetail)
 	return ret0
 }
 
 // IntEvaluation indicates an expected call of IntEvaluation.
-func (mr *MockFeatureProviderMockRecorder) IntEvaluation(flag, defaultValue, evalCtx interface{}) *gomock.Call {
+func (mr *MockFeatureProviderMockRecorder) IntEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IntEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).IntEvaluation), flag, defaultValue, evalCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IntEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).IntEvaluation), ctx, flag, defaultValue, evalCtx)
 }
 
 // Metadata mocks base method.
@@ -104,29 +105,29 @@ func (mr *MockFeatureProviderMockRecorder) Metadata() *gomock.Call {
 }
 
 // ObjectEvaluation mocks base method.
-func (m *MockFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
+func (m *MockFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ObjectEvaluation", flag, defaultValue, evalCtx)
+	ret := m.ctrl.Call(m, "ObjectEvaluation", ctx, flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(InterfaceResolutionDetail)
 	return ret0
 }
 
 // ObjectEvaluation indicates an expected call of ObjectEvaluation.
-func (mr *MockFeatureProviderMockRecorder) ObjectEvaluation(flag, defaultValue, evalCtx interface{}) *gomock.Call {
+func (mr *MockFeatureProviderMockRecorder) ObjectEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObjectEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).ObjectEvaluation), flag, defaultValue, evalCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObjectEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).ObjectEvaluation), ctx, flag, defaultValue, evalCtx)
 }
 
 // StringEvaluation mocks base method.
-func (m *MockFeatureProvider) StringEvaluation(flag, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
+func (m *MockFeatureProvider) StringEvaluation(ctx context.Context, flag, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StringEvaluation", flag, defaultValue, evalCtx)
+	ret := m.ctrl.Call(m, "StringEvaluation", ctx, flag, defaultValue, evalCtx)
 	ret0, _ := ret[0].(StringResolutionDetail)
 	return ret0
 }
 
 // StringEvaluation indicates an expected call of StringEvaluation.
-func (mr *MockFeatureProviderMockRecorder) StringEvaluation(flag, defaultValue, evalCtx interface{}) *gomock.Call {
+func (mr *MockFeatureProviderMockRecorder) StringEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StringEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).StringEvaluation), flag, defaultValue, evalCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StringEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).StringEvaluation), ctx, flag, defaultValue, evalCtx)
 }

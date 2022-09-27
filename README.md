@@ -23,13 +23,16 @@ While you'll likely want a provider for your specific backend, we've provided a 
 package main
 
 import (
+	"context"
 	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
 
 func main() {
 	openfeature.SetProvider(openfeature.NoopProvider{})
 	client := openfeature.NewClient("app")
-	value, err := client.BooleanValue("v2_enabled", false, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{})
+	value, err := client.BooleanValue(
+		context.Background(), "v2_enabled", false, openfeature.EvaluationContext{}, openfeature.EvaluationOptions{}, 
+	)
 }
 ```
 
