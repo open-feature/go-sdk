@@ -401,7 +401,11 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).
 			After(
 				mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
-					Return(StringResolutionDetail{ResolutionDetail: ResolutionDetail{ErrorCode: "forced"}}),
+					Return(StringResolutionDetail{
+						ProviderResolutionDetail: ProviderResolutionDetail{
+							ResolutionError: NewGeneralResolutionError("test"),
+						},
+					}),
 			)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any())
 

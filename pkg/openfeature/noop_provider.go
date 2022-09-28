@@ -14,9 +14,9 @@ func (e NoopProvider) Metadata() Metadata {
 func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
@@ -25,9 +25,9 @@ func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaul
 func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
 	return StringResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
@@ -36,9 +36,9 @@ func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, default
 func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
 	return FloatResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
@@ -47,9 +47,9 @@ func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultV
 func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	return IntResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
@@ -58,9 +58,9 @@ func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultVal
 func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	return InterfaceResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
