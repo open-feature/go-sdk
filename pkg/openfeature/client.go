@@ -337,10 +337,14 @@ func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultVal
 			err, "invalid flag resolution type", "expectedType", "boolean",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
-		return BooleanEvaluationDetails{
+		boolEvalDetails := BooleanEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
-		}, err
+		}
+		boolEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
+		boolEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+
+		return boolEvalDetails, err
 	}
 
 	return BooleanEvaluationDetails{
@@ -378,10 +382,14 @@ func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValu
 			err, "invalid flag resolution type", "expectedType", "string",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
-		return StringEvaluationDetails{
+		strEvalDetails := StringEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
-		}, err
+		}
+		strEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
+		strEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+
+		return strEvalDetails, err
 	}
 
 	return StringEvaluationDetails{
@@ -419,10 +427,14 @@ func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue
 			err, "invalid flag resolution type", "expectedType", "float64",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
-		return FloatEvaluationDetails{
+		floatEvalDetails := FloatEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
-		}, err
+		}
+		floatEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
+		floatEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+
+		return floatEvalDetails, err
 	}
 
 	return FloatEvaluationDetails{
@@ -460,10 +472,14 @@ func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue i
 			err, "invalid flag resolution type", "expectedType", "int64",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
-		return IntEvaluationDetails{
+		intEvalDetails := IntEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
-		}, err
+		}
+		intEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
+		intEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+
+		return intEvalDetails, err
 	}
 
 	return IntEvaluationDetails{
