@@ -11,56 +11,56 @@ func (e NoopProvider) Metadata() Metadata {
 }
 
 // BooleanEvaluation returns a boolean flag.
-func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail {
+func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
 
 // StringEvaluation returns a string flag.
-func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail {
+func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
 	return StringResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
 
 // FloatEvaluation returns a float flag.
-func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail {
+func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
 	return FloatResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
 
 // IntEvaluation returns an int flag.
-func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail {
+func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	return IntResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail {
+func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	return InterfaceResolutionDetail{
 		Value: defaultValue,
-		ResolutionDetail: ResolutionDetail{
+		ProviderResolutionDetail: ProviderResolutionDetail{
 			Variant: "default-variant",
-			Reason:  DEFAULT,
+			Reason:  DefaultReason,
 		},
 	}
 }

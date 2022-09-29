@@ -110,7 +110,15 @@ var typeToString = map[Type]string{
 type EvaluationDetails struct {
 	FlagKey  string
 	FlagType Type
-	InterfaceResolutionDetail
+	Value    interface{}
+	ResolutionDetail
+}
+
+type ResolutionDetail struct {
+	Variant      string
+	Reason       Reason
+	ErrorCode    ErrorCode
+	ErrorMessage string
 }
 
 // Option applies a change to EvaluationOptions
@@ -382,9 +390,7 @@ func (c Client) evaluate(
 	evalDetails := EvaluationDetails{
 		FlagKey:  flag,
 		FlagType: flagType,
-		InterfaceResolutionDetail: InterfaceResolutionDetail{
-			Value: defaultValue,
-		},
+		Value:    defaultValue,
 	}
 
 	apiClientInvocationProviderHooks := append(append(append(api.hooks, c.hooks...), options.hooks...), api.provider.Hooks()...) // API, Client, Invocation, Provider
@@ -413,22 +419,22 @@ func (c Client) evaluate(
 	case Boolean:
 		defValue := defaultValue.(bool)
 		res := api.provider.BooleanEvaluation(ctx, flag, defValue, flatCtx)
-		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case String:
 		defValue := defaultValue.(string)
 		res := api.provider.StringEvaluation(ctx, flag, defValue, flatCtx)
-		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case Float:
 		defValue := defaultValue.(float64)
 		res := api.provider.FloatEvaluation(ctx, flag, defValue, flatCtx)
-		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case Int:
 		defValue := defaultValue.(int64)
 		res := api.provider.IntEvaluation(ctx, flag, defValue, flatCtx)
-		resolution.ResolutionDetail = res.ResolutionDetail
+		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	}
 
@@ -437,14 +443,16 @@ func (c Client) evaluate(
 		c.logger().Error(
 			err, "flag resolution", "flag", flag, "defaultValue", defaultValue,
 			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(), "errorCode", err,
+			"errMessage", resolution.ResolutionError.message,
 		)
 		err = fmt.Errorf("error code: %w", err)
 		c.errorHooks(hookCtx, providerInvocationClientApiHooks, err, options)
-		evalDetails.InterfaceResolutionDetail.ResolutionDetail = resolution.ResolutionDetail
+		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
+		evalDetails.Reason = ErrorReason
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
-		evalDetails.InterfaceResolutionDetail = resolution
+		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 	}
 
 	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
@@ -461,8 +469,8 @@ func (c Client) evaluate(
 	return evalDetails, nil
 }
 
-func flattenContext(evalCtx EvaluationContext) map[string]interface{} {
-	flatCtx := map[string]interface{}{}
+func flattenContext(evalCtx EvaluationContext) FlattenedContext {
+	flatCtx := FlattenedContext{}
 	if evalCtx.Attributes != nil {
 		flatCtx = evalCtx.Attributes
 	}

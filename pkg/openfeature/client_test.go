@@ -190,17 +190,69 @@ func TestRequirement_1_4_4(t *testing.T) {
 //
 // Has no suitable test as the provider implementation populates the EvaluationDetails reason field
 
-// Requirement_1_4_7
-// In cases of abnormal execution, the `evaluation details` structure's `error code` field MUST
-// contain a string identifying an error occurred during flag evaluation and the nature of the error.
-//
-// Has no suitable test as the provider implementation populates the EvaluationDetails error code field
+// In cases of abnormal execution, the `evaluation details` structure's
+// `error code` field MUST contain an `error code`.
+func TestRequirement_1_4_7(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	client := NewClient("test-client")
 
-// Requirement_1_4_8
+	ctrl := gomock.NewController(t)
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: false,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError("test"),
+			},
+		})
+	SetProvider(mockProvider)
+
+	res, err := client.evaluate(
+		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	expectedErrorCode := GeneralCode
+	if res.ErrorCode != expectedErrorCode {
+		t.Errorf("expected error code to be '%s', got '%s'", expectedErrorCode, res.ErrorCode)
+	}
+}
+
 // In cases of abnormal execution (network failure, unhandled error, etc) the `reason` field
 // in the `evaluation details` SHOULD indicate an error.
-//
-// Has no suitable test as the provider implementation populates the EvaluationDetails reason field
+func TestRequirement_1_4_8(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	client := NewClient("test-client")
+
+	ctrl := gomock.NewController(t)
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: false,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError("test"),
+			},
+		})
+	SetProvider(mockProvider)
+
+	res, err := client.evaluate(
+		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	expectedReason := ErrorReason
+	if res.Reason != expectedReason {
+		t.Errorf("expected reason to be '%s', got '%s'", expectedReason, res.Reason)
+	}
+}
 
 // Methods, functions, or operations on the client MUST NOT throw exceptions, or otherwise abnormally terminate.
 // Flag evaluation calls must always return the `default value` in the event of abnormal execution.
@@ -226,9 +278,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().BooleanEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
 			Return(BoolResolutionDetail{
 				Value: false,
-				ResolutionDetail: ResolutionDetail{
-					ErrorCode: "GENERAL",
-					Reason:    "forced test error",
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
 				},
 			}).Times(2)
 		SetProvider(mockProvider)
@@ -261,9 +312,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
 			Return(StringResolutionDetail{
 				Value: "foo",
-				ResolutionDetail: ResolutionDetail{
-					ErrorCode: "GENERAL",
-					Reason:    "forced test error",
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
 				},
 			}).Times(2)
 		SetProvider(mockProvider)
@@ -296,9 +346,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().FloatEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
 			Return(FloatResolutionDetail{
 				Value: 0,
-				ResolutionDetail: ResolutionDetail{
-					ErrorCode: "GENERAL",
-					Reason:    "forced test error",
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
 				},
 			}).Times(2)
 		SetProvider(mockProvider)
@@ -331,9 +380,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().IntEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
 			Return(IntResolutionDetail{
 				Value: 0,
-				ResolutionDetail: ResolutionDetail{
-					ErrorCode: "GENERAL",
-					Reason:    "forced test error",
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
 				},
 			}).Times(2)
 		SetProvider(mockProvider)
@@ -368,9 +416,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mockProvider.EXPECT().Hooks().AnyTimes()
 		mockProvider.EXPECT().ObjectEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
 			Return(InterfaceResolutionDetail{
-				ResolutionDetail: ResolutionDetail{
-					ErrorCode: "GENERAL",
-					Reason:    "forced test error",
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
 				},
 			}).Times(2)
 		SetProvider(mockProvider)
@@ -403,6 +450,42 @@ func TestRequirement_1_4_9(t *testing.T) {
 //
 // Satisfied by goroutines.
 
+// In cases of abnormal execution, the `evaluation details` structure's `error message` field MAY contain a
+// string containing additional details about the nature of the error.
+func TestRequirement_1_4_12(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	errMessage := "error forced by test"
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: true,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError(errMessage),
+			},
+		})
+
+	client := NewClient("test")
+	evalDetails, err := client.evaluate(
+		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	if evalDetails.ErrorMessage != errMessage {
+		t.Errorf(
+			"expected evaluation details to contain error message '%s', got '%s'",
+			errMessage, evalDetails.ErrorMessage,
+		)
+	}
+}
+
 // Requirement_1_5_1
 // The `evaluation options` structure's `hooks` field denotes an ordered collection of hooks that the client MUST
 // execute for the respective flag evaluation, in addition to those already configured.
@@ -416,7 +499,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 func TestFlattenContext(t *testing.T) {
 	tests := map[string]struct {
 		inCtx  EvaluationContext
-		outCtx map[string]interface{}
+		outCtx FlattenedContext
 	}{
 		"happy path": {
 			inCtx: EvaluationContext{
@@ -427,7 +510,7 @@ func TestFlattenContext(t *testing.T) {
 				},
 				TargetingKey: "user",
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 				"1":          "string",
 				"2":          0.01,
@@ -442,7 +525,7 @@ func TestFlattenContext(t *testing.T) {
 					"3": false,
 				},
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				"1": "string",
 				"2": 0.01,
 				"3": false,
@@ -458,7 +541,7 @@ func TestFlattenContext(t *testing.T) {
 					"3":          false,
 				},
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 				"1":          "string",
 				"2":          0.01,
@@ -469,7 +552,7 @@ func TestFlattenContext(t *testing.T) {
 			inCtx: EvaluationContext{
 				TargetingKey: "user",
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 			},
 		},
@@ -549,7 +632,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
-	const errorCode = "TIMEOUT"
+	generalErrorCode := GeneralCode
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -558,10 +641,8 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
 			Value: true,
-			ResolutionDetail: ResolutionDetail{
-				ErrorCode: errorCode,
-				Reason:    "",
-				Variant:   "",
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError("test"),
 			},
 		})
 
@@ -573,10 +654,10 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 		t.Error("expected err, got nil")
 	}
 
-	if evalDetails.ErrorCode != errorCode {
+	if evalDetails.ErrorCode != generalErrorCode {
 		t.Errorf(
 			"expected evaluation details to contain error code '%s', got '%s'",
-			errorCode, evalDetails.ErrorCode,
+			generalErrorCode, evalDetails.ErrorCode,
 		)
 	}
 }
