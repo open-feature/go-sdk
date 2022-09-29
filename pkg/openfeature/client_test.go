@@ -416,7 +416,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 func TestFlattenContext(t *testing.T) {
 	tests := map[string]struct {
 		inCtx  EvaluationContext
-		outCtx map[string]interface{}
+		outCtx FlattenedContext
 	}{
 		"happy path": {
 			inCtx: EvaluationContext{
@@ -427,7 +427,7 @@ func TestFlattenContext(t *testing.T) {
 				},
 				TargetingKey: "user",
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 				"1":          "string",
 				"2":          0.01,
@@ -442,7 +442,7 @@ func TestFlattenContext(t *testing.T) {
 					"3": false,
 				},
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				"1": "string",
 				"2": 0.01,
 				"3": false,
@@ -458,7 +458,7 @@ func TestFlattenContext(t *testing.T) {
 					"3":          false,
 				},
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 				"1":          "string",
 				"2":          0.01,
@@ -469,7 +469,7 @@ func TestFlattenContext(t *testing.T) {
 			inCtx: EvaluationContext{
 				TargetingKey: "user",
 			},
-			outCtx: map[string]interface{}{
+			outCtx: FlattenedContext{
 				TargetingKey: "user",
 			},
 		},

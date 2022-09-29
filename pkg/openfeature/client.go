@@ -461,8 +461,8 @@ func (c Client) evaluate(
 	return evalDetails, nil
 }
 
-func flattenContext(evalCtx EvaluationContext) map[string]interface{} {
-	flatCtx := map[string]interface{}{}
+func flattenContext(evalCtx EvaluationContext) FlattenedContext {
+	flatCtx := FlattenedContext{}
 	if evalCtx.Attributes != nil {
 		flatCtx = evalCtx.Attributes
 	}

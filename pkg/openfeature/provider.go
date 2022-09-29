@@ -16,15 +16,19 @@ const (
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
+// FlattenedContext contains metadata for a given flag evaluation in a flattened structure.
+// TargetingKey ("targetingKey") is stored as a string value if provided in the evaluation context.
+type FlattenedContext map[string]interface{}
+
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
 // vendors should implement
 type FeatureProvider interface {
 	Metadata() Metadata
-	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx map[string]interface{}) BoolResolutionDetail
-	StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx map[string]interface{}) StringResolutionDetail
-	FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx map[string]interface{}) FloatResolutionDetail
-	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx map[string]interface{}) IntResolutionDetail
-	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx map[string]interface{}) InterfaceResolutionDetail
+	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail
+	StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail
+	FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail
+	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
+	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 
