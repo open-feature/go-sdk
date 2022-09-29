@@ -19,11 +19,11 @@ type IClient interface {
 	FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 	IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
 	ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
-	BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-	StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-	FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-	IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-	ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+	BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
+	StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
+	FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
+	IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
+	ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 }
 
 // ClientMetadata provides a client's metadata
@@ -110,8 +110,32 @@ var typeToString = map[Type]string{
 type EvaluationDetails struct {
 	FlagKey  string
 	FlagType Type
-	Value    interface{}
 	ResolutionDetail
+}
+
+type BooleanEvaluationDetails struct {
+	Value bool
+	EvaluationDetails
+}
+
+type StringEvaluationDetails struct {
+	Value string
+	EvaluationDetails
+}
+
+type FloatEvaluationDetails struct {
+	Value float64
+	EvaluationDetails
+}
+
+type IntEvaluationDetails struct {
+	Value int64
+	EvaluationDetails
+}
+
+type InterfaceEvaluationDetails struct {
+	Value interface{}
+	EvaluationDetails
 }
 
 type ResolutionDetail struct {
@@ -292,13 +316,37 @@ func (c Client) ObjectValue(ctx context.Context, flag string, defaultValue inter
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
+func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, Boolean, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, Boolean, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return BooleanEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	value, ok := evalDetails.Value.(bool)
+	if !ok {
+		err := errors.New("evaluated value is not a boolean")
+		c.logger().Error(
+			err, "invalid flag resolution type", "expectedType", "boolean",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return BooleanEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return BooleanEvaluationDetails{
+		Value:             value,
+		EvaluationDetails: evalDetails.EvaluationDetails,
+	}, nil
 }
 
 // StringValueDetails performs a flag evaluation that returns an evaluation details struct.
@@ -309,13 +357,37 @@ func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultVal
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
+func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, String, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, String, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return StringEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	value, ok := evalDetails.Value.(string)
+	if !ok {
+		err := errors.New("evaluated value is not a string")
+		c.logger().Error(
+			err, "invalid flag resolution type", "expectedType", "string",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return StringEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return StringEvaluationDetails{
+		Value:             value,
+		EvaluationDetails: evalDetails.EvaluationDetails,
+	}, nil
 }
 
 // FloatValueDetails performs a flag evaluation that returns an evaluation details struct.
@@ -326,13 +398,37 @@ func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValu
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
+func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, Float, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, Float, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return FloatEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	value, ok := evalDetails.Value.(float64)
+	if !ok {
+		err := errors.New("evaluated value is not a float64")
+		c.logger().Error(
+			err, "invalid flag resolution type", "expectedType", "float64",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return FloatEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return FloatEvaluationDetails{
+		Value:             value,
+		EvaluationDetails: evalDetails.EvaluationDetails,
+	}, nil
 }
 
 // IntValueDetails performs a flag evaluation that returns an evaluation details struct.
@@ -343,13 +439,37 @@ func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
+func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, Int, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, Int, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return IntEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	value, ok := evalDetails.Value.(int64)
+	if !ok {
+		err := errors.New("evaluated value is not an int64")
+		c.logger().Error(
+			err, "invalid flag resolution type", "expectedType", "int64",
+			"gotType", fmt.Sprintf("%T", evalDetails.Value),
+		)
+		return IntEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return IntEvaluationDetails{
+		Value:             value,
+		EvaluationDetails: evalDetails.EvaluationDetails,
+	}, nil
 }
 
 // ObjectValueDetails performs a flag evaluation that returns an evaluation details struct.
@@ -360,7 +480,7 @@ func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue i
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error) {
+func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -371,7 +491,7 @@ func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValu
 
 func (c Client) evaluate(
 	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
-) (EvaluationDetails, error) {
+) (InterfaceEvaluationDetails, error) {
 	c.logger().V(debug).Info(
 		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
 		"evaluationContext", evalCtx, "evaluationOptions", options,
@@ -387,10 +507,12 @@ func (c Client) evaluate(
 		providerMetadata:  api.provider.Metadata(),
 		evaluationContext: evalCtx,
 	}
-	evalDetails := EvaluationDetails{
-		FlagKey:  flag,
-		FlagType: flagType,
-		Value:    defaultValue,
+	evalDetails := InterfaceEvaluationDetails{
+		Value: defaultValue,
+		EvaluationDetails: EvaluationDetails{
+			FlagKey:  flag,
+			FlagType: flagType,
+		},
 	}
 
 	apiClientInvocationProviderHooks := append(append(append(api.hooks, c.hooks...), options.hooks...), api.provider.Hooks()...) // API, Client, Invocation, Provider
@@ -500,7 +622,7 @@ func (c Client) beforeHooks(
 }
 
 func (c Client) afterHooks(
-	hookCtx HookContext, hooks []Hook, evalDetails EvaluationDetails, options EvaluationOptions,
+	hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
 	c.logger().V(debug).Info("executing after hooks")
 	defer c.logger().V(debug).Info("executed after hooks")
