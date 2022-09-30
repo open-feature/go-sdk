@@ -34,7 +34,7 @@ func (m *MockHook) EXPECT() *MockHookMockRecorder {
 }
 
 // After mocks base method.
-func (m *MockHook) After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
+func (m *MockHook) After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "After", hookContext, flagEvaluationDetails, hookHints)
 	ret0, _ := ret[0].(error)

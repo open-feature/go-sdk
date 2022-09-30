@@ -82,11 +82,11 @@ func TestRequirement_1_4_1(t *testing.T) {
 	client := NewClient("test-client")
 
 	type requirements interface {
-		BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-		StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-		FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-		IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-		ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+		BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
+		StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
+		FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
+		IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
+		ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 	}
 
 	var clientI interface{} = client
@@ -298,7 +298,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Error("expected BooleanValueDetails to return an error, got nil")
 		}
 
-		if valueDetails.Value.(bool) != defaultValue {
+		if valueDetails.Value != defaultValue {
 			t.Errorf("expected default value from BooleanValueDetails, got %v", value)
 		}
 	})
@@ -332,7 +332,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Error("expected StringValueDetails to return an error, got nil")
 		}
 
-		if valueDetails.Value.(string) != defaultValue {
+		if valueDetails.Value != defaultValue {
 			t.Errorf("expected default value from StringValueDetails, got %v", value)
 		}
 	})
@@ -366,7 +366,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Error("expected FloatValueDetails to return an error, got nil")
 		}
 
-		if valueDetails.Value.(float64) != defaultValue {
+		if valueDetails.Value != defaultValue {
 			t.Errorf("expected default value from FloatValueDetails, got %v", value)
 		}
 	})
@@ -400,7 +400,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Error("expected FloatValueDetails to return an error, got nil")
 		}
 
-		if valueDetails.Value.(int64) != defaultValue {
+		if valueDetails.Value != defaultValue {
 			t.Errorf("expected default value from IntValueDetails, got %v", value)
 		}
 	})

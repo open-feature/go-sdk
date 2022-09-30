@@ -345,7 +345,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
+			After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
 		}
 
 		var hookI interface{} = mockHook
@@ -566,11 +566,11 @@ func TestRequirement_4_4_1(t *testing.T) {
 			FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 			IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
 			ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
-			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
-			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (EvaluationDetails, error)
+			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
+			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
+			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
+			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
+			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 		}
 
 		var clientI interface{} = client
@@ -779,9 +779,8 @@ func TestRequirement_4_4_7(t *testing.T) {
 		t.Error("expected error, got nil")
 	}
 
-	resString := res.Value.(string)
-	if resString != defaultValue {
-		t.Errorf("expected default value, got %s", resString)
+	if res.Value != defaultValue {
+		t.Errorf("expected default value, got %s", res.Value)
 	}
 }
 

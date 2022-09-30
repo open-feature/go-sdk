@@ -5,7 +5,7 @@ package openfeature
 // https://github.com/open-feature/spec/blob/main/specification/hooks.md
 type Hook interface {
 	Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
-	After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error
+	After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
 	Error(hookContext HookContext, err error, hookHints HookHints)
 	Finally(hookContext HookContext, hookHints HookHints)
 }
@@ -81,7 +81,7 @@ func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) 
 	return nil, nil
 }
 
-func (u UnimplementedHook) After(hookContext HookContext, flagEvaluationDetails EvaluationDetails, hookHints HookHints) error {
+func (u UnimplementedHook) After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error {
 	return nil
 }
 

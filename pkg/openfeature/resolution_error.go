@@ -27,6 +27,10 @@ type ResolutionError struct {
 	message string
 }
 
+func (r ResolutionError) Error() string {
+	return string(r.code)
+}
+
 // NewProviderNotReadyResolutionError constructs a resolution error with code PROVIDER_NOT_READY
 //
 // Explanation - The value was resolved before the provider was ready.
