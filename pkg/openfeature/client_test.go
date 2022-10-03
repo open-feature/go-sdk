@@ -661,3 +661,32 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 		)
 	}
 }
+
+func TestValueUsedFromProvider(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: true,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				Reason: TargetingMatchReason,
+			},
+		})
+
+	client := NewClient("test")
+	evalDetails, err := client.evaluate(
+		context.Background(), "foo", Boolean, false, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err != nil {
+		t.Errorf("Unexpected Exception occurred: %s", err.Error())
+	}
+
+	if evalDetails.Value != true {
+		t.Error("Expected true value, but got default false.")
+	}
+}
