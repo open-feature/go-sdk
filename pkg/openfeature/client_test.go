@@ -124,7 +124,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 		testReason = "TEST_REASON"
 	)
-	var objectValue = map[string]int{"foo": 1, "bar": 2}
+	var objectValue = map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
 
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
