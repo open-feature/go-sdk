@@ -111,18 +111,18 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	client := NewClient("test-client")
 	const (
-		BooleanValue = 	true
-		StringValue =		"str"
-		IntValue = 			10
-		FloatValue = 		0.1
+		booleanValue = true
+		stringValue  = "str"
+		intValue     = 10
+		floatValue   = 0.1
 
-		BooleanVariant = 	"boolean"
-		StringVariant =		"string"
-		IntVariant = 			"ten"
-		FloatVariant = 		"tenth"
-		ObjectVariant = 		"object"
+		booleanVariant = "boolean"
+		stringVariant  = "string"
+		intVariant     = "ten"
+		floatVariant   = "tenth"
+		objectVariant  = "object"
 
-		TestReason = "TEST_REASON"
+		testReason = "TEST_REASON"
 	)
 	var objectValue = map[string]int{"foo": 1, "bar": 2}
 
@@ -130,126 +130,126 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	
-	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-	Return(BoolResolutionDetail{
-		Value: BooleanValue,
-		ProviderResolutionDetail: ProviderResolutionDetail{
-			Variant: BooleanVariant,
-			Reason: TestReason,
-		},
-	})
-
-	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-	Return(StringResolutionDetail{
-		Value: StringValue,
-		ProviderResolutionDetail: ProviderResolutionDetail{
-			Variant: StringVariant,
-			Reason: TestReason,
-		},
-	})
-
-	mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-	Return(IntResolutionDetail{
-		Value: IntValue,
-		ProviderResolutionDetail: ProviderResolutionDetail{
-			Variant: IntVariant,
-			Reason: TestReason,
-		},
-	})
-
-	mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-	Return(FloatResolutionDetail{
-		Value: FloatValue,
-		ProviderResolutionDetail: ProviderResolutionDetail{
-			Variant: FloatVariant,
-			Reason: TestReason,
-		},
-	})
-
-	mockProvider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-	Return(InterfaceResolutionDetail{
-		Value: objectValue,
-		ProviderResolutionDetail: ProviderResolutionDetail{
-			Variant:ObjectVariant,
-			Reason: TestReason,
-		},
-	})
-
 	SetProvider(mockProvider)
 
 	flagKey := "foo"
 
 	t.Run("BooleanValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(BoolResolutionDetail{
+				Value: booleanValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: booleanVariant,
+					Reason:  testReason,
+				},
+			})
+
 		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, false, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
-		if (evDetails.Value != BooleanValue) {
+		if evDetails.Value != booleanValue {
 			t.Error(err)
 		}
 	})
 
 	t.Run("StringValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(StringResolutionDetail{
+				Value: stringValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: stringVariant,
+					Reason:  testReason,
+				},
+			})
+
 		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+
 		if err != nil {
 			t.Error(err)
 		}
-		if (evDetails.Value != StringValue) {
+		if evDetails.Value != stringValue {
 			t.Error("Incorrect value returned!")
 		}
-		if (evDetails.Variant != StringVariant) {
+		if evDetails.Variant != stringVariant {
 			t.Error("Incorrect variant returned!")
 		}
-		if (evDetails.Reason != TestReason) {
+		if evDetails.Reason != testReason {
 			t.Error("Incorrect reason returned!")
 		}
 	})
 
 	t.Run("FloatValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(FloatResolutionDetail{
+				Value: floatValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: floatVariant,
+					Reason:  testReason,
+				},
+			})
+
 		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
-		if (evDetails.Value != FloatValue) {
+		if evDetails.Value != floatValue {
 			t.Error("Incorrect value returned!")
 		}
-		if (evDetails.Variant != FloatVariant) {
+		if evDetails.Variant != floatVariant {
 			t.Error("Incorrect variant returned!")
 		}
-		if (evDetails.Reason != TestReason) {
+		if evDetails.Reason != testReason {
 			t.Error("Incorrect reason returned!")
 		}
 	})
 
 	t.Run("IntValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(IntResolutionDetail{
+				Value: intValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: intVariant,
+					Reason:  testReason,
+				},
+			})
+
 		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
-		if (evDetails.Value != IntValue) {
+		if evDetails.Value != intValue {
 			t.Error("Incorrect value returned!")
 		}
-		if (evDetails.Variant != IntVariant) {
+		if evDetails.Variant != intVariant {
 			t.Error("Incorrect variant returned!")
 		}
-		if (evDetails.Reason != TestReason) {
+		if evDetails.Reason != testReason {
 			t.Error("Incorrect reason returned!")
 		}
 	})
 
 	t.Run("ObjectValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(InterfaceResolutionDetail{
+				Value: objectValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: objectVariant,
+					Reason:  testReason,
+				},
+			})
+
 		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, nil, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
-		if (!reflect.DeepEqual(evDetails.Value, objectValue)) {
+		if !reflect.DeepEqual(evDetails.Value, objectValue) {
 			t.Error("Incorrect value returned!")
 		}
-		if (evDetails.Variant != ObjectVariant) {
+		if evDetails.Variant != objectVariant {
 			t.Error("Incorrect variant returned!")
 		}
-		if (evDetails.Reason != TestReason) {
+		if evDetails.Reason != testReason {
 			t.Error("Incorrect reason returned!")
 		}
 	})
