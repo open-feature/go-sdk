@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/open-feature/go-sdk/compare/v0.5.0...v0.5.1) (2022-10-03)
+
+
+### Bug Fixes
+
+* Client uses value returned by provider ([#85](https://github.com/open-feature/go-sdk/issues/85)) ([436a712](https://github.com/open-feature/go-sdk/commit/436a7129668b558eb54b80121a75ef9e4b44deba))
+
 ## [0.5.0](https://github.com/open-feature/go-sdk/compare/v0.4.0...v0.5.0) (2022-09-30)
 
 
