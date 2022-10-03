@@ -590,6 +590,7 @@ func (c Client) evaluate(
 		return evalDetails, err
 	}
 	if resolution.Value != nil {
+		evalDetails.Value = resolution.Value
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 	}
 
