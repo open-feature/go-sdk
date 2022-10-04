@@ -97,8 +97,167 @@ func TestRequirement_1_4_1(t *testing.T) {
 
 // Requirement_1_4_2
 // The `evaluation details` structure's `value` field MUST contain the evaluated flag value.
-//
-// Has no suitable test as the provider implementation populates the EvaluationDetails value field
+
+// Requirement_1_4_5
+// In cases of normal execution, the `evaluation details` structure's `variant` field MUST
+// contain the value of the `variant` field in the `flag resolution` structure returned
+// by the configured `provider`, if the field is set.
+
+// Requirement_1_4_6
+// In cases of normal execution, the `evaluation details` structure's `reason` field MUST
+// contain the value of the `reason` field in the `flag resolution` structure returned
+// by the configured `provider`, if the field is set.
+func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	client := NewClient("test-client")
+	const (
+		booleanValue = true
+		stringValue  = "str"
+		intValue     = 10
+		floatValue   = 0.1
+
+		booleanVariant = "boolean"
+		stringVariant  = "string"
+		intVariant     = "ten"
+		floatVariant   = "tenth"
+		objectVariant  = "object"
+
+		testReason = "TEST_REASON"
+
+		incorrectValue   = "Incorrect value returned!"
+		incorrectVariant = "Incorrect variant returned!"
+		incorrectReason  = "Incorrect reason returned!"
+	)
+	var objectValue = map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
+
+	ctrl := gomock.NewController(t)
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+
+	flagKey := "foo"
+
+	t.Run("BooleanValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(BoolResolutionDetail{
+				Value: booleanValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: booleanVariant,
+					Reason:  testReason,
+				},
+			})
+
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, false, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.Value != booleanValue {
+			t.Error(err)
+		}
+	})
+
+	t.Run("StringValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(StringResolutionDetail{
+				Value: stringValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: stringVariant,
+					Reason:  testReason,
+				},
+			})
+
+		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.Value != stringValue {
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != stringVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
+		}
+	})
+
+	t.Run("FloatValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(FloatResolutionDetail{
+				Value: floatValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: floatVariant,
+					Reason:  testReason,
+				},
+			})
+
+		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.Value != floatValue {
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != floatVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
+		}
+	})
+
+	t.Run("IntValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(IntResolutionDetail{
+				Value: intValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: intVariant,
+					Reason:  testReason,
+				},
+			})
+
+		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.Value != intValue {
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != intVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
+		}
+	})
+
+	t.Run("ObjectValueDetails", func(t *testing.T) {
+		mockProvider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(InterfaceResolutionDetail{
+				Value: objectValue,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					Variant: objectVariant,
+					Reason:  testReason,
+				},
+			})
+
+		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, nil, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(evDetails.Value, objectValue) {
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != objectVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
+		}
+	})
+}
 
 // TODO Requirement_1_4_3 once upgraded Go to 1.18 for generics
 
@@ -175,20 +334,6 @@ func TestRequirement_1_4_4(t *testing.T) {
 		}
 	})
 }
-
-// Requirement_1_4_5
-// In cases of normal execution, the `evaluation details` structure's `variant` field MUST
-// contain the value of the `variant` field in the `flag resolution` structure returned
-// by the configured `provider`, if the field is set.
-//
-// Has no suitable test as the provider implementation populates the EvaluationDetails variant field
-
-// Requirement_1_4_6
-// In cases of normal execution, the `evaluation details` structure's `reason` field MUST
-// contain the value of the `reason` field in the `flag resolution` structure returned
-// by the configured `provider`, if the field is set.
-//
-// Has no suitable test as the provider implementation populates the EvaluationDetails reason field
 
 // In cases of abnormal execution, the `evaluation details` structure's
 // `error code` field MUST contain an `error code`.
@@ -659,34 +804,5 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 			"expected evaluation details to contain error code '%s', got '%s'",
 			generalErrorCode, evalDetails.ErrorCode,
 		)
-	}
-}
-
-func TestValueUsedFromProvider(t *testing.T) {
-	defer t.Cleanup(initSingleton)
-	ctrl := gomock.NewController(t)
-
-	mockProvider := NewMockFeatureProvider(ctrl)
-	mockProvider.EXPECT().Metadata().AnyTimes()
-	mockProvider.EXPECT().Hooks().AnyTimes()
-	SetProvider(mockProvider)
-	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(BoolResolutionDetail{
-			Value: true,
-			ProviderResolutionDetail: ProviderResolutionDetail{
-				Reason: TargetingMatchReason,
-			},
-		})
-
-	client := NewClient("test")
-	evalDetails, err := client.evaluate(
-		context.Background(), "foo", Boolean, false, EvaluationContext{}, EvaluationOptions{},
-	)
-	if err != nil {
-		t.Errorf("Unexpected Exception occurred: %s", err.Error())
-	}
-
-	if evalDetails.Value != true {
-		t.Error("Expected true value, but got default false.")
 	}
 }
