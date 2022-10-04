@@ -123,6 +123,10 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 		objectVariant  = "object"
 
 		testReason = "TEST_REASON"
+
+		incorrectValue   = "Incorrect value returned!"
+		incorrectVariant = "Incorrect variant returned!"
+		incorrectReason  = "Incorrect reason returned!"
 	)
 	var objectValue = map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
 
@@ -169,13 +173,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if evDetails.Value != stringValue {
-			t.Error("Incorrect value returned!")
+			t.Error(incorrectValue)
 		}
 		if evDetails.Variant != stringVariant {
-			t.Error("Incorrect variant returned!")
+			t.Error(incorrectVariant)
 		}
 		if evDetails.Reason != testReason {
-			t.Error("Incorrect reason returned!")
+			t.Error(incorrectReason)
 		}
 	})
 
@@ -194,13 +198,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if evDetails.Value != floatValue {
-			t.Error("Incorrect value returned!")
+			t.Error(incorrectValue)
 		}
 		if evDetails.Variant != floatVariant {
-			t.Error("Incorrect variant returned!")
+			t.Error(incorrectVariant)
 		}
 		if evDetails.Reason != testReason {
-			t.Error("Incorrect reason returned!")
+			t.Error(incorrectReason)
 		}
 	})
 
@@ -219,13 +223,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if evDetails.Value != intValue {
-			t.Error("Incorrect value returned!")
+			t.Error(incorrectValue)
 		}
 		if evDetails.Variant != intVariant {
-			t.Error("Incorrect variant returned!")
+			t.Error(incorrectVariant)
 		}
 		if evDetails.Reason != testReason {
-			t.Error("Incorrect reason returned!")
+			t.Error(incorrectReason)
 		}
 	})
 
@@ -244,13 +248,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if !reflect.DeepEqual(evDetails.Value, objectValue) {
-			t.Error("Incorrect value returned!")
+			t.Error(incorrectValue)
 		}
 		if evDetails.Variant != objectVariant {
-			t.Error("Incorrect variant returned!")
+			t.Error(incorrectVariant)
 		}
 		if evDetails.Reason != testReason {
-			t.Error("Incorrect reason returned!")
+			t.Error(incorrectReason)
 		}
 	})
 }
