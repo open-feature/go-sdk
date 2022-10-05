@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,10 +12,10 @@ import (
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,
 // identifying the subject of the flag evaluation.
 func TestRequirement_3_1_1(t *testing.T) {
-	evalCtx := &EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 
 	metaValue := reflect.ValueOf(evalCtx).Elem()
-	fieldName := "TargetingKey"
+	fieldName := "targetingKey"
 
 	field := metaValue.FieldByName(fieldName)
 	if field == (reflect.Value{}) {
@@ -25,9 +26,9 @@ func TestRequirement_3_1_1(t *testing.T) {
 // The evaluation context MUST support the inclusion of custom fields,
 // having keys of type `string`, and values of type `boolean | string | number | datetime | structure`.
 func TestRequirement_3_1_2(t *testing.T) {
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 
-	tpe := reflect.TypeOf(evalCtx.Attributes)
+	tpe := reflect.TypeOf(evalCtx.attributes)
 	if tpe.Kind() != reflect.Map {
 		t.Fatalf("expected EvaluationContext.Attributes kind to be map, got %s", tpe.Kind())
 	}
@@ -44,7 +45,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
 	t.Run("API MUST have a method for supplying `evaluation context`", func(t *testing.T) {
-		SetEvaluationContext(EvaluationContext{})
+		SetEvaluationContext(&MutableEvaluationContext{})
 	})
 
 	t.Run("client MUST have a method for supplying `evaluation context`", func(t *testing.T) {
@@ -89,9 +90,9 @@ func TestRequirement_3_2_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
-	apiEvalCtx := EvaluationContext{
-		TargetingKey: "API",
-		Attributes: map[string]interface{}{
+	apiEvalCtx := &MutableEvaluationContext{
+		targetingKey: "API",
+		attributes: map[string]interface{}{
 			"invocationEvalCtx": true,
 			"foo":               2,
 			"user":              2,
@@ -104,9 +105,9 @@ func TestRequirement_3_2_2(t *testing.T) {
 	SetProvider(mockProvider)
 
 	client := NewClient("test")
-	clientEvalCtx := EvaluationContext{
-		TargetingKey: "Client",
-		Attributes: map[string]interface{}{
+	clientEvalCtx := &MutableEvaluationContext{
+		targetingKey: "Client",
+		attributes: map[string]interface{}{
 			"clientEvalCtx": true,
 			"foo":           1,
 			"user":          1,
@@ -114,18 +115,18 @@ func TestRequirement_3_2_2(t *testing.T) {
 	}
 	client.SetEvaluationContext(clientEvalCtx)
 
-	invocationEvalCtx := EvaluationContext{
-		TargetingKey: "",
-		Attributes: map[string]interface{}{
+	invocationEvalCtx := &MutableEvaluationContext{
+		targetingKey: "",
+		attributes: map[string]interface{}{
 			"apiEvalCtx": true,
 			"foo":        "bar",
 		},
 	}
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	expectedMergedEvalCtx := EvaluationContext{
-		TargetingKey: "Client",
-		Attributes: map[string]interface{}{
+	expectedMergedEvalCtx := &MutableEvaluationContext{
+		targetingKey: "Client",
+		attributes: map[string]interface{}{
 			"apiEvalCtx":        true,
 			"invocationEvalCtx": true,
 			"clientEvalCtx":     true,
@@ -141,4 +142,48 @@ func TestRequirement_3_2_2(t *testing.T) {
 		t.Error(err)
 	}
 
+}
+
+func TestMutableEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
+	attributes := map[string]interface{}{
+		"foo": "bar",
+	}
+	evalCtx := NewMutableEvaluationContext("foo", attributes)
+
+	attributes["safetyCheck"] = "safe"
+
+	if _, ok := evalCtx.attributes["safetyCheck"]; ok {
+		t.Error("mutation of map passed to NewEvaluationContext caused a mutation of its attributes field")
+	}
+}
+
+func TestMutableEvaluationContext_SetAttributesNotPassedByReference(t *testing.T) {
+	evalCtx := NewMutableEvaluationContext("foo", nil)
+
+	newAttributes := map[string]interface{}{
+		"foo": "bar",
+	}
+	evalCtx.SetAttributes(newAttributes)
+	newAttributes["safetyCheck"] = "safe"
+
+	if _, ok := evalCtx.attributes["safetyCheck"]; ok {
+		t.Error("mutation of map passed to SetAttributes caused a mutation of its attributes field")
+	}
+}
+
+func TestMutableEvaluationContext_MutateAttributesConcurrently(t *testing.T) {
+	evalCtx := NewMutableEvaluationContext("foo", map[string]interface{}{
+		"foo": "bar",
+	})
+	numberOfConcurrentWriteAttempts := 10
+	for i := 0; i < numberOfConcurrentWriteAttempts; i++ { // checking for crashes
+		go func(i int) {
+			evalCtx.SetAttribute(fmt.Sprintf("write_%d", i), i)
+			evalCtx.SetAttribute("foo", "new bar")
+			evalCtx.SetAttributes(map[string]interface{}{
+				"multiple": "attributes",
+				"to":       "test",
+			})
+		}(i)
+	}
 }

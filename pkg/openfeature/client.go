@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 )
@@ -38,6 +39,7 @@ func (cm ClientMetadata) Name() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
+	mx                sync.Mutex
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
@@ -49,30 +51,36 @@ func NewClient(name string) *Client {
 	return &Client{
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
-		evaluationContext: EvaluationContext{},
+		evaluationContext: &MutableEvaluationContext{},
 		logger:            globalLogger,
 	}
 }
 
 // WithLogger sets the logger of the client
 func (c *Client) WithLogger(l logr.Logger) *Client {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.logger = func() logr.Logger { return l }
 	return c
 }
 
 // Metadata returns the client's metadata
-func (c Client) Metadata() ClientMetadata {
+func (c *Client) Metadata() ClientMetadata {
 	return c.metadata
 }
 
 // AddHooks appends to the client's collection of any previously added hooks
 func (c *Client) AddHooks(hooks ...Hook) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.hooks = append(c.hooks, hooks...)
 	c.logger().V(info).Info("appended hooks to client", "client", c.Metadata().name, "hooks", hooks)
 }
 
 // SetEvaluationContext sets the client's evaluation context
 func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.evaluationContext = evalCtx
 	c.logger().V(info).Info(
 		"set client evaluation context", "client", c.Metadata().name, "evaluationContext", evalCtx,
@@ -81,6 +89,8 @@ func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
 
 // EvaluationContext returns the client's evaluation context
 func (c *Client) EvaluationContext() EvaluationContext {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	return c.evaluationContext
 }
 
@@ -170,7 +180,7 @@ func WithHookHints(hookHints HookHints) Option {
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error) {
+func (c *Client) BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -202,7 +212,7 @@ func (c Client) BooleanValue(ctx context.Context, flag string, defaultValue bool
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error) {
+func (c *Client) StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -234,7 +244,7 @@ func (c Client) StringValue(ctx context.Context, flag string, defaultValue strin
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error) {
+func (c *Client) FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -266,7 +276,7 @@ func (c Client) FloatValue(ctx context.Context, flag string, defaultValue float6
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error) {
+func (c *Client) IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -298,7 +308,7 @@ func (c Client) IntValue(ctx context.Context, flag string, defaultValue int64, e
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error) {
+func (c *Client) ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -316,7 +326,7 @@ func (c Client) ObjectValue(ctx context.Context, flag string, defaultValue inter
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error) {
+func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -361,7 +371,7 @@ func (c Client) BooleanValueDetails(ctx context.Context, flag string, defaultVal
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error) {
+func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -406,7 +416,7 @@ func (c Client) StringValueDetails(ctx context.Context, flag string, defaultValu
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error) {
+func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -451,7 +461,7 @@ func (c Client) FloatValueDetails(ctx context.Context, flag string, defaultValue
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error) {
+func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -496,7 +506,7 @@ func (c Client) IntValueDetails(ctx context.Context, flag string, defaultValue i
 // - defaultValue is returned if an error occurs
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error) {
+func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error) {
 	evalOptions := &EvaluationOptions{}
 	for _, option := range options {
 		option(evalOptions)
@@ -505,14 +515,14 @@ func (c Client) ObjectValueDetails(ctx context.Context, flag string, defaultValu
 	return c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
 }
 
-func (c Client) evaluate(
+func (c *Client) evaluate(
 	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (InterfaceEvaluationDetails, error) {
 	c.logger().V(debug).Info(
 		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
 		"evaluationContext", evalCtx, "evaluationOptions", options,
 	)
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, api.evaluationContext) // API (global) -> client -> invocation
+	evalCtx = evalCtx.Merge(c.evaluationContext, api.evaluationContext) // API (global) -> client -> invocation
 
 	var err error
 	hookCtx := HookContext{
@@ -610,16 +620,17 @@ func (c Client) evaluate(
 
 func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 	flatCtx := FlattenedContext{}
-	if evalCtx.Attributes != nil {
-		flatCtx = evalCtx.Attributes
+	attrs := evalCtx.Attributes()
+	if attrs != nil {
+		flatCtx = attrs
 	}
-	if evalCtx.TargetingKey != "" {
-		flatCtx[TargetingKey] = evalCtx.TargetingKey
+	if evalCtx.TargetingKey() != "" {
+		flatCtx[TargetingKey] = evalCtx.TargetingKey()
 	}
 	return flatCtx
 }
 
-func (c Client) beforeHooks(
+func (c *Client) beforeHooks(
 	hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
 	c.logger().V(debug).Info("executing before hooks")
@@ -628,17 +639,17 @@ func (c Client) beforeHooks(
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(hookCtx, options.hookHints)
 		if resultEvalCtx != nil {
-			hookCtx.evaluationContext = *resultEvalCtx
+			hookCtx.evaluationContext = resultEvalCtx
 		}
 		if err != nil {
-			return mergeContexts(hookCtx.evaluationContext, evalCtx), err
+			return hookCtx.evaluationContext.Merge(evalCtx), err
 		}
 	}
 
-	return mergeContexts(hookCtx.evaluationContext, evalCtx), nil
+	return hookCtx.evaluationContext.Merge(evalCtx), nil
 }
 
-func (c Client) afterHooks(
+func (c *Client) afterHooks(
 	hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
 	c.logger().V(debug).Info("executing after hooks")
@@ -653,7 +664,7 @@ func (c Client) afterHooks(
 	return nil
 }
 
-func (c Client) errorHooks(hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
+func (c *Client) errorHooks(hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
 	c.logger().V(debug).Info("executing error hooks")
 	defer c.logger().V(debug).Info("executed error hooks")
 
@@ -662,36 +673,11 @@ func (c Client) errorHooks(hookCtx HookContext, hooks []Hook, err error, options
 	}
 }
 
-func (c Client) finallyHooks(hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
+func (c *Client) finallyHooks(hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
 	c.logger().V(debug).Info("executing finally hooks")
 	defer c.logger().V(debug).Info("executed finally hooks")
 
 	for _, hook := range hooks {
 		hook.Finally(hookCtx, options.hookHints)
 	}
-}
-
-// merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in case
-// of any conflicts with the (n+1)th EvaluationContext
-func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
-	if len(evaluationContexts) == 0 {
-		return EvaluationContext{}
-	}
-
-	mergedCtx := evaluationContexts[0]
-
-	for i := 1; i < len(evaluationContexts); i++ {
-		if mergedCtx.TargetingKey == "" && evaluationContexts[i].TargetingKey != "" {
-			mergedCtx.TargetingKey = evaluationContexts[i].TargetingKey
-		}
-
-		for k, v := range evaluationContexts[i].Attributes {
-			_, ok := mergedCtx.Attributes[k]
-			if !ok {
-				mergedCtx.Attributes[k] = v
-			}
-		}
-	}
-
-	return mergedCtx
 }

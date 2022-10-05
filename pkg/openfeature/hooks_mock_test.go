@@ -48,10 +48,10 @@ func (mr *MockHookMockRecorder) After(hookContext, flagEvaluationDetails, hookHi
 }
 
 // Before mocks base method.
-func (m *MockHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+func (m *MockHook) Before(hookContext HookContext, hookHints HookHints) (EvaluationContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Before", hookContext, hookHints)
-	ret0, _ := ret[0].(*EvaluationContext)
+	ret0, _ := ret[0].(EvaluationContext)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

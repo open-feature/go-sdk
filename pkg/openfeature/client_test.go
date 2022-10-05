@@ -148,7 +148,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, false, EvaluationContext{})
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, false, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -167,7 +167,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", &MutableEvaluationContext{})
 
 		if err != nil {
 			t.Error(err)
@@ -193,7 +193,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 0, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -218,7 +218,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 0, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -243,7 +243,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, nil, EvaluationContext{})
+		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, nil, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -270,7 +270,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	flagKey := "foo"
 
 	t.Run("BooleanValueDetails", func(t *testing.T) {
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, true, EvaluationContext{})
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, true, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -283,7 +283,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("StringValueDetails", func(t *testing.T) {
-		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -296,7 +296,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("FloatValueDetails", func(t *testing.T) {
-		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 1, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -309,7 +309,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("IntValueDetails", func(t *testing.T) {
-		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 1, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -322,7 +322,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("ObjectValueDetails", func(t *testing.T) {
-		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, 1, &MutableEvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -355,7 +355,7 @@ func TestRequirement_1_4_7(t *testing.T) {
 	SetProvider(mockProvider)
 
 	res, err := client.evaluate(
-		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+		context.Background(), "foo", Boolean, true, &MutableEvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
 		t.Error("expected err, got nil")
@@ -387,7 +387,7 @@ func TestRequirement_1_4_8(t *testing.T) {
 	SetProvider(mockProvider)
 
 	res, err := client.evaluate(
-		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+		context.Background(), "foo", Boolean, true, &MutableEvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
 		t.Error("expected err, got nil")
@@ -409,7 +409,7 @@ func TestRequirement_1_4_8(t *testing.T) {
 func TestRequirement_1_4_9(t *testing.T) {
 	client := NewClient("test-client")
 	flagKey := "flag-key"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	ctrl := gomock.NewController(t)
@@ -617,7 +617,7 @@ func TestRequirement_1_4_12(t *testing.T) {
 
 	client := NewClient("test")
 	evalDetails, err := client.evaluate(
-		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+		context.Background(), "foo", Boolean, true, &MutableEvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
 		t.Error("expected err, got nil")
@@ -647,13 +647,13 @@ func TestFlattenContext(t *testing.T) {
 		outCtx FlattenedContext
 	}{
 		"happy path": {
-			inCtx: EvaluationContext{
-				Attributes: map[string]interface{}{
+			inCtx: &MutableEvaluationContext{
+				attributes: map[string]interface{}{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
 				},
-				TargetingKey: "user",
+				targetingKey: "user",
 			},
 			outCtx: FlattenedContext{
 				TargetingKey: "user",
@@ -663,8 +663,8 @@ func TestFlattenContext(t *testing.T) {
 			},
 		},
 		"no targeting key": {
-			inCtx: EvaluationContext{
-				Attributes: map[string]interface{}{
+			inCtx: &MutableEvaluationContext{
+				attributes: map[string]interface{}{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
@@ -677,9 +677,9 @@ func TestFlattenContext(t *testing.T) {
 			},
 		},
 		"duplicated key": {
-			inCtx: EvaluationContext{
-				TargetingKey: "user",
-				Attributes: map[string]interface{}{
+			inCtx: &MutableEvaluationContext{
+				targetingKey: "user",
+				attributes: map[string]interface{}{
 					TargetingKey: "not user",
 					"1":          "string",
 					"2":          0.01,
@@ -694,8 +694,8 @@ func TestFlattenContext(t *testing.T) {
 			},
 		},
 		"no attributes": {
-			inCtx: EvaluationContext{
-				TargetingKey: "user",
+			inCtx: &MutableEvaluationContext{
+				targetingKey: "user",
 			},
 			outCtx: FlattenedContext{
 				TargetingKey: "user",
@@ -733,7 +733,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 
 	client := NewClient("test")
 	attributes := map[string]interface{}{"should": "persist"}
-	evalCtx := EvaluationContext{Attributes: attributes}
+	evalCtx := &MutableEvaluationContext{attributes: attributes}
 	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), attributes)
 
 	_, err := client.BooleanValue(
@@ -763,7 +763,7 @@ func TestClientLoggerUsesLatestGlobalLogger(t *testing.T) {
 
 	client := NewClient("test")
 	SetLogger(logr.New(l))
-	_, err := client.BooleanValue(context.Background(), "foo", false, EvaluationContext{})
+	_, err := client.BooleanValue(context.Background(), "foo", false, &MutableEvaluationContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -793,7 +793,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 
 	client := NewClient("test")
 	evalDetails, err := client.evaluate(
-		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+		context.Background(), "foo", Boolean, true, &MutableEvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
 		t.Error("expected err, got nil")

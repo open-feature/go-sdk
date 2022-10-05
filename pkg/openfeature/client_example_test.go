@@ -18,8 +18,8 @@ func ExampleNewClient() {
 func ExampleClient_BooleanValue() {
 	client := openfeature.NewClient("example-client")
 	value, err := client.BooleanValue(
-		context.Background(), "test-flag", true, openfeature.EvaluationContext{},
-	)
+		context.Background(), "test-flag", true, &openfeature.MutableEvaluationContext{},
+)
 	if err != nil {
 		log.Fatal("error while getting boolean value : ", err)
 	}
@@ -31,8 +31,8 @@ func ExampleClient_BooleanValue() {
 func ExampleClient_StringValue() {
 	client := openfeature.NewClient("example-client")
 	value, err := client.StringValue(
-		context.Background(), "test-flag", "openfeature", openfeature.EvaluationContext{},
-	)
+		context.Background(), "test-flag", "openfeature", &openfeature.MutableEvaluationContext{},
+)
 	if err != nil {
 		log.Fatal("error while getting string value : ", err)
 	}
@@ -44,8 +44,8 @@ func ExampleClient_StringValue() {
 func ExampleClient_FloatValue() {
 	client := openfeature.NewClient("example-client")
 	value, err := client.FloatValue(
-		context.Background(), "test-flag", 0.55, openfeature.EvaluationContext{},
-	)
+		context.Background(), "test-flag", 0.55, &openfeature.MutableEvaluationContext{},
+)
 	if err != nil {
 		log.Fatalf("error while getting float value: %v", err)
 	}
@@ -57,8 +57,8 @@ func ExampleClient_FloatValue() {
 func ExampleClient_IntValue() {
 	client := openfeature.NewClient("example-client")
 	value, err := client.IntValue(
-		context.Background(), "test-flag", 3, openfeature.EvaluationContext{},
-	)
+		context.Background(), "test-flag", 3, &openfeature.MutableEvaluationContext{},
+)
 	if err != nil {
 		log.Fatalf("error while getting int value: %v", err)
 	}
@@ -70,8 +70,8 @@ func ExampleClient_IntValue() {
 func ExampleClient_ObjectValue() {
 	client := openfeature.NewClient("example-client")
 	value, err := client.ObjectValue(
-		context.Background(), "test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{},
-	)
+		context.Background(), "test-flag", map[string]string{"foo": "bar"}, &openfeature.MutableEvaluationContext{},
+)
 	if err != nil {
 		log.Fatal("error while getting object value : ", err)
 	}

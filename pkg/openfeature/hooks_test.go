@@ -161,7 +161,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 
 		flagKey := "foo"
 		defaultValue := "bar"
-		evalCtx := EvaluationContext{}
+		evalCtx := &MutableEvaluationContext{}
 		flatCtx := flattenContext(evalCtx)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
@@ -182,7 +182,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 
 		type requirement interface {
-			Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
+			Before(hookContext HookContext, hookHints HookHints) (EvaluationContext, error)
 		}
 
 		var hookI interface{} = mockHook
@@ -206,7 +206,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -218,14 +218,14 @@ func TestRequirement_4_3_3(t *testing.T) {
 		providerMetadata:  mockProvider.Metadata(),
 		evaluationContext: evalCtx,
 	}
-	hook1EvalCtxResult := &EvaluationContext{TargetingKey: "mockHook1"}
-	hook1EvalCtxResultFlat := flattenContext(*hook1EvalCtxResult)
+	hook1EvalCtxResult := &MutableEvaluationContext{targetingKey: "mockHook1"}
+	hook1EvalCtxResultFlat := flattenContext(hook1EvalCtxResult)
 	mockHook1.EXPECT().Before(hook1Ctx, gomock.Any()).Return(hook1EvalCtxResult, nil)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, hook1EvalCtxResultFlat)
 
 	// assert that the evaluation context returned by the first hook is passed into the second hook
 	hook2Ctx := hook1Ctx
-	hook2Ctx.evaluationContext = *hook1EvalCtxResult
+	hook2Ctx.evaluationContext = hook1EvalCtxResult
 	mockHook2.EXPECT().Before(hook2Ctx, gomock.Any())
 
 	mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
@@ -252,16 +252,16 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
 
-	apiEvalCtx := EvaluationContext{
-		Attributes: map[string]interface{}{
+	apiEvalCtx := &MutableEvaluationContext{
+		attributes: map[string]interface{}{
 			"key":            "api context",
 			"lowestPriority": true,
 		},
 	}
 	SetEvaluationContext(apiEvalCtx)
 
-	clientEvalCtx := EvaluationContext{
-		Attributes: map[string]interface{}{
+	clientEvalCtx := &MutableEvaluationContext{
+		attributes: map[string]interface{}{
 			"key":            "client context",
 			"lowestPriority": false,
 			"beatsClient":    false,
@@ -271,8 +271,8 @@ func TestRequirement_4_3_4(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	invEvalCtx := EvaluationContext{
-		Attributes: map[string]interface{}{
+	invEvalCtx := &MutableEvaluationContext{
+		attributes: map[string]interface{}{
 			"key":         "invocation context",
 			"on":          true,
 			"beatsClient": true,
@@ -281,8 +281,8 @@ func TestRequirement_4_3_4(t *testing.T) {
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	hookEvalCtxResult := &EvaluationContext{
-		Attributes: map[string]interface{}{
+	hookEvalCtxResult := &MutableEvaluationContext{
+		attributes: map[string]interface{}{
 			"key":        "hook value",
 			"multiplier": 3,
 		},
@@ -290,8 +290,8 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockHook.EXPECT().Before(gomock.Any(), gomock.Any()).Return(hookEvalCtxResult, nil)
 
 	// assert that the EvaluationContext returned by Before hooks is merged with the invocation EvaluationContext
-	expectedMergedContext := EvaluationContext{
-		Attributes: map[string]interface{}{
+	expectedMergedContext := &MutableEvaluationContext{
+		attributes: map[string]interface{}{
 			"key":            "hook value", // hook takes precedence
 			"multiplier":     3,
 			"on":             true,
@@ -324,7 +324,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 
 		flagKey := "foo"
 		defaultValue := "bar"
-		evalCtx := EvaluationContext{}
+		evalCtx := &MutableEvaluationContext{}
 		flatCtx := flattenContext(evalCtx)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
@@ -364,7 +364,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("error hook MUST run when errors are encountered in the before stage", func(t *testing.T) {
@@ -459,7 +459,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("finally hook MUST run after the before & after stages", func(t *testing.T) {
@@ -587,7 +587,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("before, after & finally hooks MUST be evaluated in the following order", func(t *testing.T) {
@@ -693,7 +693,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run(
@@ -760,7 +760,7 @@ func TestRequirement_4_4_7(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
@@ -800,7 +800,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := &MutableEvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("hook hints must be passed to before, after & finally hooks", func(t *testing.T) {

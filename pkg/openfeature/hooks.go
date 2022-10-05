@@ -4,7 +4,7 @@ package openfeature
 // They operate similarly to middleware in many web frameworks.
 // https://github.com/open-feature/spec/blob/main/specification/hooks.md
 type Hook interface {
-	Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
+	Before(hookContext HookContext, hookHints HookHints) (EvaluationContext, error)
 	After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
 	Error(hookContext HookContext, err error, hookHints HookHints)
 	Finally(hookContext HookContext, hookHints HookHints)
@@ -72,12 +72,13 @@ var _ Hook = UnimplementedHook{}
 // UnimplementedHook implements all hook methods with empty functions
 // Include UnimplementedHook in your hook struct to avoid defining empty functions
 // e.g.
-// type MyHook struct {
-//   UnimplementedHook
-// }
+//
+//	type MyHook struct {
+//	  UnimplementedHook
+//	}
 type UnimplementedHook struct{}
 
-func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) (EvaluationContext, error) {
 	return nil, nil
 }
 

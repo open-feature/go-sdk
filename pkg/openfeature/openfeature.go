@@ -26,7 +26,7 @@ func initSingleton() {
 	api = evaluationAPI{
 		provider:          NoopProvider{},
 		hooks:             []Hook{},
-		evaluationContext: EvaluationContext{},
+		evaluationContext: &MutableEvaluationContext{},
 		logger:            logr.New(logger{}),
 	}
 }
