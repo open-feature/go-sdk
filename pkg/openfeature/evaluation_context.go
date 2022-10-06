@@ -9,14 +9,17 @@ type EvaluationContext struct {
 	attributes   map[string]interface{}
 }
 
+// Attribute retrieves the attribute with the given key
 func (e EvaluationContext) Attribute(key string) interface{} {
 	return e.attributes[key]
 }
 
+// TargetingKey returns the key uniquely identifying the subject (end-user, or client service) of a flag evaluation
 func (e EvaluationContext) TargetingKey() string {
 	return e.targetingKey
 }
 
+// Attributes returns a copy of the EvaluationContext's attributes
 func (e EvaluationContext) Attributes() map[string]interface{} {
 	// copy attributes to new map to prevent mutation (maps are passed by reference)
 	attrs := make(map[string]interface{}, len(e.attributes))
