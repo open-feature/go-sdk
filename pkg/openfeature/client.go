@@ -620,7 +620,7 @@ func (c Client) evaluate(
 func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 	flatCtx := FlattenedContext{}
 	if evalCtx.attributes != nil {
-		flatCtx = evalCtx.attributes
+		flatCtx = evalCtx.Attributes()
 	}
 	if evalCtx.targetingKey != "" {
 		flatCtx[TargetingKey] = evalCtx.targetingKey
