@@ -17,7 +17,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	SetProvider(mockProvider)
 
-	if api.provider != mockProvider {
+	if api.provider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
 	}
 }
@@ -50,7 +50,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 	AddHooks(mockHook)
 	AddHooks(mockHook, mockHook)
 
-	if len(api.hooks) != 3 {
+	if len(api.hooks()) != 3 {
 		t.Error("func AddHooks didn't append the list of hooks to the existing collection of hooks")
 	}
 }
