@@ -648,12 +648,12 @@ func TestFlattenContext(t *testing.T) {
 	}{
 		"happy path": {
 			inCtx: EvaluationContext{
-				Attributes: map[string]interface{}{
+				attributes: map[string]interface{}{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
 				},
-				TargetingKey: "user",
+				targetingKey: "user",
 			},
 			outCtx: FlattenedContext{
 				TargetingKey: "user",
@@ -664,7 +664,7 @@ func TestFlattenContext(t *testing.T) {
 		},
 		"no targeting key": {
 			inCtx: EvaluationContext{
-				Attributes: map[string]interface{}{
+				attributes: map[string]interface{}{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
@@ -678,8 +678,8 @@ func TestFlattenContext(t *testing.T) {
 		},
 		"duplicated key": {
 			inCtx: EvaluationContext{
-				TargetingKey: "user",
-				Attributes: map[string]interface{}{
+				targetingKey: "user",
+				attributes: map[string]interface{}{
 					TargetingKey: "not user",
 					"1":          "string",
 					"2":          0.01,
@@ -695,7 +695,7 @@ func TestFlattenContext(t *testing.T) {
 		},
 		"no attributes": {
 			inCtx: EvaluationContext{
-				TargetingKey: "user",
+				targetingKey: "user",
 			},
 			outCtx: FlattenedContext{
 				TargetingKey: "user",
@@ -733,7 +733,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 
 	client := NewClient("test")
 	attributes := map[string]interface{}{"should": "persist"}
-	evalCtx := EvaluationContext{Attributes: attributes}
+	evalCtx := EvaluationContext{attributes: attributes}
 	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), attributes)
 
 	_, err := client.BooleanValue(

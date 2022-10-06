@@ -14,7 +14,7 @@ func TestRequirement_3_1_1(t *testing.T) {
 	evalCtx := &EvaluationContext{}
 
 	metaValue := reflect.ValueOf(evalCtx).Elem()
-	fieldName := "TargetingKey"
+	fieldName := "targetingKey"
 
 	field := metaValue.FieldByName(fieldName)
 	if field == (reflect.Value{}) {
@@ -27,15 +27,15 @@ func TestRequirement_3_1_1(t *testing.T) {
 func TestRequirement_3_1_2(t *testing.T) {
 	evalCtx := EvaluationContext{}
 
-	tpe := reflect.TypeOf(evalCtx.Attributes)
+	tpe := reflect.TypeOf(evalCtx.attributes)
 	if tpe.Kind() != reflect.Map {
-		t.Fatalf("expected EvaluationContext.Attributes kind to be map, got %s", tpe.Kind())
+		t.Fatalf("expected EvaluationContext.attributes kind to be map, got %s", tpe.Kind())
 	}
 	if tpe.Key().Kind() != reflect.String {
-		t.Errorf("expected EvaluationContext.Attributes key to be string, got %s", tpe.Key().Kind())
+		t.Errorf("expected EvaluationContext.attributes key to be string, got %s", tpe.Key().Kind())
 	}
 	if tpe.Elem().Kind() != reflect.Interface {
-		t.Errorf("expected EvaluationContext.Attributes value to be interface{}, got %s", tpe.Elem().Kind())
+		t.Errorf("expected EvaluationContext.attributes value to be interface{}, got %s", tpe.Elem().Kind())
 	}
 }
 
@@ -90,8 +90,8 @@ func TestRequirement_3_2_2(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	apiEvalCtx := EvaluationContext{
-		TargetingKey: "API",
-		Attributes: map[string]interface{}{
+		targetingKey: "API",
+		attributes: map[string]interface{}{
 			"invocationEvalCtx": true,
 			"foo":               2,
 			"user":              2,
@@ -105,8 +105,8 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	client := NewClient("test")
 	clientEvalCtx := EvaluationContext{
-		TargetingKey: "Client",
-		Attributes: map[string]interface{}{
+		targetingKey: "Client",
+		attributes: map[string]interface{}{
 			"clientEvalCtx": true,
 			"foo":           1,
 			"user":          1,
@@ -115,8 +115,8 @@ func TestRequirement_3_2_2(t *testing.T) {
 	client.SetEvaluationContext(clientEvalCtx)
 
 	invocationEvalCtx := EvaluationContext{
-		TargetingKey: "",
-		Attributes: map[string]interface{}{
+		targetingKey: "",
+		attributes: map[string]interface{}{
 			"apiEvalCtx": true,
 			"foo":        "bar",
 		},
@@ -124,8 +124,8 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 	expectedMergedEvalCtx := EvaluationContext{
-		TargetingKey: "Client",
-		Attributes: map[string]interface{}{
+		targetingKey: "Client",
+		attributes: map[string]interface{}{
 			"apiEvalCtx":        true,
 			"invocationEvalCtx": true,
 			"clientEvalCtx":     true,
@@ -141,4 +141,30 @@ func TestRequirement_3_2_2(t *testing.T) {
 		t.Error(err)
 	}
 
+}
+
+func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
+	attributes := map[string]interface{}{
+		"foo": "bar",
+	}
+	evalCtx := NewEvaluationContext("foo", attributes)
+
+	attributes["immutabilityCheck"] = "safe"
+
+	if _, ok := evalCtx.attributes["immutabilityCheck"]; ok {
+		t.Error("mutation of map passed to NewEvaluationContext caused a mutation of its attributes field")
+	}
+}
+
+func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {
+	evalCtx := NewEvaluationContext("foo", map[string]interface{}{
+		"foo": "bar",
+	})
+
+	attributes := evalCtx.Attributes()
+	attributes["immutabilityCheck"] = "safe"
+
+	if _, ok := evalCtx.attributes["immutabilityCheck"]; ok {
+		t.Error("mutation of map passed to SetAttributes caused a mutation of its attributes field")
+	}
 }
