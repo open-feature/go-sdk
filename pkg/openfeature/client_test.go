@@ -806,3 +806,34 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 		)
 	}
 }
+
+func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockProvider1 := NewMockFeatureProvider(ctrl)
+	mockProvider2 := NewMockFeatureProvider(ctrl)
+	mockProvider1Hook := NewMockHook(ctrl)
+	mockProvider1.EXPECT().Metadata().AnyTimes()
+	mockProvider2.EXPECT().Metadata().AnyTimes()
+	mockProvider1.EXPECT().Hooks().Return([]Hook{mockProvider1Hook}).AnyTimes()
+
+	// set new provider during initial provider's Before hook
+	mockProvider1Hook.EXPECT().Before(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ HookContext, _ HookHints) (*EvaluationContext, error) {
+			SetProvider(mockProvider2)
+			return nil, nil
+		})
+	SetProvider(mockProvider1)
+
+	mockProvider1.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	// ensure that the first provider's hooks are still fired
+	mockProvider1Hook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
+	mockProvider1Hook.EXPECT().Finally(gomock.Any(), gomock.Any())
+
+	client := NewClient("test")
+	_, err := client.BooleanValue(context.Background(), "foo", true, EvaluationContext{})
+	if err != nil {
+		t.Error(err)
+	}
+}

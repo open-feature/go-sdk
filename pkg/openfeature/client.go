@@ -556,13 +556,21 @@ func (c *Client) evaluate(
 	)
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, api.evaluationContext()) // API (global) -> client -> invocation
 
+	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
+	api.RLock()
+	provider := api.prvder
+	globalHooks := api.hks
+	api.RUnlock()
+	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
+	providerInvocationClientApiHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
+
 	var err error
 	hookCtx := HookContext{
 		flagKey:           flag,
 		flagType:          flagType,
 		defaultValue:      defaultValue,
 		clientMetadata:    c.metadata,
-		providerMetadata:  api.provider().Metadata(),
+		providerMetadata:  provider.Metadata(),
 		evaluationContext: evalCtx,
 	}
 	evalDetails := InterfaceEvaluationDetails{
@@ -573,8 +581,6 @@ func (c *Client) evaluate(
 		},
 	}
 
-	apiClientInvocationProviderHooks := append(append(append(api.hooks(), c.hooks...), options.hooks...), api.provider().Hooks()...) // API, Client, Invocation, Provider
-	providerInvocationClientApiHooks := append(append(append(api.provider().Hooks(), options.hooks...), c.hooks...), api.hooks()...) // Provider, Invocation, Client, API
 	defer func() {
 		c.finallyHooks(hookCtx, providerInvocationClientApiHooks, options)
 	}()
@@ -595,25 +601,25 @@ func (c *Client) evaluate(
 	var resolution InterfaceResolutionDetail
 	switch flagType {
 	case Object:
-		resolution = api.provider().ObjectEvaluation(ctx, flag, defaultValue, flatCtx)
+		resolution = provider.ObjectEvaluation(ctx, flag, defaultValue, flatCtx)
 	case Boolean:
 		defValue := defaultValue.(bool)
-		res := api.provider().BooleanEvaluation(ctx, flag, defValue, flatCtx)
+		res := provider.BooleanEvaluation(ctx, flag, defValue, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case String:
 		defValue := defaultValue.(string)
-		res := api.provider().StringEvaluation(ctx, flag, defValue, flatCtx)
+		res := provider.StringEvaluation(ctx, flag, defValue, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case Float:
 		defValue := defaultValue.(float64)
-		res := api.provider().FloatEvaluation(ctx, flag, defValue, flatCtx)
+		res := provider.FloatEvaluation(ctx, flag, defValue, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	case Int:
 		defValue := defaultValue.(int64)
-		res := api.provider().IntEvaluation(ctx, flag, defValue, flatCtx)
+		res := provider.IntEvaluation(ctx, flag, defValue, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = res.Value
 	}
