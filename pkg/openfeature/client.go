@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 )
@@ -38,6 +39,7 @@ func (cm ClientMetadata) Name() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
+	mx                *sync.Mutex
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
@@ -47,6 +49,7 @@ type Client struct {
 // NewClient returns a new Client. Name is a unique identifier for this client
 func NewClient(name string) *Client {
 	return &Client{
+		mx:                &sync.Mutex{},
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
@@ -56,6 +59,8 @@ func NewClient(name string) *Client {
 
 // WithLogger sets the logger of the client
 func (c *Client) WithLogger(l logr.Logger) *Client {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.logger = func() logr.Logger { return l }
 	return c
 }
@@ -67,12 +72,16 @@ func (c Client) Metadata() ClientMetadata {
 
 // AddHooks appends to the client's collection of any previously added hooks
 func (c *Client) AddHooks(hooks ...Hook) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.hooks = append(c.hooks, hooks...)
 	c.logger().V(info).Info("appended hooks to client", "client", c.Metadata().name, "hooks", hooks)
 }
 
 // SetEvaluationContext sets the client's evaluation context
 func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	c.evaluationContext = evalCtx
 	c.logger().V(info).Info(
 		"set client evaluation context", "client", c.Metadata().name, "evaluationContext", evalCtx,
@@ -610,11 +619,11 @@ func (c Client) evaluate(
 
 func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 	flatCtx := FlattenedContext{}
-	if evalCtx.Attributes != nil {
-		flatCtx = evalCtx.Attributes
+	if evalCtx.attributes != nil {
+		flatCtx = evalCtx.Attributes()
 	}
-	if evalCtx.TargetingKey != "" {
-		flatCtx[TargetingKey] = evalCtx.TargetingKey
+	if evalCtx.targetingKey != "" {
+		flatCtx[TargetingKey] = evalCtx.targetingKey
 	}
 	return flatCtx
 }
@@ -678,17 +687,21 @@ func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 		return EvaluationContext{}
 	}
 
-	mergedCtx := evaluationContexts[0]
+	// create copy to prevent mutation of given EvaluationContext
+	mergedCtx := EvaluationContext{
+		attributes:   evaluationContexts[0].Attributes(),
+		targetingKey: evaluationContexts[0].targetingKey,
+	}
 
 	for i := 1; i < len(evaluationContexts); i++ {
-		if mergedCtx.TargetingKey == "" && evaluationContexts[i].TargetingKey != "" {
-			mergedCtx.TargetingKey = evaluationContexts[i].TargetingKey
+		if mergedCtx.targetingKey == "" && evaluationContexts[i].targetingKey != "" {
+			mergedCtx.targetingKey = evaluationContexts[i].targetingKey
 		}
 
-		for k, v := range evaluationContexts[i].Attributes {
-			_, ok := mergedCtx.Attributes[k]
+		for k, v := range evaluationContexts[i].attributes {
+			_, ok := mergedCtx.attributes[k]
 			if !ok {
-				mergedCtx.Attributes[k] = v
+				mergedCtx.attributes[k] = v
 			}
 		}
 	}
