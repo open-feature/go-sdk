@@ -47,8 +47,8 @@ type FeatureProvider interface {
 // N.B we could use generics but to support older versions of go for now we will have type specific resolution
 // detail
 type ProviderResolutionDetail struct {
-	ResolutionError ResolutionError
 	Reason          Reason
+	ResolutionError ResolutionError
 	Variant         string
 }
 
@@ -65,7 +65,7 @@ func (p ProviderResolutionDetail) Error() error {
 	if p.ResolutionError.code == "" {
 		return nil
 	}
-	return errors.New(string(p.ResolutionError.code))
+	return errors.New(p.ResolutionError.Error())
 }
 
 // BoolResolutionDetail provides a resolution detail with boolean type
