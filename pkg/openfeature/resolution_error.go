@@ -1,5 +1,7 @@
 package openfeature
 
+import "fmt"
+
 type ErrorCode string
 
 const (
@@ -28,7 +30,7 @@ type ResolutionError struct {
 }
 
 func (r ResolutionError) Error() string {
-	return string(r.code)
+	return fmt.Sprintf("%s: %s", r.code, r.message)
 }
 
 // NewProviderNotReadyResolutionError constructs a resolution error with code PROVIDER_NOT_READY

@@ -65,7 +65,7 @@ func (p ProviderResolutionDetail) Error() error {
 	if p.ResolutionError.code == "" {
 		return nil
 	}
-	return errors.New(string(p.ResolutionError.code))
+	return errors.New(p.ResolutionError.Error())
 }
 
 // BoolResolutionDetail provides a resolution detail with boolean type

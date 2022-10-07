@@ -21,7 +21,9 @@ func (l logger) Enabled(level int) bool { return true }
 
 func (l logger) Info(level int, msg string, keysAndValues ...interface{}) {}
 
-func (l logger) Error(err error, msg string, keysAndValues ...interface{}) { log.Println(err) }
+func (l logger) Error(err error, msg string, keysAndValues ...interface{}) {
+	log.Println("openfeature:", err)
+}
 
 func (l logger) WithValues(keysAndValues ...interface{}) logr.LogSink { return l }
 
