@@ -47,8 +47,8 @@ type FeatureProvider interface {
 // N.B we could use generics but to support older versions of go for now we will have type specific resolution
 // detail
 type ProviderResolutionDetail struct {
-	Reason          Reason
 	ResolutionError ResolutionError
+	Reason          Reason
 	Variant         string
 }
 
