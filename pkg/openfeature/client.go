@@ -687,7 +687,11 @@ func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 		return EvaluationContext{}
 	}
 
-	mergedCtx := evaluationContexts[0]
+	// create copy to prevent mutation of given EvaluationContext
+	mergedCtx := EvaluationContext{
+		attributes:   evaluationContexts[0].Attributes(),
+		targetingKey: evaluationContexts[0].targetingKey,
+	}
 
 	for i := 1; i < len(evaluationContexts); i++ {
 		if mergedCtx.targetingKey == "" && evaluationContexts[i].targetingKey != "" {

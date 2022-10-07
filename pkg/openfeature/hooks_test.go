@@ -206,7 +206,11 @@ func TestRequirement_4_3_3(t *testing.T) {
 
 	flagKey := "foo"
 	defaultValue := "bar"
-	evalCtx := EvaluationContext{}
+	evalCtx := EvaluationContext{
+		attributes: map[string]interface{}{
+			"is": "a test",
+		},
+	}
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -219,9 +223,11 @@ func TestRequirement_4_3_3(t *testing.T) {
 		evaluationContext: evalCtx,
 	}
 	hook1EvalCtxResult := &EvaluationContext{targetingKey: "mockHook1"}
-	hook1EvalCtxResultFlat := flattenContext(*hook1EvalCtxResult)
 	mockHook1.EXPECT().Before(hook1Ctx, gomock.Any()).Return(hook1EvalCtxResult, nil)
-	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, hook1EvalCtxResultFlat)
+	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, map[string]interface{}{
+		"is":         "a test",
+		TargetingKey: "mockHook1",
+	})
 
 	// assert that the evaluation context returned by the first hook is passed into the second hook
 	hook2Ctx := hook1Ctx
