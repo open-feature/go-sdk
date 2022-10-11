@@ -554,13 +554,15 @@ func (c *Client) evaluate(
 		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
 		"evaluationContext", evalCtx, "evaluationOptions", options,
 	)
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, api.evaluationContext()) // API (global) -> client -> invocation
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	api.RLock()
 	provider := api.prvder
 	globalHooks := api.hks
+	globalCtx := api.evalCtx
 	api.RUnlock()
+
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
 	providerInvocationClientApiHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
 

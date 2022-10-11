@@ -11,7 +11,7 @@ type evaluationAPI struct {
 	hks     []Hook
 	evalCtx EvaluationContext
 	logger  logr.Logger
-	sync.RWMutex
+	mutex
 }
 
 // api is the global evaluationAPI.  This is a singleton and there can only be one instance.
@@ -28,6 +28,7 @@ func initSingleton() {
 		hks:     []Hook{},
 		evalCtx: EvaluationContext{},
 		logger:  logr.New(logger{}),
+		mutex:   &sync.RWMutex{},
 	}
 }
 
