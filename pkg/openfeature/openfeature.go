@@ -7,11 +7,11 @@ import (
 )
 
 type evaluationAPI struct {
-	provider          FeatureProvider
-	hooks             []Hook
-	evaluationContext EvaluationContext
-	logger            logr.Logger
-	sync.RWMutex
+	prvder  FeatureProvider
+	hks     []Hook
+	evalCtx EvaluationContext
+	logger  logr.Logger
+	mutex
 }
 
 // api is the global evaluationAPI.  This is a singleton and there can only be one instance.
@@ -24,10 +24,11 @@ func init() {
 
 func initSingleton() {
 	api = evaluationAPI{
-		provider:          NoopProvider{},
-		hooks:             []Hook{},
-		evaluationContext: EvaluationContext{},
-		logger:            logr.New(logger{}),
+		prvder:  NoopProvider{},
+		hks:     []Hook{},
+		evalCtx: EvaluationContext{},
+		logger:  logr.New(logger{}),
+		mutex:   &sync.RWMutex{},
 	}
 }
 
@@ -47,17 +48,23 @@ func (e EvaluationOptions) Hooks() []Hook {
 	return e.hooks
 }
 
+func (api *evaluationAPI) provider() FeatureProvider {
+	api.RLock()
+	defer api.RUnlock()
+	return api.prvder
+}
+
 func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.Lock()
 	defer api.Unlock()
-	api.provider = provider
+	api.prvder = provider
 	api.logger.V(info).Info("set global provider", "name", provider.Metadata().Name)
 }
 
 func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
 	api.Lock()
 	defer api.Unlock()
-	api.evaluationContext = evalCtx
+	api.evalCtx = evalCtx
 	api.logger.V(info).Info("set global evaluation context", "evaluationContext", evalCtx)
 }
 
@@ -66,6 +73,12 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.Unlock()
 	api.logger = l
 	api.logger.V(info).Info("set global logger")
+}
+
+func (api *evaluationAPI) hooks() []Hook {
+	api.RLock()
+	defer api.RUnlock()
+	return api.hks
 }
 
 // SetProvider sets the global provider.
@@ -85,17 +98,19 @@ func SetLogger(l logr.Logger) {
 
 // ProviderMetadata returns the global provider's metadata
 func ProviderMetadata() Metadata {
-	return api.provider.Metadata()
+	return api.provider().Metadata()
 }
 
 // AddHooks appends to the collection of any previously added hooks
 func AddHooks(hooks ...Hook) {
 	api.Lock()
 	defer api.Unlock()
-	api.hooks = append(api.hooks, hooks...)
+	api.hks = append(api.hks, hooks...)
 	api.logger.V(info).Info("appended hooks to the global singleton", "hooks", hooks)
 }
 
 func globalLogger() logr.Logger {
+	api.RLock()
+	defer api.RUnlock()
 	return api.logger
 }
