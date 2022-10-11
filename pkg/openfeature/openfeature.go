@@ -61,12 +61,6 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) {
 	api.logger.V(info).Info("set global provider", "name", provider.Metadata().Name)
 }
 
-func (api *evaluationAPI) evaluationContext() EvaluationContext {
-	api.RLock()
-	defer api.RUnlock()
-	return api.evalCtx
-}
-
 func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
 	api.Lock()
 	defer api.Unlock()
