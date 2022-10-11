@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/open-feature/go-sdk/compare/v0.5.1...v0.6.0) (2022-10-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* made EvaluationContext fields unexported with a constructor and setters to enforce immutability (#91)
+
+### Features
+
+* made EvaluationContext fields unexported with a constructor and setters to enforce immutability ([#91](https://github.com/open-feature/go-sdk/issues/91)) ([691a1e3](https://github.com/open-feature/go-sdk/commit/691a1e360e1966280d1b03579ea5e9f03afadf94))
+
+
+### Bug Fixes
+
+* locks on singleton and client state to ensure thread safety ([#93](https://github.com/open-feature/go-sdk/issues/93)) ([9dbd6b0](https://github.com/open-feature/go-sdk/commit/9dbd6b0f13bf9b22b2dace6445051f55f8031367))
+* resolution error only includes the code ([#96](https://github.com/open-feature/go-sdk/issues/96)) ([524b054](https://github.com/open-feature/go-sdk/commit/524b05478a08f17bf7892905352c1a5cf47a69a9))
+
 ## [0.5.1](https://github.com/open-feature/go-sdk/compare/v0.5.0...v0.5.1) (2022-10-03)
 
 
