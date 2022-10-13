@@ -34,6 +34,13 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+
+    services:
+      flagd:
+        image: ghcr.io/open-feature/flagd-testbed:latest
+        ports:
+          - 8013:8013
+
     steps:
       - name: Install Go
         uses: actions/setup-go@v3
