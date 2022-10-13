@@ -48,6 +48,8 @@ jobs:
           go-version: ${{ env.DEFAULT_GO_VERSION }}
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
