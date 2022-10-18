@@ -10,7 +10,7 @@ import (
 
 // The provider interface MUST define a `metadata` member or accessor, containing a `name` field or accessor
 // of type string, which identifies the provider implementation.
-func TestRequirement_2_1(t *testing.T) {
+func TestRequirement_2_1_1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
@@ -37,7 +37,7 @@ func TestRequirement_2_1(t *testing.T) {
 // The `feature provider` interface MUST define methods to resolve flag values,
 // with parameters `flag key` (string, required), `default value` (boolean | number | string | structure, required)
 // and `evaluation context` (optional), which returns a `flag resolution` structure.
-func TestRequirement_2_2(t *testing.T) {
+func TestRequirement_2_2_1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
@@ -55,7 +55,7 @@ func TestRequirement_2_2(t *testing.T) {
 	}
 }
 
-// Conditional_Requirement_2_3_1
+// Conditional_Requirement_2_2_2_1
 // The `feature provider` interface MUST define methods for typed flag resolution,
 // including boolean, numeric, string, and structure.
 //
