@@ -14,4 +14,4 @@ The go version in the `go.mod` is the currently supported version of go.
 
 When writing a test to cover a spec requirement use the test naming convention `TestRequirement_x_y_z` where `x_y_z` is the numbering of the spec requirement (e.g. spec requirement `1.1.1` demands a test with name `TestRequirement_1_1_1`). Also include the description of the test requirement as a comment of the test.
 
-Thanks, issues and pull requests following these guidelines are welcome.
+Thanks! Issues and pull requests following these guidelines are welcome.
