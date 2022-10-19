@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/open-feature/go-sdk/compare/v0.6.0...v1.0.0) (2022-10-19)
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 ([#101](https://github.com/open-feature/go-sdk/issues/101)) ([665d670](https://github.com/open-feature/go-sdk/commit/665d6703fc39b33f0f11d3c427b479855c322c1b))
+
 ## [0.6.0](https://github.com/open-feature/go-sdk/compare/v0.5.1...v0.6.0) (2022-10-11)
 
 
