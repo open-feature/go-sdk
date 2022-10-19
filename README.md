@@ -37,6 +37,8 @@ func main() {
 }
 ```
 
+For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts
+
 ### Hooks
 
 Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
