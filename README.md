@@ -21,6 +21,7 @@ go get github.com/open-feature/go-sdk
 
 To configure the sdk you'll need to add a provider to the `openfeature` global singleton. From there, you can generate a `Client` which is usable by your code.
 While you'll likely want a provider for your specific backend, we've provided a `NoopProvider`, which simply returns the default passed in.
+
 ```go
 package main
 
@@ -103,7 +104,12 @@ Run unit tests with `make test`.
 The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features/evaluation.feature) using [`flagd`](https://github.com/open-feature/flagd).
 If you'd like to run them locally, you can start the flagd testbed with `docker run -p 8013:8013 ghcr.io/open-feature/flagd-testbed:latest` and then run `make integration-test`.
 
+### Releases
+
+This repo uses Release Please to release packages. Release Please sets up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged. When Release Please's running PR is merged, any changed artifacts are published.
+
 ## Contacting us
+
 We hold regular meetings which you can see [here](https://github.com/open-feature/community/#meetings-and-events).
 
 We are also present in the `#openfeature` channel in the [CNCF slack](https://slack.cncf.io/).
