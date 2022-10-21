@@ -39,6 +39,8 @@ func main() {
 }
 ```
 
+A (non-exhaustive) list of available providers can be found [here](https://docs.openfeature.dev/docs/reference/technologies/server/go).
+
 For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts
 
 ### Hooks
@@ -60,6 +62,8 @@ func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints 
 ```
 
 Register the hook at global, client or invocation level.
+
+A (non-exhaustive) list of available hooks can be found [here](https://docs.openfeature.dev/docs/reference/technologies/server/go).
 
 ## Configuration
 
