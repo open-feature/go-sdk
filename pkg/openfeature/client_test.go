@@ -866,3 +866,46 @@ func TestClientProviderLock(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	ctrl := gomock.NewController(t)
+
+	variant := "variant1"
+	reason := TargetingMatchReason
+	var value interface{} = nil
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	SetProvider(mockProvider)
+	mockProvider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(InterfaceResolutionDetail{
+			Value: value,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				Variant: variant,
+				Reason:  reason,
+			},
+		})
+
+	client := NewClient("test")
+	evDetails, err := client.ObjectValueDetails(context.Background(), "foo", nil, EvaluationContext{})
+	if err != nil {
+		t.Errorf("should not return an error: %s", err.Error())
+	}
+	if evDetails.Value != value {
+		t.Errorf("unexpected value returned (expected: %s, value: %s)", value, evDetails.Value)
+	}
+	if evDetails.Variant != variant {
+		t.Errorf("unexpected variant returned (expected: %s, value: %s)", variant, evDetails.Variant)
+	}
+	if evDetails.Reason != reason {
+		t.Errorf("unexpected reason returned (expected: %s, value: %s)", reason, evDetails.Reason)
+	}
+	if evDetails.ErrorMessage != "" {
+		t.Error("not supposed to have an error message")
+	}
+	if evDetails.ErrorCode != "" {
+		t.Error("not supposed to have an error code")
+	}
+}
