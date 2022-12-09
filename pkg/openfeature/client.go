@@ -639,10 +639,8 @@ func (c *Client) evaluate(
 		evalDetails.Reason = ErrorReason
 		return evalDetails, err
 	}
-	if resolution.Value != nil {
-		evalDetails.Value = resolution.Value
-		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
-	}
+	evalDetails.Value = resolution.Value
+	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
 	if err := c.afterHooks(hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
 		c.logger().Error(
