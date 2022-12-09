@@ -889,7 +889,10 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 		})
 
 	client := NewClient("test")
-	evDetails, _ := client.ObjectValueDetails(context.Background(), "foo", nil, EvaluationContext{})
+	evDetails, err := client.ObjectValueDetails(context.Background(), "foo", nil, EvaluationContext{})
+	if err != nil {
+		t.Error("should not return an error")
+	}
 	if evDetails.Value != value {
 		t.Errorf("unexpected value returned (expected: %s, value: %s)", value, evDetails.Value)
 	}
