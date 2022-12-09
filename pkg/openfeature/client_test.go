@@ -873,6 +873,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 
 	variant := "variant1"
 	reason := TargetingMatchReason
+	var value interface{} = nil
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -880,7 +881,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 	SetProvider(mockProvider)
 	mockProvider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(InterfaceResolutionDetail{
-			Value: nil,
+			Value: value,
 			ProviderResolutionDetail: ProviderResolutionDetail{
 				Variant: variant,
 				Reason:  reason,
@@ -889,6 +890,9 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 
 	client := NewClient("test")
 	evDetails, _ := client.ObjectValueDetails(context.Background(), "foo", nil, EvaluationContext{})
+	if evDetails.Value != value {
+		t.Errorf("unexpected value returned (expected: %s, value: %s)", value, evDetails.Value)
+	}
 	if evDetails.Variant != variant {
 		t.Errorf("unexpected variant returned (expected: %s, value: %s)", variant, evDetails.Variant)
 	}
