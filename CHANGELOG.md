@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/open-feature/go-sdk/compare/v1.0.0...v1.0.1) (2022-12-09)
+
+
+### Bug Fixes
+
+* allow nil value for object evaluation ([f45dba0](https://github.com/open-feature/go-sdk/commit/f45dba0678eac07eda8923842bae9b15cb8b99af))
+* allow nil value for object evaluation ([#118](https://github.com/open-feature/go-sdk/issues/118)) ([f45dba0](https://github.com/open-feature/go-sdk/commit/f45dba0678eac07eda8923842bae9b15cb8b99af))
+
 ## [1.0.0](https://github.com/open-feature/go-sdk/compare/v0.6.0...v1.0.0) (2022-10-19)
 
 
