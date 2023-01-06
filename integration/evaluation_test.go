@@ -6,30 +6,13 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"time"
 
 	"github.com/cucumber/godog"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
+	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
-
-// ctxStorageKey is the key used to pass test data across context.Context
-type ctxStorageKey struct{}
-
-var (
-	client *openfeature.Client
-)
-
-func init() {
-	// register the flagd provider before the tests
-	fmt.Println("Setting flagd provider...")
-	openfeature.SetProvider(flagd.NewProvider(flagd.WithPort(8013)))
-	fmt.Println("flagd provider configured!")
-
-	client = openfeature.NewClient("integration tests")
-}
 
 func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey, defaultValueStr string,
@@ -39,6 +22,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.BooleanValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -68,6 +52,7 @@ func theResolvedBooleanValueShouldBe(ctx context.Context, expectedValueStr strin
 func aStringFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.StringValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -92,6 +77,7 @@ func theResolvedStringValueShouldBe(ctx context.Context, expectedValue string) e
 func anIntegerFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.IntValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -116,6 +102,7 @@ func theResolvedIntegerValueShouldBe(ctx context.Context, expectedValue int64) e
 func aFloatFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.FloatValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -138,6 +125,7 @@ func theResolvedFloatValueShouldBe(ctx context.Context, expectedValue float64) e
 }
 
 func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, flagKey string) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.ObjectValue(ctx, flagKey, nil, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -180,6 +168,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.BooleanValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -217,6 +206,7 @@ func theResolvedBooleanDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -249,6 +239,7 @@ func theResolvedStringDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe
 func anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -281,6 +272,7 @@ func theResolvedIntegerDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aFloatFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.FloatValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -313,6 +305,7 @@ func theResolvedFloatDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 	ctx context.Context, flagKey string,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.ObjectValueDetails(ctx, flagKey, nil, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -402,6 +395,7 @@ func aFlagWithKeyIsEvaluatedWithDefaultValue(
 	if !ok {
 		return ctx, errors.New("no contextAwareEvaluationData found")
 	}
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.StringValue(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
@@ -432,6 +426,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 		return errors.New("no contextAwareEvaluationData found")
 	}
 
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.StringValue(
 		ctx, ctxAwareEvalData.flagKey, ctxAwareEvalData.defaultValue, openfeature.EvaluationContext{},
 	)
@@ -455,6 +450,7 @@ type stringFlagNotFoundData struct {
 func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, stringFlagNotFoundData{
@@ -464,7 +460,7 @@ func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue(
 	}), nil
 }
 
-func thenTheDefaultStringValueShouldBeReturned(ctx context.Context) (context.Context, error) {
+func theDefaultStringValueShouldBeReturned(ctx context.Context) (context.Context, error) {
 	strNotFoundData, ok := ctx.Value(ctxStorageKey{}).(stringFlagNotFoundData)
 	if !ok {
 		return ctx, errors.New("no stringFlagNotFoundData found")
@@ -518,6 +514,7 @@ type typeErrorData struct {
 func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
+	client := ctx.Value(ctxClientKey{}).(*openfeature.Client)
 	got, err := client.IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, typeErrorData{
@@ -527,7 +524,7 @@ func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue(
 	}), nil
 }
 
-func thenTheDefaultIntegerValueShouldBeReturned(ctx context.Context) (context.Context, error) {
+func theDefaultIntegerValueShouldBeReturned(ctx context.Context) (context.Context, error) {
 	typeErrData, ok := ctx.Value(ctxStorageKey{}).(typeErrorData)
 	if !ok {
 		return ctx, errors.New("no typeErrorData found")
@@ -568,7 +565,23 @@ func theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateATypeMismatchWit
 	return nil
 }
 
-func InitializeScenario(ctx *godog.ScenarioContext) {
+func anOpenfeatureClientIsRegisteredWithCacheDisabled(ctx context.Context) (context.Context, error) {
+	provider := flagd.NewProvider(flagd.WithPort(8013), flagd.WithoutCache())
+	openfeature.SetProvider(provider)
+	client := openfeature.NewClient("evaluation tests")
+
+	select {
+	case <-provider.IsReady():
+	case <-time.After(500 * time.Millisecond):
+		return ctx, errors.New("provider not ready after 500 milliseconds")
+	}
+
+	return context.WithValue(ctx, ctxClientKey{}, client), nil
+}
+
+func InitializeEvaluationScenario(ctx *godog.ScenarioContext) {
+	ctx.Step(`^an openfeature client is registered with cache disabled$`, anOpenfeatureClientIsRegisteredWithCacheDisabled)
+
 	ctx.Step(`^a boolean flag with key "([^"]*)" is evaluated with default value "([^"]*)"$`, aBooleanFlagWithKeyIsEvaluatedWithDefaultValue)
 	ctx.Step(`^the resolved boolean value should be "([^"]*)"$`, theResolvedBooleanValueShouldBe)
 
@@ -606,30 +619,33 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the resolved flag value is "([^"]*)" when the context is empty$`, theResolvedFlagValueIsWhenTheContextIsEmpty)
 
 	ctx.Step(`^a non-existent string flag with key "([^"]*)" is evaluated with details and a default value "([^"]*)"$`, aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue)
-	ctx.Step(`^then the default string value should be returned$`, thenTheDefaultStringValueShouldBeReturned)
+	ctx.Step(`^the default string value should be returned$`, theDefaultStringValueShouldBeReturned)
 	ctx.Step(`^the reason should indicate an error and the error code should indicate a missing flag with "([^"]*)"$`, theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateAMissingFlagWith)
 
 	ctx.Step(`^a string flag with key "([^"]*)" is evaluated as an integer, with details and a default value (\d+)$`, aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue)
-	ctx.Step(`^then the default integer value should be returned$`, thenTheDefaultIntegerValueShouldBeReturned)
+	ctx.Step(`^the default integer value should be returned$`, theDefaultIntegerValueShouldBeReturned)
 	ctx.Step(`^the reason should indicate an error and the error code should indicate a type mismatch with "([^"]*)"$`, theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateATypeMismatchWith)
+
+	ctx.Before(resetState)
 }
 
-func TestFeatures(t *testing.T) {
+func TestEvaluation(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
 
 	suite := godog.TestSuite{
-		ScenarioInitializer: InitializeScenario,
+		Name:                "evaluation.feature",
+		ScenarioInitializer: InitializeEvaluationScenario,
 		Options: &godog.Options{
 			Format:   "pretty",
-			Paths:    []string{"../test-harness/features"},
+			Paths:    []string{"../test-harness/features/evaluation.feature"},
 			TestingT: t, // Testing instance that will run subtests.
 		},
 	}
 
 	if suite.Run() != 0 {
-		t.Fatal("non-zero status returned, failed to run feature tests")
+		t.Fatal("non-zero status returned, failed to run evaluation tests")
 	}
 }
 

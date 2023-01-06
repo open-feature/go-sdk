@@ -40,6 +40,8 @@ jobs:
         image: ghcr.io/open-feature/flagd-testbed:latest
         ports:
           - 8013:8013
+        volumes:
+          - ${{ GITHUB_WORKSPACE }}/go-sdk/test-harness/testing-flags.json:/testing-flags.json
 
     steps:
       - name: Install Go
