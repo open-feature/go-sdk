@@ -67,6 +67,7 @@ func (h HookContext) EvaluationContext() EvaluationContext {
 }
 
 // NewHookContext constructs HookContext
+// Allows for simplified hook test cases while maintaining immutability
 func NewHookContext(
 	flagKey string,
 	flagType Type,
