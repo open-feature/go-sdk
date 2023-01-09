@@ -20,3 +20,9 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+sboms:
+  - documents:
+      - bom.json
+    artifacts: any
+    cmd: cyclonedx-gomod
+    args: [ "mod", "-licenses", "-std", "-json", "-output", "$document", "../" ]
