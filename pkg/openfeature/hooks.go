@@ -66,15 +66,36 @@ func (h HookContext) EvaluationContext() EvaluationContext {
 	return h.evaluationContext
 }
 
+// NewHookContext constructs HookContext
+// Allows for simplified hook test cases while maintaining immutability
+func NewHookContext(
+	flagKey string,
+	flagType Type,
+	defaultValue interface{},
+	clientMetadata ClientMetadata,
+	providerMetadata Metadata,
+	evaluationContext EvaluationContext,
+) HookContext {
+	return HookContext{
+		flagKey:           flagKey,
+		flagType:          flagType,
+		defaultValue:      defaultValue,
+		clientMetadata:    clientMetadata,
+		providerMetadata:  providerMetadata,
+		evaluationContext: evaluationContext,
+	}
+}
+
 // check at compile time that UnimplementedHook implements the Hook interface
 var _ Hook = UnimplementedHook{}
 
 // UnimplementedHook implements all hook methods with empty functions
 // Include UnimplementedHook in your hook struct to avoid defining empty functions
 // e.g.
-// type MyHook struct {
-//   UnimplementedHook
-// }
+//
+//	type MyHook struct {
+//	  UnimplementedHook
+//	}
 type UnimplementedHook struct{}
 
 func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
