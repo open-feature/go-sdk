@@ -32,6 +32,14 @@ type ClientMetadata struct {
 	name string
 }
 
+// NewClientMetadata constructs ClientMetadata
+// Allows for simplified hook test cases while maintaining immutability
+func NewClientMetadata(name string) ClientMetadata {
+	return ClientMetadata{
+		name: name,
+	}
+}
+
 // Name returns the client's name
 func (cm ClientMetadata) Name() string {
 	return cm.name
