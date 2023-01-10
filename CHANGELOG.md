@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/open-feature/go-sdk/compare/v1.0.1...v1.1.0) (2023-01-10)
+
+
+### Features
+
+* HookContext constructor ([#130](https://github.com/open-feature/go-sdk/issues/130)) ([1701648](https://github.com/open-feature/go-sdk/commit/1701648c5f137a78d850a613db2b159f44a19f86))
+* NewClientMetadata constructor  ([#133](https://github.com/open-feature/go-sdk/issues/133)) ([fa8b15b](https://github.com/open-feature/go-sdk/commit/fa8b15b4a66c1f606dcc3e631e427631ad63b8c5))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/cucumber/godog to v0.12.6 ([#121](https://github.com/open-feature/go-sdk/issues/121)) ([780d5a4](https://github.com/open-feature/go-sdk/commit/780d5a419ffbef2701d018531bbe30676d3bef4d))
+* **deps:** update module golang.org/x/text to v0.6.0 ([#115](https://github.com/open-feature/go-sdk/issues/115)) ([728cd4b](https://github.com/open-feature/go-sdk/commit/728cd4bbe4e71eaf03f93edfcd1d1255a616c675))
+
 ## [1.0.1](https://github.com/open-feature/go-sdk/compare/v1.0.0...v1.0.1) (2022-12-09)
 
 
