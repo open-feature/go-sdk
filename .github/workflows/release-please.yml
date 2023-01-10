@@ -40,7 +40,7 @@ jobs:
           go-version: ${{ env.DEFAULT_GO_VERSION }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           args: release --rm-dist
         env:
