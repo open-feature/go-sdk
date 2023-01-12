@@ -35,14 +35,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      flagd:
-        image: ghcr.io/open-feature/flagd-testbed:latest
-        ports:
-          - 8013:8013
-        volumes:
-          - ${{ GITHUB_WORKSPACE }}/go-sdk/test-harness/testing-flags.json:/testing-flags.json
-
     steps:
       - name: Install Go
         uses: actions/setup-go@v3
@@ -52,6 +44,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Run flagd-testbed
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: open-feature/flagd-testbed:latest
+          options: -d -p 8013:8013 -v $PWD/go-sdk/test-harness/testing-flags.json:/testing-flags.json
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
