@@ -225,7 +225,7 @@ func resetState(ctx context.Context, sc *godog.Scenario) (context.Context, error
 	return ctx, nil
 }
 
-func anOpenfeatureClientIsRegisteredWithCacheEnabled(ctx context.Context) (context.Context, error) {
+func aProviderIsRegisteredWithCacheEnabled(ctx context.Context) (context.Context, error) {
 	provider := flagd.NewProvider(flagd.WithPort(8013))
 	openfeature.SetProvider(provider)
 	client := openfeature.NewClient("caching tests")
@@ -245,7 +245,7 @@ func InitializeCachingScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^a string flag with key "([^"]*)" is evaluated with details and default value "([^"]*)"$`, aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue)
 	ctx.Step(`^an integer flag with key "([^"]*)" is evaluated with details and default value (\d+)$`, anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue)
 	ctx.Step(`^an object flag with key "([^"]*)" is evaluated with details and a null default value$`, anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue)
-	ctx.Step(`^an openfeature client is registered with cache enabled$`, anOpenfeatureClientIsRegisteredWithCacheEnabled)
+	ctx.Step(`^a provider is registered with cache enabled$`, aProviderIsRegisteredWithCacheEnabled)
 	ctx.Step(`^sleep for (\d+) milliseconds$`, sleepForMilliseconds)
 	ctx.Step(`^the flag\'s configuration with key "([^"]*)" is updated to defaultVariant "([^"]*)"$`, theFlagsConfigurationWithKeyIsUpdatedToDefaultVariant)
 	ctx.Step(`^the resolved boolean details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedBooleanDetailsReasonOfFlagWithKeyShouldBe)

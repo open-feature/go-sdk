@@ -600,7 +600,7 @@ func theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateATypeMismatchWit
 	return nil
 }
 
-func anOpenfeatureClientIsRegisteredWithCacheDisabled(ctx context.Context) (context.Context, error) {
+func aProviderIsRegisteredWithCacheDisabled(ctx context.Context) (context.Context, error) {
 	provider := flagd.NewProvider(flagd.WithPort(8013), flagd.WithoutCache())
 	openfeature.SetProvider(provider)
 	client := openfeature.NewClient("evaluation tests")
@@ -615,7 +615,7 @@ func anOpenfeatureClientIsRegisteredWithCacheDisabled(ctx context.Context) (cont
 }
 
 func InitializeEvaluationScenario(ctx *godog.ScenarioContext) {
-	ctx.Step(`^an openfeature client is registered with cache disabled$`, anOpenfeatureClientIsRegisteredWithCacheDisabled)
+	ctx.Step(`^a provider is registered with cache disabled$`, aProviderIsRegisteredWithCacheDisabled)
 
 	ctx.Step(`^a boolean flag with key "([^"]*)" is evaluated with default value "([^"]*)"$`, aBooleanFlagWithKeyIsEvaluatedWithDefaultValue)
 	ctx.Step(`^the resolved boolean value should be "([^"]*)"$`, theResolvedBooleanValueShouldBe)
