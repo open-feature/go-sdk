@@ -45,7 +45,7 @@ jobs:
         with:
           submodules: recursive
       - name: Run flagd-testbed
-        run: docker run -d -p 8013:8013 -v ${{ github.workspace }}/test-harness/testing-flags.json:/testing-flags.json
+        run: docker run -d -p 8013:8013 -v ${{ github.workspace }}/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:latest
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
