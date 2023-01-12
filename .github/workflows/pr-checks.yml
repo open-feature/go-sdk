@@ -47,8 +47,7 @@ jobs:
       - name: Run flagd-testbed
         uses: addnab/docker-run-action@v3
         with:
-          registry: ghcr.io
-          image: open-feature/flagd-testbed:latest
+          image: ghcr.io/open-feature/flagd-testbed:latest
           options: -d -p 8013:8013 -v $PWD/go-sdk/test-harness/testing-flags.json:/testing-flags.json
       - name: Setup Environment
         run: |
