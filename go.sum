@@ -680,13 +680,14 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.19.0/go.mod h1:LY+I3pBVzYsTBU1AnDwOSxaYi9WoWiqgwooUqq9yPro=
 github.com/onsi/gomega v1.20.1/go.mod h1:DtrZpjmvpn2mPm4YWQa0/ALMDj9v4YxLgojwPeREyVo=
 github.com/open-feature/flagd v0.2.2/go.mod h1:W2/qHl0RdDXDcNxk0w3Y4FIByp0ygg+cDV0p0jlt6MQ=
-github.com/open-feature/flagd v0.2.8-0.20221221122807-af6f133688b5 h1:oTg9T2yH7Y953YbqRYbnlXIq+mSuGEQQFAzqVA4g0Ns=
 github.com/open-feature/flagd v0.2.8-0.20221221122807-af6f133688b5/go.mod h1:xvovz/Y6PP1t8sq/d5qNXUi/VTWEsDYCXxTj6B6XoAI=
+github.com/open-feature/flagd v0.3.0 h1:qIcc078zacGB8Bf2ZuOuKjvwoFJyxZUYAQdHTLNagHw=
+github.com/open-feature/flagd v0.3.0/go.mod h1:MXtWeENFOVYnqXcGeN9zpSOag8t4QUyy7gnnKGD07q0=
 github.com/open-feature/go-sdk v0.5.1/go.mod h1:5yoSk6QrkAHXKQW9pD+ejxOx3uXUqJwoHmwEK4hlZvk=
 github.com/open-feature/go-sdk v1.0.1/go.mod h1:Ub7Bu2yjBFieDMQJZXoOV+x6Mhn9pudxG1CR7zsHBUg=
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.0.0-20221011094516-34ac39f0e96d/go.mod h1:AOpCyiTXl89u4lOWDKzN9UUKDnzCRJz9EhbPAFgZwws=
-github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.1 h1:kQOm94bZ0ap0gFD2LV43JNSHYiEEv7lkx0oQgKgJmIg=
-github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.1/go.mod h1:6wbRT4QeBJXkfyWnntXZbxm1noDTVEmDUmzrCW5kbEA=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.2 h1:RxuWl1D9MJJIzOpDA2cue0g9hmgMX8Nt4eV6jBt/+4E=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.2/go.mod h1:6wbRT4QeBJXkfyWnntXZbxm1noDTVEmDUmzrCW5kbEA=
 github.com/open-feature/open-feature-operator v0.0.10-0.20220826061622-a6421d66936a/go.mod h1:64BnRheofvmnkA2WEhue3Z+40zGDuZGMPhuftkcSBGo=
 github.com/open-feature/open-feature-operator v0.2.20/go.mod h1:xwo07+Z0r/ri7mh1XTt/oBolCZZCNPfIKEFuoPncut8=
 github.com/open-feature/schemas v0.0.0-20220809125333-185e3bd77775/go.mod h1:vj+rfTsOLlh5PtGGkAbitnJmFPYuTHXTjOy13kzNgKQ=

@@ -174,7 +174,14 @@ func aBooleanFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	return context.WithValue(ctx, ctxStorageKey{}, got), nil
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.BooleanEvaluationDetails)
+	if !ok {
+		store = make(map[string]openfeature.BooleanEvaluationDetails)
+	}
+
+	store[flagKey] = got
+
+	return context.WithValue(ctx, ctxStorageKey{}, store), nil
 }
 
 func theResolvedBooleanDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
@@ -185,9 +192,9 @@ func theResolvedBooleanDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 		return errors.New("value must be of type bool")
 	}
 
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.BooleanEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstBooleanEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if got.Value != value {
@@ -212,15 +219,22 @@ func aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	return context.WithValue(ctx, ctxStorageKey{}, got), nil
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.StringEvaluationDetails)
+	if !ok {
+		store = make(map[string]openfeature.StringEvaluationDetails)
+	}
+
+	store[flagKey] = got
+
+	return context.WithValue(ctx, ctxStorageKey{}, store), nil
 }
 
 func theResolvedStringDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 	ctx context.Context, value, variant, reason string,
 ) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.StringEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstStringEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if got.Value != value {
@@ -245,15 +259,22 @@ func anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	return context.WithValue(ctx, ctxStorageKey{}, got), nil
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.IntEvaluationDetails)
+	if !ok {
+		store = make(map[string]openfeature.IntEvaluationDetails)
+	}
+
+	store[flagKey] = got
+
+	return context.WithValue(ctx, ctxStorageKey{}, store), nil
 }
 
 func theResolvedIntegerDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 	ctx context.Context, value int64, variant, reason string,
 ) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.IntEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstIntegerEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if got.Value != value {
@@ -278,15 +299,22 @@ func aFloatFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	return context.WithValue(ctx, ctxStorageKey{}, got), nil
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.FloatEvaluationDetails)
+	if !ok {
+		store = make(map[string]openfeature.FloatEvaluationDetails)
+	}
+
+	store[flagKey] = got
+
+	return context.WithValue(ctx, ctxStorageKey{}, store), nil
 }
 
 func theResolvedFloatDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 	ctx context.Context, value float64, variant, reason string,
 ) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.FloatEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstFloatEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if got.Value != value {
@@ -311,15 +339,22 @@ func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	return context.WithValue(ctx, ctxStorageKey{}, got), nil
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.InterfaceEvaluationDetails)
+	if !ok {
+		store = make(map[string]openfeature.InterfaceEvaluationDetails)
+	}
+
+	store[flagKey] = got
+
+	return context.WithValue(ctx, ctxStorageKey{}, store), nil
 }
 
 func theResolvedObjectDetailsValueShouldBeContainFieldsAndWithValuesAndRespectively(
 	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int,
 ) (context.Context, error) {
-	gotResDetail, ok := ctx.Value(ctxStorageKey{}).(openfeature.InterfaceEvaluationDetails)
-	if !ok {
-		return ctx, errors.New("no flag resolution result")
+	gotResDetail, err := firstInterfaceEvaluationDetails(ctx)
+	if err != nil {
+		return ctx, err
 	}
 
 	got, ok := gotResDetail.Value.(*structpb.Struct)
@@ -349,9 +384,9 @@ func theResolvedObjectDetailsValueShouldBeContainFieldsAndWithValuesAndRespectiv
 }
 
 func theVariantShouldBeAndTheReasonShouldBe(ctx context.Context, variant, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.InterfaceEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstInterfaceEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if got.Variant != variant {

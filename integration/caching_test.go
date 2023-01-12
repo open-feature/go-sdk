@@ -51,10 +51,100 @@ func theFlagsConfigurationWithKeyIsUpdatedToDefaultVariant(flagKey, defaultVaria
 	return nil
 }
 
-func theResolvedBooleanDetailsReasonShouldBe(ctx context.Context, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.BooleanEvaluationDetails)
+func theResolvedBooleanDetailsReasonOfFlagWithKeyShouldBe(ctx context.Context, flagkey, reason string) error {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.BooleanEvaluationDetails)
 	if !ok {
 		return errors.New("no flag resolution result")
+	}
+
+	got, ok := store[flagkey]
+	if !ok {
+		return fmt.Errorf("flag result with key %s not found", flagkey)
+	}
+
+	if string(got.Reason) != reason {
+		return fmt.Errorf("expected reason to be %s, got %s", reason, got.Reason)
+	}
+
+	return nil
+}
+
+func theResolvedStringDetailsReasonOfFlagWithKeyShouldBe(ctx context.Context, flagkey, reason string) error {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.StringEvaluationDetails)
+	if !ok {
+		return errors.New("no flag resolution result")
+	}
+
+	got, ok := store[flagkey]
+	if !ok {
+		return fmt.Errorf("flag result with key %s not found", flagkey)
+	}
+
+	if string(got.Reason) != reason {
+		return fmt.Errorf("expected reason to be %s, got %s", reason, got.Reason)
+	}
+
+	return nil
+}
+
+func theResolvedIntegerDetailsReasonOfFlagWithKeyShouldBe(ctx context.Context, flagkey, reason string) error {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.IntEvaluationDetails)
+	if !ok {
+		return errors.New("no flag resolution result")
+	}
+
+	got, ok := store[flagkey]
+	if !ok {
+		return fmt.Errorf("flag result with key %s not found", flagkey)
+	}
+
+	if string(got.Reason) != reason {
+		return fmt.Errorf("expected reason to be %s, got %s", reason, got.Reason)
+	}
+
+	return nil
+}
+
+func theResolvedFloatDetailsReasonOfFlagWithKeyShouldBe(ctx context.Context, flagkey, reason string) error {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.FloatEvaluationDetails)
+	if !ok {
+		return errors.New("no flag resolution result")
+	}
+
+	got, ok := store[flagkey]
+	if !ok {
+		return fmt.Errorf("flag result with key %s not found", flagkey)
+	}
+
+	if string(got.Reason) != reason {
+		return fmt.Errorf("expected reason to be %s, got %s", reason, got.Reason)
+	}
+
+	return nil
+}
+
+func theResolvedObjectDetailsReasonOfFlagWithKeyShouldBe(ctx context.Context, flagkey, reason string) error {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.InterfaceEvaluationDetails)
+	if !ok {
+		return errors.New("no flag resolution result")
+	}
+
+	got, ok := store[flagkey]
+	if !ok {
+		return fmt.Errorf("flag result with key %s not found", flagkey)
+	}
+
+	if string(got.Reason) != reason {
+		return fmt.Errorf("expected reason to be %s, got %s", reason, got.Reason)
+	}
+
+	return nil
+}
+
+func theResolvedBooleanDetailsReasonShouldBe(ctx context.Context, reason string) error {
+	got, err := firstBooleanEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if string(got.Reason) != reason {
@@ -65,9 +155,9 @@ func theResolvedBooleanDetailsReasonShouldBe(ctx context.Context, reason string)
 }
 
 func theResolvedStringDetailsReasonShouldBe(ctx context.Context, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.StringEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstStringEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if string(got.Reason) != reason {
@@ -78,9 +168,9 @@ func theResolvedStringDetailsReasonShouldBe(ctx context.Context, reason string) 
 }
 
 func theResolvedIntegerDetailsReasonShouldBe(ctx context.Context, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.IntEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstIntegerEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if string(got.Reason) != reason {
@@ -91,9 +181,9 @@ func theResolvedIntegerDetailsReasonShouldBe(ctx context.Context, reason string)
 }
 
 func theResolvedFloatDetailsReasonShouldBe(ctx context.Context, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.FloatEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstFloatEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if string(got.Reason) != reason {
@@ -104,9 +194,9 @@ func theResolvedFloatDetailsReasonShouldBe(ctx context.Context, reason string) e
 }
 
 func theResolvedObjectDetailsReasonShouldBe(ctx context.Context, reason string) error {
-	got, ok := ctx.Value(ctxStorageKey{}).(openfeature.InterfaceEvaluationDetails)
-	if !ok {
-		return errors.New("no flag resolution result")
+	got, err := firstInterfaceEvaluationDetails(ctx)
+	if err != nil {
+		return err
 	}
 
 	if string(got.Reason) != reason {
@@ -154,15 +244,19 @@ func InitializeCachingScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^a float flag with key "([^"]*)" is evaluated with details and default value (\d+)\.(\d+)$`, aFloatFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue)
 	ctx.Step(`^a string flag with key "([^"]*)" is evaluated with details and default value "([^"]*)"$`, aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue)
 	ctx.Step(`^an integer flag with key "([^"]*)" is evaluated with details and default value (\d+)$`, anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue)
-	ctx.Step(`^an object flag with key "([^"]*)" is evaluated with a null default value$`, anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue)
 	ctx.Step(`^an object flag with key "([^"]*)" is evaluated with details and a null default value$`, anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue)
 	ctx.Step(`^an openfeature client is registered with cache enabled$`, anOpenfeatureClientIsRegisteredWithCacheEnabled)
 	ctx.Step(`^sleep for (\d+) milliseconds$`, sleepForMilliseconds)
 	ctx.Step(`^the flag\'s configuration with key "([^"]*)" is updated to defaultVariant "([^"]*)"$`, theFlagsConfigurationWithKeyIsUpdatedToDefaultVariant)
+	ctx.Step(`^the resolved boolean details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedBooleanDetailsReasonOfFlagWithKeyShouldBe)
 	ctx.Step(`^the resolved boolean details reason should be "([^"]*)"$`, theResolvedBooleanDetailsReasonShouldBe)
+	ctx.Step(`^the resolved float details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedFloatDetailsReasonOfFlagWithKeyShouldBe)
 	ctx.Step(`^the resolved float details reason should be "([^"]*)"$`, theResolvedFloatDetailsReasonShouldBe)
+	ctx.Step(`^the resolved integer details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedIntegerDetailsReasonOfFlagWithKeyShouldBe)
 	ctx.Step(`^the resolved integer details reason should be "([^"]*)"$`, theResolvedIntegerDetailsReasonShouldBe)
+	ctx.Step(`^the resolved object details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedObjectDetailsReasonOfFlagWithKeyShouldBe)
 	ctx.Step(`^the resolved object details reason should be "([^"]*)"$`, theResolvedObjectDetailsReasonShouldBe)
+	ctx.Step(`^the resolved string details reason of flag with key "([^"]*)" should be "([^"]*)"$`, theResolvedStringDetailsReasonOfFlagWithKeyShouldBe)
 	ctx.Step(`^the resolved string details reason should be "([^"]*)"$`, theResolvedStringDetailsReasonShouldBe)
 
 	ctx.Before(resetState)
