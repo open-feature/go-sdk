@@ -9,5 +9,13 @@
       "matchCurrentVersion": "!/^0/",
       "automerge": true
     }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["^Makefile$", "^README.md$", "^.github/workflows/pr-checks.yml$"],
+      "matchStrings": ["ghcr\\.io\\/open-feature\\/flagd-testbed:(?<currentValue>.*?)\\n"],
+      "depNameTemplate": "open-feature/test-harness",
+      "datasourceTemplate": "github-releases"
+    }
   ]
 }
