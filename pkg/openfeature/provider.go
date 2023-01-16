@@ -14,7 +14,11 @@ const (
 	SplitReason Reason = "SPLIT"
 	// DisabledReason - the resolved value was the result of the flag being disabled in the management system.
 	DisabledReason Reason = "DISABLED"
-	// UnknownReason - the reason for the resolved value could not be determined.
+	// StaticReason - the resolved value is static (no dynamic evaluation)
+	StaticReason Reason = "STATIC"
+	// CachedReason - the resolved value was retrieved from cache
+	CachedReason Reason = "CACHED"
+	// UnknownReason - the reason for the resolved value could not be determined.	
 	UnknownReason Reason = "UNKNOWN"
 	// ErrorReason - the resolved value was the result of an error.
 	ErrorReason Reason = "ERROR"
