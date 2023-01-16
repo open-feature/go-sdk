@@ -39,6 +39,11 @@ jobs:
         with:
           go-version: ${{ env.DEFAULT_GO_VERSION }}
 
+      - name: Install cyclonedx-gomod
+        uses: CycloneDX/gh-gomod-generate-sbom@v1
+        with:
+          version: v1.3.0
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:

@@ -123,6 +123,10 @@ make integration-test
 
 This repo uses Release Please to release packages. Release Please sets up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged. When Release Please's running PR is merged, any changed artifacts are published.
 
+#### SBOM
+
+The release workflow generates a SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
+
 ## Contacting us
 
 We hold regular meetings which you can see [here](https://github.com/open-feature/community/#meetings-and-events).
