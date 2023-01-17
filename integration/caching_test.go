@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -20,16 +19,19 @@ const flagConfigurationPath = "../test-harness/testing-flags.json"
 
 var testingFlags eval.Flags
 
-func init() {
-	file, err := os.Open(flagConfigurationPath)
+func loadFlagConfiguration(path string) (eval.Flags, error) {
+	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return eval.Flags{}, err
 	}
 
-	err = json.NewDecoder(file).Decode(&testingFlags)
+	var flags eval.Flags
+	err = json.NewDecoder(file).Decode(&flags)
 	if err != nil {
-		log.Fatal(fmt.Errorf("decode testing-flags.json: %v", err))
+		return eval.Flags{}, fmt.Errorf("decode %s: %v", path, err)
 	}
+
+	return flags, nil
 }
 
 func theFlagsConfigurationWithKeyIsUpdatedToDefaultVariant(flagKey, defaultVariant string) error {
@@ -265,6 +267,12 @@ func InitializeCachingScenario(ctx *godog.ScenarioContext) {
 func TestCaching(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
+	}
+
+	var err error
+	testingFlags, err = loadFlagConfiguration(flagConfigurationPath)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	suite := godog.TestSuite{
