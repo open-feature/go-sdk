@@ -6,9 +6,8 @@ require (
 	github.com/cucumber/godog v0.12.6
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.2
-	github.com/open-feature/flagd v0.3.4
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.4
+	github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1
 	golang.org/x/text v0.6.0
 )
 
@@ -22,6 +21,7 @@ require (
 	github.com/cucumber/messages-go/v16 v16.0.1 // indirect
 	github.com/diegoholiveira/jsonlogic/v3 v3.2.7 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-memdb v1.3.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
@@ -30,6 +30,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/open-feature/flagd v0.3.4 // indirect
 	github.com/open-feature/schemas v0.2.8 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
