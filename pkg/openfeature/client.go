@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/go-logr/logr"
 )
@@ -563,6 +564,18 @@ func (c *Client) evaluate(
 		"evaluationContext", evalCtx, "evaluationOptions", options,
 	)
 
+	evalDetails := InterfaceEvaluationDetails{
+		Value: defaultValue,
+		EvaluationDetails: EvaluationDetails{
+			FlagKey:  flag,
+			FlagType: flagType,
+		},
+	}
+
+	if !utf8.Valid([]byte(flag)) {
+		return evalDetails, NewParseErrorResolutionError("flag key is not a UTF-8 encoded string")
+	}
+
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	api.RLock()
 	provider := api.prvder
@@ -582,13 +595,6 @@ func (c *Client) evaluate(
 		clientMetadata:    c.metadata,
 		providerMetadata:  provider.Metadata(),
 		evaluationContext: evalCtx,
-	}
-	evalDetails := InterfaceEvaluationDetails{
-		Value: defaultValue,
-		EvaluationDetails: EvaluationDetails{
-			FlagKey:  flag,
-			FlagType: flagType,
-		},
 	}
 
 	defer func() {

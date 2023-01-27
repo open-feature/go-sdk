@@ -105,7 +105,7 @@ Run unit tests with `make test`.
 
 #### Integration tests
 
-The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features) using [`flagd`](https://github.com/open-feature/flagd).
+The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd) and [flagd](https://github.com/open-feature/flagd).
 If you'd like to run them locally, first pull the `test-harness` git submodule
 ```
 git submodule update --init --recursive
@@ -118,6 +118,20 @@ docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.j
 ```
 make integration-test
 ```
+
+#### Fuzzing
+
+[Go supports fuzzing natively as of 1.18](https://go.dev/security/fuzz/).
+The fuzzing suite is implemented as an integration of `go-sdk` with the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd) and [flagd](https://github.com/open-feature/flagd).
+The fuzzing tests are found in [./integration/evaluation_fuzz_test.go](./integration/evaluation_fuzz_test.go), they are dependent on the flagd testbed running, you can start it with
+```
+docker run -p 8013:8013 ghcr.io/open-feature/flagd-testbed:latest
+```
+then, to execute a fuzzing test, run the following
+```
+go test -fuzz=FuzzBooleanEvaluation ./integration/evaluation_fuzz_test.go
+```
+substituting the name of the fuzz as appropriate.
 
 ### Releases
 
