@@ -3,9 +3,8 @@ package integration_test
 import (
 	"testing"
 
-	"github.com/open-feature/go-sdk-contrib/tests/flagd/pkg/integration"
-
 	"github.com/cucumber/godog"
+	"github.com/open-feature/go-sdk-contrib/tests/flagd/pkg/integration"
 )
 
 const flagConfigurationPath = "../test-harness/testing-flags.json"

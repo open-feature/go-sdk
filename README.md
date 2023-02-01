@@ -14,7 +14,7 @@ We support multiple data types for flags (floats, integers, strings, booleans, o
 ## Installation
 
 ```shell
-go get github.com/open-feature/go-sdk
+go get github.com/open-feature/go-sdk/v2
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ package main
 
 import (
 	"context"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk/v2/pkg/openfeature"
 )
 
 func main() {
