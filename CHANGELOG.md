@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/open-feature/go-sdk/compare/v1.1.0...v1.2.0) (2023-02-02)
+
+
+### ⚠ NOTE
+
+* upgraded Go version to 1.18 ([#140](https://github.com/open-feature/go-sdk/issues/140))
+
+### Features
+
+* add STATIC, CACHED reasons ([#136](https://github.com/open-feature/go-sdk/issues/136)) ([ffdde63](https://github.com/open-feature/go-sdk/commit/ffdde638926e7f68837fd160c45fdc6cf1b34687))
+* upgrade Go to 1.18 ([#140](https://github.com/open-feature/go-sdk/issues/140)) ([c4c3c82](https://github.com/open-feature/go-sdk/commit/c4c3c828e581bdc3a29b4ec7859e1688ad9d9554))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/open-feature/flagd to v0.3.1 ([#137](https://github.com/open-feature/go-sdk/issues/137)) ([7f2652f](https://github.com/open-feature/go-sdk/commit/7f2652fcbbf26f962a902fd85945e5093d796f16))
+* **deps:** update module github.com/open-feature/flagd to v0.3.2 ([#145](https://github.com/open-feature/go-sdk/issues/145)) ([2f20979](https://github.com/open-feature/go-sdk/commit/2f20979e0c25a54710ac27759688c7824bf22429))
+* **deps:** update module github.com/open-feature/flagd to v0.3.4 ([#149](https://github.com/open-feature/go-sdk/issues/149)) ([31bd8b7](https://github.com/open-feature/go-sdk/commit/31bd8b7cc73279a58cb329f4d2f16064c1115e5a))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.3 ([#144](https://github.com/open-feature/go-sdk/issues/144)) ([1b9fd94](https://github.com/open-feature/go-sdk/commit/1b9fd94537c95e4ef53b24c24e5dc6e63026f71e))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.4 ([#146](https://github.com/open-feature/go-sdk/issues/146)) ([a45f288](https://github.com/open-feature/go-sdk/commit/a45f2888493f86759fbd513d3e06480ec83c30be))
+* validate that a flag key is valid UTF-8 & implemented fuzzing tests ([#141](https://github.com/open-feature/go-sdk/issues/141)) ([e3e7f82](https://github.com/open-feature/go-sdk/commit/e3e7f829c978a706297365bb72492785be09f39c))
+
 ## [1.1.0](https://github.com/open-feature/go-sdk/compare/v1.0.1...v1.1.0) (2023-01-10)
 
 
