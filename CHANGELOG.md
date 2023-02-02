@@ -3,9 +3,9 @@
 ## [1.2.0](https://github.com/open-feature/go-sdk/compare/v1.1.0...v1.2.0) (2023-02-02)
 
 
-### ⚠ BREAKING CHANGES
+### ⚠ NOTE
 
-* upgrade Go to 1.18 ([#140](https://github.com/open-feature/go-sdk/issues/140))
+* upgraded Go version to 1.18 ([#140](https://github.com/open-feature/go-sdk/issues/140))
 
 ### Features
 
