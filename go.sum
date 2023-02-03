@@ -51,6 +51,8 @@ github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bufbuild/connect-go v1.5.0 h1:IfbgbzzaaZvF+OM3SfxO2EjtvNJarNAz2DIRuuNjAgc=
 github.com/bufbuild/connect-go v1.5.0/go.mod h1:9iNvh/NOsfhNBUH5CtvXeVUskQO1xsrEviH7ZArwZ3I=
+github.com/bufbuild/connect-go v1.5.1 h1:ORhrSiu63hWxtuMmC/V1mKySSRhEySsW5RkHJcyJXBk=
+github.com/bufbuild/connect-go v1.5.1/go.mod h1:9iNvh/NOsfhNBUH5CtvXeVUskQO1xsrEviH7ZArwZ3I=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
@@ -211,6 +213,8 @@ github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.4 h1:AkaY+pqcjHQe8W/
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.4/go.mod h1:5U1Ry0iFy4j466JafVdK210E7wo6YODKnoaREyhCiHo=
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.5 h1:BjkVE9hSJguboRwtIVARH98Sb7d8vSTCAZy4arzgIMQ=
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.5/go.mod h1:dSN37PROGYK46bqPb5+GjeIBqZvBrvA6Av+KREovIqE=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.6 h1:nGdQ9HYe2tF4nJcLugwT4jDIRxMn3pfFP9JvepitTdQ=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.6/go.mod h1:dHB0hsYykZ1Un+CdnWErqLqUQswUADIvDg2VwDLx7gs=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1 h1:FATKM2T7O4OBeVF7pjJldwegbGm1JXhX11f5ffldbFA=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1/go.mod h1:Oo6p7XjTcMHbiWrU/UwxN6Uguo0lHGfMsTYksEs/cKE=
 github.com/open-feature/schemas v0.2.8 h1:oA75hJXpOd9SFgmNI2IAxWZkwzQPUDm7Jyyh3q489wM=
