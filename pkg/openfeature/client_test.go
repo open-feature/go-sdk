@@ -128,7 +128,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 		incorrectVariant = "Incorrect variant returned!"
 		incorrectReason  = "Incorrect reason returned!"
 	)
-	var objectValue = map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
+	objectValue := map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
 
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -168,7 +168,6 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			})
 
 		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
-
 		if err != nil {
 			t.Error(err)
 		}
@@ -819,8 +818,8 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 	mockProvider1.EXPECT().Hooks().Return([]Hook{mockProvider1Hook}).AnyTimes()
 
 	// set new provider during initial provider's Before hook
-	mockProvider1Hook.EXPECT().Before(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ HookContext, _ HookHints) (*EvaluationContext, error) {
+	mockProvider1Hook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ HookContext, _ HookHints) (*EvaluationContext, error) {
 			SetProvider(mockProvider2)
 			return nil, nil
 		})
@@ -828,8 +827,8 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 
 	mockProvider1.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	// ensure that the first provider's hooks are still fired
-	mockProvider1Hook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any())
-	mockProvider1Hook.EXPECT().Finally(gomock.Any(), gomock.Any())
+	mockProvider1Hook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	mockProvider1Hook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
 	client := NewClient("test")
 	_, err := client.BooleanValue(context.Background(), "foo", true, EvaluationContext{})
