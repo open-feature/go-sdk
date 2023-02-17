@@ -8,7 +8,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7
 	github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.7.0
 )
 
 require (
