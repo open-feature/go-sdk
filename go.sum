@@ -215,6 +215,8 @@ github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.5 h1:BjkVE9hSJguboRw
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.5/go.mod h1:dSN37PROGYK46bqPb5+GjeIBqZvBrvA6Av+KREovIqE=
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.6 h1:nGdQ9HYe2tF4nJcLugwT4jDIRxMn3pfFP9JvepitTdQ=
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.6/go.mod h1:dHB0hsYykZ1Un+CdnWErqLqUQswUADIvDg2VwDLx7gs=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7 h1:0s8reX/EfCNV37PsGSr55wUpppPtyp0jZKeuVAaWZ+4=
+github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7/go.mod h1:dHB0hsYykZ1Un+CdnWErqLqUQswUADIvDg2VwDLx7gs=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1 h1:FATKM2T7O4OBeVF7pjJldwegbGm1JXhX11f5ffldbFA=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.0.1/go.mod h1:Oo6p7XjTcMHbiWrU/UwxN6Uguo0lHGfMsTYksEs/cKE=
 github.com/open-feature/schemas v0.2.8 h1:oA75hJXpOd9SFgmNI2IAxWZkwzQPUDm7Jyyh3q489wM=
