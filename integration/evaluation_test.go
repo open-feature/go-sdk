@@ -14,7 +14,7 @@ func TestEvaluation(t *testing.T) {
 
 	suite := godog.TestSuite{
 		Name:                "evaluation.feature",
-		ScenarioInitializer: integration.InitializeEvaluationScenario,
+		ScenarioInitializer: integration.InitializeEvaluationScenario(),
 		Options: &godog.Options{
 			Format:   "pretty",
 			Paths:    []string{"../test-harness/features/evaluation.feature"},
