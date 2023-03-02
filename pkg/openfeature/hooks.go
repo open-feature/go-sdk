@@ -1,13 +1,15 @@
 package openfeature
 
+import "context"
+
 // Hook allows application developers to add arbitrary behavior to the flag evaluation lifecycle.
 // They operate similarly to middleware in many web frameworks.
 // https://github.com/open-feature/spec/blob/main/specification/hooks.md
 type Hook interface {
-	Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
-	After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
-	Error(hookContext HookContext, err error, hookHints HookHints)
-	Finally(hookContext HookContext, hookHints HookHints)
+	Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
+	After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
+	Error(ctx context.Context, hookContext HookContext, err error, hookHints HookHints)
+	Finally(ctx context.Context, hookContext HookContext, hookHints HookHints)
 }
 
 // HookHints contains a map of hints for hooks
@@ -98,14 +100,12 @@ var _ Hook = UnimplementedHook{}
 //	}
 type UnimplementedHook struct{}
 
-func (u UnimplementedHook) Before(hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
+func (UnimplementedHook) Before(context.Context, HookContext, HookHints) (*EvaluationContext, error) {
 	return nil, nil
 }
 
-func (u UnimplementedHook) After(hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error {
+func (UnimplementedHook) After(context.Context, HookContext, InterfaceEvaluationDetails, HookHints) error {
 	return nil
 }
-
-func (u UnimplementedHook) Error(hookContext HookContext, err error, hookHints HookHints) {}
-
-func (u UnimplementedHook) Finally(hookContext HookContext, hookHints HookHints) {}
+func (UnimplementedHook) Error(context.Context, HookContext, error, HookHints) {}
+func (UnimplementedHook) Finally(context.Context, HookContext, HookHints)      {}
