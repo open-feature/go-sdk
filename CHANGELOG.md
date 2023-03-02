@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0](https://github.com/open-feature/go-sdk/compare/v1.2.0...v1.3.0) (2023-03-02)
+
+
+### Features
+
+* go context in hook calls ([#163](https://github.com/open-feature/go-sdk/issues/163)) ([fc569ec](https://github.com/open-feature/go-sdk/commit/fc569ec81c0fe64779cf04ed6b8b7fd14d21b395))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.5 ([#154](https://github.com/open-feature/go-sdk/issues/154)) ([ae3f3da](https://github.com/open-feature/go-sdk/commit/ae3f3da27b8b226f9f3b44a5300f4d2fba3d59df))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.6 ([#156](https://github.com/open-feature/go-sdk/issues/156)) ([2432c20](https://github.com/open-feature/go-sdk/commit/2432c200332559816ddc237dbb9ff8fd9b3bbfcc))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.7 ([#161](https://github.com/open-feature/go-sdk/issues/161)) ([cfe1d74](https://github.com/open-feature/go-sdk/commit/cfe1d7432ee96c4f18fa2d7eb5e18d502b21f693))
+* **deps:** update module golang.org/x/text to v0.7.0 ([#157](https://github.com/open-feature/go-sdk/issues/157)) ([6857bb3](https://github.com/open-feature/go-sdk/commit/6857bb3c2b4fabb451aba0e04ba6fbfbbaf3f920))
+
 ## [1.2.0](https://github.com/open-feature/go-sdk/compare/v1.1.0...v1.2.0) (2023-02-02)
 
 
