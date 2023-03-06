@@ -5,8 +5,8 @@ mockgen:
 	mockgen -source=pkg/openfeature/mutex.go -destination=pkg/openfeature/mutex_mock_test.go -package=openfeature
 test:
 	go test --short -cover ./...
-integration-test: # dependent on: docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:latest
-	go test -cover ./...
+integration-test: # dependent on: flagd start -f file:test-harness/symlink_testing-flags.json
+	go test -cover ./integration/...
 	cd test-harness; git restore testing-flags.json; cd .. # reset testing-flags.json
 
 lint:

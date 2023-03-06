@@ -108,11 +108,11 @@ Run unit tests with `make test`.
 The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd), [flagd](https://github.com/open-feature/flagd) and [the flagd test module](https://github.com/open-feature/go-sdk-contrib/tree/main/tests/flagd).
 If you'd like to run them locally, first pull the `test-harness` git submodule
 ```
-git submodule update --init --recursive
+git pull --recurse-submodules origin main
 ```
-then start the flagd testbed with 
+then start the flagd binary (installation instructions [here](https://github.com/open-feature/flagd/blob/main/docs/usage/getting_started.md#go-binary)) with
 ```
-docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:latest
+flagd start -f file:test-harness/symlink_testing-flags.json
 ```
  and finally run
 ```

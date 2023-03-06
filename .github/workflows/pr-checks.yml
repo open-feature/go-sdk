@@ -32,7 +32,7 @@ jobs:
       - name: Run linter
         run: make lint
 
-  test:
+  test: # caching tests are disabled due to slow file I/O in github actions
     runs-on: ubuntu-latest
 
     steps:
@@ -45,7 +45,7 @@ jobs:
         with:
           submodules: recursive
       - name: Run flagd-testbed
-        run: docker run -d -p 8013:8013 -v ${{ github.workspace }}/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:v0.2.2
+        run: docker run -d -p 8013:8013 ghcr.io/open-feature/flagd-testbed:v0.2.2
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -57,7 +57,9 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
-      - name: Run tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Run unit tests
+        run: go test -short -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+      - name: Run evaluation integration tests
+        run: go test -cover ./integration -run TestEvaluation

@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/mock v1.6.0
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7
-	github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0
+	github.com/open-feature/go-sdk-contrib/tests/flagd v1.2.1
 	golang.org/x/text v0.8.0
 )
 
