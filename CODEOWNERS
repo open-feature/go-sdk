@@ -1,3 +1,6 @@
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence
-* @skyerus @beeme1mr @davejohnston
+#
+# Managed by Peribolos: https://github.com/open-feature/community/blob/main/config/open-feature/sdk-golang/workgroup.yaml
+#
+* @open-feature/sdk-golang-maintainers
