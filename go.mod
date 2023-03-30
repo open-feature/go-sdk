@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cucumber/godog v0.12.6
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/golang/mock v1.6.0
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7
 	github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0
