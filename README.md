@@ -77,11 +77,85 @@ For complete documentation, visit: https://openfeature.dev/docs/category/concept
 
 ### Context-aware evaluation:
 
-TODO
+ometimes the value of a flag must take into account some dynamic criteria about the application or user, such as the user location, IP, email address, or the location of the server.
+In OpenFeature, we refer to this as [`targeting`](https://openfeature.dev/specification/glossary#targeting).
+If the flag system you're using supports targeting, you can provide the input data using the `EvaluationContext`.
+
+```go
+// add a value to the global context
+openfeature.SetEvaluationContext(openfeature.NewEvaluationContext(
+    "",
+    map[string]interface{}{
+        "myGlobalKey":  "myGlobalValue",
+    },
+))
+
+// add a value to the client context
+client := openfeature.NewClient("my-app")
+client.SetEvaluationContext(openfeature.NewEvaluationContext(
+    "", 
+    map[string]interface{}{
+        "myGlobalKey":  "myGlobalValue",
+    },
+))
+
+// add a value to the invocation context
+evalCtx := openfeature.NewEvaluationContext(
+    "",
+    map[string]interface{}{
+        "myInvocationKey": "myInvocationValue",
+    },
+)
+boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
+```
 
 ### Providers:
 
-TODO
+To develop a provider, you need to create a new project and include the OpenFeature SDK as a dependency. This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/go-sdk-contrib) available under the OpenFeature organization. Finally, you’ll then need to write the provider itself. This can be accomplished by implementing the `FeatureProvider` interface exported by the OpenFeature SDK.
+
+```go
+package provider
+
+// MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
+type MyFeatureProvider struct{}
+
+// Metadata returns the metadata of the provider
+func (e MyFeatureProvider) Metadata() Metadata {
+    return Metadata{Name: "MyFeatureProvider"}
+}
+
+// BooleanEvaluation returns a boolean flag
+func (e MyFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail {
+    // code to evaluate boolean
+}
+
+// StringEvaluation returns a string flag
+func (e MyFeatureProvider) StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail {
+    // code to evaluate string
+}
+
+// FloatEvaluation returns a float flag
+func (e MyFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail {
+    // code to evaluate float
+}
+
+// IntEvaluation returns an int flag
+func (e MyFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail {
+    // code to evaluate int
+}
+
+// ObjectEvaluation returns an object flag
+func (e MyFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail {
+    // code to evaluate object
+}
+
+// Hooks returns hooks
+func (e MyFeatureProvider) Hooks() []Hook {
+    // code to retrieve hooks
+}
+```
+
+See [here](https://openfeature.dev/docs/reference/technologies/server/go) for a catalog of available providers.
 
 ### Hooks:
 
