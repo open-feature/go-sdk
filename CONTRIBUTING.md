@@ -1,6 +1,4 @@
-## Development
-
-Welcome!
+## Welcome!
 
 Thank you very much for contributing to this project. Any issues and pull requests following these guidelines are welcome.
 
@@ -13,6 +11,8 @@ TLDR: be respectful.
 
 Vendor specific details are intentionally not included in this module in order to be lightweight and agnostic.
 If there are changes needed to enable vendor specific behaviour in code or other extension points, check out [the spec](https://github.com/open-feature/spec).
+
+## Development
 
 ### Installation and Dependencies
 
