@@ -77,7 +77,7 @@ For complete documentation, visit: https://openfeature.dev/docs/category/concept
 
 ### Context-aware evaluation:
 
-ometimes the value of a flag must take into account some dynamic criteria about the application or user, such as the user location, IP, email address, or the location of the server.
+Sometimes the value of a flag must take into account some dynamic criteria about the application or user, such as the user location, IP, email address, or the location of the server.
 In OpenFeature, we refer to this as [`targeting`](https://openfeature.dev/specification/glossary#targeting).
 If the flag system you're using supports targeting, you can provide the input data using the `EvaluationContext`.
 
