@@ -84,7 +84,7 @@ If the flag system you're using supports targeting, you can provide the input da
 ```go
 // add a value to the global context
 openfeature.SetEvaluationContext(openfeature.NewEvaluationContext(
-    "",
+    "foo",
     map[string]interface{}{
         "myGlobalKey":  "myGlobalValue",
     },
