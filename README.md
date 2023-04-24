@@ -1,4 +1,13 @@
-# OpenFeature SDK for Go
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/white/openfeature-horizontal-white.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/black/openfeature-horizontal-black.svg">
+    <img align="center" alt="OpenFeature Logo">
+  </picture>
+</p>
+
+<h2 align="center">OpenFeature Go SDK</h2>
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
 [![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
@@ -7,17 +16,40 @@
 [![v0.5.1](https://img.shields.io/static/v1?label=Specification&message=v0.5.1&color=yellow)](https://github.com/open-feature/spec/tree/v0.5.1)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6601/badge)](https://bestpractices.coreinfrastructure.org/projects/6601)
 
-This is the Go implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
+## 👋 Hey there! Thanks for checking out the OpenFeature Go SDK
 
-We support multiple data types for flags (floats, integers, strings, booleans, objects) as well as hooks, which can alter the lifecycle of a flag evaluation.
+### What is OpenFeature?
 
-## Installation
+[OpenFeature][openfeature-website] is an open standard that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
+
+### Why standardize feature flags?
+
+Standardizing feature flags unifies tools and vendors behind a common interface which avoids vendor lock-in at the code level. Additionally, it offers a framework for building extensions and integrations and allows providers to focus on their unique value proposition.
+
+## 🔍 Requirements:
+
+- Go 1.18+
+
+## 📦 Installation:
 
 ```shell
 go get github.com/open-feature/go-sdk
 ```
 
-## Usage
+### Software Bill of Materials (SBOM)
+
+The release workflow generates a SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
+
+## 🌟 Features:
+
+- support for various backend [providers](https://openfeature.dev/docs/reference/concepts/provider)
+- easy integration and extension via [hooks](https://openfeature.dev/docs/reference/concepts/hooks)
+- bool, string, numeric and object flag types
+- [context-aware](https://openfeature.dev/docs/reference/concepts/evaluation-context) evaluation
+
+## 🚀 Usage:
+
+### Basics:
 
 To configure the sdk you'll need to add a provider to the `openfeature` global singleton. From there, you can generate a `Client` which is usable by your code.
 While you'll likely want a provider for your specific backend, we've provided a `NoopProvider`, which simply returns the default passed in.
@@ -43,7 +75,89 @@ A list of available providers can be found [here](https://openfeature.dev/docs/r
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
-### Hooks
+### Context-aware evaluation:
+
+Sometimes the value of a flag must take into account some dynamic criteria about the application or user, such as the user location, IP, email address, or the location of the server.
+In OpenFeature, we refer to this as [`targeting`](https://openfeature.dev/specification/glossary#targeting).
+If the flag system you're using supports targeting, you can provide the input data using the `EvaluationContext`.
+
+```go
+// add a value to the global context
+openfeature.SetEvaluationContext(openfeature.NewEvaluationContext(
+    "foo",
+    map[string]interface{}{
+        "myGlobalKey":  "myGlobalValue",
+    },
+))
+
+// add a value to the client context
+client := openfeature.NewClient("my-app")
+client.SetEvaluationContext(openfeature.NewEvaluationContext(
+    "", 
+    map[string]interface{}{
+        "myGlobalKey":  "myGlobalValue",
+    },
+))
+
+// add a value to the invocation context
+evalCtx := openfeature.NewEvaluationContext(
+    "",
+    map[string]interface{}{
+        "myInvocationKey": "myInvocationValue",
+    },
+)
+boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
+```
+
+### Providers:
+
+To develop a provider, you need to create a new project and include the OpenFeature SDK as a dependency. This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/go-sdk-contrib) available under the OpenFeature organization. Finally, you’ll then need to write the provider itself. This can be accomplished by implementing the `FeatureProvider` interface exported by the OpenFeature SDK.
+
+```go
+package provider
+
+// MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
+type MyFeatureProvider struct{}
+
+// Metadata returns the metadata of the provider
+func (e MyFeatureProvider) Metadata() Metadata {
+    return Metadata{Name: "MyFeatureProvider"}
+}
+
+// BooleanEvaluation returns a boolean flag
+func (e MyFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail {
+    // code to evaluate boolean
+}
+
+// StringEvaluation returns a string flag
+func (e MyFeatureProvider) StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail {
+    // code to evaluate string
+}
+
+// FloatEvaluation returns a float flag
+func (e MyFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail {
+    // code to evaluate float
+}
+
+// IntEvaluation returns an int flag
+func (e MyFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail {
+    // code to evaluate int
+}
+
+// ObjectEvaluation returns an object flag
+func (e MyFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail {
+    // code to evaluate object
+}
+
+// Hooks returns hooks
+func (e MyFeatureProvider) Hooks() []Hook {
+    // code to retrieve hooks
+}
+```
+
+See [here](https://openfeature.dev/docs/reference/technologies/server/go) for a catalog of available providers.
+
+### Hooks:
 
 Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
 
@@ -65,9 +179,7 @@ Register the hook at global, client or invocation level.
 
 A list of available hooks can be found [here](https://openfeature.dev/docs/reference/technologies/server/go).
 
-## Configuration
-
-### Logging
+### Logging:
 
 If not configured, the logger falls back to the standard Go log package at error level only.
 
@@ -89,74 +201,29 @@ c := openfeature.NewClient("log").WithLogger(l) // set the logger at client leve
 [logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
 The sdk logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
 
-## Development
+## ⭐️ Support the project
 
-### Installation and Dependencies
+- Give this repo a ⭐️!
+- Follow us social media:
+  - Twitter: [@openfeature](https://twitter.com/openfeature)
+  - LinkedIn: [OpenFeature](https://www.linkedin.com/company/openfeature/)
+- Join us on [Slack](https://cloud-native.slack.com/archives/C0344AANLA1)
+- For more check out our [community page](https://openfeature.dev/community/)
 
-Install dependencies with `go get ./...`
+## 🤝 Contributing
 
-We value having as few runtime dependencies as possible. The addition of any dependencies requires careful consideration and review.
+Interested in contributing? Great, we'd love your help! To get started, take a look at the [CONTRIBUTING](CONTRIBUTING.md) guide.
 
-### Testing
-
-#### Unit tests
-
-Run unit tests with `make test`.
-
-#### Integration tests
-
-The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd), [flagd](https://github.com/open-feature/flagd) and [the flagd test module](https://github.com/open-feature/go-sdk-contrib/tree/main/tests/flagd).
-If you'd like to run them locally, first pull the `test-harness` git submodule
-```
-git submodule update --init --recursive
-```
-then start the flagd testbed with 
-```
-docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:latest
-```
- and finally run
-```
-make integration-test
-```
-
-#### Fuzzing
-
-[Go supports fuzzing natively as of 1.18](https://go.dev/security/fuzz/).
-The fuzzing suite is implemented as an integration of `go-sdk` with the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd) and [flagd](https://github.com/open-feature/flagd).
-The fuzzing tests are found in [./integration/evaluation_fuzz_test.go](./integration/evaluation_fuzz_test.go), they are dependent on the flagd testbed running, you can start it with
-```
-docker run -p 8013:8013 ghcr.io/open-feature/flagd-testbed:latest
-```
-then, to execute a fuzzing test, run the following
-```
-go test -fuzz=FuzzBooleanEvaluation ./integration/evaluation_fuzz_test.go
-```
-substituting the name of the fuzz as appropriate.
-
-### Releases
-
-This repo uses Release Please to release packages. Release Please sets up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged. When Release Please's running PR is merged, any changed artifacts are published.
-
-#### SBOM
-
-The release workflow generates a SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
-
-## Contacting us
-
-We hold regular meetings which you can see [here](https://github.com/open-feature/community/#meetings-and-events).
-
-We are also present in the `#openfeature` channel in the [CNCF slack](https://slack.cncf.io/).
-
-## Contributors
-
-Thanks so much to our contributors.
+### Thanks to everyone that has already contributed
 
 <a href="https://github.com/open-feature/go-sdk/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=open-feature/go-sdk" />
+  <img src="https://contrib.rocks/image?repo=open-feature/go-sdk" alt="Pictures of the folks who have contributed to the project" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
 
-## License
+## 📜 License
 
-Apache License 2.0
+[Apache License 2.0](LICENSE)
+
+[openfeature-website]: https://openfeature.dev
