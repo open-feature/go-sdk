@@ -1,10 +1,10 @@
-package integration_test
+package e2e_test
 
 import (
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/open-feature/go-sdk-contrib/tests/flagd/pkg/integration"
+	e2e "github.com/open-feature/go-sdk-contrib/tests/flagd/pkg/integration"
 )
 
 func TestEvaluation(t *testing.T) {
@@ -14,7 +14,7 @@ func TestEvaluation(t *testing.T) {
 
 	suite := godog.TestSuite{
 		Name:                "evaluation.feature",
-		ScenarioInitializer: integration.InitializeEvaluationScenario(),
+		ScenarioInitializer: e2e.InitializeEvaluationScenario(),
 		Options: &godog.Options{
 			Format:   "pretty",
 			Paths:    []string{"../test-harness/features/evaluation.feature"},
