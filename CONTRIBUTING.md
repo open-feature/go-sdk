@@ -32,9 +32,9 @@ When writing a test to cover a spec requirement use the test naming convention `
 
 Run unit tests with `make test`.
 
-#### Integration tests
+#### End-to-End tests
 
-The continuous integration runs a set of [gherkin integration tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd), [flagd](https://github.com/open-feature/flagd) and [the flagd test module](https://github.com/open-feature/go-sdk-contrib/tree/main/tests/flagd).
+The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd), [flagd](https://github.com/open-feature/flagd) and [the flagd test module](https://github.com/open-feature/go-sdk-contrib/tree/main/tests/flagd).
 If you'd like to run them locally, first pull the `test-harness` git submodule
 ```
 git submodule update --init --recursive
@@ -45,7 +45,7 @@ docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.j
 ```
  and finally run
 ```
-make integration-test
+make e2e-test
 ```
 
 #### Fuzzing
