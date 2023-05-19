@@ -164,7 +164,11 @@ type ResolutionDetail struct {
 	Reason       Reason
 	ErrorCode    ErrorCode
 	ErrorMessage string
+	FlagMetadata *FlagMetadata
 }
+
+// FlagMetadata provides a mechanism for providers to surface additional information about a feature flag
+type FlagMetadata map[string]interface{}
 
 // Option applies a change to EvaluationOptions
 type Option func(*EvaluationOptions)
