@@ -164,11 +164,69 @@ type ResolutionDetail struct {
 	Reason       Reason
 	ErrorCode    ErrorCode
 	ErrorMessage string
-	FlagMetadata *FlagMetadata
+	FlagMetadata FlagMetadata
 }
 
-// FlagMetadata provides a mechanism for providers to surface additional information about a feature flag
+// A structure which supports definition of arbitrary properties, with keys of type string, and values of type boolean, string, int64 or float64.
+//
+// This structure is populated by a provider for use by an Application Author (via the Evaluation API) or an Application Integrator (via hooks).
 type FlagMetadata map[string]interface{}
+
+// Fetch string value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+func (f FlagMetadata) GetString(key string) (string, error) {
+	v, ok := f[key]
+	if !ok {
+		return "", fmt.Errorf("key %s does not exist in FlagMetadata", key)
+	}
+	switch t := v.(type) {
+	case string:
+		return v.(string), nil
+	default:
+		return "", fmt.Errorf("wrong type for key %s, expected string, got %T", key, t)
+	}
+}
+
+// Fetch bool value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+func (f FlagMetadata) GetBool(key string) (bool, error) {
+	v, ok := f[key]
+	if !ok {
+		return false, fmt.Errorf("key %s does not exist in FlagMetadata", key)
+	}
+	switch t := v.(type) {
+	case bool:
+		return v.(bool), nil
+	default:
+		return false, fmt.Errorf("wrong type for key %s, expected bool, got %T", key, t)
+	}
+}
+
+// Fetch int64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+func (f FlagMetadata) GetInt(key string) (int64, error) {
+	v, ok := f[key]
+	if !ok {
+		return 0, fmt.Errorf("key %s does not exist in FlagMetadata", key)
+	}
+	switch t := v.(type) {
+	case int64:
+		return v.(int64), nil
+	default:
+		return 0, fmt.Errorf("wrong type for key %s, expected string, got %T", key, t)
+	}
+}
+
+// Fetch float64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+func (f FlagMetadata) GetFloat(key string) (float64, error) {
+	v, ok := f[key]
+	if !ok {
+		return 0, fmt.Errorf("key %s does not exist in FlagMetadata", key)
+	}
+	switch t := v.(type) {
+	case float64:
+		return v.(float64), nil
+	default:
+		return 0, fmt.Errorf("wrong type for key %s, expected string, got %T", key, t)
+	}
+}
 
 // Option applies a change to EvaluationOptions
 type Option func(*EvaluationOptions)

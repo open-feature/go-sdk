@@ -630,6 +630,75 @@ func TestRequirement_1_4_12(t *testing.T) {
 	}
 }
 
+// Requirement_1_4_13
+// If the `flag metadata` field in the `flag resolution` structure returned by the configured `provider` is set,
+// the `evaluation details` structure's `flag metadata` field MUST contain that value. Otherwise,
+// it MUST contain an empty record.
+func TestRequirement_1_4_13(t *testing.T) {
+	client := NewClient("test-client")
+	flagKey := "flag-key"
+	evalCtx := EvaluationContext{}
+	flatCtx := flattenContext(evalCtx)
+
+	ctrl := gomock.NewController(t)
+	t.Run("No Metadata", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := true
+		mockProvider.EXPECT().Metadata().AnyTimes()
+		mockProvider.EXPECT().Hooks().AnyTimes()
+		mockProvider.EXPECT().BooleanEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
+			Return(BoolResolutionDetail{
+				Value: true,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					FlagMetadata: nil,
+				},
+			}).Times(1)
+		SetProvider(mockProvider)
+
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if evDetails.FlagMetadata != nil {
+			t.Errorf(
+				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
+				evDetails.FlagMetadata, nil,
+			)
+		}
+	})
+
+	t.Run("Metadata present", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := true
+		metadata := FlagMetadata{
+			"bing": "bong",
+		}
+		mockProvider.EXPECT().Metadata().AnyTimes()
+		mockProvider.EXPECT().Hooks().AnyTimes()
+		mockProvider.EXPECT().BooleanEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
+			Return(BoolResolutionDetail{
+				Value: true,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					FlagMetadata: metadata,
+				},
+			}).Times(1)
+		SetProvider(mockProvider)
+
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(metadata, evDetails.FlagMetadata) {
+			t.Errorf(
+				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
+				evDetails.FlagMetadata, metadata,
+			)
+		}
+	})
+}
+
 // Requirement_1_5_1
 // The `evaluation options` structure's `hooks` field denotes an ordered collection of hooks that the client MUST
 // execute for the respective flag evaluation, in addition to those already configured.
