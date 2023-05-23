@@ -1032,24 +1032,27 @@ func TestFlagMetadataAccessors(t *testing.T) {
 
 	t.Run("int", func(t *testing.T) {
 		expectedValue := int64(12)
-		key := "int"
-		key2 := "not-int"
 		metadata := FlagMetadata{
-			key:  expectedValue,
-			key2: true,
+			"int":    int(12),
+			"int8":   int8(12),
+			"int16":  int16(12),
+			"int32":  int32(12),
+			"int164": int32(12),
 		}
-		val, err := metadata.GetInt(key)
-		if err != nil {
-			t.Error("unexpected error value, expected nil", err)
+		for k, _ := range metadata {
+			val, err := metadata.GetInt(k)
+			if err != nil {
+				t.Error("unexpected error value, expected nil", err)
+			}
+			if val != expectedValue {
+				t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+			}
 		}
-		if val != expectedValue {
-			t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+
+		metadata = FlagMetadata{
+			"not-int": true,
 		}
-		val, err = metadata.GetInt(key2)
-		if err == nil {
-			t.Error("unexpected error value", err)
-		}
-		val, err = metadata.GetInt("not-in-map")
+		_, err := metadata.GetInt("not-int")
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
@@ -1057,24 +1060,24 @@ func TestFlagMetadataAccessors(t *testing.T) {
 
 	t.Run("float", func(t *testing.T) {
 		expectedValue := float64(12)
-		key := "float"
-		key2 := "not-float"
 		metadata := FlagMetadata{
-			key:  expectedValue,
-			key2: true,
+			"float32": float32(12),
+			"float64": float64(12),
 		}
-		val, err := metadata.GetFloat(key)
-		if err != nil {
-			t.Error("unexpected error value, expected nil", err)
+		for k, _ := range metadata {
+			val, err := metadata.GetFloat(k)
+			if err != nil {
+				t.Error("unexpected error value, expected nil", err)
+			}
+			if val != expectedValue {
+				t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+			}
 		}
-		if val != expectedValue {
-			t.Errorf("wrong value returned from FlagMetadata, expected %f, got %f", val, expectedValue)
+
+		metadata = FlagMetadata{
+			"not-float": true,
 		}
-		val, err = metadata.GetFloat(key2)
-		if err == nil {
-			t.Error("unexpected error value", err)
-		}
-		val, err = metadata.GetFloat("not-in-map")
+		_, err := metadata.GetInt("not-float")
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}

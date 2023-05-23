@@ -207,6 +207,14 @@ func (f FlagMetadata) GetInt(key string) (int64, error) {
 		return 0, fmt.Errorf("key %s does not exist in FlagMetadata", key)
 	}
 	switch t := v.(type) {
+	case int:
+		return int64(v.(int)), nil
+	case int8:
+		return int64(v.(int8)), nil
+	case int16:
+		return int64(v.(int16)), nil
+	case int32:
+		return int64(v.(int32)), nil
 	case int64:
 		return v.(int64), nil
 	default:
@@ -221,6 +229,8 @@ func (f FlagMetadata) GetFloat(key string) (float64, error) {
 		return 0, fmt.Errorf("key %s does not exist in FlagMetadata", key)
 	}
 	switch t := v.(type) {
+	case float32:
+		return float64(v.(float32)), nil
 	case float64:
 		return v.(float64), nil
 	default:
