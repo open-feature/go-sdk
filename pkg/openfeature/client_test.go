@@ -1056,6 +1056,10 @@ func TestFlagMetadataAccessors(t *testing.T) {
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
+		_, err = metadata.GetInt("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
 	})
 
 	t.Run("float", func(t *testing.T) {
@@ -1078,6 +1082,10 @@ func TestFlagMetadataAccessors(t *testing.T) {
 			"not-float": true,
 		}
 		_, err := metadata.GetInt("not-float")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		_, err = metadata.GetInt("not-in-map")
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
