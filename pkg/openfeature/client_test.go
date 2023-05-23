@@ -977,3 +977,106 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 		t.Error("not supposed to have an error code")
 	}
 }
+
+func TestFlagMetadataAccessors(t *testing.T) {
+
+	t.Run("bool", func(t *testing.T) {
+		expectedValue := true
+		key := "bool"
+		key2 := "not-bool"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: "12",
+		}
+		val, err := metadata.GetBool(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %t, got %t", val, expectedValue)
+		}
+		val, err = metadata.GetBool(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		val, err = metadata.GetBool("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("string", func(t *testing.T) {
+		expectedValue := "string"
+		key := "string"
+		key2 := "not-string"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: true,
+		}
+		val, err := metadata.GetString(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %s, got %s", val, expectedValue)
+		}
+		val, err = metadata.GetString(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		val, err = metadata.GetString("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("int", func(t *testing.T) {
+		expectedValue := int64(12)
+		key := "int"
+		key2 := "not-int"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: true,
+		}
+		val, err := metadata.GetInt(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+		}
+		val, err = metadata.GetInt(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		val, err = metadata.GetInt("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("float", func(t *testing.T) {
+		expectedValue := float64(12)
+		key := "float"
+		key2 := "not-float"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: true,
+		}
+		val, err := metadata.GetFloat(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %f, got %f", val, expectedValue)
+		}
+		val, err = metadata.GetFloat(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		val, err = metadata.GetFloat("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+}
