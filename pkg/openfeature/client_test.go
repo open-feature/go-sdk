@@ -995,11 +995,11 @@ func TestFlagMetadataAccessors(t *testing.T) {
 		if val != expectedValue {
 			t.Errorf("wrong value returned from FlagMetadata, expected %t, got %t", val, expectedValue)
 		}
-		val, err = metadata.GetBool(key2)
+		_, err = metadata.GetBool(key2)
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
-		val, err = metadata.GetBool("not-in-map")
+		_, err = metadata.GetBool("not-in-map")
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
@@ -1020,11 +1020,11 @@ func TestFlagMetadataAccessors(t *testing.T) {
 		if val != expectedValue {
 			t.Errorf("wrong value returned from FlagMetadata, expected %s, got %s", val, expectedValue)
 		}
-		val, err = metadata.GetString(key2)
+		_, err = metadata.GetString(key2)
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
-		val, err = metadata.GetString("not-in-map")
+		_, err = metadata.GetString("not-in-map")
 		if err == nil {
 			t.Error("unexpected error value", err)
 		}
@@ -1039,7 +1039,7 @@ func TestFlagMetadataAccessors(t *testing.T) {
 			"int32":  int32(12),
 			"int164": int32(12),
 		}
-		for k, _ := range metadata {
+		for k := range metadata {
 			val, err := metadata.GetInt(k)
 			if err != nil {
 				t.Error("unexpected error value, expected nil", err)
@@ -1068,7 +1068,7 @@ func TestFlagMetadataAccessors(t *testing.T) {
 			"float32": float32(12),
 			"float64": float64(12),
 		}
-		for k, _ := range metadata {
+		for k := range metadata {
 			val, err := metadata.GetFloat(k)
 			if err != nil {
 				t.Error("unexpected error value, expected nil", err)
