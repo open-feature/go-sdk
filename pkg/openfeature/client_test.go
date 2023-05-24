@@ -630,6 +630,75 @@ func TestRequirement_1_4_12(t *testing.T) {
 	}
 }
 
+// Requirement_1_4_13
+// If the `flag metadata` field in the `flag resolution` structure returned by the configured `provider` is set,
+// the `evaluation details` structure's `flag metadata` field MUST contain that value. Otherwise,
+// it MUST contain an empty record.
+func TestRequirement_1_4_13(t *testing.T) {
+	client := NewClient("test-client")
+	flagKey := "flag-key"
+	evalCtx := EvaluationContext{}
+	flatCtx := flattenContext(evalCtx)
+
+	ctrl := gomock.NewController(t)
+	t.Run("No Metadata", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := true
+		mockProvider.EXPECT().Metadata().AnyTimes()
+		mockProvider.EXPECT().Hooks().AnyTimes()
+		mockProvider.EXPECT().BooleanEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
+			Return(BoolResolutionDetail{
+				Value: true,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					FlagMetadata: nil,
+				},
+			}).Times(1)
+		SetProvider(mockProvider)
+
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf(
+				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
+				evDetails.FlagMetadata, FlagMetadata{},
+			)
+		}
+	})
+
+	t.Run("Metadata present", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		defaultValue := true
+		metadata := FlagMetadata{
+			"bing": "bong",
+		}
+		mockProvider.EXPECT().Metadata().AnyTimes()
+		mockProvider.EXPECT().Hooks().AnyTimes()
+		mockProvider.EXPECT().BooleanEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
+			Return(BoolResolutionDetail{
+				Value: true,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					FlagMetadata: metadata,
+				},
+			}).Times(1)
+		SetProvider(mockProvider)
+
+		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(metadata, evDetails.FlagMetadata) {
+			t.Errorf(
+				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
+				evDetails.FlagMetadata, metadata,
+			)
+		}
+	})
+}
+
 // Requirement_1_5_1
 // The `evaluation options` structure's `hooks` field denotes an ordered collection of hooks that the client MUST
 // execute for the respective flag evaluation, in addition to those already configured.
@@ -907,4 +976,118 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 	if evDetails.ErrorCode != "" {
 		t.Error("not supposed to have an error code")
 	}
+}
+
+func TestFlagMetadataAccessors(t *testing.T) {
+
+	t.Run("bool", func(t *testing.T) {
+		expectedValue := true
+		key := "bool"
+		key2 := "not-bool"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: "12",
+		}
+		val, err := metadata.GetBool(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %t, got %t", val, expectedValue)
+		}
+		_, err = metadata.GetBool(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		_, err = metadata.GetBool("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("string", func(t *testing.T) {
+		expectedValue := "string"
+		key := "string"
+		key2 := "not-string"
+		metadata := FlagMetadata{
+			key:  expectedValue,
+			key2: true,
+		}
+		val, err := metadata.GetString(key)
+		if err != nil {
+			t.Error("unexpected error value, expected nil", err)
+		}
+		if val != expectedValue {
+			t.Errorf("wrong value returned from FlagMetadata, expected %s, got %s", val, expectedValue)
+		}
+		_, err = metadata.GetString(key2)
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		_, err = metadata.GetString("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("int", func(t *testing.T) {
+		expectedValue := int64(12)
+		metadata := FlagMetadata{
+			"int":    int(12),
+			"int8":   int8(12),
+			"int16":  int16(12),
+			"int32":  int32(12),
+			"int164": int32(12),
+		}
+		for k := range metadata {
+			val, err := metadata.GetInt(k)
+			if err != nil {
+				t.Error("unexpected error value, expected nil", err)
+			}
+			if val != expectedValue {
+				t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+			}
+		}
+
+		metadata = FlagMetadata{
+			"not-int": true,
+		}
+		_, err := metadata.GetInt("not-int")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		_, err = metadata.GetInt("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
+
+	t.Run("float", func(t *testing.T) {
+		expectedValue := float64(12)
+		metadata := FlagMetadata{
+			"float32": float32(12),
+			"float64": float64(12),
+		}
+		for k := range metadata {
+			val, err := metadata.GetFloat(k)
+			if err != nil {
+				t.Error("unexpected error value, expected nil", err)
+			}
+			if val != expectedValue {
+				t.Errorf("wrong value returned from FlagMetadata, expected %b, got %b", val, expectedValue)
+			}
+		}
+
+		metadata = FlagMetadata{
+			"not-float": true,
+		}
+		_, err := metadata.GetInt("not-float")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+		_, err = metadata.GetInt("not-in-map")
+		if err == nil {
+			t.Error("unexpected error value", err)
+		}
+	})
 }

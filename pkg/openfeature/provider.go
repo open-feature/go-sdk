@@ -18,7 +18,7 @@ const (
 	StaticReason Reason = "STATIC"
 	// CachedReason - the resolved value was retrieved from cache
 	CachedReason Reason = "CACHED"
-	// UnknownReason - the reason for the resolved value could not be determined.	
+	// UnknownReason - the reason for the resolved value could not be determined.
 	UnknownReason Reason = "UNKNOWN"
 	// ErrorReason - the resolved value was the result of an error.
 	ErrorReason Reason = "ERROR"
@@ -54,14 +54,20 @@ type ProviderResolutionDetail struct {
 	ResolutionError ResolutionError
 	Reason          Reason
 	Variant         string
+	FlagMetadata    FlagMetadata
 }
 
 func (p ProviderResolutionDetail) ResolutionDetail() ResolutionDetail {
+	metadata := FlagMetadata{}
+	if p.FlagMetadata != nil {
+		metadata = p.FlagMetadata
+	}
 	return ResolutionDetail{
 		Variant:      p.Variant,
 		Reason:       p.Reason,
 		ErrorCode:    p.ResolutionError.code,
 		ErrorMessage: p.ResolutionError.message,
+		FlagMetadata: metadata,
 	}
 }
 
