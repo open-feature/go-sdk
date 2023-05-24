@@ -660,10 +660,10 @@ func TestRequirement_1_4_13(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if evDetails.FlagMetadata != nil {
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
 			t.Errorf(
 				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
-				evDetails.FlagMetadata, nil,
+				evDetails.FlagMetadata, FlagMetadata{},
 			)
 		}
 	})

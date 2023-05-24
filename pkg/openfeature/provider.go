@@ -58,12 +58,16 @@ type ProviderResolutionDetail struct {
 }
 
 func (p ProviderResolutionDetail) ResolutionDetail() ResolutionDetail {
+	metadata := FlagMetadata{}
+	if p.FlagMetadata != nil {
+		metadata = p.FlagMetadata
+	}
 	return ResolutionDetail{
 		Variant:      p.Variant,
 		Reason:       p.Reason,
 		ErrorCode:    p.ResolutionError.code,
 		ErrorMessage: p.ResolutionError.message,
-		FlagMetadata: p.FlagMetadata,
+		FlagMetadata: metadata,
 	}
 }
 
