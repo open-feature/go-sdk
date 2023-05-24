@@ -218,7 +218,7 @@ func (f FlagMetadata) GetInt(key string) (int64, error) {
 	case int64:
 		return v.(int64), nil
 	default:
-		return 0, fmt.Errorf("wrong type for key %s, expected integer, got %T", key, t)return 0, fmt.Errorf("wrong type for key %s, expected string, got %T", key, t)
+		return 0, fmt.Errorf("wrong type for key %s, expected integer, got %T", key, t)
 	}
 }
 
