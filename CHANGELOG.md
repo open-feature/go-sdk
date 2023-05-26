@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/open-feature/go-sdk/compare/v1.3.0...v1.4.0) (2023-05-24)
+
+
+### Features
+
+* add flag metadata field ([#178](https://github.com/open-feature/go-sdk/issues/178)) ([e3b299d](https://github.com/open-feature/go-sdk/commit/e3b299db80e036c569abd04d0e173b6e843e914d))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/go-logr/logr to v1.2.4 ([#171](https://github.com/open-feature/go-sdk/issues/171)) ([6ff22f1](https://github.com/open-feature/go-sdk/commit/6ff22f1084f5604099574c9443b0006f885c71e2))
+* **deps:** update module golang.org/x/text to v0.8.0 ([#167](https://github.com/open-feature/go-sdk/issues/167)) ([33334fa](https://github.com/open-feature/go-sdk/commit/33334fa7939f5d95bec25a0228800fb43c827d80))
+* **deps:** update module golang.org/x/text to v0.9.0 ([#172](https://github.com/open-feature/go-sdk/issues/172)) ([8bc9d7e](https://github.com/open-feature/go-sdk/commit/8bc9d7ef6f800b6593b0223840416a7debbc54fa))
+
 ## [1.3.0](https://github.com/open-feature/go-sdk/compare/v1.2.0...v1.3.0) (2023-03-02)
 
 
