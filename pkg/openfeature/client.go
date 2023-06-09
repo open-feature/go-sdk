@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"sync"
 	"unicode/utf8"
 
@@ -85,7 +86,7 @@ func (c *Client) AddHooks(hooks ...Hook) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.hooks = append(c.hooks, hooks...)
-	c.logger().V(info).Info("appended hooks to client", "client", c.metadata.name, "hooks", hooks)
+	c.logger().V(internal.Info).Info("appended hooks to client", "client", c.metadata.name, "hooks", hooks)
 }
 
 // SetEvaluationContext sets the client's evaluation context
@@ -93,7 +94,7 @@ func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.evaluationContext = evalCtx
-	c.logger().V(info).Info(
+	c.logger().V(internal.Info).Info(
 		"set client evaluation context", "client", c.metadata.name, "evaluationContext", evalCtx,
 	)
 }
@@ -651,7 +652,7 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 func (c *Client) evaluate(
 	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (InterfaceEvaluationDetails, error) {
-	c.logger().V(debug).Info(
+	c.logger().V(internal.Debug).Info(
 		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
 		"evaluationContext", evalCtx, "evaluationOptions", options,
 	)
@@ -669,11 +670,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	api.RLock()
-	provider := api.prvder
-	globalHooks := api.hks
-	globalCtx := api.evalCtx
-	api.RUnlock()
+	provider, globalHooks, globalCtx := forTransaction()
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
@@ -758,7 +755,7 @@ func (c *Client) evaluate(
 		return evalDetails, err
 	}
 
-	c.logger().V(debug).Info("evaluated flag", "flag", flag, "details", evalDetails, "type", flagType)
+	c.logger().V(internal.Debug).Info("evaluated flag", "flag", flag, "details", evalDetails, "type", flagType)
 	return evalDetails, nil
 }
 
@@ -776,8 +773,8 @@ func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 func (c *Client) beforeHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
-	c.logger().V(debug).Info("executing before hooks")
-	defer c.logger().V(debug).Info("executed before hooks")
+	c.logger().V(internal.Debug).Info("executing before hooks")
+	defer c.logger().V(internal.Debug).Info("executed before hooks")
 
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(ctx, hookCtx, options.hookHints)
@@ -795,8 +792,8 @@ func (c *Client) beforeHooks(
 func (c *Client) afterHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
-	c.logger().V(debug).Info("executing after hooks")
-	defer c.logger().V(debug).Info("executed after hooks")
+	c.logger().V(internal.Debug).Info("executing after hooks")
+	defer c.logger().V(internal.Debug).Info("executed after hooks")
 
 	for _, hook := range hooks {
 		if err := hook.After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
@@ -808,8 +805,8 @@ func (c *Client) afterHooks(
 }
 
 func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
-	c.logger().V(debug).Info("executing error hooks")
-	defer c.logger().V(debug).Info("executed error hooks")
+	c.logger().V(internal.Debug).Info("executing error hooks")
+	defer c.logger().V(internal.Debug).Info("executed error hooks")
 
 	for _, hook := range hooks {
 		hook.Error(ctx, hookCtx, err, options.hookHints)
@@ -817,8 +814,8 @@ func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Ho
 }
 
 func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
-	c.logger().V(debug).Info("executing finally hooks")
-	defer c.logger().V(debug).Info("executed finally hooks")
+	c.logger().V(internal.Debug).Info("executing finally hooks")
+	defer c.logger().V(internal.Debug).Info("executed finally hooks")
 
 	for _, hook := range hooks {
 		hook.Finally(ctx, hookCtx, options.hookHints)

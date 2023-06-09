@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"reflect"
 	"testing"
 
@@ -814,7 +815,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 
 type lr struct {
 	callback func()
-	logger
+	internal.Logger
 }
 
 func (l lr) Info(level int, msg string, keysAndValues ...interface{}) {
@@ -901,35 +902,6 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 
 	client := NewClient("test")
 	_, err := client.BooleanValue(context.Background(), "foo", true, EvaluationContext{})
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func TestClientProviderLock(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer t.Cleanup(initSingleton)
-
-	mockMutex := NewMockmutex(ctrl)
-	mockProvider1 := NewMockFeatureProvider(ctrl)
-	mockProvider2 := NewMockFeatureProvider(ctrl)
-
-	mockProvider1.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	mockProvider1.EXPECT().Hooks().AnyTimes()
-	mockProvider1.EXPECT().Metadata().AnyTimes()
-
-	mockMutex.EXPECT().RLock().DoAndReturn(func() {
-		api.prvder = mockProvider1
-	})
-
-	// test that any provider change after RUnlock has no impact on this transaction
-	mockMutex.EXPECT().RUnlock().DoAndReturn(func() {
-		api.prvder = mockProvider2
-	})
-	api.mutex = mockMutex
-
-	client := NewClient("test").WithLogger(logr.New(logger{}))
-	_, err := client.BooleanValue(context.Background(), "foo", false, EvaluationContext{})
 	if err != nil {
 		t.Error(err)
 	}
