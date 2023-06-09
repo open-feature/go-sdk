@@ -17,6 +17,18 @@ type evaluationAPI struct {
 	mu              sync.RWMutex
 }
 
+// newEvaluationAPI is a helper to generate an API. Used internally
+func newEvaluationAPI() evaluationAPI {
+	return evaluationAPI{
+		defaultProvider: NoopProvider{},
+		namedProviders:  map[string]FeatureProvider{},
+		hks:             []Hook{},
+		evalCtx:         EvaluationContext{},
+		logger:          logr.New(internal.Logger{}),
+		mu:              sync.RWMutex{},
+	}
+}
+
 // setProvider sets the default provider of the evaluationAPI. Returns an error if FeatureProvider is nil
 func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	api.mu.RLock()
