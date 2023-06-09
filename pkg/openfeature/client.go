@@ -670,7 +670,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := forTransaction()
+	provider, globalHooks, globalCtx := forTransaction(c.metadata.name)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider

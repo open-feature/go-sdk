@@ -16,17 +16,22 @@ func init() {
 
 func initSingleton() {
 	api = evaluationAPI{
-		prvder:  NoopProvider{},
-		hks:     []Hook{},
-		evalCtx: EvaluationContext{},
-		logger:  logr.New(internal.Logger{}),
-		mu:      sync.RWMutex{},
+		defaultProvider: NoopProvider{},
+		hks:             []Hook{},
+		evalCtx:         EvaluationContext{},
+		logger:          logr.New(internal.Logger{}),
+		mu:              sync.RWMutex{},
 	}
 }
 
-// SetProvider sets the global provider.
-func SetProvider(provider FeatureProvider) {
-	api.setProvider(provider)
+// SetProvider sets the default provider.
+func SetProvider(provider FeatureProvider) error {
+	return api.setProvider(provider)
+}
+
+// SetNamedProvider sets a provider mapped to the given Client name.
+func SetNamedProvider(clientName string, provider FeatureProvider) error {
+	return api.setNamedProvider(clientName, provider)
 }
 
 // SetEvaluationContext sets the global evaluation context.
@@ -53,6 +58,6 @@ func globalLogger() logr.Logger {
 	return api.getLogger()
 }
 
-func forTransaction() (FeatureProvider, []Hook, EvaluationContext) {
-	return api.forTransaction()
+func forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
+	return api.forTransaction(clientName)
 }

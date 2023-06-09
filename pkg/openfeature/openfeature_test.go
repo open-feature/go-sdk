@@ -15,7 +15,11 @@ func TestRequirement_1_1_1(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
 
 	if api.provider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
@@ -31,7 +35,11 @@ func TestRequirement_1_1_2(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProviderName := "mock-provider"
 	mockProvider.EXPECT().Metadata().Return(Metadata{Name: mockProviderName}).AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
 
 	if ProviderMetadata() != mockProvider.Metadata() {
 		t.Error("globally set provider's metadata doesn't match the mock provider's metadata")
