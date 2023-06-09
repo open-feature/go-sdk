@@ -167,12 +167,13 @@ type ResolutionDetail struct {
 	FlagMetadata FlagMetadata
 }
 
-// A structure which supports definition of arbitrary properties, with keys of type string, and values of type boolean, string, int64 or float64.
-//
-// This structure is populated by a provider for use by an Application Author (via the Evaluation API) or an Application Integrator (via hooks).
+// FlagMetadata is a structure which supports definition of arbitrary properties, with keys of type string, and values
+// of type boolean, string, int64 or float64. This structure is populated by a provider for use by an Application
+// Author (via the Evaluation API) or an Application Integrator (via hooks).
 type FlagMetadata map[string]interface{}
 
-// Fetch string value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetString fetch string value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetString(key string) (string, error) {
 	v, ok := f[key]
 	if !ok {
@@ -186,7 +187,8 @@ func (f FlagMetadata) GetString(key string) (string, error) {
 	}
 }
 
-// Fetch bool value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetBool fetch bool value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetBool(key string) (bool, error) {
 	v, ok := f[key]
 	if !ok {
@@ -200,7 +202,8 @@ func (f FlagMetadata) GetBool(key string) (bool, error) {
 	}
 }
 
-// Fetch int64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetInt fetch int64 value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetInt(key string) (int64, error) {
 	v, ok := f[key]
 	if !ok {
@@ -222,7 +225,8 @@ func (f FlagMetadata) GetInt(key string) (int64, error) {
 	}
 }
 
-// Fetch float64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetFloat fetch float64 value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetFloat(key string) (float64, error) {
 	v, ok := f[key]
 	if !ok {
@@ -240,6 +244,22 @@ func (f FlagMetadata) GetFloat(key string) (float64, error) {
 
 // Option applies a change to EvaluationOptions
 type Option func(*EvaluationOptions)
+
+// EvaluationOptions should contain a list of hooks to be executed for a flag evaluation
+type EvaluationOptions struct {
+	hooks     []Hook
+	hookHints HookHints
+}
+
+// HookHints returns evaluation options' hook hints
+func (e EvaluationOptions) HookHints() HookHints {
+	return e.hookHints
+}
+
+// Hooks returns evaluation options' hooks
+func (e EvaluationOptions) Hooks() []Hook {
+	return e.hooks
+}
 
 // WithHooks applies provided hooks.
 func WithHooks(hooks ...Hook) Option {
