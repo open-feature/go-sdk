@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"errors"
 	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"sync"
@@ -8,26 +9,49 @@ import (
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
 type evaluationAPI struct {
-	prvder  FeatureProvider
-	hks     []Hook
-	evalCtx EvaluationContext
-	logger  logr.Logger
-	mu      sync.RWMutex
+	defaultProvider FeatureProvider
+	namedProviders  map[string]FeatureProvider
+	hks             []Hook
+	evalCtx         EvaluationContext
+	logger          logr.Logger
+	mu              sync.RWMutex
 }
 
-func (api *evaluationAPI) setProvider(provider FeatureProvider) {
+// setProvider sets the default provider of the evaluationAPI. Returns an error if FeatureProvider is nil
+func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
-	api.prvder = provider
+	if provider == nil {
+		return errors.New("default provider cannot be set to nil")
+	}
+
+	api.defaultProvider = provider
 	api.logger.V(internal.Info).Info("set global provider", "name", provider.Metadata().Name)
+
+	return nil
+}
+
+// setProvider sets a provider with client name. Returns an error if FeatureProvider is nil
+func (api *evaluationAPI) setNamedProvider(clientName string, provider FeatureProvider) error {
+	api.mu.RLock()
+	defer api.mu.RUnlock()
+
+	if provider == nil {
+		return errors.New("provider cannot be set to nil")
+	}
+
+	api.namedProviders[clientName] = provider
+	api.logger.V(internal.Info).Info("set named provider provider", "name", "providerName", clientName, provider.Metadata().Name)
+
+	return nil
 }
 
 func (api *evaluationAPI) provider() FeatureProvider {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
-	return api.prvder
+	return api.defaultProvider
 }
 
 func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
@@ -68,9 +92,16 @@ func (api *evaluationAPI) getHooks() []Hook {
 	return api.hks
 }
 
-func (api *evaluationAPI) forTransaction() (FeatureProvider, []Hook, EvaluationContext) {
+func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
-	return api.prvder, api.hks, api.evalCtx
+	var provider FeatureProvider
+
+	provider = api.namedProviders[clientName]
+	if provider == nil {
+		provider = api.defaultProvider
+	}
+
+	return provider, api.hks, api.evalCtx
 }
