@@ -2,9 +2,11 @@ package openfeature
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
+	"sync"
 )
 
-// api is the global evaluationAPI.  This is a singleton and there can only be one instance.
+// api is the global evaluationAPI. This is a singleton and there can only be one instance. Avoid direct access.
 var api evaluationAPI
 
 // init initializes the OpenFeature evaluation API
@@ -13,7 +15,13 @@ func init() {
 }
 
 func initSingleton() {
-	api = NewEvaluationAPI()
+	api = evaluationAPI{
+		prvder:  NoopProvider{},
+		hks:     []Hook{},
+		evalCtx: EvaluationContext{},
+		logger:  logr.New(internal.Logger{}),
+		mu:      sync.RWMutex{},
+	}
 }
 
 // SetProvider sets the global provider.
@@ -26,7 +34,7 @@ func SetEvaluationContext(evalCtx EvaluationContext) {
 	api.setEvaluationContext(evalCtx)
 }
 
-// SetLogger sets the global logger.
+// SetLogger sets the global Logger.
 func SetLogger(l logr.Logger) {
 	api.setLogger(l)
 }
@@ -38,14 +46,13 @@ func ProviderMetadata() Metadata {
 
 // AddHooks appends to the collection of any previously added hooks
 func AddHooks(hooks ...Hook) {
-	api.Lock()
-	defer api.Unlock()
-	api.hks = append(api.hks, hooks...)
-	api.logger.V(info).Info("appended hooks to the global singleton", "hooks", hooks)
+	api.addHooks(hooks...)
 }
 
 func globalLogger() logr.Logger {
-	api.RLock()
-	defer api.RUnlock()
-	return api.logger
+	return api.getLogger()
+}
+
+func forTransaction() (FeatureProvider, []Hook, EvaluationContext) {
+	return api.forTransaction()
 }
