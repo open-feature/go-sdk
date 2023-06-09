@@ -157,7 +157,11 @@ func TestRequirement_4_3_2(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		flagKey := "foo"
 		defaultValue := "bar"
@@ -172,7 +176,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -199,7 +203,12 @@ func TestRequirement_4_3_3(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
 	mockHook1 := NewMockHook(ctrl)
 	mockHook2 := NewMockHook(ctrl)
 	client := NewClient("test")
@@ -239,7 +248,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	mockHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-	_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
+	_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}
@@ -254,7 +263,12 @@ func TestRequirement_4_3_4(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
 
@@ -309,7 +323,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-	_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, invEvalCtx, WithHooks(mockHook))
+	_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, invEvalCtx, WithHooks(mockHook))
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}
@@ -326,7 +340,11 @@ func TestRequirement_4_3_5(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		flagKey := "foo"
 		defaultValue := "bar"
@@ -341,7 +359,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 			After(mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, flatCtx))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -378,7 +396,11 @@ func TestRequirement_4_3_6(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -387,7 +409,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -398,7 +420,11 @@ func TestRequirement_4_3_6(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -415,7 +441,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -426,7 +452,11 @@ func TestRequirement_4_3_6(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -437,7 +467,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -473,7 +503,11 @@ func TestRequirement_4_3_7(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -483,7 +517,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()))
 		mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx)
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -494,7 +528,11 @@ func TestRequirement_4_3_7(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -503,7 +541,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any()).
 			After(mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()))
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -609,7 +647,12 @@ func TestRequirement_4_4_2(t *testing.T) {
 
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
 
 		// before: API, Client, Invocation, Provider
@@ -632,7 +675,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 
 		mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx)
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockInvocationHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockInvocationHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -651,7 +694,12 @@ func TestRequirement_4_4_2(t *testing.T) {
 
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
 
 		mockAPIHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced"))
@@ -667,7 +715,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockClientHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 		mockAPIHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockInvocationHook))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockInvocationHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -710,7 +758,11 @@ func TestRequirement_4_4_6(t *testing.T) {
 			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
 			mockProvider.EXPECT().Metadata().AnyTimes()
-			SetProvider(mockProvider)
+
+			err := SetProvider(mockProvider)
+			if err != nil {
+				t.Errorf("error setting up provider %v", err)
+			}
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -721,7 +773,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 			mockHook2.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-			_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
+			_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
 			if err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -736,7 +788,11 @@ func TestRequirement_4_4_6(t *testing.T) {
 			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
 			mockProvider.EXPECT().Metadata().AnyTimes()
-			SetProvider(mockProvider)
+
+			err := SetProvider(mockProvider)
+			if err != nil {
+				t.Errorf("error setting up provider %v", err)
+			}
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -751,7 +807,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 
 			mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx)
 
-			_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
+			_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook1, mockHook2))
 			if err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -772,7 +828,11 @@ func TestRequirement_4_4_7(t *testing.T) {
 	client := NewClient("test")
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -815,7 +875,12 @@ func TestRequirement_4_5_2(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
 		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
@@ -826,7 +891,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 
 		mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx)
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook), WithHookHints(hookHints))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook), WithHookHints(hookHints))
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -838,7 +903,12 @@ func TestRequirement_4_5_2(t *testing.T) {
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
-		SetProvider(mockProvider)
+
+		err := SetProvider(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
 		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
@@ -847,7 +917,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), hookHints)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook), WithHookHints(hookHints))
+		_, err = client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook), WithHookHints(hookHints))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
