@@ -22,19 +22,9 @@ func SetProvider(provider FeatureProvider) error {
 	return api.setProvider(provider)
 }
 
-// getProvider returns the default provider of the API. Intended to be used by tests
-func getProvider() FeatureProvider {
-	return api.defaultProvider
-}
-
 // SetNamedProvider sets a provider mapped to the given Client name.
 func SetNamedProvider(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider)
-}
-
-// getProvider returns the default provider of the API. Intended to be used by tests
-func getNamedProviders() map[string]FeatureProvider {
-	return api.namedProviders
 }
 
 // SetEvaluationContext sets the global evaluation context.
@@ -47,9 +37,9 @@ func SetLogger(l logr.Logger) {
 	api.setLogger(l)
 }
 
-// ProviderMetadata returns the global provider's metadata
+// ProviderMetadata returns the default provider's metadata
 func ProviderMetadata() Metadata {
-	return api.provider().Metadata()
+	return api.getProvider().Metadata()
 }
 
 // AddHooks appends to the collection of any previously added hooks
@@ -57,15 +47,28 @@ func AddHooks(hooks ...Hook) {
 	api.addHooks(hooks...)
 }
 
+// getProvider returns the default provider of the API. Intended to be used by tests
+func getProvider() FeatureProvider {
+	return api.getProvider()
+}
+
+// getNamedProviders returns the default provider of the API. Intended to be used by tests
+func getNamedProviders() map[string]FeatureProvider {
+	return api.getNamedProviders()
+}
+
 // getHooks returns hooks of the API. Intended to be used by tests
 func getHooks() []Hook {
 	return api.getHooks()
 }
 
+// globalLogger return the global logger set at the API
 func globalLogger() logr.Logger {
 	return api.getLogger()
 }
 
+// forTransaction is a helper to retrieve transaction scoped operators by Client.
+// Here, transaction means a flag evaluation.
 func forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
 	return api.forTransaction(clientName)
 }
