@@ -51,6 +51,8 @@ func TestRequirement_1_1_2(t *testing.T) {
 func TestRequirement_1_1_3(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
+	// Setup
+
 	ctrl := gomock.NewController(t)
 	providerA := NewMockFeatureProvider(ctrl)
 	providerA.EXPECT().Metadata().Return(Metadata{Name: "providerA"}).AnyTimes()
@@ -71,6 +73,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 	namedProviders := getNamedProviders()
 
 	// Validate binding
+
 	if len(namedProviders) != 2 {
 		t.Errorf("expected %d providers, but got %d", 2, len(namedProviders))
 	}
@@ -83,7 +86,20 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("invalid provider binding")
 	}
 
+	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
+
+	provider, _, _ := forTransaction("clientA")
+	if provider.Metadata().Name != "providerA" {
+		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Name)
+	}
+
+	provider, _, _ = forTransaction("clientB")
+	if provider.Metadata().Name != "providerB" {
+		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
+	}
+
 	// Validate overriding: If the client-name already has a bound provider, it is overwritten with the new mapping.
+
 	providerB2 := NewMockFeatureProvider(ctrl)
 	providerB2.EXPECT().Metadata().Return(Metadata{Name: "providerB2"}).AnyTimes()
 
@@ -95,6 +111,13 @@ func TestRequirement_1_1_3(t *testing.T) {
 	namedProviders = getNamedProviders()
 	if namedProviders["clientB"] != providerB2 {
 		t.Errorf("named provider overriding failed")
+	}
+
+	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
+
+	provider, _, _ = forTransaction("clientB")
+	if provider.Metadata().Name != "providerB2" {
+		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
 	}
 }
 
@@ -140,6 +163,27 @@ func TestRequirement_1_1_7(t *testing.T) {
 	var f clientCreationFunc = NewClient
 
 	use(f) // to avoid the declared and not used error
+}
+
+// Non-spec bound validation - If there is no client name bound provider, then return the default provider
+func TestDefaultClientUsage(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	ctrl := gomock.NewController(t)
+	defaultProvider := NewMockFeatureProvider(ctrl)
+	defaultProvider.EXPECT().Metadata().Return(Metadata{Name: "defaultClientReplacement"}).AnyTimes()
+
+	err := SetProvider(defaultProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
+	// Validate provider retrieval by client evaluation
+	provider, _, _ := forTransaction("ClientName")
+
+	if provider.Metadata().Name != "defaultClientReplacement" {
+		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
+	}
 }
 
 func use(vals ...interface{}) {
