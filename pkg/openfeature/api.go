@@ -39,7 +39,13 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 		return errors.New("default provider cannot be set to nil")
 	}
 
-	api.defaultProvider = provider
+	// Initialize new default provider and shutdown the old one
+	go func() {
+		provider.Init(api.evalCtx)
+		api.defaultProvider.Shutdown()
+		api.defaultProvider = provider
+	}()
+
 	return nil
 }
 
@@ -60,7 +66,15 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 		return errors.New("provider cannot be set to nil")
 	}
 
-	api.namedProviders[clientName] = provider
+	// Initialize new default provider and shutdown the old one
+	go func() {
+		provider.Init(api.evalCtx)
+		if api.namedProviders[clientName] != nil {
+			api.namedProviders[clientName].Shutdown()
+		}
+		api.namedProviders[clientName] = provider
+	}()
+
 	return nil
 }
 
@@ -98,6 +112,14 @@ func (api *evaluationAPI) addHooks(hooks ...Hook) {
 	defer api.mu.Unlock()
 
 	api.hks = append(api.hks, hooks...)
+}
+
+func (api *evaluationAPI) shutdown() {
+	api.defaultProvider.Shutdown()
+
+	for _, provider := range api.namedProviders {
+		provider.Shutdown()
+	}
 }
 
 func (api *evaluationAPI) getHooks() []Hook {

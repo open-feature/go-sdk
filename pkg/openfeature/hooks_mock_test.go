@@ -6,34 +6,49 @@ package openfeature
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockHook is a mock of Hook interface
+// MockHook is a mock of Hook interface.
 type MockHook struct {
 	ctrl     *gomock.Controller
 	recorder *MockHookMockRecorder
 }
 
-// MockHookMockRecorder is the mock recorder for MockHook
+// MockHookMockRecorder is the mock recorder for MockHook.
 type MockHookMockRecorder struct {
 	mock *MockHook
 }
 
-// NewMockHook creates a new mock instance
+// NewMockHook creates a new mock instance.
 func NewMockHook(ctrl *gomock.Controller) *MockHook {
 	mock := &MockHook{ctrl: ctrl}
 	mock.recorder = &MockHookMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHook) EXPECT() *MockHookMockRecorder {
 	return m.recorder
 }
 
-// Before mocks base method
+// After mocks base method.
+func (m *MockHook) After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "After", ctx, hookContext, flagEvaluationDetails, hookHints)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// After indicates an expected call of After.
+func (mr *MockHookMockRecorder) After(ctx, hookContext, flagEvaluationDetails, hookHints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "After", reflect.TypeOf((*MockHook)(nil).After), ctx, hookContext, flagEvaluationDetails, hookHints)
+}
+
+// Before mocks base method.
 func (m *MockHook) Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (*EvaluationContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Before", ctx, hookContext, hookHints)
@@ -42,45 +57,31 @@ func (m *MockHook) Before(ctx context.Context, hookContext HookContext, hookHint
 	return ret0, ret1
 }
 
-// Before indicates an expected call of Before
+// Before indicates an expected call of Before.
 func (mr *MockHookMockRecorder) Before(ctx, hookContext, hookHints interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Before", reflect.TypeOf((*MockHook)(nil).Before), ctx, hookContext, hookHints)
 }
 
-// After mocks base method
-func (m *MockHook) After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "After", ctx, hookContext, flagEvaluationDetails, hookHints)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// After indicates an expected call of After
-func (mr *MockHookMockRecorder) After(ctx, hookContext, flagEvaluationDetails, hookHints interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "After", reflect.TypeOf((*MockHook)(nil).After), ctx, hookContext, flagEvaluationDetails, hookHints)
-}
-
-// Error mocks base method
+// Error mocks base method.
 func (m *MockHook) Error(ctx context.Context, hookContext HookContext, err error, hookHints HookHints) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Error", ctx, hookContext, err, hookHints)
 }
 
-// Error indicates an expected call of Error
+// Error indicates an expected call of Error.
 func (mr *MockHookMockRecorder) Error(ctx, hookContext, err, hookHints interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockHook)(nil).Error), ctx, hookContext, err, hookHints)
 }
 
-// Finally mocks base method
+// Finally mocks base method.
 func (m *MockHook) Finally(ctx context.Context, hookContext HookContext, hookHints HookHints) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Finally", ctx, hookContext, hookHints)
 }
 
-// Finally indicates an expected call of Finally
+// Finally indicates an expected call of Finally.
 func (mr *MockHookMockRecorder) Finally(ctx, hookContext, hookHints interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Finally", reflect.TypeOf((*MockHook)(nil).Finally), ctx, hookContext, hookHints)

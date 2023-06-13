@@ -2,10 +2,10 @@ package openfeature
 
 import (
 	"context"
+	"github.com/golang/mock/gomock"
 	"reflect"
 	"testing"
-
-	"github.com/golang/mock/gomock"
+	"time"
 )
 
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,
@@ -100,12 +100,16 @@ func TestRequirement_3_2_2(t *testing.T) {
 	SetEvaluationContext(apiEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Init(gomock.Any())
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
 	err := SetProvider(mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
+
+	// wait for initialization
+	time.Sleep(200 * time.Millisecond)
 
 	client := NewClient("test")
 	clientEvalCtx := EvaluationContext{

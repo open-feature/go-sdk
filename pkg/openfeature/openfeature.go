@@ -17,12 +17,14 @@ func initSingleton() {
 	api = newEvaluationAPI()
 }
 
-// SetProvider sets the default provider.
+// SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from
+// provider status
 func SetProvider(provider FeatureProvider) error {
 	return api.setProvider(provider)
 }
 
-// SetNamedProvider sets a provider mapped to the given Client name.
+// SetNamedProvider sets a provider mapped to the given Client name. Provider initialization is asynchronous and
+// status can be checked from provider status
 func SetNamedProvider(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider)
 }
@@ -45,6 +47,11 @@ func ProviderMetadata() Metadata {
 // AddHooks appends to the collection of any previously added hooks
 func AddHooks(hooks ...Hook) {
 	api.addHooks(hooks...)
+}
+
+// Shutdown active providers
+func Shutdown() {
+	api.shutdown()
 }
 
 // getProvider returns the default provider of the API. Intended to be used by tests
