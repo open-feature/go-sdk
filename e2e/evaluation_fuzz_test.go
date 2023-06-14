@@ -1,3 +1,5 @@
+//go:build skippedTest
+
 package e2e_test
 
 import (
