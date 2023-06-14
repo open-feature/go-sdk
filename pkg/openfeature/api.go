@@ -40,8 +40,6 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	}
 
 	api.defaultProvider = provider
-	api.logger.V(internal.Info).Info("set global provider", "name", provider.Metadata().Name)
-
 	return nil
 }
 
@@ -63,8 +61,6 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	}
 
 	api.namedProviders[clientName] = provider
-	api.logger.V(internal.Info).Info("set named provider provider", "name", "providerName", clientName, provider.Metadata().Name)
-
 	return nil
 }
 
@@ -81,7 +77,6 @@ func (api *evaluationAPI) setEvaluationContext(evalCtx EvaluationContext) {
 	defer api.mu.Unlock()
 
 	api.evalCtx = evalCtx
-	api.logger.V(internal.Info).Info("set global evaluation context", "evaluationContext", evalCtx)
 }
 
 func (api *evaluationAPI) setLogger(l logr.Logger) {
@@ -89,7 +84,6 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.mu.Unlock()
 
 	api.logger = l
-	api.logger.V(internal.Info).Info("set global logger")
 }
 
 func (api *evaluationAPI) getLogger() logr.Logger {
@@ -104,7 +98,6 @@ func (api *evaluationAPI) addHooks(hooks ...Hook) {
 	defer api.mu.Unlock()
 
 	api.hks = append(api.hks, hooks...)
-	api.logger.V(internal.Info).Info("appended hooks", "hooks", hooks)
 }
 
 func (api *evaluationAPI) getHooks() []Hook {
