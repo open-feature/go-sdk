@@ -50,6 +50,7 @@ type FeatureProvider interface {
 	StateHandler
 }
 
+// StateHandler is the contract of initialization & shutdown
 type StateHandler interface {
 	Init(evaluationContext EvaluationContext)
 	Shutdown()
