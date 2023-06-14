@@ -41,9 +41,15 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 
 	// Initialize new default provider and shutdown the old one
 	go func() {
-		provider.Init(api.evalCtx)
-		api.defaultProvider.Shutdown()
+		api.mu.Lock()
+		defer api.mu.Unlock()
+
+		oldProvider := api.defaultProvider
+
 		api.defaultProvider = provider
+		api.defaultProvider.Init(api.evalCtx)
+
+		oldProvider.Shutdown()
 	}()
 
 	return nil
@@ -68,11 +74,17 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new default provider and shutdown the old one
 	go func() {
-		provider.Init(api.evalCtx)
-		if api.namedProviders[clientName] != nil {
-			api.namedProviders[clientName].Shutdown()
-		}
+		api.mu.Lock()
+		defer api.mu.Unlock()
+
+		oldProvider := api.namedProviders[clientName]
+
 		api.namedProviders[clientName] = provider
+		api.namedProviders[clientName].Init(api.evalCtx)
+
+		if oldProvider != nil {
+			oldProvider.Shutdown()
+		}
 	}()
 
 	return nil
