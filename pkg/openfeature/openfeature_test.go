@@ -1,9 +1,12 @@
 package openfeature
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
@@ -165,7 +168,9 @@ func TestRequirement_1_1_7(t *testing.T) {
 	use(f) // to avoid the declared and not used error
 }
 
-// Non-spec bound validation - If there is no client name bound provider, then return the default provider
+// Non-spec bound validations
+
+// If there is no client name bound provider, then return the default provider
 func TestDefaultClientUsage(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
@@ -183,6 +188,18 @@ func TestDefaultClientUsage(t *testing.T) {
 
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
+	}
+}
+
+// Ability to override default logger
+func TestLoggerOverride(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	newOverride := internal.Logger{}
+	SetLogger(logr.New(newOverride))
+
+	if !reflect.DeepEqual(globalLogger().GetSink(), newOverride) {
+		t.Error("logger overriding failed")
 	}
 }
 
