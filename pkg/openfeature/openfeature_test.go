@@ -203,6 +203,21 @@ func TestLoggerOverride(t *testing.T) {
 	}
 }
 
+// Nil providers are not accepted for default and named providers
+func TestForNilProviders(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	err := SetProvider(nil)
+	if err == nil {
+		t.Errorf("setting nil provider must result in an error")
+	}
+
+	err = SetNamedProvider("client", nil)
+	if err == nil {
+		t.Errorf("setting nil named provider must result in an error")
+	}
+}
+
 func use(vals ...interface{}) {
 	for _, val := range vals {
 		_ = val
