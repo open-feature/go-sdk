@@ -1,7 +1,3 @@
-//go:build skippedTest
-
-// Disabled till we publish and update flagd dependency
-
 package e2e_test
 
 import (

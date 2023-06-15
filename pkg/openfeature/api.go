@@ -40,16 +40,20 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	}
 
 	// Initialize new default provider and shutdown the old one
+	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.defaultProvider
+	api.defaultProvider = provider
+
 	go func() {
-		api.mu.Lock()
-		defer api.mu.Unlock()
+		v, ok := provider.(StateHandler)
+		if ok {
+			v.Init(api.evalCtx)
+		}
 
-		oldProvider := api.defaultProvider
-
-		api.defaultProvider = provider
-		api.defaultProvider.Init(api.evalCtx)
-
-		oldProvider.Shutdown()
+		v, ok = oldProvider.(StateHandler)
+		if ok {
+			v.Shutdown()
+		}
 	}()
 
 	return nil
@@ -73,17 +77,21 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	}
 
 	// Initialize new default provider and shutdown the old one
+	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.namedProviders[clientName]
+	api.namedProviders[clientName] = provider
+
 	go func() {
-		api.mu.Lock()
-		defer api.mu.Unlock()
-
-		oldProvider := api.namedProviders[clientName]
-
-		api.namedProviders[clientName] = provider
-		api.namedProviders[clientName].Init(api.evalCtx)
+		v, ok := provider.(StateHandler)
+		if ok {
+			v.Init(api.evalCtx)
+		}
 
 		if oldProvider != nil {
-			oldProvider.Shutdown()
+			v, ok = oldProvider.(StateHandler)
+			if ok {
+				v.Shutdown()
+			}
 		}
 	}()
 
@@ -127,10 +135,16 @@ func (api *evaluationAPI) addHooks(hooks ...Hook) {
 }
 
 func (api *evaluationAPI) shutdown() {
-	api.defaultProvider.Shutdown()
+	v, ok := api.defaultProvider.(StateHandler)
+	if ok {
+		v.Shutdown()
+	}
 
 	for _, provider := range api.namedProviders {
-		provider.Shutdown()
+		v, ok = provider.(StateHandler)
+		if ok {
+			v.Shutdown()
+		}
 	}
 }
 

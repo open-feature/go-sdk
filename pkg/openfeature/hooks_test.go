@@ -157,16 +157,12 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		flagKey := "foo"
 		defaultValue := "bar"
@@ -207,16 +203,12 @@ func TestRequirement_4_3_3(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
-	mockProvider.EXPECT().Init(gomock.Any())
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
 	err := SetProvider(mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
-
-	// wait for initialization
-	time.Sleep(200 * time.Millisecond)
 
 	mockHook1 := NewMockHook(ctrl)
 	mockHook2 := NewMockHook(ctrl)
@@ -271,16 +263,12 @@ func TestRequirement_4_3_4(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
-	mockProvider.EXPECT().Init(gomock.Any())
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
 	err := SetProvider(mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
-
-	// wait for initialization
-	time.Sleep(200 * time.Millisecond)
 
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
@@ -349,20 +337,16 @@ func TestRequirement_4_3_5(t *testing.T) {
 
 	t.Run("after hook MUST run after flag resolution occurs", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
-		
+
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		flagKey := "foo"
 		defaultValue := "bar"
@@ -414,16 +398,12 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -444,16 +424,12 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -482,16 +458,12 @@ func TestRequirement_4_3_6(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -538,16 +510,12 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -569,16 +537,12 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -692,16 +656,12 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockProviderHook := NewMockHook(ctrl)
 
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
 
@@ -743,16 +703,12 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockProviderHook := NewMockHook(ctrl)
 
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
 
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
 
@@ -812,16 +768,12 @@ func TestRequirement_4_4_6(t *testing.T) {
 			mockHook2 := NewMockHook(ctrl)
 			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
-			mockProvider.EXPECT().Init(gomock.Any())
 			mockProvider.EXPECT().Metadata().AnyTimes()
 
 			err := SetProvider(mockProvider)
 			if err != nil {
 				t.Errorf("error setting up provider %v", err)
 			}
-
-			// wait for initialization
-			time.Sleep(200 * time.Millisecond)
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -848,16 +800,12 @@ func TestRequirement_4_4_6(t *testing.T) {
 			mockHook2 := NewMockHook(ctrl)
 			client := NewClient("test")
 			mockProvider := NewMockFeatureProvider(ctrl)
-			mockProvider.EXPECT().Init(gomock.Any())
 			mockProvider.EXPECT().Metadata().AnyTimes()
 
 			err := SetProvider(mockProvider)
 			if err != nil {
 				t.Errorf("error setting up provider %v", err)
 			}
-
-			// wait for initialization
-			time.Sleep(200 * time.Millisecond)
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -892,16 +840,12 @@ func TestRequirement_4_4_7(t *testing.T) {
 	mockHook := NewMockHook(ctrl)
 	client := NewClient("test")
 	mockProvider := NewMockFeatureProvider(ctrl)
-	mockProvider.EXPECT().Init(gomock.Any())
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
 	err := SetProvider(mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
-
-	// wait for initialization
-	time.Sleep(200 * time.Millisecond)
 
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -943,17 +887,13 @@ func TestRequirement_4_5_2(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-
-		// wait for initialization
-		time.Sleep(200 * time.Millisecond)
-
+		
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
 		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
@@ -975,7 +915,6 @@ func TestRequirement_4_5_2(t *testing.T) {
 		mockHook := NewMockHook(ctrl)
 		client := NewClient("test")
 		mockProvider := NewMockFeatureProvider(ctrl)
-		mockProvider.EXPECT().Init(gomock.Any())
 		mockProvider.EXPECT().Metadata().AnyTimes()
 
 		err := SetProvider(mockProvider)

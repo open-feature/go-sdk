@@ -47,10 +47,9 @@ type FeatureProvider interface {
 	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
 	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
 	Hooks() []Hook
-	StateHandler
 }
 
-// StateHandler is the contract of initialization & shutdown
+// StateHandler is the contract for initialization & shutdown
 type StateHandler interface {
 	Init(evaluationContext EvaluationContext)
 	Shutdown()

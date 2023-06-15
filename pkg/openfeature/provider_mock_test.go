@@ -76,18 +76,6 @@ func (mr *MockFeatureProviderMockRecorder) Hooks() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Hooks", reflect.TypeOf((*MockFeatureProvider)(nil).Hooks))
 }
 
-// Init mocks base method.
-func (m *MockFeatureProvider) Init(evaluationContext EvaluationContext) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Init", evaluationContext)
-}
-
-// Init indicates an expected call of Init.
-func (mr *MockFeatureProviderMockRecorder) Init(evaluationContext interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockFeatureProvider)(nil).Init), evaluationContext)
-}
-
 // IntEvaluation mocks base method.
 func (m *MockFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
 	m.ctrl.T.Helper()
@@ -128,32 +116,6 @@ func (m *MockFeatureProvider) ObjectEvaluation(ctx context.Context, flag string,
 func (mr *MockFeatureProviderMockRecorder) ObjectEvaluation(ctx, flag, defaultValue, evalCtx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObjectEvaluation", reflect.TypeOf((*MockFeatureProvider)(nil).ObjectEvaluation), ctx, flag, defaultValue, evalCtx)
-}
-
-// Shutdown mocks base method.
-func (m *MockFeatureProvider) Shutdown() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Shutdown")
-}
-
-// Shutdown indicates an expected call of Shutdown.
-func (mr *MockFeatureProviderMockRecorder) Shutdown() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockFeatureProvider)(nil).Shutdown))
-}
-
-// Status mocks base method.
-func (m *MockFeatureProvider) Status() State {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Status")
-	ret0, _ := ret[0].(State)
-	return ret0
-}
-
-// Status indicates an expected call of Status.
-func (mr *MockFeatureProviderMockRecorder) Status() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockFeatureProvider)(nil).Status))
 }
 
 // StringEvaluation mocks base method.
