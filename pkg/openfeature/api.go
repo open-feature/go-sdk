@@ -42,8 +42,6 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
 	oldProvider := api.defaultProvider
-	api.defaultProvider = provider
-
 	go func() {
 		v, ok := provider.(StateHandler)
 		if ok {
@@ -55,6 +53,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 			v.Shutdown()
 		}
 	}()
+	api.defaultProvider = provider
 
 	return nil
 }
@@ -79,8 +78,6 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
 	oldProvider := api.namedProviders[clientName]
-	api.namedProviders[clientName] = provider
-
 	go func() {
 		v, ok := provider.(StateHandler)
 		if ok {
@@ -94,6 +91,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 			}
 		}
 	}()
+	api.namedProviders[clientName] = provider
 
 	return nil
 }

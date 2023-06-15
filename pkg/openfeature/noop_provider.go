@@ -4,7 +4,6 @@ import "context"
 
 // NoopProvider implements the FeatureProvider interface and provides functions for evaluating flags
 type NoopProvider struct {
-	NoopStateHandler
 }
 
 // Metadata returns the metadata of the provider

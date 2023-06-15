@@ -23,9 +23,9 @@ const (
 	// ErrorReason - the resolved value was the result of an error.
 	ErrorReason Reason = "ERROR"
 
-	NotReadyState = "NOT_READY"
-	ReadyState    = "READY"
-	ErrorState    = "ERROR"
+	NotReadyState State = "NOT_READY"
+	ReadyState    State = "READY"
+	ErrorState    State = "ERROR"
 
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
@@ -38,7 +38,7 @@ type FlattenedContext map[string]interface{}
 type Reason string
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
-// This should be implemented by vendors.
+// This should be implemented by flag management systems.
 type FeatureProvider interface {
 	Metadata() Metadata
 	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail
@@ -49,56 +49,15 @@ type FeatureProvider interface {
 	Hooks() []Hook
 }
 
-// StateHandler is the contract for initialization & shutdown
+// State represents the status of the provider
+type State string
+
+// StateHandler is the contract for initialization & shutdown.
+// FeatureProvider can opt in for this behavior by implementing the interface
 type StateHandler interface {
 	Init(evaluationContext EvaluationContext)
 	Shutdown()
 	Status() State
-}
-
-// NoopStateHandler is an always Ready, otherwise noop implementation of StateHandler
-type NoopStateHandler struct {
-}
-
-func (n NoopStateHandler) Init(evaluationContext EvaluationContext) {
-	//NOOP
-}
-
-func (n NoopStateHandler) Shutdown() {
-	//NOOP
-}
-
-func (n NoopStateHandler) Status() State {
-	return Ready{}
-}
-
-// State represents and expose state
-type State interface {
-	get() string
-}
-
-// NotReady implements NOT_READY State
-type NotReady struct {
-}
-
-func (s NotReady) get() string {
-	return NotReadyState
-}
-
-// Ready implements READY State
-type Ready struct {
-}
-
-func (s Ready) get() string {
-	return ReadyState
-}
-
-// Error implements ERROR State
-type Error struct {
-}
-
-func (s Ready) Error() string {
-	return ErrorState
 }
 
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
