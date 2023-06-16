@@ -8,6 +8,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7
 	github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0
+	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.10.0
 )
 
@@ -46,6 +47,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

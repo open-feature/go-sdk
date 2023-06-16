@@ -19,3 +19,16 @@ func (s *StateHandlerForTests) Shutdown() {
 func (s *StateHandlerForTests) Status() State {
 	return s.State
 }
+
+// ProviderEventing is an implementation of invoke capability
+type ProviderEventing struct {
+	c chan Event
+}
+
+func (s ProviderEventing) Invoke(e Event) {
+	s.c <- e
+}
+
+func (s ProviderEventing) EventChannel() <-chan Event {
+	return s.c
+}

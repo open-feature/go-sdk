@@ -15,6 +15,8 @@ import (
 type IClient interface {
 	Metadata() ClientMetadata
 	AddHooks(hooks ...Hook)
+	AddHandler(eventType EventType, callback EventCallBack)
+	RemoveHandler(eventType EventType, callback EventCallBack)
 	SetEvaluationContext(evalCtx EvaluationContext)
 	EvaluationContext() EvaluationContext
 	BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error)
@@ -87,6 +89,16 @@ func (c *Client) AddHooks(hooks ...Hook) {
 	defer c.mx.Unlock()
 	c.hooks = append(c.hooks, hooks...)
 	c.logger().V(internal.Info).Info("appended hooks to client", "client", c.metadata.name, "hooks", hooks)
+}
+
+// AddHandler allows to add Client level event handler
+func (c *Client) AddHandler(eventType EventType, callback EventCallBack) {
+	addClientHandler(c.metadata.Name(), eventType, callback)
+}
+
+// RemoveHandler allows to remove Client level event handler
+func (c *Client) RemoveHandler(eventType EventType, callback EventCallBack) {
+	removeClientHandler(c.metadata.Name(), eventType, callback)
 }
 
 // SetEvaluationContext sets the client's evaluation context

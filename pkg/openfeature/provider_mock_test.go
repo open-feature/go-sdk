@@ -193,39 +193,39 @@ func (mr *MockStateHandlerMockRecorder) Status() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockStateHandler)(nil).Status))
 }
 
-// MockState is a mock of State interface.
-type MockState struct {
+// MockEventHandler is a mock of EventHandler interface.
+type MockEventHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockStateMockRecorder
+	recorder *MockEventHandlerMockRecorder
 }
 
-// MockStateMockRecorder is the mock recorder for MockState.
-type MockStateMockRecorder struct {
-	mock *MockState
+// MockEventHandlerMockRecorder is the mock recorder for MockEventHandler.
+type MockEventHandlerMockRecorder struct {
+	mock *MockEventHandler
 }
 
-// NewMockState creates a new mock instance.
-func NewMockState(ctrl *gomock.Controller) *MockState {
-	mock := &MockState{ctrl: ctrl}
-	mock.recorder = &MockStateMockRecorder{mock}
+// NewMockEventHandler creates a new mock instance.
+func NewMockEventHandler(ctrl *gomock.Controller) *MockEventHandler {
+	mock := &MockEventHandler{ctrl: ctrl}
+	mock.recorder = &MockEventHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockState) EXPECT() *MockStateMockRecorder {
+func (m *MockEventHandler) EXPECT() *MockEventHandlerMockRecorder {
 	return m.recorder
 }
 
-// get mocks base method.
-func (m *MockState) get() string {
+// EventChannel mocks base method.
+func (m *MockEventHandler) EventChannel() <-chan Event {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "get")
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "EventChannel")
+	ret0, _ := ret[0].(<-chan Event)
 	return ret0
 }
 
-// get indicates an expected call of get.
-func (mr *MockStateMockRecorder) get() *gomock.Call {
+// EventChannel indicates an expected call of EventChannel.
+func (mr *MockEventHandlerMockRecorder) EventChannel() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "get", reflect.TypeOf((*MockState)(nil).get))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventChannel", reflect.TypeOf((*MockEventHandler)(nil).EventChannel))
 }
