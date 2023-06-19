@@ -42,7 +42,8 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	api.initAndShutdown(provider, api.defaultProvider)
+	oldProvider := api.defaultProvider
+	api.initAndShutdown(provider, oldProvider)
 	api.defaultProvider = provider
 
 	api.registerEventingProvider(provider)
@@ -73,6 +74,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.namedProviders[clientName]
 	api.initAndShutdown(provider, api.namedProviders[clientName])
 	api.namedProviders[clientName] = provider
 

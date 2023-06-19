@@ -6,12 +6,8 @@ import (
 	"github.com/go-logr/logr"
 )
 
-const (
-	Info  = 0
-	Debug = 1
-)
-
-// Logger is the sdk's default Logger. Logs using the standard log package on error, all other logs are no-ops
+// Logger is the sdk's default logr.LogSink implementation.
+// Logs using this logger logs only on error, all other logs are no-ops
 type Logger struct{}
 
 func (l Logger) Init(info logr.RuntimeInfo) {}
