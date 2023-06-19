@@ -60,23 +60,6 @@ type StateHandler interface {
 	Status() State
 }
 
-// NoopStateHandler is a noop StateHandler implementation
-// Status always set to ReadyState to comply with specification
-type NoopStateHandler struct {
-}
-
-func (s *NoopStateHandler) Init(e EvaluationContext) {
-	// NOOP
-}
-
-func (s *NoopStateHandler) Shutdown() {
-	// NOOP
-}
-
-func (s *NoopStateHandler) Status() State {
-	return ReadyState
-}
-
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
 // representing the result of the provider's flag resolution process
 // see https://github.com/open-feature/spec/blob/main/specification/types.md#resolution-details
