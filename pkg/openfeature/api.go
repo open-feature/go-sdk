@@ -41,18 +41,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	oldProvider := api.defaultProvider
-	go func() {
-		v, ok := provider.(StateHandler)
-		if ok {
-			v.Init(api.evalCtx)
-		}
-
-		v, ok = oldProvider.(StateHandler)
-		if ok {
-			v.Shutdown()
-		}
-	}()
+	api.initAndShutdown(provider, api.defaultProvider)
 	api.defaultProvider = provider
 
 	return nil
@@ -77,20 +66,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	oldProvider := api.namedProviders[clientName]
-	go func() {
-		v, ok := provider.(StateHandler)
-		if ok {
-			v.Init(api.evalCtx)
-		}
-
-		if oldProvider != nil {
-			v, ok = oldProvider.(StateHandler)
-			if ok {
-				v.Shutdown()
-			}
-		}
-	}()
+	api.initAndShutdown(provider, api.namedProviders[clientName])
 	api.namedProviders[clientName] = provider
 
 	return nil
@@ -167,4 +143,23 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 	}
 
 	return provider, api.hks, api.evalCtx
+}
+
+// initAndShutdown is a helper to initialise new FeatureProvider and shutdown old FeatureProvider.
+// Operation happens concurrently.
+func (api *evaluationAPI) initAndShutdown(newProvider FeatureProvider, oldProvider FeatureProvider) {
+	go func() {
+		v, ok := newProvider.(StateHandler)
+		if ok {
+			v.Init(api.evalCtx)
+		}
+
+		// oldProvider can be nil
+		if oldProvider != nil {
+			v, ok = oldProvider.(StateHandler)
+			if ok {
+				v.Shutdown()
+			}
+		}
+	}()
 }

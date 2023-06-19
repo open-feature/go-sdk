@@ -103,6 +103,81 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 // The provider mutator function MUST invoke the shutdown function on the previously registered provider once it's no
 // longer being used to resolve flag values.
+func TestRequirement_1_1_2_3(t *testing.T) {
+	t.Run("default provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, shutdownSem := setupProviderWithSemaphores()
+
+		err := SetProvider(provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+
+		providerOverride, _, _ := setupProviderWithSemaphores()
+
+		err = SetProvider(providerOverride)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("shutdown not invoked for old default provider when registering new provider")
+		case <-shutdownSem:
+			break
+		}
+
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, shutdownSem := setupProviderWithSemaphores()
+
+		var client = "client"
+
+		err := SetNamedProvider(client, provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+		
+		providerOverride, _, _ := setupProviderWithSemaphores()
+
+		err = SetNamedProvider(client, providerOverride)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("shutdown not invoked for old default provider when registering new provider")
+		case <-shutdownSem:
+			break
+		}
+	})
+}
+
+// The provider mutator function MUST invoke the shutdown function on the previously registered provider once it's no
+// longer being used to resolve flag values.
 
 // The `API` MUST provide a function to bind a given `provider` to one or more client `name`s.
 // If the client-name already has a bound provider, it is overwritten with the new mapping.
@@ -229,7 +304,7 @@ func TestRequirement_1_6_1(t *testing.T) {
 
 	provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
-	// Setup provider and wait for initialization done - minor delay
+	// Setup provider and wait for initialization done
 	err := SetProvider(provider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
@@ -238,7 +313,7 @@ func TestRequirement_1_6_1(t *testing.T) {
 	select {
 	// short enough wait time, but not too long
 	case <-time.After(100 * time.Millisecond):
-		t.Errorf("intialization delayed")
+		t.Errorf("intialization timeout")
 	case <-initSem:
 		break
 	}
@@ -317,7 +392,8 @@ func setupProviderWithSemaphores() (struct {
 	intiSem := make(chan interface{}, 1)
 	shutdownSem := make(chan interface{}, 1)
 
-	sh := &StateHandlerForTests{
+	sh := &stateHandlerForTests{
+		// Semaphore must be invoked
 		initF: func(e EvaluationContext) {
 			intiSem <- ""
 		},
