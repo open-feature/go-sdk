@@ -101,7 +101,11 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
-	SetProvider(mockProvider)
+
+	err := SetProvider(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
 
 	client := NewClient("test")
 	clientEvalCtx := EvaluationContext{
@@ -136,7 +140,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	flatCtx := flattenContext(expectedMergedEvalCtx)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), flatCtx)
 
-	_, err := client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx)
+	_, err = client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx)
 	if err != nil {
 		t.Error(err)
 	}

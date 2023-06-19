@@ -14,7 +14,10 @@ func setupFuzzClient(f *testing.F) *openfeature.Client {
 	f.Helper()
 
 	provider := flagd.NewProvider(flagd.WithPort(8013), flagd.WithoutCache())
-	openfeature.SetProvider(provider)
+	err := openfeature.SetProvider(provider)
+	if err != nil {
+		f.Errorf("error setting up provider %v", err)
+	}
 
 	select {
 	case <-provider.IsReady():

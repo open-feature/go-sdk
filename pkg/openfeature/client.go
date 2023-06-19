@@ -85,7 +85,6 @@ func (c *Client) AddHooks(hooks ...Hook) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.hooks = append(c.hooks, hooks...)
-	c.logger().V(info).Info("appended hooks to client", "client", c.metadata.name, "hooks", hooks)
 }
 
 // SetEvaluationContext sets the client's evaluation context
@@ -93,9 +92,6 @@ func (c *Client) SetEvaluationContext(evalCtx EvaluationContext) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.evaluationContext = evalCtx
-	c.logger().V(info).Info(
-		"set client evaluation context", "client", c.metadata.name, "evaluationContext", evalCtx,
-	)
 }
 
 // EvaluationContext returns the client's evaluation context
@@ -167,12 +163,13 @@ type ResolutionDetail struct {
 	FlagMetadata FlagMetadata
 }
 
-// A structure which supports definition of arbitrary properties, with keys of type string, and values of type boolean, string, int64 or float64.
-//
-// This structure is populated by a provider for use by an Application Author (via the Evaluation API) or an Application Integrator (via hooks).
+// FlagMetadata is a structure which supports definition of arbitrary properties, with keys of type string, and values
+// of type boolean, string, int64 or float64. This structure is populated by a provider for use by an Application
+// Author (via the Evaluation API) or an Application Integrator (via hooks).
 type FlagMetadata map[string]interface{}
 
-// Fetch string value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetString fetch string value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetString(key string) (string, error) {
 	v, ok := f[key]
 	if !ok {
@@ -186,7 +183,8 @@ func (f FlagMetadata) GetString(key string) (string, error) {
 	}
 }
 
-// Fetch bool value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetBool fetch bool value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetBool(key string) (bool, error) {
 	v, ok := f[key]
 	if !ok {
@@ -200,7 +198,8 @@ func (f FlagMetadata) GetBool(key string) (bool, error) {
 	}
 }
 
-// Fetch int64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetInt fetch int64 value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetInt(key string) (int64, error) {
 	v, ok := f[key]
 	if !ok {
@@ -222,7 +221,8 @@ func (f FlagMetadata) GetInt(key string) (int64, error) {
 	}
 }
 
-// Fetch float64 value from FlagMetadata, returns an error if the key does not exist, or, the value is of the wrong type
+// GetFloat fetch float64 value from FlagMetadata.
+// Returns an error if the key does not exist, or, the value is of the wrong type
 func (f FlagMetadata) GetFloat(key string) (float64, error) {
 	v, ok := f[key]
 	if !ok {
@@ -240,6 +240,22 @@ func (f FlagMetadata) GetFloat(key string) (float64, error) {
 
 // Option applies a change to EvaluationOptions
 type Option func(*EvaluationOptions)
+
+// EvaluationOptions should contain a list of hooks to be executed for a flag evaluation
+type EvaluationOptions struct {
+	hooks     []Hook
+	hookHints HookHints
+}
+
+// HookHints returns evaluation options' hook hints
+func (e EvaluationOptions) HookHints() HookHints {
+	return e.hookHints
+}
+
+// Hooks returns evaluation options' hooks
+func (e EvaluationOptions) Hooks() []Hook {
+	return e.hooks
+}
 
 // WithHooks applies provided hooks.
 func WithHooks(hooks ...Hook) Option {
@@ -631,11 +647,6 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 func (c *Client) evaluate(
 	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (InterfaceEvaluationDetails, error) {
-	c.logger().V(debug).Info(
-		"evaluating flag", "flag", flag, "type", flagType.String(), "defaultValue", defaultValue,
-		"evaluationContext", evalCtx, "evaluationOptions", options,
-	)
-
 	evalDetails := InterfaceEvaluationDetails{
 		Value: defaultValue,
 		EvaluationDetails: EvaluationDetails{
@@ -649,11 +660,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	api.RLock()
-	provider := api.prvder
-	globalHooks := api.hks
-	globalCtx := api.evalCtx
-	api.RUnlock()
+	provider, globalHooks, globalCtx := forTransaction(c.metadata.name)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
@@ -737,8 +744,6 @@ func (c *Client) evaluate(
 		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
 	}
-
-	c.logger().V(debug).Info("evaluated flag", "flag", flag, "details", evalDetails, "type", flagType)
 	return evalDetails, nil
 }
 
@@ -756,9 +761,6 @@ func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 func (c *Client) beforeHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
-	c.logger().V(debug).Info("executing before hooks")
-	defer c.logger().V(debug).Info("executed before hooks")
-
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(ctx, hookCtx, options.hookHints)
 		if resultEvalCtx != nil {
@@ -775,9 +777,6 @@ func (c *Client) beforeHooks(
 func (c *Client) afterHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
-	c.logger().V(debug).Info("executing after hooks")
-	defer c.logger().V(debug).Info("executed after hooks")
-
 	for _, hook := range hooks {
 		if err := hook.After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
 			return err
@@ -788,18 +787,12 @@ func (c *Client) afterHooks(
 }
 
 func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
-	c.logger().V(debug).Info("executing error hooks")
-	defer c.logger().V(debug).Info("executed error hooks")
-
 	for _, hook := range hooks {
 		hook.Error(ctx, hookCtx, err, options.hookHints)
 	}
 }
 
 func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
-	c.logger().V(debug).Info("executing finally hooks")
-	defer c.logger().V(debug).Info("executed finally hooks")
-
 	for _, hook := range hooks {
 		hook.Finally(ctx, hookCtx, options.hookHints)
 	}
