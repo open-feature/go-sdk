@@ -20,13 +20,15 @@ type evaluationAPI struct {
 
 // newEvaluationAPI is a helper to generate an API. Used internally
 func newEvaluationAPI() evaluationAPI {
+	logger := logr.New(internal.Logger{})
+
 	return evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
 		evalCtx:         EvaluationContext{},
-		logger:          logr.New(internal.Logger{}),
-		eventHandler:    newEventHandler(),
+		logger:          logger,
+		eventHandler:    newEventHandler(logger),
 		mu:              sync.RWMutex{},
 	}
 }
@@ -107,6 +109,7 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.mu.Unlock()
 
 	api.logger = l
+	api.eventHandler.updateLogger(l)
 }
 
 func (api *evaluationAPI) getLogger() logr.Logger {

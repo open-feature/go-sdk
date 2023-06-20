@@ -3,6 +3,7 @@ package openfeature
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	"sync"
 	"time"
@@ -10,6 +11,24 @@ import (
 
 // event handler is registry to connect API and Client event handlers to Providers
 
+type eventHandler struct {
+	providerShutdownHook map[string]chan interface{}
+	apiRegistry          map[EventType][]EventCallBack
+	clientRegistry       map[string]clientHolder
+	logger               logr.Logger
+	mu                   sync.Mutex
+}
+
+func newEventHandler(logger logr.Logger) eventHandler {
+	return eventHandler{
+		providerShutdownHook: map[string]chan interface{}{},
+		apiRegistry:          map[EventType][]EventCallBack{},
+		clientRegistry:       map[string]clientHolder{},
+		logger:               logger,
+	}
+}
+
+// clientHolder is a helper struct to hold client specific callbacks
 type clientHolder struct {
 	name   string
 	holder map[EventType][]EventCallBack
@@ -22,19 +41,11 @@ func newClientHolder(client string) clientHolder {
 	}
 }
 
-type eventHandler struct {
-	providerShutdownHook map[string]chan interface{}
-	apiRegistry          map[EventType][]EventCallBack
-	clientRegistry       map[string]clientHolder
-	mu                   sync.Mutex
-}
+func (e *eventHandler) updateLogger(l logr.Logger) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-func newEventHandler() eventHandler {
-	return eventHandler{
-		providerShutdownHook: map[string]chan interface{}{},
-		apiRegistry:          map[EventType][]EventCallBack{},
-		clientRegistry:       map[string]clientHolder{},
-	}
+	e.logger = l
 }
 
 func (e *eventHandler) registerApiHandler(t EventType, c EventCallBack) {
@@ -67,16 +78,16 @@ func (e *eventHandler) removeApiHandler(t EventType, c EventCallBack) {
 	e.apiRegistry[t] = entrySlice
 }
 
-func (e *eventHandler) registerClientHandler(name string, t EventType, c EventCallBack) {
+func (e *eventHandler) registerClientHandler(clientName string, t EventType, c EventCallBack) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.clientRegistry[name]
+	_, ok := e.clientRegistry[clientName]
 	if !ok {
-		e.clientRegistry[name] = newClientHolder(name)
+		e.clientRegistry[clientName] = newClientHolder(clientName)
 	}
 
-	v := e.clientRegistry[name]
+	v := e.clientRegistry[clientName]
 
 	if v.holder[t] == nil {
 		v.holder[t] = []EventCallBack{c}
@@ -127,10 +138,9 @@ func (e *eventHandler) registerEventingProvider(provider FeatureProvider) {
 		for {
 			select {
 			case event := <-v.EventChannel():
-				// todo loggign or ignore errors here
 				err := e.triggerEvent(event)
 				if err != nil {
-					return
+					e.logger.Error(err, fmt.Sprintf("error handling event type: %s", event.EventType))
 				}
 			case <-sem:
 				return
@@ -139,7 +149,7 @@ func (e *eventHandler) registerEventingProvider(provider FeatureProvider) {
 	}()
 }
 
-func (e *eventHandler) triggerEvent(t Event) error {
+func (e *eventHandler) triggerEvent(event Event) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -150,30 +160,42 @@ func (e *eventHandler) triggerEvent(t Event) error {
 
 	group.Go(func() error {
 		// first run API handlers
-		for _, c := range e.apiRegistry[t.EventType] {
+		for _, c := range e.apiRegistry[event.EventType] {
 			f := *c
-			f(EventDetails{
-				ProviderEventDetails: ProviderEventDetails{
-					Message:       t.Message,
-					FlagChanges:   t.FlagChanges,
-					EventMetadata: t.EventMetadata,
-				},
-			})
+			func() {
+				defer func() {
+					recover()
+				}()
+
+				f(EventDetails{
+					ProviderEventDetails: ProviderEventDetails{
+						Message:       event.Message,
+						FlagChanges:   event.FlagChanges,
+						EventMetadata: event.EventMetadata,
+					},
+				})
+			}()
 		}
 
 		// then run Client handlers
-		for _, client := range e.clientRegistry {
-			for _, c := range client.holder[t.EventType] {
-				f := *c
+		// Note - we must only run associated client handlers of the provider
+		associateClientRegistry := e.clientRegistry[event.ProviderName]
+		for _, c := range associateClientRegistry.holder[event.EventType] {
+			f := *c
+			func() {
+				defer func() {
+					recover()
+				}()
+
 				f(EventDetails{
-					client: client.name,
+					client: associateClientRegistry.name,
 					ProviderEventDetails: ProviderEventDetails{
-						Message:       t.Message,
-						FlagChanges:   t.FlagChanges,
-						EventMetadata: t.EventMetadata,
+						Message:       event.Message,
+						FlagChanges:   event.FlagChanges,
+						EventMetadata: event.EventMetadata,
 					},
 				})
-			}
+			}()
 		}
 
 		return nil
@@ -181,7 +203,7 @@ func (e *eventHandler) triggerEvent(t Event) error {
 
 	// wait for completion or timeout
 	select {
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(500 * time.Millisecond):
 		return fmt.Errorf("event handlers timeout")
 	case <-gCtx.Done():
 		return nil
@@ -208,7 +230,7 @@ func (e *eventHandler) unregisterEventingProvider(provider FeatureProvider) erro
 	select {
 	case sem <- "":
 		return nil
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(200 * time.Millisecond):
 		return fmt.Errorf("event handler of provider %s timeout with exiting", provider.Metadata().Name)
 	}
 }

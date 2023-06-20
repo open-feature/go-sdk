@@ -99,18 +99,11 @@ type ProviderEventDetails struct {
 	EventMetadata map[string]interface{}
 }
 
-// Event is a single event emitted by FeatureProvider
+// Event is an event emitted by a FeatureProvider.
 type Event struct {
+	ProviderName string
 	EventType
 	ProviderEventDetails
-}
-
-// SimpleEventHandler is the out-of-the-box EventHandler which is noop
-type SimpleEventHandler struct {
-}
-
-func (s SimpleEventHandler) EventChannel() <-chan Event {
-	return make(chan Event, 1)
 }
 
 type EventDetails struct {
@@ -119,6 +112,14 @@ type EventDetails struct {
 }
 
 type EventCallBack *func(details EventDetails)
+
+// SimpleEventHandler is the out-of-the-box EventHandler which is noop
+type SimpleEventHandler struct {
+}
+
+func (s SimpleEventHandler) EventChannel() <-chan Event {
+	return make(chan Event, 1)
+}
 
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
 // representing the result of the provider's flag resolution process

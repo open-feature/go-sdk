@@ -1,38 +1,341 @@
 package openfeature
 
 import (
+	"context"
+	"github.com/go-logr/logr"
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"golang.org/x/exp/slices"
+	"golang.org/x/sync/errgroup"
 	"reflect"
 	"testing"
 	"time"
 )
 
-var h1 func(details EventDetails)
-var h2 func(details EventDetails)
-var h3 func(details EventDetails)
-var h4 func(details EventDetails)
+var logger logr.Logger
 
 func init() {
-	h1 = func(details EventDetails) {
-		// noop
+	logger = logr.New(internal.Logger{})
+}
+
+// Requirement 5.1.1 The provider MAY define a mechanism for signaling the occurrence of one of a set of events,
+// including PROVIDER_READY, PROVIDER_ERROR, PROVIDER_CONFIGURATION_CHANGED and PROVIDER_STALE,
+// with a provider event details payload.
+func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
+
+	t.Run("Ignored non-eventing providers", func(t *testing.T) {
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(NoopProvider{})
+
+		if len(handler.providerShutdownHook) != 0 {
+			t.Errorf("implementation should ignore non eventing provider")
+		}
+
+		err := handler.unregisterEventingProvider(NoopProvider{})
+		if err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("Accepts addition and removal of eventing providers", func(t *testing.T) {
+		eventingImpl := &ProviderEventing{}
+
+		eventingProvider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
+
+		if len(handler.providerShutdownHook) != 1 {
+			t.Errorf("implementation should register eventing provider")
+		}
+
+		err := handler.unregisterEventingProvider(eventingProvider)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(handler.providerShutdownHook) != 0 {
+			t.Errorf("implementation should allow removal of eventing provider")
+		}
+
+		// double removal check for nil check & avoid panic
+		err = handler.unregisterEventingProvider(eventingProvider)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+// Requirement 5.1.2 When a provider signals the occurrence of a particular event,
+// the associated client and API event handlers MUST run.
+func TestEventHandler_Eventing(t *testing.T) {
+	t.Run("Simple API level event", func(t *testing.T) {
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
+		eventingProvider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
+
+		rsp := make(chan EventDetails)
+		callBack := func(details EventDetails) {
+			rsp <- details
+		}
+
+		handler.registerApiHandler(ProviderReady, &callBack)
+
+		fCh := []string{"flagA"}
+		meta := map[string]interface{}{
+			"key": "value",
+		}
+
+		// trigger event from provider implementation
+		eventingImpl.Invoke(Event{
+			EventType: ProviderReady,
+			ProviderEventDetails: ProviderEventDetails{
+				Message:       "ReadyMessage",
+				FlagChanges:   fCh,
+				EventMetadata: meta,
+			},
+		})
+
+		// wait for execution
+		var result EventDetails
+		select {
+		case result = <-rsp:
+			break
+		case <-time.After(200 * time.Millisecond):
+			t.Fatalf("timeout - event did not trigger")
+		}
+		if result.Message != "ReadyMessage" {
+			t.Errorf("expected %s, but got %s", "EventMessage", result.Message)
+		}
+
+		if !slices.Equal(result.FlagChanges, fCh) {
+			t.Errorf("flag changes are not equal")
+		}
+
+		if !reflect.DeepEqual(result.EventMetadata, meta) {
+			t.Errorf("metadata are not equal")
+		}
+	})
+
+	t.Run("Simple Client level event", func(t *testing.T) {
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
+		// NoopProvider backed event supported provider
+		eventingProvider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
+
+		rsp := make(chan EventDetails)
+		callBack := func(details EventDetails) {
+			rsp <- details
+		}
+
+		// associated to NoopProvider
+		handler.registerClientHandler(eventingProvider.Metadata().Name, ProviderReady, &callBack)
+
+		fCh := []string{"flagA"}
+		meta := map[string]interface{}{
+			"key": "value",
+		}
+
+		// trigger event from provider implementation
+		eventingImpl.Invoke(Event{
+			ProviderName: eventingProvider.Metadata().Name,
+			EventType:    ProviderReady,
+			ProviderEventDetails: ProviderEventDetails{
+				Message:       "ReadyMessage",
+				FlagChanges:   fCh,
+				EventMetadata: meta,
+			},
+		})
+
+		// wait for execution
+		var result EventDetails
+		select {
+		case result = <-rsp:
+			break
+		case <-time.After(200 * time.Millisecond):
+			t.Fatalf("timeout - event did not trigger")
+		}
+
+		if result.client != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.client)
+		}
+
+		if result.Message != "ReadyMessage" {
+			t.Errorf("expected %s, but got %s", "EventMessage", result.Message)
+		}
+
+		if !slices.Equal(result.FlagChanges, fCh) {
+			t.Errorf("flag changes are not equal")
+		}
+
+		if !reflect.DeepEqual(result.EventMetadata, meta) {
+			t.Errorf("metadata are not equal")
+		}
+	})
+}
+
+// Requirement 5.1.3 When a provider signals the occurrence of a particular event,
+// event handlers on clients which are not associated with that provider MUST NOT run.
+func TestEventHandler_clientAssociation(t *testing.T) {
+	eventingImpl := &ProviderEventing{
+		c: make(chan Event, 1),
 	}
 
-	h2 = func(details EventDetails) {
-		// noop
+	// NoopProvider backed event supported provider
+	eventingProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		eventingImpl,
 	}
 
-	h3 = func(details EventDetails) {
-		// noop
+	// event handler & provider registration
+	handler := newEventHandler(logger)
+	handler.registerEventingProvider(eventingProvider)
+
+	rsp := make(chan EventDetails)
+	callBack := func(details EventDetails) {
+		rsp <- details
 	}
 
-	h4 = func(details EventDetails) {
-		// noop
+	event := ProviderReady
+
+	// register a random client - no association with registered provider
+	handler.registerClientHandler("someClient", event, &callBack)
+
+	// invoke provider event
+	eventingImpl.Invoke(Event{
+		ProviderName:         eventingProvider.Metadata().Name,
+		EventType:            event,
+		ProviderEventDetails: ProviderEventDetails{},
+	})
+
+	select {
+	case <-rsp:
+		t.Fatalf("incorrect association - handler must not have been invoked")
+	case <-time.After(200 * time.Millisecond):
+		break
 	}
 }
 
+// Requirement 5.2.5 If a handler function terminates abnormally, other handler functions MUST run.
+func TestEventHandler_ErrorHandling(t *testing.T) {
+	errorCallback := func(e EventDetails) {
+		panic("callback panic")
+	}
+
+	rsp := make(chan EventDetails, 1)
+	successAPICallback := func(e EventDetails) {
+		rsp <- e
+	}
+
+	rspClient := make(chan EventDetails, 1)
+	successClientCallback := func(e EventDetails) {
+		rspClient <- e
+	}
+
+	handler := newEventHandler(logger)
+
+	// api level handlers
+	handler.registerApiHandler(ProviderReady, &errorCallback)
+	handler.registerApiHandler(ProviderReady, &successAPICallback)
+
+	// provider association
+	provider := "providerA"
+
+	// client level handlers
+	handler.registerClientHandler(provider, ProviderReady, &errorCallback)
+	handler.registerClientHandler(provider, ProviderReady, &successClientCallback)
+
+	// trigger events manually
+	go func() {
+		handler.triggerEvent(Event{
+			ProviderName:         provider,
+			EventType:            ProviderReady,
+			ProviderEventDetails: ProviderEventDetails{},
+		})
+	}()
+
+	select {
+	case <-rsp:
+		break
+	case <-time.After(200 * time.Millisecond):
+		t.Error("API level callback timeout - handler recovery was not successful")
+	}
+
+	select {
+	case <-rspClient:
+		break
+	case <-time.After(200 * time.Millisecond):
+		t.Error("client callback timeout - handler recovery was not successful")
+	}
+}
+
+// Make sure event handler cannot block
+func TestEventHandler_Timeout(t *testing.T) {
+	timeoutCallback := func(e EventDetails) {
+		time.Sleep(5 * time.Second)
+	}
+
+	handler := newEventHandler(logger)
+	handler.registerApiHandler(ProviderReady, &timeoutCallback)
+
+	group, ctx := errgroup.WithContext(context.Background())
+
+	group.Go(func() error {
+		return handler.triggerEvent(Event{
+			ProviderName:         "provider",
+			EventType:            ProviderReady,
+			ProviderEventDetails: ProviderEventDetails{},
+		})
+	})
+
+	select {
+	case <-ctx.Done():
+		break
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timeout while waiting for condition")
+	}
+
+	err := group.Wait()
+	if err == nil {
+		t.Errorf("expected timeout error, but got none")
+	}
+}
+
+// Contract tests - registration & removal
+
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
-		handler := newEventHandler()
+		handler := newEventHandler(logger)
 
 		// Add multiple - ProviderReady
 		handler.registerApiHandler(ProviderReady, &h1)
@@ -70,7 +373,7 @@ func TestEventHandler_Registration(t *testing.T) {
 	})
 
 	t.Run("Client handlers", func(t *testing.T) {
-		handler := newEventHandler()
+		handler := newEventHandler(logger)
 
 		// Add multiple - client a
 		handler.registerClientHandler("a", ProviderReady, &h1)
@@ -106,9 +409,8 @@ func TestEventHandler_Registration(t *testing.T) {
 }
 
 func TestEventHandler_APIRemoval(t *testing.T) {
-
 	t.Run("API level removal", func(t *testing.T) {
-		handler := newEventHandler()
+		handler := newEventHandler(logger)
 
 		// Add multiple - ProviderReady
 		handler.registerApiHandler(ProviderReady, &h1)
@@ -161,7 +463,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 	})
 
 	t.Run("Client level removal", func(t *testing.T) {
-		handler := newEventHandler()
+		handler := newEventHandler(logger)
 
 		// Add multiple - client a
 		handler.registerClientHandler("a", ProviderReady, &h1)
@@ -215,181 +517,5 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 		// removal referenced to non-existing clients does nothing & no panics
 		handler.removeClientHandler("non-existing", ProviderReady, &h1)
 		handler.removeClientHandler("b", ProviderReady, &h1)
-	})
-}
-
-func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
-
-	t.Run("Ignored non-eventing providers", func(t *testing.T) {
-		handler := newEventHandler()
-		handler.registerEventingProvider(NoopProvider{})
-
-		if len(handler.providerShutdownHook) != 0 {
-			t.Errorf("implementation should ignore non eventing provider")
-		}
-
-		err := handler.unregisterEventingProvider(NoopProvider{})
-		if err != nil {
-			t.Error(err)
-		}
-	})
-
-	t.Run("Accepts addition and removal of eventing providers", func(t *testing.T) {
-		eventingImpl := &ProviderEventing{}
-
-		eventingProvider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			eventingImpl,
-		}
-
-		handler := newEventHandler()
-		handler.registerEventingProvider(eventingProvider)
-
-		if len(handler.providerShutdownHook) != 1 {
-			t.Errorf("implementation should register eventing provider")
-		}
-
-		err := handler.unregisterEventingProvider(eventingProvider)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if len(handler.providerShutdownHook) != 0 {
-			t.Errorf("implementation should allow removal of eventing provider")
-		}
-
-		// double removal check for nil check & avoid panic
-		err = handler.unregisterEventingProvider(eventingProvider)
-		if err != nil {
-			t.Error(err)
-		}
-	})
-}
-
-func TestEventHandler_Eventing(t *testing.T) {
-	t.Run("Simple API level event", func(t *testing.T) {
-		eventingImpl := &ProviderEventing{
-			c: make(chan Event),
-		}
-
-		eventingProvider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			eventingImpl,
-		}
-
-		handler := newEventHandler()
-		handler.registerEventingProvider(eventingProvider)
-
-		rsp := make(chan EventDetails)
-		callBack := func(details EventDetails) {
-			rsp <- details
-		}
-
-		handler.registerApiHandler(ProviderReady, &callBack)
-
-		fCh := []string{"flagA"}
-		meta := map[string]interface{}{
-			"key": "value",
-		}
-
-		// trigger event
-		eventingImpl.Invoke(Event{
-			EventType: ProviderReady,
-			ProviderEventDetails: ProviderEventDetails{
-				Message:       "ReadyMessage",
-				FlagChanges:   fCh,
-				EventMetadata: meta,
-			},
-		})
-
-		// wait for execution
-		var result EventDetails
-		select {
-		case result = <-rsp:
-			break
-		case <-time.After(100 * time.Second):
-			t.Errorf("timeout - event did not trigger")
-		}
-		if result.Message != "ReadyMessage" {
-			t.Errorf("expected %s, but got %s", "EventMessage", result.Message)
-		}
-
-		if !slices.Equal(result.FlagChanges, fCh) {
-			t.Errorf("flag changes are not equal")
-		}
-
-		if !reflect.DeepEqual(result.EventMetadata, meta) {
-			t.Errorf("metadata are not equal")
-		}
-	})
-
-	t.Run("Simple Client level event", func(t *testing.T) {
-		eventingImpl := &ProviderEventing{
-			c: make(chan Event),
-		}
-
-		eventingProvider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			eventingImpl,
-		}
-
-		handler := newEventHandler()
-		handler.registerEventingProvider(eventingProvider)
-
-		rsp := make(chan EventDetails)
-		callBack := func(details EventDetails) {
-			rsp <- details
-		}
-
-		handler.registerClientHandler("clientA", ProviderReady, &callBack)
-
-		fCh := []string{"flagA"}
-		meta := map[string]interface{}{
-			"key": "value",
-		}
-
-		// trigger event
-		eventingImpl.Invoke(Event{
-			EventType: ProviderReady,
-			ProviderEventDetails: ProviderEventDetails{
-				Message:       "ReadyMessage",
-				FlagChanges:   fCh,
-				EventMetadata: meta,
-			},
-		})
-
-		// wait for execution
-		var result EventDetails
-		select {
-		case result = <-rsp:
-			break
-		case <-time.After(100 * time.Second):
-			t.Errorf("timeout - event did not trigger")
-		}
-
-		if result.client != "clientA" {
-			t.Errorf("expected %s, but got %s", "clientA", result.client)
-		}
-
-		if result.Message != "ReadyMessage" {
-			t.Errorf("expected %s, but got %s", "EventMessage", result.Message)
-		}
-
-		if !slices.Equal(result.FlagChanges, fCh) {
-			t.Errorf("flag changes are not equal")
-		}
-
-		if !reflect.DeepEqual(result.EventMetadata, meta) {
-			t.Errorf("metadata are not equal")
-		}
 	})
 }
