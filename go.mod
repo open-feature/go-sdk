@@ -9,7 +9,7 @@ require (
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.7
 	github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.11.0
+	golang.org/x/text v0.10.0
 )
 
 require (
