@@ -1,12 +1,12 @@
 package openfeature
 
 import (
-	"reflect"
-	"testing"
-
 	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
+	"reflect"
+	"testing"
+	"time"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
@@ -31,7 +31,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 
 // The `API` MUST provide a function to set the default `provider`,
 // which accepts an API-conformant `provider` implementation.
-func TestRequirement_1_1_2(t *testing.T) {
+func TestRequirement_1_1_2_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
@@ -48,6 +48,136 @@ func TestRequirement_1_1_2(t *testing.T) {
 		t.Error("globally set provider's metadata doesn't match the mock provider's metadata")
 	}
 }
+
+// The provider mutator function MUST invoke the initialize function on the newly registered provider before using it
+// to resolve flag values.
+func TestRequirement_1_1_2_2(t *testing.T) {
+	t.Run("default provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, _ := setupProviderWithSemaphores()
+
+		err := SetProvider(provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+
+		if !reflect.DeepEqual(provider, getProvider()) {
+			t.Errorf("provider not updated to the one set")
+		}
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, _ := setupProviderWithSemaphores()
+
+		var client = "client"
+
+		err := SetNamedProvider(client, provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+
+		if !reflect.DeepEqual(provider, getNamedProviders()[client]) {
+			t.Errorf("provider not updated to the one set")
+		}
+	})
+}
+
+// The provider mutator function MUST invoke the shutdown function on the previously registered provider once it's no
+// longer being used to resolve flag values.
+func TestRequirement_1_1_2_3(t *testing.T) {
+	t.Run("default provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, shutdownSem := setupProviderWithSemaphores()
+
+		err := SetProvider(provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+
+		providerOverride, _, _ := setupProviderWithSemaphores()
+
+		err = SetProvider(providerOverride)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("shutdown not invoked for old default provider when registering new provider")
+		case <-shutdownSem:
+			break
+		}
+
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider, initSem, shutdownSem := setupProviderWithSemaphores()
+
+		var client = "client"
+
+		err := SetNamedProvider(client, provider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("initialization not invoked with provider registration")
+		case <-initSem:
+			break
+		}
+		
+		providerOverride, _, _ := setupProviderWithSemaphores()
+
+		err = SetNamedProvider(client, providerOverride)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		select {
+		// short enough wait time, but not too long
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("shutdown not invoked for old default provider when registering new provider")
+		case <-shutdownSem:
+			break
+		}
+	})
+}
+
+// The provider mutator function MUST invoke the shutdown function on the previously registered provider once it's no
+// longer being used to resolve flag values.
 
 // The `API` MUST provide a function to bind a given `provider` to one or more client `name`s.
 // If the client-name already has a bound provider, it is overwritten with the new mapping.
@@ -168,6 +298,37 @@ func TestRequirement_1_1_7(t *testing.T) {
 	use(f) // to avoid the declared and not used error
 }
 
+// The API MUST define a mechanism to propagate a shutdown request to active providers.
+func TestRequirement_1_6_1(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	provider, initSem, shutdownSem := setupProviderWithSemaphores()
+
+	// Setup provider and wait for initialization done
+	err := SetProvider(provider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
+	select {
+	// short enough wait time, but not too long
+	case <-time.After(100 * time.Millisecond):
+		t.Errorf("intialization timeout")
+	case <-initSem:
+		break
+	}
+
+	Shutdown()
+
+	select {
+	// short enough wait time, but not too long
+	case <-time.After(100 * time.Millisecond):
+		t.Errorf("shutdown not invoked")
+	case <-shutdownSem:
+		break
+	}
+}
+
 // Non-spec bound validations
 
 // If there is no client name bound provider, then return the default provider
@@ -222,4 +383,35 @@ func use(vals ...interface{}) {
 	for _, val := range vals {
 		_ = val
 	}
+}
+
+func setupProviderWithSemaphores() (struct {
+	FeatureProvider
+	StateHandler
+}, chan interface{}, chan interface{}) {
+	intiSem := make(chan interface{}, 1)
+	shutdownSem := make(chan interface{}, 1)
+
+	sh := &stateHandlerForTests{
+		// Semaphore must be invoked
+		initF: func(e EvaluationContext) {
+			intiSem <- ""
+		},
+		// Semaphore must be invoked
+		shutdownF: func() {
+			shutdownSem <- ""
+		},
+		State: ReadyState,
+	}
+
+	// Derive provider with initialize & shutdown support
+	provider := struct {
+		FeatureProvider
+		StateHandler
+	}{
+		FeatureProvider: NoopProvider{},
+		StateHandler:    sh,
+	}
+
+	return provider, intiSem, shutdownSem
 }

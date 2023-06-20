@@ -3,7 +3,8 @@ package openfeature
 import "context"
 
 // NoopProvider implements the FeatureProvider interface and provides functions for evaluating flags
-type NoopProvider struct{}
+type NoopProvider struct {
+}
 
 // Metadata returns the metadata of the provider
 func (e NoopProvider) Metadata() Metadata {

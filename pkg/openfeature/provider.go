@@ -23,6 +23,10 @@ const (
 	// ErrorReason - the resolved value was the result of an error.
 	ErrorReason Reason = "ERROR"
 
+	NotReadyState State = "NOT_READY"
+	ReadyState    State = "READY"
+	ErrorState    State = "ERROR"
+
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
@@ -34,7 +38,7 @@ type FlattenedContext map[string]interface{}
 type Reason string
 
 // FeatureProvider interface defines a set of functions that can be called in order to evaluate a flag.
-// vendors should implement
+// This should be implemented by flag management systems.
 type FeatureProvider interface {
 	Metadata() Metadata
 	BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail
@@ -43,6 +47,17 @@ type FeatureProvider interface {
 	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
 	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
 	Hooks() []Hook
+}
+
+// State represents the status of the provider
+type State string
+
+// StateHandler is the contract for initialization & shutdown.
+// FeatureProvider can opt in for this behavior by implementing the interface
+type StateHandler interface {
+	Init(evaluationContext EvaluationContext)
+	Shutdown()
+	Status() State
 }
 
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
