@@ -107,11 +107,11 @@ type Event struct {
 }
 
 type EventDetails struct {
-	providerName string
+	client string
 	ProviderEventDetails
 }
 
-type EventCallback *func(details EventDetails)
+type EventCallBack *func(details EventDetails)
 
 // SimpleEventHandler is the out-of-the-box EventHandler which is noop
 type SimpleEventHandler struct {
