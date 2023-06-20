@@ -117,7 +117,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(handlerExecutionTime):
 			t.Fatalf("timeout - event did not trigger")
 		}
 		if result.Message != "ReadyMessage" {
@@ -179,7 +179,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(handlerExecutionTime):
 			t.Fatalf("timeout - event did not trigger")
 		}
 
@@ -241,7 +241,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	select {
 	case <-rsp:
 		t.Fatalf("incorrect association - handler must not have been invoked")
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(handlerExecutionTime):
 		break
 	}
 }
@@ -277,7 +277,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 
 	// trigger events manually
 	go func() {
-		handler.triggerEvent(Event{
+		_ = handler.triggerEvent(Event{
 			ProviderName:         provider,
 			EventType:            ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{},
@@ -287,14 +287,14 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	select {
 	case <-rsp:
 		break
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(handlerExecutionTime):
 		t.Error("API level callback timeout - handler recovery was not successful")
 	}
 
 	select {
 	case <-rspClient:
 		break
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(handlerExecutionTime):
 		t.Error("client callback timeout - handler recovery was not successful")
 	}
 }
@@ -302,7 +302,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 // Make sure event handler cannot block
 func TestEventHandler_Timeout(t *testing.T) {
 	timeoutCallback := func(e EventDetails) {
-		time.Sleep(5 * time.Second)
+		time.Sleep(handlerExecutionTime * 10)
 	}
 
 	handler := newEventHandler(logger)
@@ -321,7 +321,7 @@ func TestEventHandler_Timeout(t *testing.T) {
 	select {
 	case <-ctx.Done():
 		break
-	case <-time.After(1 * time.Second):
+	case <-time.After(handlerExecutionTime * 2):
 		t.Fatalf("timeout while waiting for condition")
 	}
 

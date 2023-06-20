@@ -11,6 +11,9 @@ import (
 
 // event handler is registry to connect API and Client event handlers to Providers
 
+// handlerExecutionTime defines the maximum time event handler will wait for its handlers to complete
+const handlerExecutionTime = 500 * time.Millisecond
+
 type eventHandler struct {
 	providerShutdownHook map[string]chan interface{}
 	apiRegistry          map[EventType][]EventCallBack
@@ -164,7 +167,9 @@ func (e *eventHandler) triggerEvent(event Event) error {
 			f := *c
 			func() {
 				defer func() {
-					recover()
+					if r := recover(); r != nil {
+						e.logger.Info("recovered from a panic")
+					}
 				}()
 
 				f(EventDetails{
@@ -184,7 +189,9 @@ func (e *eventHandler) triggerEvent(event Event) error {
 			f := *c
 			func() {
 				defer func() {
-					recover()
+					if r := recover(); r != nil {
+						e.logger.Info("recovered from a panic")
+					}
 				}()
 
 				f(EventDetails{
@@ -203,7 +210,7 @@ func (e *eventHandler) triggerEvent(event Event) error {
 
 	// wait for completion or timeout
 	select {
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(handlerExecutionTime):
 		return fmt.Errorf("event handlers timeout")
 	case <-gCtx.Done():
 		return nil
