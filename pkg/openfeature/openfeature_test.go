@@ -2,11 +2,12 @@ package openfeature
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/golang/mock/gomock"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
@@ -158,7 +159,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 		case <-initSem:
 			break
 		}
-		
+
 		providerOverride, _, _ := setupProviderWithSemaphores()
 
 		err = SetNamedProvider(client, providerOverride)
@@ -327,6 +328,122 @@ func TestRequirement_1_6_1(t *testing.T) {
 	case <-shutdownSem:
 		break
 	}
+}
+
+func TestRequirement_EventCompliance(t *testing.T) {
+
+	// The client MUST provide a function for associating handler functions with a particular provider event type.
+	// The API and client MUST provide a function allowing the removal of event handlers.
+	t.Run("requirement_5_2_1 & requirement_5_2_1", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		clientName := "OFClient"
+
+		client := NewClient(clientName)
+
+		// adding handlers
+		client.AddHandler(ProviderReady, &h1)
+		client.AddHandler(ProviderError, &h1)
+		client.AddHandler(ProviderStale, &h1)
+		client.AddHandler(ProviderConfigChange, &h1)
+
+		registry := getClientRegistry(clientName)
+
+		if registry == nil {
+			t.Fatalf("no event handler registry present for client name %s", clientName)
+		}
+
+		if len(registry.holder[ProviderReady]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry.holder[ProviderError]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry.holder[ProviderStale]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry.holder[ProviderConfigChange]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		// removing handlers
+		client.RemoveHandler(ProviderReady, &h1)
+		client.RemoveHandler(ProviderError, &h1)
+		client.RemoveHandler(ProviderStale, &h1)
+		client.RemoveHandler(ProviderConfigChange, &h1)
+
+		if len(registry.holder[ProviderReady]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry.holder[ProviderError]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry.holder[ProviderStale]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry.holder[ProviderConfigChange]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+	})
+
+	// The API MUST provide a function for associating handler functions with a particular provider event type.
+	t.Run("requirement_5_2_2 & requirement_5_2_1", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		// adding handlers
+		AddHandler(ProviderReady, &h1)
+		AddHandler(ProviderError, &h1)
+		AddHandler(ProviderStale, &h1)
+		AddHandler(ProviderConfigChange, &h1)
+
+		registry := getAPIEventRegistry()
+
+		if len(registry[ProviderReady]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry[ProviderError]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry[ProviderStale]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		if len(registry[ProviderConfigChange]) < 1 {
+			t.Errorf("expected a registry regiration, but got none")
+		}
+
+		// removing handlers
+		RemoveHandler(ProviderReady, &h1)
+		RemoveHandler(ProviderError, &h1)
+		RemoveHandler(ProviderStale, &h1)
+		RemoveHandler(ProviderConfigChange, &h1)
+
+		registry = getAPIEventRegistry()
+
+		if len(registry[ProviderReady]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry[ProviderError]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry[ProviderStale]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+
+		if len(registry[ProviderConfigChange]) > 0 {
+			t.Errorf("expected empty registrations")
+		}
+	})
 }
 
 // Non-spec bound validations

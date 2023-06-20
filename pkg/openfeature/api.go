@@ -2,10 +2,9 @@ package openfeature
 
 import (
 	"errors"
-	"sync"
-
 	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
+	"sync"
 )
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
@@ -15,17 +14,21 @@ type evaluationAPI struct {
 	hks             []Hook
 	evalCtx         EvaluationContext
 	logger          logr.Logger
-	mu              sync.RWMutex
+	eventHandler
+	mu sync.RWMutex
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
 func newEvaluationAPI() evaluationAPI {
+	logger := logr.New(internal.Logger{})
+
 	return evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
 		evalCtx:         EvaluationContext{},
-		logger:          logr.New(internal.Logger{}),
+		logger:          logger,
+		eventHandler:    newEventHandler(logger),
 		mu:              sync.RWMutex{},
 	}
 }
@@ -41,8 +44,15 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	api.initAndShutdown(provider, api.defaultProvider)
+	oldProvider := api.defaultProvider
+	api.initAndShutdown(provider, oldProvider)
 	api.defaultProvider = provider
+
+	api.registerEventingProvider(provider)
+	err := api.unregisterEventingProvider(oldProvider)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -66,8 +76,15 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.namedProviders[clientName]
 	api.initAndShutdown(provider, api.namedProviders[clientName])
 	api.namedProviders[clientName] = provider
+
+	api.registerEventingProvider(provider)
+	err := api.unregisterEventingProvider(oldProvider)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -92,6 +109,7 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.mu.Unlock()
 
 	api.logger = l
+	api.eventHandler.updateLogger(l)
 }
 
 func (api *evaluationAPI) getLogger() logr.Logger {
