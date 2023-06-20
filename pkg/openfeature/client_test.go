@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 )
@@ -911,10 +912,13 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 	// set new provider during initial provider's Before hook
 	mockProvider1Hook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(_ context.Context, _ HookContext, _ HookHints) (*EvaluationContext, error) {
-			err := SetProvider(mockProvider1)
+			err := SetProvider(mockProvider2)
 			if err != nil {
 				return nil, err
 			}
+
+			// wait for initialization
+			time.Sleep(200 * time.Millisecond)
 			return nil, nil
 		})
 
