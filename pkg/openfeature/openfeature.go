@@ -50,33 +50,33 @@ func AddHooks(hooks ...Hook) {
 }
 
 // AddHandler allows to add API level event handler
-func AddHandler(eventType EventType, callback EventCallback) {
+func AddHandler(eventType EventType, callback EventCallBack) {
 	api.registerApiHandler(eventType, callback)
 }
 
 // addClientHandler is a helper for Client to add an event handler
-func addClientHandler(name string, t EventType, c EventCallback) {
+func addClientHandler(name string, t EventType, c EventCallBack) {
 	api.registerClientHandler(name, t, c)
 }
 
 // RemoveHandler allows to remove API level event handler
-func RemoveHandler(eventType EventType, callback EventCallback) {
+func RemoveHandler(eventType EventType, callback EventCallBack) {
 	api.removeApiHandler(eventType, callback)
 }
 
 // removeClientHandler is a helper for Client to add an event handler
-func removeClientHandler(name string, t EventType, c EventCallback) {
+func removeClientHandler(name string, t EventType, c EventCallBack) {
 	api.removeClientHandler(name, t, c)
 }
 
 // getAPIEventRegistry is a helper for testing
-func getAPIEventRegistry() map[EventType][]EventCallback {
-	return api.eventExecutor.apiRegistry
+func getAPIEventRegistry() map[EventType][]EventCallBack {
+	return api.eventHandler.apiRegistry
 }
 
 // getClientRegistry is a helper for testing
-func getClientRegistry(client string) *scopedCallback {
-	if v, ok := api.eventExecutor.scopedRegistry[client]; ok {
+func getClientRegistry(client string) *clientHolder {
+	if v, ok := api.eventHandler.clientRegistry[client]; ok {
 		return &v
 	}
 
