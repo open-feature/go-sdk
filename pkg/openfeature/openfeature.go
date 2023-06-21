@@ -71,12 +71,12 @@ func removeClientHandler(name string, t EventType, c EventCallBack) {
 
 // getAPIEventRegistry is a helper for testing
 func getAPIEventRegistry() map[EventType][]EventCallBack {
-	return api.eventHandler.apiRegistry
+	return api.eventExecutor.apiRegistry
 }
 
 // getClientRegistry is a helper for testing
-func getClientRegistry(client string) *clientHolder {
-	if v, ok := api.eventHandler.clientRegistry[client]; ok {
+func getClientRegistry(client string) *scopedCallback {
+	if v, ok := api.eventExecutor.scopedRegistry[client]; ok {
 		return &v
 	}
 

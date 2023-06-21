@@ -2,9 +2,10 @@ package openfeature
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
-	"sync"
 )
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
@@ -14,8 +15,8 @@ type evaluationAPI struct {
 	hks             []Hook
 	evalCtx         EvaluationContext
 	logger          logr.Logger
-	eventHandler
-	mu sync.RWMutex
+	mu              sync.RWMutex
+	eventExecutor
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
@@ -28,8 +29,8 @@ func newEvaluationAPI() evaluationAPI {
 		hks:             []Hook{},
 		evalCtx:         EvaluationContext{},
 		logger:          logger,
-		eventHandler:    newEventHandler(logger),
 		mu:              sync.RWMutex{},
+		eventExecutor:   newEventHandler(logger),
 	}
 }
 
@@ -109,7 +110,7 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.mu.Unlock()
 
 	api.logger = l
-	api.eventHandler.updateLogger(l)
+	api.eventExecutor.updateLogger(l)
 }
 
 func (api *evaluationAPI) getLogger() logr.Logger {

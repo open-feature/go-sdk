@@ -1,13 +1,14 @@
 package openfeature
 
 import (
-	"reflect"
-	"testing"
-	"time"
-
+	"context"
 	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"golang.org/x/exp/slices"
+	"golang.org/x/sync/errgroup"
+	"reflect"
+	"testing"
+	"time"
 )
 
 var logger logr.Logger
@@ -22,27 +23,20 @@ func init() {
 func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 
 	t.Run("Ignored non-eventing providers", func(t *testing.T) {
-		executor := newEventExecutor(logger)
-		err := executor.registerDefaultProvider(NoopProvider{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(NoopProvider{})
 
-		if executor.defaultProviderReference != nil {
+		if len(handler.providerShutdownHook) != 0 {
 			t.Errorf("implementation should ignore non eventing provider")
 		}
 
-		err = executor.registerNamedEventingProvider("name", NoopProvider{})
+		err := handler.unregisterEventingProvider(NoopProvider{})
 		if err != nil {
-			t.Fatal(err)
-		}
-
-		if len(executor.namedProviderReference) != 0 {
-			t.Fatalf("implementation should ignore non eventing provider")
+			t.Error(err)
 		}
 	})
 
-	t.Run("Accepts addition of eventing providers", func(t *testing.T) {
+	t.Run("Accepts addition and removal of eventing providers", func(t *testing.T) {
 		eventingImpl := &ProviderEventing{}
 
 		eventingProvider := struct {
@@ -53,23 +47,26 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
-		err := executor.registerDefaultProvider(eventingProvider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
 
-		if executor.defaultProviderReference == nil {
+		if len(handler.providerShutdownHook) != 1 {
 			t.Errorf("implementation should register eventing provider")
 		}
 
-		err = executor.registerNamedEventingProvider("name", eventingProvider)
+		err := handler.unregisterEventingProvider(eventingProvider)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		if _, ok := executor.namedProviderReference["name"]; !ok {
-			t.Errorf("implementation should register named eventing provider")
+		if len(handler.providerShutdownHook) != 0 {
+			t.Errorf("implementation should allow removal of eventing provider")
+		}
+
+		// double removal check for nil check & avoid panic
+		err = handler.unregisterEventingProvider(eventingProvider)
+		if err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -90,18 +87,15 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
-		err := executor.registerDefaultProvider(eventingProvider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
 
 		rsp := make(chan EventDetails)
 		callBack := func(details EventDetails) {
 			rsp <- details
 		}
 
-		executor.registerApiHandler(ProviderReady, &callBack)
+		handler.registerApiHandler(ProviderReady, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -123,7 +117,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(handlerExecutionTime):
 			t.Fatalf("timeout - event did not trigger")
 		}
 		if result.Message != "ReadyMessage" {
@@ -153,22 +147,16 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
-
-		// associated to client name
-		associatedName := "providerForClient"
-
-		err := executor.registerNamedEventingProvider(associatedName, eventingProvider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		handler := newEventHandler(logger)
+		handler.registerEventingProvider(eventingProvider)
 
 		rsp := make(chan EventDetails)
 		callBack := func(details EventDetails) {
 			rsp <- details
 		}
 
-		executor.registerClientHandler(associatedName, ProviderReady, &callBack)
+		// associated to NoopProvider
+		handler.registerClientHandler(eventingProvider.Metadata().Name, ProviderReady, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -191,12 +179,12 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(handlerExecutionTime):
 			t.Fatalf("timeout - event did not trigger")
 		}
 
-		if result.providerName != eventingProvider.Metadata().Name {
-			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.providerName)
+		if result.client != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.client)
 		}
 
 		if result.Message != "ReadyMessage" {
@@ -220,8 +208,8 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		c: make(chan Event, 1),
 	}
 
-	// eventing supported provider
-	defaultProvider := struct {
+	// NoopProvider backed event supported provider
+	eventingProvider := struct {
 		FeatureProvider
 		EventHandler
 	}{
@@ -229,27 +217,9 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		eventingImpl,
 	}
 
-	executor := newEventExecutor(logger)
-
-	// default provider
-	err := executor.registerDefaultProvider(defaultProvider)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// named provider(associated to name someClient)
-	err = executor.registerNamedEventingProvider("someClient", struct {
-		FeatureProvider
-		EventHandler
-	}{
-		NoopProvider{},
-		&ProviderEventing{
-			c: make(chan Event, 1),
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// event handler & provider registration
+	handler := newEventHandler(logger)
+	handler.registerEventingProvider(eventingProvider)
 
 	rsp := make(chan EventDetails)
 	callBack := func(details EventDetails) {
@@ -257,19 +227,21 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	event := ProviderReady
-	executor.registerClientHandler("someClient", event, &callBack)
 
-	// invoke default provider
+	// register a random client - no association with registered provider
+	handler.registerClientHandler("someClient", event, &callBack)
+
+	// invoke provider event
 	eventingImpl.Invoke(Event{
-		ProviderName:         defaultProvider.Metadata().Name,
+		ProviderName:         eventingProvider.Metadata().Name,
 		EventType:            event,
 		ProviderEventDetails: ProviderEventDetails{},
 	})
 
 	select {
 	case <-rsp:
-		t.Fatalf("incorrect association - executor must not have been invoked")
-	case <-time.After(200 * time.Millisecond):
+		t.Fatalf("incorrect association - handler must not have been invoked")
+	case <-time.After(handlerExecutionTime):
 		break
 	}
 }
@@ -290,77 +262,72 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 		rspClient <- e
 	}
 
-	executor := newEventExecutor(logger)
+	handler := newEventHandler(logger)
 
 	// api level handlers
-	executor.registerApiHandler(ProviderReady, &errorCallback)
-	executor.registerApiHandler(ProviderReady, &successAPICallback)
+	handler.registerApiHandler(ProviderReady, &errorCallback)
+	handler.registerApiHandler(ProviderReady, &successAPICallback)
 
 	// provider association
 	provider := "providerA"
 
 	// client level handlers
-	executor.registerClientHandler(provider, ProviderReady, &errorCallback)
-	executor.registerClientHandler(provider, ProviderReady, &successClientCallback)
+	handler.registerClientHandler(provider, ProviderReady, &errorCallback)
+	handler.registerClientHandler(provider, ProviderReady, &successClientCallback)
 
 	// trigger events manually
 	go func() {
-		executor.triggerEvent(Event{
+		_ = handler.triggerEvent(Event{
 			ProviderName:         provider,
 			EventType:            ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{},
-		}, "", true)
+		})
 	}()
 
 	select {
 	case <-rsp:
 		break
-	case <-time.After(200 * time.Millisecond):
-		t.Error("API level callback timeout - executor recovery was not successful")
+	case <-time.After(handlerExecutionTime):
+		t.Error("API level callback timeout - handler recovery was not successful")
 	}
 
 	select {
 	case <-rspClient:
 		break
-	case <-time.After(200 * time.Millisecond):
-		t.Error("client callback timeout - executor recovery was not successful")
+	case <-time.After(handlerExecutionTime):
+		t.Error("client callback timeout - handler recovery was not successful")
 	}
 }
 
-// Requirement 5.3.3 PROVIDER_READY handlers attached after the provider is already in a ready state MUST run immediately.
-func TestEventHandler_ProviderReadiness(t *testing.T) {
-	readyEventingProvider := struct {
-		FeatureProvider
-		StateHandler
-		EventHandler
-	}{
-		NoopProvider{},
-		&stateHandlerForTests{
-			State: ReadyState,
-		},
-		&ProviderEventing{},
+// Make sure event handler cannot block
+func TestEventHandler_Timeout(t *testing.T) {
+	timeoutCallback := func(e EventDetails) {
+		time.Sleep(handlerExecutionTime * 10)
 	}
 
-	executor := newEventExecutor(logger)
+	handler := newEventHandler(logger)
+	handler.registerApiHandler(ProviderReady, &timeoutCallback)
 
-	clientAssociation := "clientA"
-	err := executor.registerNamedEventingProvider(clientAssociation, readyEventingProvider)
-	if err != nil {
-		t.Fatal(err)
-	}
+	group, ctx := errgroup.WithContext(context.Background())
 
-	rsp := make(chan EventDetails, 1)
-	successAPICallback := func(e EventDetails) {
-		rsp <- e
-	}
-
-	executor.registerClientHandler(clientAssociation, ProviderReady, &successAPICallback)
+	group.Go(func() error {
+		return handler.triggerEvent(Event{
+			ProviderName:         "provider",
+			EventType:            ProviderReady,
+			ProviderEventDetails: ProviderEventDetails{},
+		})
+	})
 
 	select {
-	case <-rsp:
+	case <-ctx.Done():
 		break
-	case <-time.After(200 * time.Millisecond):
-		t.Errorf("timedout waiting for ready state callback, but got none")
+	case <-time.After(handlerExecutionTime * 2):
+		t.Fatalf("timeout while waiting for condition")
+	}
+
+	err := group.Wait()
+	if err == nil {
+		t.Errorf("expected timeout error, but got none")
 	}
 }
 
@@ -368,73 +335,73 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		handler := newEventHandler(logger)
 
 		// Add multiple - ProviderReady
-		executor.registerApiHandler(ProviderReady, &h1)
-		executor.registerApiHandler(ProviderReady, &h2)
-		executor.registerApiHandler(ProviderReady, &h3)
-		executor.registerApiHandler(ProviderReady, &h4)
+		handler.registerApiHandler(ProviderReady, &h1)
+		handler.registerApiHandler(ProviderReady, &h2)
+		handler.registerApiHandler(ProviderReady, &h3)
+		handler.registerApiHandler(ProviderReady, &h4)
 
 		// Add multiple - ProviderError
-		executor.registerApiHandler(ProviderError, &h2)
-		executor.registerApiHandler(ProviderError, &h2)
+		handler.registerApiHandler(ProviderError, &h2)
+		handler.registerApiHandler(ProviderError, &h2)
 
 		// Add single types
-		executor.registerApiHandler(ProviderStale, &h3)
-		executor.registerApiHandler(ProviderConfigChange, &h4)
+		handler.registerApiHandler(ProviderStale, &h3)
+		handler.registerApiHandler(ProviderConfigChange, &h4)
 
-		readyLen := len(executor.apiRegistry[ProviderReady])
+		readyLen := len(handler.apiRegistry[ProviderReady])
 		if readyLen != 4 {
 			t.Errorf("expected %d events, but got %d", 4, readyLen)
 		}
 
-		errLen := len(executor.apiRegistry[ProviderError])
+		errLen := len(handler.apiRegistry[ProviderError])
 		if errLen != 2 {
 			t.Errorf("expected %d events, but got %d", 2, errLen)
 		}
 
-		staleLen := len(executor.apiRegistry[ProviderStale])
+		staleLen := len(handler.apiRegistry[ProviderStale])
 		if staleLen != 1 {
 			t.Errorf("expected %d events, but got %d", 1, staleLen)
 		}
 
-		cfgLen := len(executor.apiRegistry[ProviderConfigChange])
+		cfgLen := len(handler.apiRegistry[ProviderConfigChange])
 		if cfgLen != 1 {
 			t.Errorf("expected %d events, but got %d", 1, cfgLen)
 		}
 	})
 
 	t.Run("Client handlers", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		handler := newEventHandler(logger)
 
 		// Add multiple - client a
-		executor.registerClientHandler("a", ProviderReady, &h1)
-		executor.registerClientHandler("a", ProviderReady, &h2)
-		executor.registerClientHandler("a", ProviderReady, &h3)
-		executor.registerClientHandler("a", ProviderReady, &h4)
+		handler.registerClientHandler("a", ProviderReady, &h1)
+		handler.registerClientHandler("a", ProviderReady, &h2)
+		handler.registerClientHandler("a", ProviderReady, &h3)
+		handler.registerClientHandler("a", ProviderReady, &h4)
 
 		// Add single for rest of the client
-		executor.registerClientHandler("b", ProviderError, &h2)
-		executor.registerClientHandler("c", ProviderStale, &h3)
-		executor.registerClientHandler("d", ProviderConfigChange, &h4)
+		handler.registerClientHandler("b", ProviderError, &h2)
+		handler.registerClientHandler("c", ProviderStale, &h3)
+		handler.registerClientHandler("d", ProviderConfigChange, &h4)
 
-		readyLen := len(executor.scopedRegistry["a"].callbacks[ProviderReady])
+		readyLen := len(handler.scopedRegistry["a"].callbacks[ProviderReady])
 		if readyLen != 4 {
 			t.Errorf("expected %d events in client a, but got %d", 4, readyLen)
 		}
 
-		errLen := len(executor.scopedRegistry["b"].callbacks[ProviderError])
+		errLen := len(handler.scopedRegistry["b"].callbacks[ProviderError])
 		if errLen != 1 {
 			t.Errorf("expected %d events in client b, but got %d", 1, errLen)
 		}
 
-		staleLen := len(executor.scopedRegistry["c"].callbacks[ProviderStale])
+		staleLen := len(handler.scopedRegistry["c"].callbacks[ProviderStale])
 		if staleLen != 1 {
 			t.Errorf("expected %d events in client c, but got %d", 1, staleLen)
 		}
 
-		cfgLen := len(executor.scopedRegistry["d"].callbacks[ProviderConfigChange])
+		cfgLen := len(handler.scopedRegistry["d"].callbacks[ProviderConfigChange])
 		if cfgLen != 1 {
 			t.Errorf("expected %d events in client d, but got %d", 1, cfgLen)
 		}
@@ -443,120 +410,120 @@ func TestEventHandler_Registration(t *testing.T) {
 
 func TestEventHandler_APIRemoval(t *testing.T) {
 	t.Run("API level removal", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		handler := newEventHandler(logger)
 
 		// Add multiple - ProviderReady
-		executor.registerApiHandler(ProviderReady, &h1)
-		executor.registerApiHandler(ProviderReady, &h2)
-		executor.registerApiHandler(ProviderReady, &h3)
-		executor.registerApiHandler(ProviderReady, &h4)
+		handler.registerApiHandler(ProviderReady, &h1)
+		handler.registerApiHandler(ProviderReady, &h2)
+		handler.registerApiHandler(ProviderReady, &h3)
+		handler.registerApiHandler(ProviderReady, &h4)
 
 		// Add single types
-		executor.registerApiHandler(ProviderError, &h2)
-		executor.registerApiHandler(ProviderStale, &h3)
-		executor.registerApiHandler(ProviderConfigChange, &h4)
+		handler.registerApiHandler(ProviderError, &h2)
+		handler.registerApiHandler(ProviderStale, &h3)
+		handler.registerApiHandler(ProviderConfigChange, &h4)
 
 		// removal
-		executor.removeApiHandler(ProviderReady, &h1)
-		executor.removeApiHandler(ProviderError, &h2)
-		executor.removeApiHandler(ProviderStale, &h3)
-		executor.removeApiHandler(ProviderConfigChange, &h4)
+		handler.removeApiHandler(ProviderReady, &h1)
+		handler.removeApiHandler(ProviderError, &h2)
+		handler.removeApiHandler(ProviderStale, &h3)
+		handler.removeApiHandler(ProviderConfigChange, &h4)
 
-		readyLen := len(executor.apiRegistry[ProviderReady])
+		readyLen := len(handler.apiRegistry[ProviderReady])
 		if readyLen != 3 {
 			t.Errorf("expected %d events, but got %d", 3, readyLen)
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h2) {
+		if !slices.Contains(handler.apiRegistry[ProviderReady], &h2) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h3) {
+		if !slices.Contains(handler.apiRegistry[ProviderReady], &h3) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h3) {
+		if !slices.Contains(handler.apiRegistry[ProviderReady], &h3) {
 			t.Errorf("expected callback to be present")
 		}
 
-		errLen := len(executor.apiRegistry[ProviderError])
+		errLen := len(handler.apiRegistry[ProviderError])
 		if errLen != 0 {
 			t.Errorf("expected %d events, but got %d", 0, errLen)
 		}
 
-		staleLen := len(executor.apiRegistry[ProviderStale])
+		staleLen := len(handler.apiRegistry[ProviderStale])
 		if staleLen != 0 {
 			t.Errorf("expected %d events, but got %d", 0, staleLen)
 		}
 
-		cfgLen := len(executor.apiRegistry[ProviderConfigChange])
+		cfgLen := len(handler.apiRegistry[ProviderConfigChange])
 		if cfgLen != 0 {
 			t.Errorf("expected %d events, but got %d", 0, cfgLen)
 		}
 	})
 
 	t.Run("Client level removal", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		handler := newEventHandler(logger)
 
 		// Add multiple - client a
-		executor.registerClientHandler("a", ProviderReady, &h1)
-		executor.registerClientHandler("a", ProviderReady, &h2)
-		executor.registerClientHandler("a", ProviderReady, &h3)
-		executor.registerClientHandler("a", ProviderReady, &h4)
+		handler.registerClientHandler("a", ProviderReady, &h1)
+		handler.registerClientHandler("a", ProviderReady, &h2)
+		handler.registerClientHandler("a", ProviderReady, &h3)
+		handler.registerClientHandler("a", ProviderReady, &h4)
 
 		// Add single
-		executor.registerClientHandler("b", ProviderError, &h2)
-		executor.registerClientHandler("c", ProviderStale, &h3)
-		executor.registerClientHandler("d", ProviderConfigChange, &h4)
+		handler.registerClientHandler("b", ProviderError, &h2)
+		handler.registerClientHandler("c", ProviderStale, &h3)
+		handler.registerClientHandler("d", ProviderConfigChange, &h4)
 
 		// removal
-		executor.removeClientHandler("a", ProviderReady, &h1)
-		executor.removeClientHandler("b", ProviderError, &h2)
-		executor.removeClientHandler("c", ProviderStale, &h3)
-		executor.removeClientHandler("d", ProviderConfigChange, &h4)
+		handler.removeClientHandler("a", ProviderReady, &h1)
+		handler.removeClientHandler("b", ProviderError, &h2)
+		handler.removeClientHandler("c", ProviderStale, &h3)
+		handler.removeClientHandler("d", ProviderConfigChange, &h4)
 
-		readyLen := len(executor.scopedRegistry["a"].callbacks[ProviderReady])
+		readyLen := len(handler.scopedRegistry["a"].callbacks[ProviderReady])
 		if readyLen != 3 {
 			t.Errorf("expected %d events in client a, but got %d", 3, readyLen)
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h2) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h2) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h3) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h3) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h4) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h4) {
 			t.Errorf("expected callback to be present")
 		}
 
-		errLen := len(executor.scopedRegistry["b"].callbacks[ProviderError])
+		errLen := len(handler.scopedRegistry["b"].callbacks[ProviderError])
 		if errLen != 0 {
 			t.Errorf("expected %d events in client b, but got %d", 0, errLen)
 		}
 
-		staleLen := len(executor.scopedRegistry["c"].callbacks[ProviderStale])
+		staleLen := len(handler.scopedRegistry["c"].callbacks[ProviderStale])
 		if staleLen != 0 {
 			t.Errorf("expected %d events in client c, but got %d", 0, staleLen)
 		}
 
-		cfgLen := len(executor.scopedRegistry["d"].callbacks[ProviderConfigChange])
+		cfgLen := len(handler.scopedRegistry["d"].callbacks[ProviderConfigChange])
 		if cfgLen != 0 {
 			t.Errorf("expected %d events in client d, but got %d", 0, cfgLen)
 		}
 
 		// removal referenced to non-existing clients does nothing & no panics
-		executor.removeClientHandler("non-existing", ProviderReady, &h1)
-		executor.removeClientHandler("b", ProviderReady, &h1)
+		handler.removeClientHandler("non-existing", ProviderReady, &h1)
+		handler.removeClientHandler("b", ProviderReady, &h1)
 	})
 
 	t.Run("remove handlers that were not added", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		handler := newEventHandler(logger)
 
 		// removal of non-added handlers shall not panic
-		executor.removeApiHandler(ProviderReady, &h1)
-		executor.removeClientHandler("a", ProviderReady, &h1)
+		handler.removeApiHandler(ProviderReady, &h1)
+		handler.removeClientHandler("a", ProviderReady, &h1)
 	})
 }
