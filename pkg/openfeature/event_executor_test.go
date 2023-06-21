@@ -386,22 +386,22 @@ func TestEventHandler_Registration(t *testing.T) {
 		handler.registerClientHandler("c", ProviderStale, &h3)
 		handler.registerClientHandler("d", ProviderConfigChange, &h4)
 
-		readyLen := len(handler.clientRegistry["a"].holder[ProviderReady])
+		readyLen := len(handler.scopedRegistry["a"].callbacks[ProviderReady])
 		if readyLen != 4 {
 			t.Errorf("expected %d events in client a, but got %d", 4, readyLen)
 		}
 
-		errLen := len(handler.clientRegistry["b"].holder[ProviderError])
+		errLen := len(handler.scopedRegistry["b"].callbacks[ProviderError])
 		if errLen != 1 {
 			t.Errorf("expected %d events in client b, but got %d", 1, errLen)
 		}
 
-		staleLen := len(handler.clientRegistry["c"].holder[ProviderStale])
+		staleLen := len(handler.scopedRegistry["c"].callbacks[ProviderStale])
 		if staleLen != 1 {
 			t.Errorf("expected %d events in client c, but got %d", 1, staleLen)
 		}
 
-		cfgLen := len(handler.clientRegistry["d"].holder[ProviderConfigChange])
+		cfgLen := len(handler.scopedRegistry["d"].callbacks[ProviderConfigChange])
 		if cfgLen != 1 {
 			t.Errorf("expected %d events in client d, but got %d", 1, cfgLen)
 		}
@@ -482,34 +482,34 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 		handler.removeClientHandler("c", ProviderStale, &h3)
 		handler.removeClientHandler("d", ProviderConfigChange, &h4)
 
-		readyLen := len(handler.clientRegistry["a"].holder[ProviderReady])
+		readyLen := len(handler.scopedRegistry["a"].callbacks[ProviderReady])
 		if readyLen != 3 {
 			t.Errorf("expected %d events in client a, but got %d", 3, readyLen)
 		}
 
-		if !slices.Contains(handler.clientRegistry["a"].holder[ProviderReady], &h2) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h2) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(handler.clientRegistry["a"].holder[ProviderReady], &h3) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h3) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(handler.clientRegistry["a"].holder[ProviderReady], &h4) {
+		if !slices.Contains(handler.scopedRegistry["a"].callbacks[ProviderReady], &h4) {
 			t.Errorf("expected callback to be present")
 		}
 
-		errLen := len(handler.clientRegistry["b"].holder[ProviderError])
+		errLen := len(handler.scopedRegistry["b"].callbacks[ProviderError])
 		if errLen != 0 {
 			t.Errorf("expected %d events in client b, but got %d", 0, errLen)
 		}
 
-		staleLen := len(handler.clientRegistry["c"].holder[ProviderStale])
+		staleLen := len(handler.scopedRegistry["c"].callbacks[ProviderStale])
 		if staleLen != 0 {
 			t.Errorf("expected %d events in client c, but got %d", 0, staleLen)
 		}
 
-		cfgLen := len(handler.clientRegistry["d"].holder[ProviderConfigChange])
+		cfgLen := len(handler.scopedRegistry["d"].callbacks[ProviderConfigChange])
 		if cfgLen != 0 {
 			t.Errorf("expected %d events in client d, but got %d", 0, cfgLen)
 		}
@@ -517,5 +517,13 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 		// removal referenced to non-existing clients does nothing & no panics
 		handler.removeClientHandler("non-existing", ProviderReady, &h1)
 		handler.removeClientHandler("b", ProviderReady, &h1)
+	})
+
+	t.Run("remove handlers that were not added", func(t *testing.T) {
+		handler := newEventHandler(logger)
+
+		// removal of non-added handlers shall not panic
+		handler.removeApiHandler(ProviderReady, &h1)
+		handler.removeClientHandler("a", ProviderReady, &h1)
 	})
 }

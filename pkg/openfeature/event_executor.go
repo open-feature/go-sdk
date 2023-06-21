@@ -3,55 +3,57 @@ package openfeature
 import (
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
-	"golang.org/x/sync/errgroup"
 	"sync"
 	"time"
+
+	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
 )
 
-// event handler is registry to connect API and Client event handlers to Providers
+// event executor is a registry to connect API and Client event handlers to Providers
 
 // handlerExecutionTime defines the maximum time event handler will wait for its handlers to complete
 const handlerExecutionTime = 500 * time.Millisecond
 
-type eventHandler struct {
+type eventExecutor struct {
 	providerShutdownHook map[string]chan interface{}
 	apiRegistry          map[EventType][]EventCallBack
-	clientRegistry       map[string]clientHolder
+	scopedRegistry       map[string]scopedCallback
 	logger               logr.Logger
 	mu                   sync.Mutex
 }
 
-func newEventHandler(logger logr.Logger) eventHandler {
-	return eventHandler{
+func newEventHandler(logger logr.Logger) eventExecutor {
+	return eventExecutor{
 		providerShutdownHook: map[string]chan interface{}{},
 		apiRegistry:          map[EventType][]EventCallBack{},
-		clientRegistry:       map[string]clientHolder{},
+		scopedRegistry:       map[string]scopedCallback{},
 		logger:               logger,
 	}
 }
 
-// clientHolder is a helper struct to hold client specific callbacks
-type clientHolder struct {
-	name   string
-	holder map[EventType][]EventCallBack
+// scopedCallback is a helper struct to hold scope specific callbacks.
+// Here, the scope correlates to the client and provider name
+type scopedCallback struct {
+	scope     string
+	callbacks map[EventType][]EventCallBack
 }
 
-func newClientHolder(client string) clientHolder {
-	return clientHolder{
-		name:   client,
-		holder: map[EventType][]EventCallBack{},
+func newScopedCallback(client string) scopedCallback {
+	return scopedCallback{
+		scope:     client,
+		callbacks: map[EventType][]EventCallBack{},
 	}
 }
 
-func (e *eventHandler) updateLogger(l logr.Logger) {
+func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	e.logger = l
 }
 
-func (e *eventHandler) registerApiHandler(t EventType, c EventCallBack) {
+func (e *eventExecutor) registerApiHandler(t EventType, c EventCallBack) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -62,7 +64,7 @@ func (e *eventHandler) registerApiHandler(t EventType, c EventCallBack) {
 	}
 }
 
-func (e *eventHandler) removeApiHandler(t EventType, c EventCallBack) {
+func (e *eventExecutor) removeApiHandler(t EventType, c EventCallBack) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -81,35 +83,35 @@ func (e *eventHandler) removeApiHandler(t EventType, c EventCallBack) {
 	e.apiRegistry[t] = entrySlice
 }
 
-func (e *eventHandler) registerClientHandler(clientName string, t EventType, c EventCallBack) {
+func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallBack) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.clientRegistry[clientName]
+	_, ok := e.scopedRegistry[clientName]
 	if !ok {
-		e.clientRegistry[clientName] = newClientHolder(clientName)
+		e.scopedRegistry[clientName] = newScopedCallback(clientName)
 	}
 
-	v := e.clientRegistry[clientName]
+	callback := e.scopedRegistry[clientName]
 
-	if v.holder[t] == nil {
-		v.holder[t] = []EventCallBack{c}
+	if callback.callbacks[t] == nil {
+		callback.callbacks[t] = []EventCallBack{c}
 	} else {
-		v.holder[t] = append(v.holder[t], c)
+		callback.callbacks[t] = append(callback.callbacks[t], c)
 	}
 }
 
-func (e *eventHandler) removeClientHandler(name string, t EventType, c EventCallBack) {
+func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallBack) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.clientRegistry[name]
+	_, ok := e.scopedRegistry[name]
 	if !ok {
 		// nothing to remove
 		return
 	}
 
-	entrySlice := e.clientRegistry[name].holder[t]
+	entrySlice := e.scopedRegistry[name].callbacks[t]
 	if entrySlice == nil {
 		// nothing to remove
 		return
@@ -121,10 +123,10 @@ func (e *eventHandler) removeClientHandler(name string, t EventType, c EventCall
 		}
 	}
 
-	e.clientRegistry[name].holder[t] = entrySlice
+	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-func (e *eventHandler) registerEventingProvider(provider FeatureProvider) {
+func (e *eventExecutor) registerEventingProvider(provider FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -152,7 +154,7 @@ func (e *eventHandler) registerEventingProvider(provider FeatureProvider) {
 	}()
 }
 
-func (e *eventHandler) triggerEvent(event Event) error {
+func (e *eventExecutor) triggerEvent(event Event) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -164,45 +166,14 @@ func (e *eventHandler) triggerEvent(event Event) error {
 	group.Go(func() error {
 		// first run API handlers
 		for _, c := range e.apiRegistry[event.EventType] {
-			f := *c
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						e.logger.Info("recovered from a panic")
-					}
-				}()
-
-				f(EventDetails{
-					ProviderEventDetails: ProviderEventDetails{
-						Message:       event.Message,
-						FlagChanges:   event.FlagChanges,
-						EventMetadata: event.EventMetadata,
-					},
-				})
-			}()
+			e.executeHandler(*c, "", event)
 		}
 
 		// then run Client handlers
 		// Note - we must only run associated client handlers of the provider
-		associateClientRegistry := e.clientRegistry[event.ProviderName]
-		for _, c := range associateClientRegistry.holder[event.EventType] {
-			f := *c
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						e.logger.Info("recovered from a panic")
-					}
-				}()
-
-				f(EventDetails{
-					client: associateClientRegistry.name,
-					ProviderEventDetails: ProviderEventDetails{
-						Message:       event.Message,
-						FlagChanges:   event.FlagChanges,
-						EventMetadata: event.EventMetadata,
-					},
-				})
-			}()
+		associateClientRegistry := e.scopedRegistry[event.ProviderName]
+		for _, c := range associateClientRegistry.callbacks[event.EventType] {
+			e.executeHandler(*c, associateClientRegistry.scope, event)
 		}
 
 		return nil
@@ -217,7 +188,24 @@ func (e *eventHandler) triggerEvent(event Event) error {
 	}
 }
 
-func (e *eventHandler) unregisterEventingProvider(provider FeatureProvider) error {
+func (e *eventExecutor) executeHandler(f func(details EventDetails), clientName string, event Event) {
+	defer func() {
+		if r := recover(); r != nil {
+			e.logger.Info("recovered from a panic")
+		}
+	}()
+
+	f(EventDetails{
+		client: clientName,
+		ProviderEventDetails: ProviderEventDetails{
+			Message:       event.Message,
+			FlagChanges:   event.FlagChanges,
+			EventMetadata: event.EventMetadata,
+		},
+	})
+}
+
+func (e *eventExecutor) unregisterEventingProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
