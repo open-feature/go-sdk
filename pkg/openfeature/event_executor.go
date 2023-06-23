@@ -23,7 +23,7 @@ type eventExecutor struct {
 	mu                   sync.Mutex
 }
 
-func newEventHandler(logger logr.Logger) eventExecutor {
+func newEventExecutor(logger logr.Logger) eventExecutor {
 	return eventExecutor{
 		providerShutdownHook: map[string]chan interface{}{},
 		apiRegistry:          map[EventType][]EventCallBack{},

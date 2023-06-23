@@ -30,7 +30,7 @@ func newEvaluationAPI() evaluationAPI {
 		evalCtx:         EvaluationContext{},
 		logger:          logger,
 		mu:              sync.RWMutex{},
-		eventExecutor:   newEventHandler(logger),
+		eventExecutor:   newEventExecutor(logger),
 	}
 }
 
