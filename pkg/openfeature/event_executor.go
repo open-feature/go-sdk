@@ -49,6 +49,7 @@ func newScopedCallback(client string) scopedCallback {
 
 type providerReference struct {
 	eventHandler      *EventHandler
+	metadata          Metadata
 	name              string
 	isDefault         bool
 	shutdownSemaphore chan interface{}
@@ -100,12 +101,34 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 		e.scopedRegistry[clientName] = newScopedCallback(clientName)
 	}
 
-	callback := e.scopedRegistry[clientName]
+	registry := e.scopedRegistry[clientName]
 
-	if callback.callbacks[t] == nil {
-		callback.callbacks[t] = []EventCallBack{c}
+	if registry.callbacks[t] == nil {
+		registry.callbacks[t] = []EventCallBack{c}
 	} else {
-		callback.callbacks[t] = append(callback.callbacks[t], c)
+		registry.callbacks[t] = append(registry.callbacks[t], c)
+	}
+
+	if t != ProviderReady {
+		return
+	}
+
+	// execute if ready provider exist
+	provider, ok := e.namedProviderReference[clientName]
+	if !ok {
+		return
+	}
+
+	s, ok := (*provider.eventHandler).(StateHandler)
+	if !ok {
+		return
+	}
+
+	if s.Status() == ReadyState {
+		(*c)(EventDetails{
+			provider:             provider.metadata.Name,
+			ProviderEventDetails: ProviderEventDetails{},
+		})
 	}
 }
 
@@ -151,6 +174,7 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 
 	newProvider := &providerReference{
 		eventHandler:      &v,
+		metadata:          provider.Metadata(),
 		isDefault:         true,
 		shutdownSemaphore: sem,
 	}
@@ -160,7 +184,7 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 }
 
 // registerNamedEventingProvider register a named FeatureProvider and remove event listener for old named provider
-func (e *eventExecutor) registerNamedEventingProvider(name string, provider FeatureProvider) error {
+func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -169,18 +193,19 @@ func (e *eventExecutor) registerNamedEventingProvider(name string, provider Feat
 		return nil
 	}
 
-	oldProvider := e.namedProviderReference[name]
+	oldProvider := e.namedProviderReference[associatedClient]
 
 	// register shutdown semaphore for new named provider
 	sem := make(chan interface{})
 
 	newProvider := &providerReference{
 		eventHandler:      &v,
-		name:              name,
+		name:              associatedClient,
+		metadata:          provider.Metadata(),
 		shutdownSemaphore: sem,
 	}
 
-	e.namedProviderReference[name] = newProvider
+	e.namedProviderReference[associatedClient] = newProvider
 	return e.listenAndShutdown(newProvider, oldProvider)
 }
 
