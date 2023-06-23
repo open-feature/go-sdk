@@ -25,19 +25,26 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 
 	t.Run("Ignored non-eventing providers", func(t *testing.T) {
 		executor := newEventExecutor(logger)
-		executor.registerEventingProvider(NoopProvider{})
+		err := executor.registerDefaultProvider(NoopProvider{})
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		if len(executor.providerShutdownHook) != 0 {
+		if executor.defaultProviderReference != nil {
 			t.Errorf("implementation should ignore non eventing provider")
 		}
 
-		err := executor.unregisterEventingProvider(NoopProvider{})
+		err = executor.registerNamedEventingProvider("name", NoopProvider{})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
+		}
+
+		if len(executor.namedProviderReference) != 0 {
+			t.Fatalf("implementation should ignore non eventing provider")
 		}
 	})
 
-	t.Run("Accepts addition and removal of eventing providers", func(t *testing.T) {
+	t.Run("Accepts addition of eventing providers", func(t *testing.T) {
 		eventingImpl := &ProviderEventing{}
 
 		eventingProvider := struct {
@@ -49,25 +56,22 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 		}
 
 		executor := newEventExecutor(logger)
-		executor.registerEventingProvider(eventingProvider)
+		err := executor.registerDefaultProvider(eventingProvider)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		if len(executor.providerShutdownHook) != 1 {
+		if executor.defaultProviderReference == nil {
 			t.Errorf("implementation should register eventing provider")
 		}
 
-		err := executor.unregisterEventingProvider(eventingProvider)
+		err = executor.registerNamedEventingProvider("name", eventingProvider)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-		if len(executor.providerShutdownHook) != 0 {
-			t.Errorf("implementation should allow removal of eventing provider")
-		}
-
-		// double removal check for nil check & avoid panic
-		err = executor.unregisterEventingProvider(eventingProvider)
-		if err != nil {
-			t.Error(err)
+		if _, ok := executor.namedProviderReference["name"]; !ok {
+			t.Errorf("implementation should register named eventing provider")
 		}
 	})
 }
@@ -89,7 +93,10 @@ func TestEventHandler_Eventing(t *testing.T) {
 		}
 
 		executor := newEventExecutor(logger)
-		executor.registerEventingProvider(eventingProvider)
+		err := executor.registerDefaultProvider(eventingProvider)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		rsp := make(chan EventDetails)
 		callBack := func(details EventDetails) {
@@ -149,15 +156,21 @@ func TestEventHandler_Eventing(t *testing.T) {
 		}
 
 		executor := newEventExecutor(logger)
-		executor.registerEventingProvider(eventingProvider)
+
+		// associated to client name
+		associatedName := "providerForClient"
+
+		err := executor.registerNamedEventingProvider(associatedName, eventingProvider)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		rsp := make(chan EventDetails)
 		callBack := func(details EventDetails) {
 			rsp <- details
 		}
 
-		// associated to NoopProvider
-		executor.registerClientHandler(eventingProvider.Metadata().Name, ProviderReady, &callBack)
+		executor.registerClientHandler(associatedName, ProviderReady, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -184,8 +197,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			t.Fatalf("timeout - event did not trigger")
 		}
 
-		if result.client != eventingProvider.Metadata().Name {
-			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.client)
+		if result.provider != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.provider)
 		}
 
 		if result.Message != "ReadyMessage" {
@@ -209,8 +222,8 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		c: make(chan Event, 1),
 	}
 
-	// NoopProvider backed event supported provider
-	eventingProvider := struct {
+	// eventing supported provider
+	defaultProvider := struct {
 		FeatureProvider
 		EventHandler
 	}{
@@ -218,9 +231,27 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		eventingImpl,
 	}
 
-	// event handler & provider registration
 	executor := newEventExecutor(logger)
-	executor.registerEventingProvider(eventingProvider)
+
+	// default provider
+	err := executor.registerDefaultProvider(defaultProvider)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// named provider(associated to name someClient)
+	err = executor.registerNamedEventingProvider("someClient", struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		&ProviderEventing{
+			c: make(chan Event, 1),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	rsp := make(chan EventDetails)
 	callBack := func(details EventDetails) {
@@ -228,13 +259,11 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	event := ProviderReady
-
-	// register a random client - no association with registered provider
 	executor.registerClientHandler("someClient", event, &callBack)
 
-	// invoke provider event
+	// invoke default provider
 	eventingImpl.Invoke(Event{
-		ProviderName:         eventingProvider.Metadata().Name,
+		ProviderName:         defaultProvider.Metadata().Name,
 		EventType:            event,
 		ProviderEventDetails: ProviderEventDetails{},
 	})
@@ -282,7 +311,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 			ProviderName:         provider,
 			EventType:            ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{},
-		})
+		}, "", true)
 	}()
 
 	select {
@@ -316,7 +345,7 @@ func TestEventHandler_Timeout(t *testing.T) {
 			ProviderName:         "provider",
 			EventType:            ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{},
-		})
+		}, "", true)
 	})
 
 	select {

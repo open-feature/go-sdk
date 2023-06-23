@@ -16,19 +16,20 @@ import (
 const handlerExecutionTime = 500 * time.Millisecond
 
 type eventExecutor struct {
-	providerShutdownHook map[string]chan interface{}
-	apiRegistry          map[EventType][]EventCallBack
-	scopedRegistry       map[string]scopedCallback
-	logger               logr.Logger
-	mu                   sync.Mutex
+	defaultProviderReference *providerReference
+	namedProviderReference   map[string]*providerReference
+	apiRegistry              map[EventType][]EventCallBack
+	scopedRegistry           map[string]scopedCallback
+	logger                   logr.Logger
+	mu                       sync.Mutex
 }
 
 func newEventExecutor(logger logr.Logger) eventExecutor {
 	return eventExecutor{
-		providerShutdownHook: map[string]chan interface{}{},
-		apiRegistry:          map[EventType][]EventCallBack{},
-		scopedRegistry:       map[string]scopedCallback{},
-		logger:               logger,
+		namedProviderReference: map[string]*providerReference{},
+		apiRegistry:            map[EventType][]EventCallBack{},
+		scopedRegistry:         map[string]scopedCallback{},
+		logger:                 logger,
 	}
 }
 
@@ -44,6 +45,13 @@ func newScopedCallback(client string) scopedCallback {
 		scope:     client,
 		callbacks: map[EventType][]EventCallBack{},
 	}
+}
+
+type providerReference struct {
+	eventHandler      *EventHandler
+	name              string
+	isDefault         bool
+	shutdownSemaphore chan interface{}
 }
 
 func (e *eventExecutor) updateLogger(l logr.Logger) {
@@ -126,35 +134,85 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-func (e *eventExecutor) registerEventingProvider(provider FeatureProvider) {
+// registerDefaultProvider register the default FeatureProvider and remove event listener for old default provider
+func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	v, ok := provider.(EventHandler)
 	if !ok {
-		return
+		return nil
 	}
 
-	// register shutdown semaphore
-	sem := make(chan interface{})
-	e.providerShutdownHook[provider.Metadata().Name] = sem
+	oldProvider := e.defaultProviderReference
 
-	go func() {
+	// register shutdown semaphore for new default provider
+	sem := make(chan interface{})
+
+	newProvider := &providerReference{
+		eventHandler:      &v,
+		isDefault:         true,
+		shutdownSemaphore: sem,
+	}
+
+	e.defaultProviderReference = newProvider
+	return e.listenAndShutdown(newProvider, oldProvider)
+}
+
+// registerNamedEventingProvider register a named FeatureProvider and remove event listener for old named provider
+func (e *eventExecutor) registerNamedEventingProvider(name string, provider FeatureProvider) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	v, ok := provider.(EventHandler)
+	if !ok {
+		return nil
+	}
+
+	oldProvider := e.namedProviderReference[name]
+
+	// register shutdown semaphore for new named provider
+	sem := make(chan interface{})
+
+	newProvider := &providerReference{
+		eventHandler:      &v,
+		name:              name,
+		shutdownSemaphore: sem,
+	}
+
+	e.namedProviderReference[name] = newProvider
+	return e.listenAndShutdown(newProvider, oldProvider)
+}
+
+func (e *eventExecutor) listenAndShutdown(newProvider *providerReference, oldReference *providerReference) error {
+	go func(newProvider *providerReference, oldReference *providerReference) {
 		for {
 			select {
-			case event := <-v.EventChannel():
-				err := e.triggerEvent(event)
+			case event := <-(*newProvider.eventHandler).EventChannel():
+				err := e.triggerEvent(event, newProvider.name, newProvider.isDefault)
 				if err != nil {
 					e.logger.Error(err, fmt.Sprintf("error handling event type: %s", event.EventType))
 				}
-			case <-sem:
+			case <-newProvider.shutdownSemaphore:
 				return
 			}
 		}
-	}()
+	}(newProvider, oldReference)
+
+	// shutdown old provider handling
+	if oldReference == nil {
+		return nil
+	}
+
+	select {
+	case oldReference.shutdownSemaphore <- "":
+		return nil
+	case <-time.After(200 * time.Millisecond):
+		return fmt.Errorf("event handler timeout waiting for handler shutdown")
+	}
 }
 
-func (e *eventExecutor) triggerEvent(event Event) error {
+func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault bool) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -169,10 +227,28 @@ func (e *eventExecutor) triggerEvent(event Event) error {
 			e.executeHandler(*c, "", event)
 		}
 
-		// then run Client handlers
-		// Note - we must only run associated client handlers of the provider
-		associateClientRegistry := e.scopedRegistry[event.ProviderName]
+		// then run Client handlers for name association
+
+		// first direct associates
+		associateClientRegistry := e.scopedRegistry[providerName]
 		for _, c := range associateClientRegistry.callbacks[event.EventType] {
+			e.executeHandler(*c, associateClientRegistry.scope, event)
+		}
+
+		if !isDefault {
+			return nil
+		}
+
+		// handling the default provider - invoke default provider bound handlers by filtering
+		var defaultHandlers []EventCallBack
+
+		for clientName, registry := range e.scopedRegistry {
+			if _, ok := e.namedProviderReference[clientName]; !ok {
+				defaultHandlers = append(defaultHandlers, registry.callbacks[event.EventType]...)
+			}
+		}
+
+		for _, c := range defaultHandlers {
 			e.executeHandler(*c, associateClientRegistry.scope, event)
 		}
 
@@ -196,36 +272,11 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), clientName 
 	}()
 
 	f(EventDetails{
-		client: clientName,
+		provider: event.ProviderName,
 		ProviderEventDetails: ProviderEventDetails{
 			Message:       event.Message,
 			FlagChanges:   event.FlagChanges,
 			EventMetadata: event.EventMetadata,
 		},
 	})
-}
-
-func (e *eventExecutor) unregisterEventingProvider(provider FeatureProvider) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	_, ok := provider.(EventHandler)
-	if !ok {
-		return nil
-	}
-
-	sem := e.providerShutdownHook[provider.Metadata().Name]
-	if sem == nil {
-		return nil
-	}
-
-	delete(e.providerShutdownHook, provider.Metadata().Name)
-
-	// wait for completion or timeout
-	select {
-	case sem <- "":
-		return nil
-	case <-time.After(200 * time.Millisecond):
-		return fmt.Errorf("event handler of provider %s timeout with exiting", provider.Metadata().Name)
-	}
 }
