@@ -18,7 +18,7 @@ const handlerExecutionTime = 500 * time.Millisecond
 type eventExecutor struct {
 	defaultProviderReference *providerReference
 	namedProviderReference   map[string]*providerReference
-	apiRegistry              map[EventType][]EventCallBack
+	apiRegistry              map[EventType][]EventCallback
 	scopedRegistry           map[string]scopedCallback
 	logger                   logr.Logger
 	mu                       sync.Mutex
@@ -27,7 +27,7 @@ type eventExecutor struct {
 func newEventExecutor(logger logr.Logger) eventExecutor {
 	return eventExecutor{
 		namedProviderReference: map[string]*providerReference{},
-		apiRegistry:            map[EventType][]EventCallBack{},
+		apiRegistry:            map[EventType][]EventCallback{},
 		scopedRegistry:         map[string]scopedCallback{},
 		logger:                 logger,
 	}
@@ -37,13 +37,13 @@ func newEventExecutor(logger logr.Logger) eventExecutor {
 // Here, the scope correlates to the client and provider name
 type scopedCallback struct {
 	scope     string
-	callbacks map[EventType][]EventCallBack
+	callbacks map[EventType][]EventCallback
 }
 
 func newScopedCallback(client string) scopedCallback {
 	return scopedCallback{
 		scope:     client,
-		callbacks: map[EventType][]EventCallBack{},
+		callbacks: map[EventType][]EventCallback{},
 	}
 }
 
@@ -62,18 +62,18 @@ func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.logger = l
 }
 
-func (e *eventExecutor) registerApiHandler(t EventType, c EventCallBack) {
+func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	if e.apiRegistry[t] == nil {
-		e.apiRegistry[t] = []EventCallBack{c}
+		e.apiRegistry[t] = []EventCallback{c}
 	} else {
 		e.apiRegistry[t] = append(e.apiRegistry[t], c)
 	}
 }
 
-func (e *eventExecutor) removeApiHandler(t EventType, c EventCallBack) {
+func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallBack) {
 	e.apiRegistry[t] = entrySlice
 }
 
-func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallBack) {
+func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -104,7 +104,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 	registry := e.scopedRegistry[clientName]
 
 	if registry.callbacks[t] == nil {
-		registry.callbacks[t] = []EventCallBack{c}
+		registry.callbacks[t] = []EventCallback{c}
 	} else {
 		registry.callbacks[t] = append(registry.callbacks[t], c)
 	}
@@ -132,7 +132,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 	}
 }
 
-func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallBack) {
+func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -265,7 +265,7 @@ func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault
 		}
 
 		// handling the default provider - invoke default provider bound handlers by filtering
-		var defaultHandlers []EventCallBack
+		var defaultHandlers []EventCallback
 
 		for clientName, registry := range e.scopedRegistry {
 			if _, ok := e.namedProviderReference[clientName]; !ok {
