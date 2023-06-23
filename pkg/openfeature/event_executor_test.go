@@ -329,6 +329,43 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	}
 }
 
+// Requirement 5.3.3 PROVIDER_READY handlers attached after the provider is already in a ready state MUST run immediately.
+func TestEventHandler_ProviderReadiness(t *testing.T) {
+	readyEventingProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			State: ReadyState,
+		},
+		&ProviderEventing{},
+	}
+
+	executor := newEventExecutor(logger)
+
+	clientAssociation := "clientA"
+	err := executor.registerNamedEventingProvider(clientAssociation, readyEventingProvider)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rsp := make(chan EventDetails, 1)
+	successAPICallback := func(e EventDetails) {
+		rsp <- e
+	}
+
+	executor.registerClientHandler(clientAssociation, ProviderReady, &successAPICallback)
+
+	select {
+	case <-rsp:
+		break
+	case <-time.After(handlerExecutionTime):
+		t.Errorf("timedout waiting for ready state callback, but got none")
+	}
+}
+
 // Make sure event handler cannot block
 func TestEventHandler_Timeout(t *testing.T) {
 	timeoutCallback := func(e EventDetails) {
