@@ -33,7 +33,7 @@ func newEventExecutor(logger logr.Logger) eventExecutor {
 	}
 }
 
-// scopedCallback is a helper struct to hold scope specific callbacks.
+// scopedCallback is a helper struct to hold client name associated callbacks.
 // Here, the scope correlates to the client and provider name
 type scopedCallback struct {
 	scope     string
@@ -48,13 +48,14 @@ func newScopedCallback(client string) scopedCallback {
 }
 
 type providerReference struct {
-	eventHandler      *EventHandler
-	metadata          Metadata
-	name              string
-	isDefault         bool
-	shutdownSemaphore chan interface{}
+	eventHandler          *EventHandler
+	metadata              Metadata
+	clientNameAssociation string
+	isDefault             bool
+	shutdownSemaphore     chan interface{}
 }
 
+// updateLogger helper to update executor's logger
 func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -62,6 +63,7 @@ func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.logger = l
 }
 
+// registerApiHandler add API(global) level handler
 func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -73,6 +75,7 @@ func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	}
 }
 
+// registerApiHandler remove API(global) level handler
 func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -92,6 +95,7 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.apiRegistry[t] = entrySlice
 }
 
+// registerApiHandler register client level handler
 func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -109,11 +113,11 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 		registry.callbacks[t] = append(registry.callbacks[t], c)
 	}
 
+	// fulfil spec requirement to fire ready events if associated provider is ready
 	if t != ProviderReady {
 		return
 	}
 
-	// execute if ready provider exist
 	provider, ok := e.namedProviderReference[clientName]
 	if !ok {
 		return
@@ -132,6 +136,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 	}
 }
 
+// registerApiHandler remove client level handler
 func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -157,7 +162,7 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-// registerDefaultProvider register the default FeatureProvider and remove event listener for old default provider
+// registerDefaultProvider register the default FeatureProvider and remove the old default provider event handler
 func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -199,22 +204,24 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 	sem := make(chan interface{})
 
 	newProvider := &providerReference{
-		eventHandler:      &v,
-		name:              associatedClient,
-		metadata:          provider.Metadata(),
-		shutdownSemaphore: sem,
+		eventHandler:          &v,
+		clientNameAssociation: associatedClient,
+		metadata:              provider.Metadata(),
+		shutdownSemaphore:     sem,
 	}
 
 	e.namedProviderReference[associatedClient] = newProvider
 	return e.listenAndShutdown(newProvider, oldProvider)
 }
 
+// listenAndShutdown is a helper to start concurrent listening to new provider events and invoke shutdown hook of the
+// old provider
 func (e *eventExecutor) listenAndShutdown(newProvider *providerReference, oldReference *providerReference) error {
 	go func(newProvider *providerReference, oldReference *providerReference) {
 		for {
 			select {
 			case event := <-(*newProvider.eventHandler).EventChannel():
-				err := e.triggerEvent(event, newProvider.name, newProvider.isDefault)
+				err := e.triggerEvent(event, newProvider.clientNameAssociation, newProvider.isDefault)
 				if err != nil {
 					e.logger.Error(err, fmt.Sprintf("error handling event type: %s", event.EventType))
 				}
@@ -237,7 +244,8 @@ func (e *eventExecutor) listenAndShutdown(newProvider *providerReference, oldRef
 	}
 }
 
-func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault bool) error {
+// triggerEvent performs the actual event handling
+func (e *eventExecutor) triggerEvent(event Event, clientNameAssociation string, isDefault bool) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -249,15 +257,15 @@ func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault
 	group.Go(func() error {
 		// first run API handlers
 		for _, c := range e.apiRegistry[event.EventType] {
-			e.executeHandler(*c, "", event)
+			e.executeHandler(*c, event)
 		}
 
 		// then run Client handlers for name association
 
 		// first direct associates
-		associateClientRegistry := e.scopedRegistry[providerName]
+		associateClientRegistry := e.scopedRegistry[clientNameAssociation]
 		for _, c := range associateClientRegistry.callbacks[event.EventType] {
-			e.executeHandler(*c, associateClientRegistry.scope, event)
+			e.executeHandler(*c, event)
 		}
 
 		if !isDefault {
@@ -265,6 +273,7 @@ func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault
 		}
 
 		// handling the default provider - invoke default provider bound handlers by filtering
+
 		var defaultHandlers []EventCallback
 
 		for clientName, registry := range e.scopedRegistry {
@@ -274,7 +283,7 @@ func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault
 		}
 
 		for _, c := range defaultHandlers {
-			e.executeHandler(*c, associateClientRegistry.scope, event)
+			e.executeHandler(*c, event)
 		}
 
 		return nil
@@ -289,7 +298,8 @@ func (e *eventExecutor) triggerEvent(event Event, providerName string, isDefault
 	}
 }
 
-func (e *eventExecutor) executeHandler(f func(details EventDetails), clientName string, event Event) {
+// executeHandler is a helper which performs the actual invocation of the callback
+func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			e.logger.Info("recovered from a panic")
