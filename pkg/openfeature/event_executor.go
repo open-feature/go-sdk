@@ -55,7 +55,7 @@ type providerReference struct {
 	shutdownSemaphore     chan interface{}
 }
 
-// updateLogger helper to update executor's logger
+// updateLogger updates the executor's logger
 func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -75,7 +75,7 @@ func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	}
 }
 
-// registerApiHandler remove API(global) level handler
+// removeApiHandler remove API(global) level handler
 func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -95,7 +95,7 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.apiRegistry[t] = entrySlice
 }
 
-// registerApiHandler register client level handler
+// registerClientHandler register client level handler
 func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -130,13 +130,15 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 
 	if s.Status() == ReadyState {
 		(*c)(EventDetails{
-			provider:             provider.metadata.Name,
-			ProviderEventDetails: ProviderEventDetails{},
+			provider: provider.metadata.Name,
+			ProviderEventDetails: ProviderEventDetails{
+				Message: "provider is at ready state",
+			},
 		})
 	}
 }
 
-// registerApiHandler remove client level handler
+// removeClientHandler remove client level handler
 func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -162,7 +164,7 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-// registerDefaultProvider register the default FeatureProvider and remove the old default provider event handler
+// registerDefaultProvider register the default FeatureProvider and remove the old default provider if available
 func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
