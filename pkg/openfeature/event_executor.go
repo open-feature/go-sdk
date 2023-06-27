@@ -138,7 +138,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 	}
 }
 
-// removeClientHandler remove client level handler
+// removeClientHandler removes client level handler
 func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
