@@ -38,20 +38,20 @@ go get github.com/open-feature/go-sdk
 
 ### Software Bill of Materials (SBOM)
 
-The release workflow generates a SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
+The release workflow generates an SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
 
 ## 🌟 Features:
 
 - support for various backend [providers](https://openfeature.dev/docs/reference/concepts/provider)
 - easy integration and extension via [hooks](https://openfeature.dev/docs/reference/concepts/hooks)
-- bool, string, numeric and object flag types
+- bool, string, numeric, and object flag types
 - [context-aware](https://openfeature.dev/docs/reference/concepts/evaluation-context) evaluation
 
 ## 🚀 Usage:
 
 ### Basics:
 
-To configure the sdk you'll need to add a provider to the `openfeature` global singleton. From there, you can generate a `Client` which is usable by your code.
+To configure the SDK you'll need to add a provider to the `openfeature` global singleton. From there, you can generate a `Client` which is usable by your code.
 While you'll likely want a provider for your specific backend, we've provided a `NoopProvider`, which simply returns the default passed in.
 
 ```go
@@ -155,13 +155,13 @@ func (e MyFeatureProvider) Hooks() []Hook {
 }
 ```
 
-See [here](https://openfeature.dev/docs/reference/technologies/server/go) for a catalog of available providers.
+See [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a catalog of available providers.
 
 ### Hooks:
 
 Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
 
-To satisfy the interface all methods (`Before`/`After`/`Finally`/`Error`) need to be defined. To avoid defining empty functions
+To satisfy the interface, all methods (`Before`/`After`/`Finally`/`Error`) need to be defined. To avoid defining empty functions
 make use of the `UnimplementedHook` struct (which already implements all the empty functions).
 
 ```go
@@ -175,17 +175,17 @@ func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints 
 }
 ```
 
-Register the hook at global, client or invocation level.
+Register the hook at the global, client, or invocation level.
 
-A list of available hooks can be found [here](https://openfeature.dev/docs/reference/technologies/server/go).
+A list of available hooks can be found [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go).
 
 ### Logging:
 
 If not configured, the logger falls back to the standard Go log package at error level only.
 
-In order to avoid coupling to any particular logging implementation the sdk uses the structured logging [logr](https://github.com/go-logr/logr)
+In order to avoid coupling to any particular logging implementation the SDK uses the structured logging [logr](https://github.com/go-logr/logr)
 API. This allows integration to any package that implements the layer between their logger and this API.
-Thankfully there is already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive)
+Thankfully there are already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive)
 for many of the popular logger packages.
 
 ```go
@@ -199,16 +199,16 @@ c := openfeature.NewClient("log").WithLogger(l) // set the logger at client leve
 ```
 
 [logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
-The sdk logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
+The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
 
 ## ⭐️ Support the project
 
 - Give this repo a ⭐️!
-- Follow us social media:
+- Follow us on social media:
   - Twitter: [@openfeature](https://twitter.com/openfeature)
   - LinkedIn: [OpenFeature](https://www.linkedin.com/company/openfeature/)
 - Join us on [Slack](https://cloud-native.slack.com/archives/C0344AANLA1)
-- For more check out our [community page](https://openfeature.dev/community/)
+- For more, check out our [community page](https://openfeature.dev/community/)
 
 ## 🤝 Contributing
 
