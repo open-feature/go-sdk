@@ -197,8 +197,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			t.Fatalf("timeout - event did not trigger")
 		}
 
-		if result.provider != eventingProvider.Metadata().Name {
-			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.provider)
+		if result.providerName != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.providerName)
 		}
 
 		if result.Message != "ReadyMessage" {

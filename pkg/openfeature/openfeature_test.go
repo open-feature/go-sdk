@@ -334,7 +334,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 	// The client MUST provide a function for associating handler functions with a particular provider event type.
 	// The API and client MUST provide a function allowing the removal of event handlers.
-	t.Run("requirement_5_2_1 & requirement_5_2_1", func(t *testing.T) {
+	t.Run("requirement_5_2_1 & requirement_5_2_7", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		clientName := "OFClient"
@@ -393,7 +393,8 @@ func TestRequirement_EventCompliance(t *testing.T) {
 	})
 
 	// The API MUST provide a function for associating handler functions with a particular provider event type.
-	t.Run("requirement_5_2_2 & requirement_5_2_1", func(t *testing.T) {
+	// The API and client MUST provide a function allowing the removal of event handlers.
+	t.Run("requirement_5_2_2 & requirement_5_2_7", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		// adding handlers

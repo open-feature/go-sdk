@@ -63,7 +63,7 @@ func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.logger = l
 }
 
-// registerApiHandler add API(global) level handler
+// registerApiHandler adds an API(global) level handler
 func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -75,7 +75,7 @@ func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	}
 }
 
-// removeApiHandler remove API(global) level handler
+// removeApiHandler removes an API(global) level handler
 func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -95,7 +95,7 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.apiRegistry[t] = entrySlice
 }
 
-// registerClientHandler register client level handler
+// registerClientHandler registers a client level handler
 func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -130,7 +130,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 
 	if s.Status() == ReadyState {
 		(*c)(EventDetails{
-			provider: provider.metadata.Name,
+			providerName: provider.metadata.Name,
 			ProviderEventDetails: ProviderEventDetails{
 				Message: "provider is at ready state",
 			},
@@ -138,7 +138,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 	}
 }
 
-// removeClientHandler removes client level handler
+// removeClientHandler removes a client level handler
 func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -190,7 +190,7 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 	return e.listenAndShutdown(newProvider, oldProvider)
 }
 
-// registerNamedEventingProvider register a named FeatureProvider and remove event listener for old named provider
+// registerNamedEventingProvider registers a named FeatureProvider and remove event listener for old named provider
 func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -309,7 +309,7 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 	}()
 
 	f(EventDetails{
-		provider: event.ProviderName,
+		providerName: event.ProviderName,
 		ProviderEventDetails: ProviderEventDetails{
 			Message:       event.Message,
 			FlagChanges:   event.FlagChanges,
