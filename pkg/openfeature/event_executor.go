@@ -164,7 +164,7 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-// registerDefaultProvider register the default FeatureProvider and remove the old default provider if available
+// registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
 func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
