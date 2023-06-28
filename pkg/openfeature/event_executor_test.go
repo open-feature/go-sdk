@@ -1,7 +1,6 @@
 package openfeature
 
 import (
-	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"golang.org/x/exp/slices"
-	"golang.org/x/sync/errgroup"
 )
 
 var logger logr.Logger
@@ -125,7 +123,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(handlerExecutionTime):
+		case <-time.After(200 * time.Millisecond):
 			t.Fatalf("timeout - event did not trigger")
 		}
 		if result.Message != "ReadyMessage" {
@@ -193,7 +191,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		select {
 		case result = <-rsp:
 			break
-		case <-time.After(handlerExecutionTime):
+		case <-time.After(200 * time.Millisecond):
 			t.Fatalf("timeout - event did not trigger")
 		}
 
@@ -271,7 +269,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	select {
 	case <-rsp:
 		t.Fatalf("incorrect association - executor must not have been invoked")
-	case <-time.After(handlerExecutionTime):
+	case <-time.After(200 * time.Millisecond):
 		break
 	}
 }
@@ -307,7 +305,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 
 	// trigger events manually
 	go func() {
-		_ = executor.triggerEvent(Event{
+		executor.triggerEvent(Event{
 			ProviderName:         provider,
 			EventType:            ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{},
@@ -317,14 +315,14 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	select {
 	case <-rsp:
 		break
-	case <-time.After(handlerExecutionTime):
+	case <-time.After(200 * time.Millisecond):
 		t.Error("API level callback timeout - executor recovery was not successful")
 	}
 
 	select {
 	case <-rspClient:
 		break
-	case <-time.After(handlerExecutionTime):
+	case <-time.After(200 * time.Millisecond):
 		t.Error("client callback timeout - executor recovery was not successful")
 	}
 }
@@ -361,40 +359,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	select {
 	case <-rsp:
 		break
-	case <-time.After(handlerExecutionTime):
+	case <-time.After(200 * time.Millisecond):
 		t.Errorf("timedout waiting for ready state callback, but got none")
-	}
-}
-
-// Make sure event handler cannot block
-func TestEventHandler_Timeout(t *testing.T) {
-	timeoutCallback := func(e EventDetails) {
-		time.Sleep(handlerExecutionTime * 10)
-	}
-
-	executor := newEventExecutor(logger)
-	executor.registerApiHandler(ProviderReady, &timeoutCallback)
-
-	group, ctx := errgroup.WithContext(context.Background())
-
-	group.Go(func() error {
-		return executor.triggerEvent(Event{
-			ProviderName:         "provider",
-			EventType:            ProviderReady,
-			ProviderEventDetails: ProviderEventDetails{},
-		}, "", true)
-	})
-
-	select {
-	case <-ctx.Done():
-		break
-	case <-time.After(handlerExecutionTime * 2):
-		t.Fatalf("timeout while waiting for condition")
-	}
-
-	err := group.Wait()
-	if err == nil {
-		t.Errorf("expected timeout error, but got none")
 	}
 }
 
