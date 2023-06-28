@@ -1,19 +1,14 @@
 package openfeature
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
-	"golang.org/x/sync/errgroup"
 )
 
 // event executor is a registry to connect API and Client event handlers to Providers
-
-// handlerExecutionTime defines the maximum time event handler will wait for its handlers to complete
-const handlerExecutionTime = 500 * time.Millisecond
 
 type eventExecutor struct {
 	defaultProviderReference *providerReference
@@ -223,10 +218,7 @@ func (e *eventExecutor) listenAndShutdown(newProvider *providerReference, oldRef
 		for {
 			select {
 			case event := <-(*newProvider.eventHandler).EventChannel():
-				err := e.triggerEvent(event, newProvider.clientNameAssociation, newProvider.isDefault)
-				if err != nil {
-					e.logger.Error(err, fmt.Sprintf("error handling event type: %s", event.EventType))
-				}
+				e.triggerEvent(event, newProvider.clientNameAssociation, newProvider.isDefault)
 			case <-newProvider.shutdownSemaphore:
 				return
 			}
@@ -247,73 +239,58 @@ func (e *eventExecutor) listenAndShutdown(newProvider *providerReference, oldRef
 }
 
 // triggerEvent performs the actual event handling
-func (e *eventExecutor) triggerEvent(event Event, clientNameAssociation string, isDefault bool) error {
+func (e *eventExecutor) triggerEvent(event Event, clientNameAssociation string, isDefault bool) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
+	// first run API handlers
+	for _, c := range e.apiRegistry[event.EventType] {
+		e.executeHandler(*c, event)
+	}
 
-	group, gCtx := errgroup.WithContext(ctx)
+	// then run Client handlers for name association
 
-	group.Go(func() error {
-		// first run API handlers
-		for _, c := range e.apiRegistry[event.EventType] {
-			e.executeHandler(*c, event)
+	// first direct associates
+	associateClientRegistry := e.scopedRegistry[clientNameAssociation]
+	for _, c := range associateClientRegistry.callbacks[event.EventType] {
+		e.executeHandler(*c, event)
+	}
+
+	if !isDefault {
+		return
+	}
+
+	// handling the default provider - invoke default provider bound handlers by filtering
+
+	var defaultHandlers []EventCallback
+
+	for clientName, registry := range e.scopedRegistry {
+		if _, ok := e.namedProviderReference[clientName]; !ok {
+			defaultHandlers = append(defaultHandlers, registry.callbacks[event.EventType]...)
 		}
+	}
 
-		// then run Client handlers for name association
-
-		// first direct associates
-		associateClientRegistry := e.scopedRegistry[clientNameAssociation]
-		for _, c := range associateClientRegistry.callbacks[event.EventType] {
-			e.executeHandler(*c, event)
-		}
-
-		if !isDefault {
-			return nil
-		}
-
-		// handling the default provider - invoke default provider bound handlers by filtering
-
-		var defaultHandlers []EventCallback
-
-		for clientName, registry := range e.scopedRegistry {
-			if _, ok := e.namedProviderReference[clientName]; !ok {
-				defaultHandlers = append(defaultHandlers, registry.callbacks[event.EventType]...)
-			}
-		}
-
-		for _, c := range defaultHandlers {
-			e.executeHandler(*c, event)
-		}
-
-		return nil
-	})
-
-	// wait for completion or timeout
-	select {
-	case <-time.After(handlerExecutionTime):
-		return fmt.Errorf("event handlers timeout")
-	case <-gCtx.Done():
-		return nil
+	for _, c := range defaultHandlers {
+		e.executeHandler(*c, event)
 	}
 }
 
 // executeHandler is a helper which performs the actual invocation of the callback
 func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event) {
-	defer func() {
-		if r := recover(); r != nil {
-			e.logger.Info("recovered from a panic")
-		}
-	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				e.logger.Info("recovered from a panic")
+			}
+		}()
 
-	f(EventDetails{
-		providerName: event.ProviderName,
-		ProviderEventDetails: ProviderEventDetails{
-			Message:       event.Message,
-			FlagChanges:   event.FlagChanges,
-			EventMetadata: event.EventMetadata,
-		},
-	})
+		f(EventDetails{
+			providerName: event.ProviderName,
+			ProviderEventDetails: ProviderEventDetails{
+				Message:       event.Message,
+				FlagChanges:   event.FlagChanges,
+				EventMetadata: event.EventMetadata,
+			},
+		})
+	}()
 }
