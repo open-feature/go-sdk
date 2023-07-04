@@ -14,8 +14,8 @@ import (
 type IClient interface {
 	Metadata() ClientMetadata
 	AddHooks(hooks ...Hook)
-	AddHandler(eventType EventType, callback EventCallBack)
-	RemoveHandler(eventType EventType, callback EventCallBack)
+	AddHandler(eventType EventType, callback EventCallback)
+	RemoveHandler(eventType EventType, callback EventCallback)
 	SetEvaluationContext(evalCtx EvaluationContext)
 	EvaluationContext() EvaluationContext
 	BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error)
@@ -90,12 +90,12 @@ func (c *Client) AddHooks(hooks ...Hook) {
 }
 
 // AddHandler allows to add Client level event handler
-func (c *Client) AddHandler(eventType EventType, callback EventCallBack) {
+func (c *Client) AddHandler(eventType EventType, callback EventCallback) {
 	addClientHandler(c.metadata.Name(), eventType, callback)
 }
 
 // RemoveHandler allows to remove Client level event handler
-func (c *Client) RemoveHandler(eventType EventType, callback EventCallBack) {
+func (c *Client) RemoveHandler(eventType EventType, callback EventCallback) {
 	removeClientHandler(c.metadata.Name(), eventType, callback)
 }
 
