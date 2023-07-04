@@ -39,6 +39,10 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		if executor.defaultProviderReference.featureProvider != eventingProvider {
+			t.Error("implementation should register default eventing provider")
+		}
+
 		err = executor.registerNamedEventingProvider("name", eventingProvider)
 		if err != nil {
 			t.Fatal(err)
@@ -54,6 +58,8 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 // the associated client and API event handlers MUST run.
 func TestEventHandler_Eventing(t *testing.T) {
 	t.Run("Simple API level event", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
@@ -66,8 +72,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
-		err := executor.registerDefaultProvider(eventingProvider)
+		err := SetProvider(eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,7 +82,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			rsp <- details
 		}
 
-		executor.registerApiHandler(ProviderReady, &callBack)
+		AddHandler(ProviderReady, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -116,6 +121,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 	})
 
 	t.Run("Simple Client level event", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
@@ -129,12 +136,10 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
-
 		// associated to client name
 		associatedName := "providerForClient"
 
-		err := executor.registerNamedEventingProvider(associatedName, eventingProvider)
+		err := SetNamedProvider(associatedName, eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -144,7 +149,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			rsp <- details
 		}
 
-		executor.registerClientHandler(associatedName, ProviderReady, &callBack)
+		client := NewClient(associatedName)
+		client.AddHandler(ProviderReady, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -192,6 +198,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 // Requirement 5.1.3 When a provider signals the occurrence of a particular event,
 // event handlers on clients which are not associated with that provider MUST NOT run.
 func TestEventHandler_clientAssociation(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
 	eventingImpl := &ProviderEventing{
 		c: make(chan Event, 1),
 	}
@@ -205,16 +213,14 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		eventingImpl,
 	}
 
-	executor := newEventExecutor(logger)
-
 	// default provider
-	err := executor.registerDefaultProvider(defaultProvider)
+	err := SetProvider(defaultProvider)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// named provider(associated to name someClient)
-	err = executor.registerNamedEventingProvider("someClient", struct {
+	err = SetNamedProvider("someClient", struct {
 		FeatureProvider
 		EventHandler
 	}{
@@ -233,7 +239,8 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	event := ProviderReady
-	executor.registerClientHandler("someClient", event, &callBack)
+	client := NewClient("someClient")
+	client.AddHandler(event, &callBack)
 
 	// invoke default provider
 	eventingImpl.Invoke(Event{
@@ -252,6 +259,8 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 
 // Requirement 5.2.5 If a handler function terminates abnormally, other handler functions MUST run.
 func TestEventHandler_ErrorHandling(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
 	eventing := &ProviderEventing{
 		c: make(chan Event, 1),
 	}
@@ -278,22 +287,23 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 		rspClient <- e
 	}
 
-	executor := newEventExecutor(logger)
-	err := executor.registerDefaultProvider(provider)
+	err := SetProvider(provider)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// api level handlers
-	executor.registerApiHandler(ProviderReady, &errorCallback)
-	executor.registerApiHandler(ProviderReady, &successAPICallback)
+	AddHandler(ProviderReady, &errorCallback)
+	AddHandler(ProviderReady, &successAPICallback)
 
 	// provider association
 	providerName := "providerA"
 
+	client := NewClient(providerName)
+
 	// client level handlers
-	executor.registerClientHandler(providerName, ProviderReady, &errorCallback)
-	executor.registerClientHandler(providerName, ProviderReady, &successClientCallback)
+	client.AddHandler(ProviderReady, &errorCallback)
+	client.AddHandler(ProviderReady, &successClientCallback)
 
 	// trigger events manually
 	go func() {
@@ -375,7 +385,8 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("clientWithNoProviderAssociation", ProviderReady, &callback)
+		client := NewClient("clientWithNoProviderAssociation")
+		client.AddHandler(ProviderReady, &callback)
 		err := SetProvider(provider)
 		if err != nil {
 			t.Fatal(err)
@@ -409,7 +420,9 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("someClient", ProviderReady, &callback)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderReady, &callback)
+
 		err := SetNamedProvider("someClient", provider)
 		if err != nil {
 			t.Fatal(err)
@@ -443,8 +456,10 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("provider", ProviderReady, &callback)
-		err := SetNamedProvider("someClient", provider)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderReady, &callback)
+
+		err := SetNamedProvider("providerWithoutClient", provider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -521,7 +536,9 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("clientWithNoProviderAssociation", ProviderError, &callback)
+		client := NewClient("clientWithNoProviderAssociation")
+		client.AddHandler(ProviderError, &callback)
+
 		err := SetProvider(provider)
 		if err != nil {
 			t.Fatal(err)
@@ -558,7 +575,9 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("someClient", ProviderError, &callback)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderError, &callback)
+
 		err := SetNamedProvider("someClient", provider)
 		if err != nil {
 			t.Fatal(err)
@@ -595,7 +614,9 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		addClientHandler("provider", ProviderError, &callback)
+		client := NewClient("provider")
+		client.AddHandler(ProviderError, &callback)
+
 		err := SetNamedProvider("someClient", provider)
 		if err != nil {
 			t.Fatal(err)
@@ -614,6 +635,8 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 // Requirement 5.3.3 PROVIDER_READY handlers attached after the provider is already in a ready state MUST run immediately.
 func TestEventHandler_ProviderReadiness(t *testing.T) {
 	t.Run("for api level under default provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		readyEventingProvider := struct {
 			FeatureProvider
 			StateHandler
@@ -626,9 +649,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
-
-		err := executor.registerDefaultProvider(readyEventingProvider)
+		err := SetProvider(readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -638,7 +659,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		executor.registerApiHandler(ProviderReady, &callback)
+		AddHandler(ProviderReady, &callback)
 
 		select {
 		case <-rsp:
@@ -649,6 +670,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("for name associated handler", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		readyEventingProvider := struct {
 			FeatureProvider
 			StateHandler
@@ -661,10 +684,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
-
 		clientAssociation := "clientA"
-		err := executor.registerNamedEventingProvider(clientAssociation, readyEventingProvider)
+		err := SetNamedProvider(clientAssociation, readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -674,7 +695,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		executor.registerClientHandler(clientAssociation, ProviderReady, &callback)
+		client := NewClient(clientAssociation)
+		client.AddHandler(ProviderReady, &callback)
 
 		select {
 		case <-rsp:
@@ -685,6 +707,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("for unassociated handler from default", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		readyEventingProvider := struct {
 			FeatureProvider
 			StateHandler
@@ -697,9 +721,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
-
-		err := executor.registerDefaultProvider(readyEventingProvider)
+		err := SetProvider(readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -709,7 +731,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		executor.registerClientHandler("someClient", ProviderReady, &callback)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderReady, &callback)
 
 		select {
 		case <-rsp:
@@ -720,6 +743,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("no event if provider is not ready", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		notReadyEventingProvider := struct {
 			FeatureProvider
 			StateHandler
@@ -728,13 +753,14 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			NoopProvider{},
 			&stateHandlerForTests{
 				State: NotReadyState,
+				initF: func(e EvaluationContext) error {
+					return errors.New("some error from initialization")
+				},
 			},
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
-
-		err := executor.registerDefaultProvider(notReadyEventingProvider)
+		err := SetProvider(notReadyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -744,7 +770,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		executor.registerClientHandler("someClient", ProviderReady, &callback)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderReady, &callback)
 
 		select {
 		case <-rsp:
@@ -755,6 +782,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("no event if subscribed for some other event", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
 		readyEventingProvider := struct {
 			FeatureProvider
 			StateHandler
@@ -762,14 +791,15 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}{
 			NoopProvider{},
 			&stateHandlerForTests{
-				State: ReadyState,
+				State: NotReadyState,
+				initF: func(e EvaluationContext) error {
+					return nil
+				},
 			},
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
-
-		err := executor.registerDefaultProvider(readyEventingProvider)
+		err := SetProvider(readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -779,7 +809,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		executor.registerClientHandler("someClient", ProviderError, &callback)
+		client := NewClient("someClient")
+		client.AddHandler(ProviderError, &callback)
 
 		select {
 		case <-rsp:
@@ -793,6 +824,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 // non-spec bound validations
 
 func TestEventHandler_multiSubs(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
 	eventingImpl := &ProviderEventing{
 		c: make(chan Event, 1),
 	}
@@ -838,19 +871,24 @@ func TestEventHandler_multiSubs(t *testing.T) {
 	globalF := func(e EventDetails) {
 		rspGlobal <- e
 	}
+
 	AddHandler(ProviderStale, &globalF)
 
 	rspClientA := make(chan EventDetails, 1)
-	clientA := func(e EventDetails) {
+	callbackA := func(e EventDetails) {
 		rspClientA <- e
 	}
-	addClientHandler("clientA", ProviderStale, &clientA)
+
+	clientA := NewClient("clientA")
+	clientA.AddHandler(ProviderStale, &callbackA)
 
 	rspClientB := make(chan EventDetails, 1)
-	clientB := func(e EventDetails) {
+	callbackB := func(e EventDetails) {
 		rspClientB <- e
 	}
-	addClientHandler("clientB", ProviderStale, &clientB)
+
+	clientB := NewClient("clientB")
+	clientB.AddHandler(ProviderStale, &callbackB)
 
 	emitDone := make(chan interface{})
 	eventCount := 5
