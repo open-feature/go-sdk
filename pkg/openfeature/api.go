@@ -173,6 +173,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, old
 	if ok && v.Status() == NotReadyState {
 		go func(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
 			err := stateHandler.Init(evalCtx)
+			// emit ready/error event once initialization is complete
 			if err != nil {
 				eventChan <- eventPayload{
 					Event{
