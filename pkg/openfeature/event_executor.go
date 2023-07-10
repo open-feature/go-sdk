@@ -303,15 +303,13 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// then run client handlers
-	var nameAssociations []string
 	for name, reference := range e.namedProviderReference {
-		if reference.featureProvider == handler {
-			nameAssociations = append(nameAssociations, name)
+		if reference.featureProvider != handler {
+			// unassociated client, continue to next
+			continue
 		}
-	}
 
-	for _, nameAssociation := range nameAssociations {
-		for _, c := range e.scopedRegistry[nameAssociation].callbacks[event.EventType] {
+		for _, c := range e.scopedRegistry[name].callbacks[event.EventType] {
 			e.executeHandler(*c, event)
 		}
 	}
@@ -321,17 +319,17 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// handling the default provider - invoke default provider bound (no provider associated) handlers by filtering
-	var defaultHandlers []EventCallback
-
 	for clientName, registry := range e.scopedRegistry {
-		if _, ok := e.namedProviderReference[clientName]; !ok {
-			defaultHandlers = append(defaultHandlers, registry.callbacks[event.EventType]...)
+		if _, ok := e.namedProviderReference[clientName]; ok {
+			// association exist, skip and check next
+			continue
+		}
+
+		for _, c := range registry.callbacks[event.EventType] {
+			e.executeHandler(*c, event)
 		}
 	}
 
-	for _, c := range defaultHandlers {
-		e.executeHandler(*c, event)
-	}
 }
 
 // executeHandler is a helper which performs the actual invocation of the callback
