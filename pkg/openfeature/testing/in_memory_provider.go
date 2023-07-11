@@ -47,6 +47,8 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 		result = res
 	} else {
 		result = defaultValue
+		detail.Reason = openfeature.ErrorReason
+		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	}
 
 	return openfeature.BoolResolutionDetail{
@@ -75,6 +77,8 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 		result = res
 	} else {
 		result = defaultValue
+		detail.Reason = openfeature.ErrorReason
+		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	}
 
 	return openfeature.StringResolutionDetail{
@@ -103,6 +107,8 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 		result = res
 	} else {
 		result = defaultValue
+		detail.Reason = openfeature.ErrorReason
+		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	}
 
 	return openfeature.FloatResolutionDetail{
@@ -126,11 +132,13 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
 
 	var result int64
-	res, ok := resolveFlag.(int64)
+	res, ok := resolveFlag.(int)
 	if ok {
-		result = res
+		result = int64(res)
 	} else {
 		result = defaultValue
+		detail.Reason = openfeature.ErrorReason
+		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	}
 
 	return openfeature.IntResolutionDetail{
@@ -158,6 +166,8 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 		result = resolveFlag
 	} else {
 		result = defaultValue
+		detail.Reason = openfeature.ErrorReason
+		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	}
 
 	return openfeature.InterfaceResolutionDetail{

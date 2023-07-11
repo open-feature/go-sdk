@@ -86,10 +86,10 @@ func TestInMemoryProvider_Int(t *testing.T) {
 		"intFlag": {
 			Key:            "intFlag",
 			State:          Enabled,
-			DefaultVariant: "one",
+			DefaultVariant: "max",
 			Variants: map[string]interface{}{
-				"one": 1,
-				"two": 2,
+				"min": -9223372036854775808,
+				"max": 9223372036854775807,
 			},
 			ContextEvaluator: nil,
 		},
@@ -98,9 +98,9 @@ func TestInMemoryProvider_Int(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("test integer success", func(t *testing.T) {
-		evaluation := memoryProvider.IntEvaluation(ctx, "IntFlag", 1, nil)
+		evaluation := memoryProvider.IntEvaluation(ctx, "intFlag", 1, nil)
 
-		if evaluation.Value != 1 {
+		if evaluation.Value != 9223372036854775807 {
 			t.Errorf("incorect evaluation, expected %d, got %d", 1, evaluation.Value)
 		}
 	})
