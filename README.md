@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD033 -->
+<!-- x-hide-in-docs-start -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/white/openfeature-horizontal-white.svg">
@@ -26,6 +27,7 @@
 
 Standardizing feature flags unifies tools and vendors behind a common interface which avoids vendor lock-in at the code level. Additionally, it offers a framework for building extensions and integrations and allows providers to focus on their unique value proposition.
 
+<!-- x-hide-in-docs-end -->
 ## 🔍 Requirements:
 
 - Go 1.18+
@@ -72,7 +74,7 @@ func main() {
 }
 ```
 
-A list of available providers can be found [here](https://openfeature.dev/docs/reference/technologies/server/go).
+A list of available providers can be found [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go).
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
@@ -267,6 +269,72 @@ import "github.com/open-feature/go-sdk/pkg/openfeature"
 openfeature.Shutdown()
 ```
 
+### Named clients:
+
+Clients can be given a name. A name is a logical identifier which can be used to associate clients with a particular provider. 
+If a name has no associated provider, clients with that name use the global provider.
+
+```go
+import "github.com/open-feature/go-sdk/pkg/openfeature"
+
+...
+
+// Registering the default provider
+openfeature.SetProvider(NewLocalProvider())
+// Registering a named provider
+openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
+
+// A Client backed by default provider
+clientWithDefault := openfeature.NewClient("")
+// A Client backed by NewCachedProvider
+clientForCache := openfeature.NewClient("clientForCache")
+```
+
+### Events:
+
+Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
+Initialization events (PROVIDER_READY on success, PROVIDER_ERROR on failure) are dispatched for every provider.
+Some providers support additional events, such as PROVIDER_CONFIGURATION_CHANGED.
+
+Please refer to the documentation of the provider you're using to see what events are supported.
+
+```go
+import "github.com/open-feature/go-sdk/pkg/openfeature"
+
+...
+var readyHandlerCallback = func(details openfeature.EventDetails) {
+    // callback implementation
+}
+
+// Global event handler
+openfeature.AddHandler(openfeature.ProviderReady, &readyHandlerCallback)
+
+...
+
+var providerErrorCallback = func(details openfeature.EventDetails) {
+    // callback implementation
+}
+
+client := openfeature.NewClient("clientName")
+
+// Client event handler
+client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
+```
+
+### Shutdown: 
+
+The OpenFeature API provides a close function to perform a cleanup of all registered providers.
+This should only be called when your application is in the process of shutting down.
+
+```go
+import "github.com/open-feature/go-sdk/pkg/openfeature"
+
+...
+
+openfeature.Shutdown()
+```
+
+<!-- x-hide-in-docs-start -->
 ## ⭐️ Support the project
 
 - Give this repo a ⭐️!
@@ -292,4 +360,5 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 [Apache License 2.0](LICENSE)
 
+<!-- x-hide-in-docs-end -->
 [openfeature-website]: https://openfeature.dev
