@@ -9,6 +9,7 @@
 </p>
 
 <h2 align="center">OpenFeature Go SDK</h2>
+
 <!-- x-hide-in-docs-end -->
 [![Go Reference](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
 [![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
@@ -29,11 +30,11 @@
 Standardizing feature flags unifies tools and vendors behind a common interface which avoids vendor lock-in at the code level. Additionally, it offers a framework for building extensions and integrations and allows providers to focus on their unique value proposition.
 
 <!-- x-hide-in-docs-end -->
-## 🔍 Requirements:
+## 🔍 Requirements
 
 - Go 1.18+
 
-## 📦 Installation:
+## 📦 Installation
 
 ```shell
 go get github.com/open-feature/go-sdk
@@ -43,7 +44,7 @@ go get github.com/open-feature/go-sdk
 
 The release workflow generates an SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
 
-## 🌟 Features:
+## 🌟 Features
 
 - support for various backend [providers](https://openfeature.dev/docs/reference/concepts/provider)
 - easy integration and extension via [hooks](https://openfeature.dev/docs/reference/concepts/hooks)
@@ -51,9 +52,7 @@ The release workflow generates an SBOM (using [cyclonedx](https://github.com/Cyc
 - [context-aware](https://openfeature.dev/docs/reference/concepts/evaluation-context) evaluation
 - Supports [OpenFeature Events](https://openfeature.dev/specification/sections/events)
 
-## 🚀 Usage:
-
-### Basics:
+## 🚀 Usage
 
 To configure the SDK you'll need to add a provider to the `openfeature` global singleton. From there, you can generate a `Client` which is usable by your code.
 While you'll likely want a provider for your specific backend, we've provided a `NoopProvider`, which simply returns the default passed in.
@@ -79,7 +78,7 @@ A list of available providers can be found [here](https://openfeature.dev/ecosys
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
-### Context-aware evaluation:
+### Context-aware evaluation
 
 Sometimes the value of a flag must take into account some dynamic criteria about the application or user, such as the user location, IP, email address, or the location of the server.
 In OpenFeature, we refer to this as [`targeting`](https://openfeature.dev/specification/glossary#targeting).
@@ -113,7 +112,7 @@ evalCtx := openfeature.NewEvaluationContext(
 boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
 ```
 
-### Providers:
+### Providers
 
 To develop a provider, you need to create a new project and include the OpenFeature SDK as a dependency. This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/go-sdk-contrib) available under the OpenFeature organization. Finally, you’ll then need to write the provider itself. This can be accomplished by implementing the `FeatureProvider` interface exported by the OpenFeature SDK.
 
@@ -161,7 +160,7 @@ func (e MyFeatureProvider) Hooks() []Hook {
 
 See [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a catalog of available providers.
 
-### Hooks:
+### Hooks
 
 Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
 
@@ -183,7 +182,7 @@ Register the hook at the global, client, or invocation level.
 
 A list of available hooks can be found [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go).
 
-### Logging:
+### Logging
 
 If not configured, the logger falls back to the standard Go log package at error level only.
 
@@ -361,5 +360,5 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 [Apache License 2.0](LICENSE)
 
-<!-- x-hide-in-docs-end -->
 [openfeature-website]: https://openfeature.dev
+<!-- x-hide-in-docs-end -->
