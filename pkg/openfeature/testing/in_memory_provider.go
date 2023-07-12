@@ -39,17 +39,8 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
-
-	var result bool
-	res, ok := resolveFlag.(bool)
-	if ok {
-		result = res
-	} else {
-		result = defaultValue
-		detail.Reason = openfeature.ErrorReason
-		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
-	}
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	result := genericResolve[bool](resolveFlag, defaultValue, &detail)
 
 	return openfeature.BoolResolutionDetail{
 		Value:                    result,
@@ -69,17 +60,8 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
-
-	var result string
-	res, ok := resolveFlag.(string)
-	if ok {
-		result = res
-	} else {
-		result = defaultValue
-		detail.Reason = openfeature.ErrorReason
-		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
-	}
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	result := genericResolve[string](resolveFlag, defaultValue, &detail)
 
 	return openfeature.StringResolutionDetail{
 		Value:                    result,
@@ -99,17 +81,8 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
-
-	var result float64
-	res, ok := resolveFlag.(float64)
-	if ok {
-		result = res
-	} else {
-		result = defaultValue
-		detail.Reason = openfeature.ErrorReason
-		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
-	}
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	result := genericResolve[float64](resolveFlag, defaultValue, &detail)
 
 	return openfeature.FloatResolutionDetail{
 		Value:                    result,
@@ -129,20 +102,11 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
-
-	var result int64
-	res, ok := resolveFlag.(int)
-	if ok {
-		result = int64(res)
-	} else {
-		result = defaultValue
-		detail.Reason = openfeature.ErrorReason
-		detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
-	}
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	result := genericResolve[int](resolveFlag, int(defaultValue), &detail)
 
 	return openfeature.IntResolutionDetail{
-		Value:                    result,
+		Value:                    int64(result),
 		ProviderResolutionDetail: detail,
 	}
 }
@@ -159,7 +123,7 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
 
 	var result interface{}
 	if resolveFlag != nil {
@@ -177,8 +141,22 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 }
 
 func (i InMemoryProvider) Hooks() []openfeature.Hook {
-	//TODO implement some hooks
 	return []openfeature.Hook{}
+}
+
+// helpers
+
+// genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail
+func genericResolve[T comparable](value interface{}, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
+	v, ok := value.(T)
+
+	if ok {
+		return v
+	}
+
+	detail.Reason = openfeature.ErrorReason
+	detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
+	return defaultValue
 }
 
 // Type Definitions for InMemoryProvider flag
@@ -199,8 +177,16 @@ type InMemoryFlag struct {
 	ContextEvaluator ContextEvaluator
 }
 
-func (flag *InMemoryFlag) Resolve(evalCtx openfeature.FlattenedContext) (
+func (flag *InMemoryFlag) Resolve(defaultValue interface{}, evalCtx openfeature.FlattenedContext) (
 	interface{}, openfeature.ProviderResolutionDetail) {
+
+	// check the state
+	if flag.State == Disabled {
+		return defaultValue, openfeature.ProviderResolutionDetail{
+			ResolutionError: openfeature.NewGeneralResolutionError("flag is disabled"),
+			Reason:          openfeature.DisabledReason,
+		}
+	}
 
 	// first resolve from context callback
 	if flag.ContextEvaluator != nil {
@@ -208,14 +194,6 @@ func (flag *InMemoryFlag) Resolve(evalCtx openfeature.FlattenedContext) (
 	}
 
 	// fallback to evaluation
-
-	// check the state
-	if flag.State == Disabled {
-		return nil, openfeature.ProviderResolutionDetail{
-			ResolutionError: openfeature.NewGeneralResolutionError("flag is disabled"),
-			Reason:          openfeature.DisabledReason,
-		}
-	}
 
 	return flag.Variants[flag.DefaultVariant], openfeature.ProviderResolutionDetail{
 		Reason:  openfeature.StaticReason,

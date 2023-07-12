@@ -165,3 +165,83 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 		}
 	})
 }
+
+func TestInMemoryProvider_MissingFlag(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+
+	ctx := context.Background()
+
+	t.Run("test missing flag", func(t *testing.T) {
+		evaluation := memoryProvider.StringEvaluation(ctx, "missing-flag", "GoodBye", nil)
+
+		if evaluation.Value != "GoodBye" {
+			t.Errorf("incorect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+		}
+
+		if evaluation.Reason != openfeature.ErrorReason {
+			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+		}
+
+		if evaluation.ResolutionDetail().ErrorCode != openfeature.FlagNotFoundCode {
+			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.ResolutionDetail().ErrorCode)
+		}
+	})
+}
+
+func TestInMemoryProvider_TypeMismatch(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"boolFlag": {
+			Key:            "boolFlag",
+			State:          Enabled,
+			DefaultVariant: "true",
+			Variants: map[string]interface{}{
+				"true":  true,
+				"false": false,
+			},
+			ContextEvaluator: nil,
+		},
+	})
+
+	ctx := context.Background()
+
+	t.Run("test missing flag", func(t *testing.T) {
+		evaluation := memoryProvider.StringEvaluation(ctx, "boolFlag", "GoodBye", nil)
+
+		if evaluation.Value != "GoodBye" {
+			t.Errorf("incorect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+		}
+
+		if evaluation.ResolutionDetail().ErrorCode != openfeature.TypeMismatchCode {
+			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+		}
+	})
+}
+
+func TestInMemoryProvider_Disabled(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"boolFlag": {
+			Key:            "boolFlag",
+			State:          Disabled,
+			DefaultVariant: "true",
+			Variants: map[string]interface{}{
+				"true":  true,
+				"false": false,
+			},
+			ContextEvaluator: nil,
+		},
+	})
+
+	ctx := context.Background()
+
+	t.Run("test missing flag", func(t *testing.T) {
+		evaluation := memoryProvider.BooleanEvaluation(ctx, "boolFlag", false, nil)
+
+		if evaluation.Value != false {
+			t.Errorf("incorect evaluation, expected %v, got %v", false, evaluation.Value)
+		}
+
+		if evaluation.Reason != openfeature.DisabledReason {
+			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+		}
+	})
+}
