@@ -44,8 +44,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Run flagd-testbed
-        run: docker run -d -p 8013:8013 -v ${{ github.workspace }}/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:v0.2.2
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
