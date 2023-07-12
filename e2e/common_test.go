@@ -15,41 +15,17 @@ var ctxFunction = func(this mp.InMemoryFlag, evalCtx openfeature.FlattenedContex
 		Variant: this.DefaultVariant,
 	}
 
-	// check for expected properties
-	fn, ok := evalCtx["fn"].(string)
-	if !ok {
-		return defaultValue, defaultResolution
+	expects := openfeature.FlattenedContext{
+		"fn":       "Sulisław",
+		"ln":       "Świętopełk",
+		"age":      int64(29),
+		"customer": false,
 	}
 
-	if fn != "Sulisław" {
-		return defaultValue, defaultResolution
-	}
-
-	ln, ok := evalCtx["ln"].(string)
-	if !ok {
-		return defaultValue, defaultResolution
-	}
-
-	if ln != "Świętopełk" {
-		return defaultValue, defaultResolution
-	}
-
-	age, ok := evalCtx["age"].(int64)
-	if !ok {
-		return defaultValue, defaultResolution
-	}
-
-	if age != 29 {
-		return defaultValue, defaultResolution
-	}
-
-	customer, ok := evalCtx["customer"].(bool)
-	if !ok {
-		return defaultValue, defaultResolution
-	}
-
-	if customer != false {
-		return defaultValue, defaultResolution
+	for k, v := range expects {
+		if v != evalCtx[k] {
+			return defaultValue, defaultResolution
+		}
 	}
 
 	return this.Variants["internal"], openfeature.ProviderResolutionDetail{

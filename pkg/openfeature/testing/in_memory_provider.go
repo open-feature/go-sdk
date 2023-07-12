@@ -28,14 +28,11 @@ func (i InMemoryProvider) Metadata() openfeature.Metadata {
 }
 
 func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
-	memoryFlag, ok := i.flags[flag]
+	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.BoolResolutionDetail{
-			Value: defaultValue,
-			ProviderResolutionDetail: openfeature.ProviderResolutionDetail{
-				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
-				Reason:          openfeature.ErrorReason,
-			},
+			Value:                    defaultValue,
+			ProviderResolutionDetail: *details,
 		}
 	}
 
@@ -49,14 +46,11 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 }
 
 func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
-	memoryFlag, ok := i.flags[flag]
+	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.StringResolutionDetail{
-			Value: defaultValue,
-			ProviderResolutionDetail: openfeature.ProviderResolutionDetail{
-				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
-				Reason:          openfeature.ErrorReason,
-			},
+			Value:                    defaultValue,
+			ProviderResolutionDetail: *details,
 		}
 	}
 
@@ -70,14 +64,11 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 }
 
 func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
-	memoryFlag, ok := i.flags[flag]
+	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.FloatResolutionDetail{
-			Value: defaultValue,
-			ProviderResolutionDetail: openfeature.ProviderResolutionDetail{
-				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
-				Reason:          openfeature.ErrorReason,
-			},
+			Value:                    defaultValue,
+			ProviderResolutionDetail: *details,
 		}
 	}
 
@@ -91,14 +82,11 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 }
 
 func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
-	memoryFlag, ok := i.flags[flag]
+	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.IntResolutionDetail{
-			Value: defaultValue,
-			ProviderResolutionDetail: openfeature.ProviderResolutionDetail{
-				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
-				Reason:          openfeature.ErrorReason,
-			},
+			Value:                    defaultValue,
+			ProviderResolutionDetail: *details,
 		}
 	}
 
@@ -112,14 +100,11 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 }
 
 func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
-	memoryFlag, ok := i.flags[flag]
+	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.InterfaceResolutionDetail{
-			Value: defaultValue,
-			ProviderResolutionDetail: openfeature.ProviderResolutionDetail{
-				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
-				Reason:          openfeature.ErrorReason,
-			},
+			Value:                    defaultValue,
+			ProviderResolutionDetail: *details,
 		}
 	}
 
@@ -142,6 +127,19 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 
 func (i InMemoryProvider) Hooks() []openfeature.Hook {
 	return []openfeature.Hook{}
+}
+
+func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.ProviderResolutionDetail, bool) {
+	memoryFlag, ok := i.flags[flag]
+	if !ok {
+		return nil,
+			&openfeature.ProviderResolutionDetail{
+				ResolutionError: openfeature.NewFlagNotFoundResolutionError(fmt.Sprintf("flag for key %s not found", flag)),
+				Reason:          openfeature.ErrorReason,
+			}, false
+	}
+
+	return &memoryFlag, nil, true
 }
 
 // helpers
