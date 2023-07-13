@@ -73,10 +73,10 @@ func TestInMemoryProvider_Float(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("test float success", func(t *testing.T) {
-		evaluation := memoryProvider.FloatEvaluation(ctx, "fOne", 1.0, nil)
+		evaluation := memoryProvider.FloatEvaluation(ctx, "floatFlag", 1.0, nil)
 
-		if evaluation.Value != 1.0 {
-			t.Errorf("incorect evaluation, expected %f, got %f", 1.0, evaluation.Value)
+		if evaluation.Value != 1.1 {
+			t.Errorf("incorect evaluation, expected %f, got %f", 1.1, evaluation.Value)
 		}
 	})
 }
@@ -204,7 +204,7 @@ func TestInMemoryProvider_TypeMismatch(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("test missing flag", func(t *testing.T) {
+	t.Run("test type mismatch flag", func(t *testing.T) {
 		evaluation := memoryProvider.StringEvaluation(ctx, "boolFlag", "GoodBye", nil)
 
 		if evaluation.Value != "GoodBye" {
@@ -233,7 +233,7 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("test missing flag", func(t *testing.T) {
+	t.Run("test disabled flag", func(t *testing.T) {
 		evaluation := memoryProvider.BooleanEvaluation(ctx, "boolFlag", false, nil)
 
 		if evaluation.Value != false {
@@ -244,4 +244,18 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
 		}
 	})
+}
+
+func TestInMemoryProvider_Metadata(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+
+	metadata := memoryProvider.Metadata()
+
+	if metadata.Name == "" {
+		t.Errorf("expected non-empty name for in-memory provider")
+	}
+
+	if metadata.Name != "InMemoryProvider" {
+		t.Errorf("incorrect name for in-memory provider")
+	}
 }
