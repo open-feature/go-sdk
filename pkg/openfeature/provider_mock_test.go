@@ -156,9 +156,11 @@ func (m *MockStateHandler) EXPECT() *MockStateHandlerMockRecorder {
 }
 
 // Init mocks base method.
-func (m *MockStateHandler) Init(evaluationContext EvaluationContext) {
+func (m *MockStateHandler) Init(evaluationContext EvaluationContext) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Init", evaluationContext)
+	ret := m.ctrl.Call(m, "Init", evaluationContext)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Init indicates an expected call of Init.

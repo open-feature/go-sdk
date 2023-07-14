@@ -28,17 +28,22 @@ func init() {
 
 // stateHandlerForTests is a StateHandler with callbacks
 type stateHandlerForTests struct {
-	initF     func(e EvaluationContext)
+	initF     func(e EvaluationContext) error
 	shutdownF func()
 	State
 }
 
-func (s *stateHandlerForTests) Init(e EvaluationContext) {
-	s.initF(e)
+func (s *stateHandlerForTests) Init(e EvaluationContext) error {
+	if s.initF != nil {
+		return s.initF(e)
+	}
+	return nil
 }
 
 func (s *stateHandlerForTests) Shutdown() {
-	s.shutdownF()
+	if s.shutdownF != nil {
+		s.shutdownF()
+	}
 }
 
 func (s *stateHandlerForTests) Status() State {

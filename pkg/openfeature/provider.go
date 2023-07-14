@@ -60,7 +60,7 @@ type State string
 // StateHandler is the contract for initialization & shutdown.
 // FeatureProvider can opt in for this behavior by implementing the interface
 type StateHandler interface {
-	Init(evaluationContext EvaluationContext)
+	Init(evaluationContext EvaluationContext) error
 	Shutdown()
 	Status() State
 }
@@ -70,8 +70,9 @@ type StateHandler interface {
 type NoopStateHandler struct {
 }
 
-func (s *NoopStateHandler) Init(e EvaluationContext) {
+func (s *NoopStateHandler) Init(e EvaluationContext) error {
 	// NOOP
+	return nil
 }
 
 func (s *NoopStateHandler) Shutdown() {
@@ -113,11 +114,11 @@ type EventDetails struct {
 
 type EventCallback *func(details EventDetails)
 
-// SimpleEventHandler is the out-of-the-box EventHandler which is noop
-type SimpleEventHandler struct {
+// NoopEventHandler is the out-of-the-box EventHandler which is noop
+type NoopEventHandler struct {
 }
 
-func (s SimpleEventHandler) EventChannel() <-chan Event {
+func (s NoopEventHandler) EventChannel() <-chan Event {
 	return make(chan Event, 1)
 }
 
