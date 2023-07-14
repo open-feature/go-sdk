@@ -46,6 +46,7 @@ The release workflow generates an SBOM (using [cyclonedx](https://github.com/Cyc
 - easy integration and extension via [hooks](https://openfeature.dev/docs/reference/concepts/hooks)
 - bool, string, numeric, and object flag types
 - [context-aware](https://openfeature.dev/docs/reference/concepts/evaluation-context) evaluation
+- Supports [OpenFeature Events](https://openfeature.dev/specification/sections/events)
 
 ## 🚀 Usage:
 
@@ -156,6 +157,19 @@ func (e MyFeatureProvider) Hooks() []Hook {
 ```
 
 See [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a catalog of available providers.
+
+#### Provider State support
+
+Provider implementations can enable [OpenFeature Provider States](https://openfeature.dev/specification/sections/providers#requirement-242) by implementing _optional_ `StateHandler` interface.
+SDK provides `NoopStateHandler` which implements this interface but perform no operation and always is in `ReadyState`.
+
+#### Eventing support
+
+Provider implementations can enable [OpenFeature events](https://openfeature.dev/specification/sections/events) by implementing _optional_ `EventHandler` interface.
+SDK provides `NoopEventHandler` which implements this interface but perform no operation.
+
+Eventing implementation use Go channels. Providers implementing this interface can emit their desired event and these events are propagated to event handlers registered either at global level or at client level. 
+The payload of the event is defined by the `Event` structure.
 
 ### Hooks:
 
