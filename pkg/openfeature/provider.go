@@ -114,11 +114,11 @@ type EventDetails struct {
 
 type EventCallback *func(details EventDetails)
 
-// SimpleEventHandler is the out-of-the-box EventHandler which is noop
-type SimpleEventHandler struct {
+// NoopEventHandler is the out-of-the-box EventHandler which is noop
+type NoopEventHandler struct {
 }
 
-func (s SimpleEventHandler) EventChannel() <-chan Event {
+func (s NoopEventHandler) EventChannel() <-chan Event {
 	return make(chan Event, 1)
 }
 
