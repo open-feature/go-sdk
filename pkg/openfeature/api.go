@@ -16,17 +16,21 @@ type evaluationAPI struct {
 	evalCtx         EvaluationContext
 	logger          logr.Logger
 	mu              sync.RWMutex
+	eventExecutor
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
 func newEvaluationAPI() evaluationAPI {
+	logger := logr.New(internal.Logger{})
+
 	return evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
 		evalCtx:         EvaluationContext{},
-		logger:          logr.New(internal.Logger{}),
+		logger:          logger,
 		mu:              sync.RWMutex{},
+		eventExecutor:   newEventExecutor(logger),
 	}
 }
 
@@ -41,8 +45,14 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 
 	// Initialize new default provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	api.initAndShutdown(provider, api.defaultProvider)
+	oldProvider := api.defaultProvider
+	api.initAndShutdown(provider, oldProvider)
 	api.defaultProvider = provider
+
+	err := api.registerDefaultProvider(provider)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -69,6 +79,11 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	api.initAndShutdown(provider, api.namedProviders[clientName])
 	api.namedProviders[clientName] = provider
 
+	err := api.registerNamedEventingProvider(clientName, provider)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -92,6 +107,7 @@ func (api *evaluationAPI) setLogger(l logr.Logger) {
 	defer api.mu.Unlock()
 
 	api.logger = l
+	api.eventExecutor.updateLogger(l)
 }
 
 func (api *evaluationAPI) getLogger() logr.Logger {

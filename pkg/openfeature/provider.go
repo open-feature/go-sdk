@@ -27,6 +27,11 @@ const (
 	ReadyState    State = "READY"
 	ErrorState    State = "ERROR"
 
+	ProviderReady        EventType = "PROVIDER_READY"
+	ProviderConfigChange EventType = "PROVIDER_CONFIGURATION_CHANGED"
+	ProviderStale        EventType = "PROVIDER_STALE"
+	ProviderError        EventType = "PROVIDER_ERROR"
+
 	TargetingKey string = "targetingKey" // evaluation context map key. The targeting key uniquely identifies the subject (end-user, or client service) of a flag evaluation.
 )
 
@@ -58,6 +63,62 @@ type StateHandler interface {
 	Init(evaluationContext EvaluationContext)
 	Shutdown()
 	Status() State
+}
+
+// NoopStateHandler is a noop StateHandler implementation
+// Status always set to ReadyState to comply with specification
+type NoopStateHandler struct {
+}
+
+func (s *NoopStateHandler) Init(e EvaluationContext) {
+	// NOOP
+}
+
+func (s *NoopStateHandler) Shutdown() {
+	// NOOP
+}
+
+func (s *NoopStateHandler) Status() State {
+	return ReadyState
+}
+
+// Eventing
+
+// EventHandler is the eventing contract enforced for FeatureProvider
+type EventHandler interface {
+	EventChannel() <-chan Event
+}
+
+// EventType emitted by a provider implementation
+type EventType string
+
+// ProviderEventDetails is the event payload emitted by FeatureProvider
+type ProviderEventDetails struct {
+	Message       string
+	FlagChanges   []string
+	EventMetadata map[string]interface{}
+}
+
+// Event is an event emitted by a FeatureProvider.
+type Event struct {
+	ProviderName string
+	EventType
+	ProviderEventDetails
+}
+
+type EventDetails struct {
+	providerName string
+	ProviderEventDetails
+}
+
+type EventCallback *func(details EventDetails)
+
+// SimpleEventHandler is the out-of-the-box EventHandler which is noop
+type SimpleEventHandler struct {
+}
+
+func (s SimpleEventHandler) EventChannel() <-chan Event {
+	return make(chan Event, 1)
 }
 
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
