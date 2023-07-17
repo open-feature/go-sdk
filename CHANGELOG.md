@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0](https://github.com/open-feature/go-sdk/compare/v1.4.0...v1.5.0) (2023-07-17)
+
+
+### Features
+
+* eventing implementation ([#188](https://github.com/open-feature/go-sdk/issues/188)) ([220dc33](https://github.com/open-feature/go-sdk/commit/220dc33fbb015a6493f8d285c681761968523fa8))
+* Initialize and shutdown behavior  ([#185](https://github.com/open-feature/go-sdk/issues/185)) ([609af46](https://github.com/open-feature/go-sdk/commit/609af46881a371dd1b18ce065164b9f116acdb7f))
+* named client support ([#180](https://github.com/open-feature/go-sdk/issues/180)) ([c6720f9](https://github.com/open-feature/go-sdk/commit/c6720f9dbf75160438447f730a2a44ef7fd5dedf))
+* provider client 1:n binding support ([#190](https://github.com/open-feature/go-sdk/issues/190)) ([940cb8b](https://github.com/open-feature/go-sdk/commit/940cb8b1a4e01304698f572831c4c26a5de32eae))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.13 ([#194](https://github.com/open-feature/go-sdk/issues/194)) ([501c34b](https://github.com/open-feature/go-sdk/commit/501c34bbc9afd3f910d58e20a5992678e7fb2fe1))
+* **deps:** update module golang.org/x/text to v0.10.0 ([#181](https://github.com/open-feature/go-sdk/issues/181)) ([d93f58b](https://github.com/open-feature/go-sdk/commit/d93f58bfb9ea92fbcbb0faa7cd7880bb629a6ebe))
+* **deps:** update module golang.org/x/text to v0.11.0 ([#191](https://github.com/open-feature/go-sdk/issues/191)) ([713a102](https://github.com/open-feature/go-sdk/commit/713a1021a8534208046cebcebf067575af465c17))
+
 ## [1.4.0](https://github.com/open-feature/go-sdk/compare/v1.3.0...v1.4.0) (2023-05-24)
 
 
