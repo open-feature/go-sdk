@@ -204,8 +204,8 @@ The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always log
 
 ### Named clients:
 
-You can have several clients, that can be referenced by a name. Every client can have a different provider assigned.
-If no provider is assigned to a named client, the global default provider is used.
+Clients can be given a name. A name is a logical identifier which can be used to associate clients with a particular provider. 
+If a name has no associated provider, clients with that name use the global provider.
 
 ```go
 import "github.com/open-feature/go-sdk/pkg/openfeature"
@@ -225,11 +225,11 @@ clientForCache := openfeature.NewClient("clientForCache")
 
 ### Events:
 
-Events provide a way to react to state changes in the provider or underlying flag management system.
-You can listen to events of either the OpenFeature API or individual clients.
+Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
+Initialization events (PROVIDER_READY on success, PROVIDER_ERROR on failure) are dispatched for every provider.
+Some providers support additional events, such as PROVIDER_CONFIGURATION_CHANGED.
 
-The events after initialization, `PROVIDER_READY` on success, `PROVIDER_ERROR` on failure during initialization, are dispatched for every provider.
-However, other event types may not be supported by your provider. Please refer to the documentation of the provider you're using to see what events are supported.
+Please refer to the documentation of the provider you're using to see what events are supported.
 
 ```go
 import "github.com/open-feature/go-sdk/pkg/openfeature"
@@ -256,7 +256,7 @@ client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
 
 ### Shutdown: 
 
-The OpenFeature API provides a shutdown function to perform a cleanup of all registered providers.
+The OpenFeature API provides a close function to perform a cleanup of all registered providers.
 This should only be called when your application is in the process of shutting down.
 
 ```go
