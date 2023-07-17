@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"context"
 	"github.com/open-feature/go-sdk/pkg/openfeature"
-	mp "github.com/open-feature/go-sdk/pkg/openfeature/testing"
+	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 	"strings"
 	"testing"
 )
@@ -11,7 +11,7 @@ import (
 func setupFuzzClient(f *testing.F) *openfeature.Client {
 	f.Helper()
 
-	memoryProvider := mp.NewInMemoryProvider(map[string]mp.InMemoryFlag{})
+	memoryProvider := memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
 	err := openfeature.SetProvider(memoryProvider)
 	if err != nil {
 		f.Errorf("error setting up provider %v", err)

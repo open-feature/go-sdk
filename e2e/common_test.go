@@ -2,11 +2,11 @@ package e2e_test
 
 import (
 	"github.com/open-feature/go-sdk/pkg/openfeature"
-	mp "github.com/open-feature/go-sdk/pkg/openfeature/testing"
+	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 )
 
 // ctxFunction is a context based evaluation callback
-var ctxFunction = func(this mp.InMemoryFlag, evalCtx openfeature.FlattenedContext) (
+var ctxFunction = func(this memprovider.InMemoryFlag, evalCtx openfeature.FlattenedContext) (
 	interface{}, openfeature.ProviderResolutionDetail) {
 
 	defaultValue := this.Variants[this.DefaultVariant]
@@ -34,10 +34,10 @@ var ctxFunction = func(this mp.InMemoryFlag, evalCtx openfeature.FlattenedContex
 	}
 }
 
-var memoryFlags = map[string]mp.InMemoryFlag{
+var memoryFlags = map[string]memprovider.InMemoryFlag{
 	"boolean-flag": {
 		Key:            "boolean-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "on",
 		Variants: map[string]interface{}{
 			"on":  true,
@@ -47,7 +47,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"string-flag": {
 		Key:            "string-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "greeting",
 		Variants: map[string]interface{}{
 			"greeting": "hi",
@@ -57,7 +57,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"integer-flag": {
 		Key:            "integer-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "ten",
 		Variants: map[string]interface{}{
 			"one": 1,
@@ -67,7 +67,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"float-flag": {
 		Key:            "float-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "half",
 		Variants: map[string]interface{}{
 			"tenth": 0.1,
@@ -77,7 +77,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"object-flag": {
 		Key:            "object-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "template",
 		Variants: map[string]interface{}{
 			"empty": map[string]interface{}{},
@@ -91,7 +91,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"wrong-flag": {
 		Key:            "wrong-flag",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "one",
 		Variants: map[string]interface{}{
 			"one": "uno",
@@ -101,7 +101,7 @@ var memoryFlags = map[string]mp.InMemoryFlag{
 	},
 	"context-aware": {
 		Key:            "context-aware",
-		State:          mp.Enabled,
+		State:          memprovider.Enabled,
 		DefaultVariant: "external",
 		Variants: map[string]interface{}{
 			"internal": "INTERNAL",

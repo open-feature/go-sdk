@@ -1,4 +1,4 @@
-package testing
+package memprovider
 
 import (
 	"context"

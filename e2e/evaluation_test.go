@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/open-feature/go-sdk/pkg/openfeature"
-	mp "github.com/open-feature/go-sdk/pkg/openfeature/testing"
+	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 	"strconv"
 	"testing"
 )
@@ -92,7 +92,7 @@ func initializeEvaluationScenario(ctx *godog.ScenarioContext) {
 }
 
 func aProviderIsRegisteredWithCacheDisabled(ctx context.Context) error {
-	memoryProvider := mp.NewInMemoryProvider(memoryFlags)
+	memoryProvider := memprovider.NewInMemoryProvider(memoryFlags)
 
 	err := openfeature.SetProvider(memoryProvider)
 	if err != nil {
