@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/open-feature/go-sdk/compare/v1.5.0...v1.5.1) (2023-07-18)
+
+
+### Bug Fixes
+
+* broken release process ([#199](https://github.com/open-feature/go-sdk/issues/199)) ([3990314](https://github.com/open-feature/go-sdk/commit/3990314592a672f04b466ef49e4f56e0e57cbadd))
+
 ## [1.5.0](https://github.com/open-feature/go-sdk/compare/v1.4.0...v1.5.0) (2023-07-17)
 
 
