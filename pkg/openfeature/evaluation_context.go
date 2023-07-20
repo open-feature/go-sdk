@@ -3,7 +3,7 @@ package openfeature
 // EvaluationContext provides ambient information for the purposes of flag evaluation
 // The use of the constructor, NewEvaluationContext, is enforced to set EvaluationContext's fields in order
 // to enforce immutability.
-// https://github.com/open-feature/spec/blob/main/specification/evaluation-context/evaluation-context.md
+// https://github.com/open-feature/spec/blob/main/specification/sections/03-evaluation-context.md
 type EvaluationContext struct {
 	targetingKey string // uniquely identifying the subject (end-user, or client service) of a flag evaluation
 	attributes   map[string]interface{}
