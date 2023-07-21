@@ -11,11 +11,12 @@
 <h2 align="center">OpenFeature Go SDK</h2>
 
 <!-- x-hide-in-docs-end -->
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Specification](https://img.shields.io/static/v1?label=Specification&message=v0.6.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.6.0)
+[![Version](https://img.shields.io/static/v1?label=Version&message=v1.5.1&color=purple)](https://github.com/open-feature/go-sdk/releases/tag/v1.5.1) <!-- x-release-please-version -->
 [![Go Reference](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
-[![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-feature/go-sdk)](https://goreportcard.com/report/github.com/open-feature/go-sdk)
 [![codecov](https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5)](https://codecov.io/gh/open-feature/go-sdk)
-[![v0.6.0](https://img.shields.io/static/v1?label=Specification&message=v0.6.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.6.0) 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6601/badge)](https://bestpractices.coreinfrastructure.org/projects/6601)
 <!-- x-hide-in-docs-start -->
 
@@ -23,7 +24,7 @@
 
 ### What is OpenFeature?
 
-[OpenFeature][openfeature-website] is an open standard that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
+[OpenFeature](https://openfeature.dev) is an open standard that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
 
 ### Why standardize feature flags?
 
@@ -40,17 +41,18 @@ Standardizing feature flags unifies tools and vendors behind a common interface 
 go get github.com/open-feature/go-sdk
 ```
 
-### Software Bill of Materials (SBOM)
-
-The release workflow generates an SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
-
 ## 🌟 Features
 
-- support for various backend [providers](https://openfeature.dev/docs/reference/concepts/provider)
-- easy integration and extension via [hooks](https://openfeature.dev/docs/reference/concepts/hooks)
-- bool, string, numeric, and object flag types
-- [context-aware](https://openfeature.dev/docs/reference/concepts/evaluation-context) evaluation
-- Supports [OpenFeature Events](https://openfeature.dev/specification/sections/events)
+| Features                        | Description                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Standardized Feature Flags      | Vendor-agnostic API based on the OpenFeature open standard for feature flagging.                              |
+| Unified Interface               | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                         |
+| Targeted Evaluation             | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data.    |
+| Modularity and Extensibility    | Custom providers and hooks can be implemented for evaluating different types of flags and reacting to events. |
+| Logging and Logging Integration | Structured logging using logr API, allowing integration with popular logger packages.                         |
+| Named Clients                   | Logical identifiers for clients to associate them with specific providers.                                    |
+| Event Handling                  | Supports event handling for state changes in the provider or flag management system.                          |
+| Cleanup and Shutdown            | Provides `Shutdown()` function for cleanup during application shutdown.                                       |
 
 ## 🚀 Usage
 
@@ -204,7 +206,7 @@ c := openfeature.NewClient("log").WithLogger(l) // set the logger at client leve
 [logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
 The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
 
-### Named clients:
+### Named clients
 
 Clients can be given a name. A name is a logical identifier which can be used to associate clients with a particular provider. 
 If a name has no associated provider, clients with that name use the global provider.
@@ -225,7 +227,7 @@ clientWithDefault := openfeature.NewClient("")
 clientForCache := openfeature.NewClient("clientForCache")
 ```
 
-### Events:
+### Events
 
 Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
 Initialization events (PROVIDER_READY on success, PROVIDER_ERROR on failure) are dispatched for every provider.
@@ -256,72 +258,7 @@ client := openfeature.NewClient("clientName")
 client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
 ```
 
-### Shutdown: 
-
-The OpenFeature API provides a close function to perform a cleanup of all registered providers.
-This should only be called when your application is in the process of shutting down.
-
-```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
-
-...
-
-openfeature.Shutdown()
-```
-
-### Named clients:
-
-Clients can be given a name. A name is a logical identifier which can be used to associate clients with a particular provider. 
-If a name has no associated provider, clients with that name use the global provider.
-
-```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
-
-...
-
-// Registering the default provider
-openfeature.SetProvider(NewLocalProvider())
-// Registering a named provider
-openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
-
-// A Client backed by default provider
-clientWithDefault := openfeature.NewClient("")
-// A Client backed by NewCachedProvider
-clientForCache := openfeature.NewClient("clientForCache")
-```
-
-### Events:
-
-Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
-Initialization events (PROVIDER_READY on success, PROVIDER_ERROR on failure) are dispatched for every provider.
-Some providers support additional events, such as PROVIDER_CONFIGURATION_CHANGED.
-
-Please refer to the documentation of the provider you're using to see what events are supported.
-
-```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
-
-...
-var readyHandlerCallback = func(details openfeature.EventDetails) {
-    // callback implementation
-}
-
-// Global event handler
-openfeature.AddHandler(openfeature.ProviderReady, &readyHandlerCallback)
-
-...
-
-var providerErrorCallback = func(details openfeature.EventDetails) {
-    // callback implementation
-}
-
-client := openfeature.NewClient("clientName")
-
-// Client event handler
-client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
-```
-
-### Shutdown: 
+### Shutdown
 
 The OpenFeature API provides a close function to perform a cleanup of all registered providers.
 This should only be called when your application is in the process of shutting down.
@@ -356,9 +293,13 @@ Interested in contributing? Great, we'd love your help! To get started, take a l
 
 Made with [contrib.rocks](https://contrib.rocks).
 
-## 📜 License
+<!-- x-hide-in-docs-end -->
+## 📜 Legal Notice
+
+### Software Bill of Materials (SBOM)
+
+The release workflow generates an SBOM (using [cyclonedx](https://github.com/CycloneDX/cyclonedx-gomod)) and pushes it to the release. It can be found as an asset named `bom.json` within a release.
+
+### License
 
 [Apache License 2.0](LICENSE)
-
-[openfeature-website]: https://openfeature.dev
-<!-- x-hide-in-docs-end -->
