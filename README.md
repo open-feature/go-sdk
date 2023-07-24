@@ -14,7 +14,7 @@
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Specification](https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.6.0)
 [![Version](https://img.shields.io/static/v1?label=version&message=v1.5.1&color=purple)](https://github.com/open-feature/go-sdk/releases/tag/v1.5.1) <!-- x-release-please-version -->
-<!-- TODO: server/client badge -->
+![Intended for Server-side](https://img.shields.io/badge/Intended_for-Server--side-blue.svg)
 [![Go package](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-feature/go-sdk)](https://goreportcard.com/report/github.com/open-feature/go-sdk)
 [![codecov](https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5)](https://codecov.io/gh/open-feature/go-sdk)
@@ -37,7 +37,7 @@ It provides a framework for building extensions and integrations that can be sha
 
 - Go 1.18+
 
-
+> This library is intended to be used in server-side contexts.
 
 ## 📦 Installation
 
@@ -48,19 +48,17 @@ go get github.com/open-feature/go-sdk
 ## 🌟 Features
 
 | Status | Features                        | Description                                                                                                   |
-| --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| ✅ | Standardized Feature Flags      | Vendor-agnostic API based on the OpenFeature open standard for feature flagging.                              |
-| ✅ | Unified Interface               | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                         |
-| ✅ | Targeted Evaluation             | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data.    |
-| ✅ | Modularity and Extensibility    | Custom providers and hooks can be implemented for evaluating different types of flags and reacting to events. |
-| ✅ | Logging and Logging Integration | Integrates with popular logger packages.                                                                      |
-| ✅ | Named Clients                   | Logical identifiers for clients to associate them with specific providers.                                    |
-| ✅ | Event Handling                  | Supports event handling for state changes in the provider or flag management system.                          |
-| ✅ | Cleanup and Shutdown            | Provides `Shutdown()` function for cleanup during application shutdown.                                       |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| ✅      | Standardized Feature Flags      | Vendor-agnostic API based on the OpenFeature open standard for feature flagging.                              |
+| ✅      | Unified Interface               | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                         |
+| ✅      | Targeted Evaluation             | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data.    |
+| ✅      | Modularity and Extensibility    | Custom providers and hooks can be implemented for evaluating different types of flags and reacting to events. |
+| ✅      | Logging and Logging Integration | Integrates with popular logger packages.                                                                      |
+| ✅      | Named Clients                   | Logical identifiers for clients to associate them with specific providers.                                    |
+| ✅      | Event Handling                  | Supports event handling for state changes in the provider or flag management system.                          |
+| ✅      | Cleanup and Shutdown            | Provides `Shutdown()` function for cleanup during application shutdown.                                       |
 
-Implemented: ✅
-Partially implemented: ⚠️
-Not implemented yet: ❌
+<sub>Implemented: ✅ Partially implemented: ⚠️ Not implemented yet: ❌</sub>
 
 ## 🚀 Usage
 
@@ -189,6 +187,8 @@ func (e MyFeatureProvider) Hooks() []Hook {
 }
 ```
 
+TODO: Extend the example to include initialize, ready, events, and shutdown.
+
 > Built a new provider? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=provider&projects=&template=document-provider.yaml&title=%5BProvider%5D%3A+) so we can add it to the docs!
 
 ### Hooks
@@ -197,6 +197,22 @@ Many hooks have already been created by member of the OpenFeature community.
 Look [here](https://openfeature.dev/ecosystem/?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a complete list of available hooks.
 
 #### Registering a hook
+
+Once you've added a hook as a dependency, it can be registered at the global, client, or invocation level.
+
+```go
+// add a hook globally, to run on all evaluations
+openfeature.AddHooks(ExampleGlobalHook{})
+
+// add a hook on this client, to run on all evaluations made by this client
+client := openfeature.NewClient("my-app")
+client.AddHooks(ExampleClientHook{})
+
+// add a hook for this evaluation only
+value, err := client.BooleanValue(
+    context.Background(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
+)
+```
 
 #### Developing a hook
 
@@ -215,8 +231,6 @@ func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints 
 	log.Println(err)
 }
 ```
-
-Register the hook at the global, client, or invocation level.
 
 > Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs!
 
@@ -267,8 +281,8 @@ clientForCache := openfeature.NewClient("clientForCache")
 ### Events
 
 Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
-Initialization events (PROVIDER_READY on success, PROVIDER_ERROR on failure) are dispatched for every provider.
-Some providers support additional events, such as PROVIDER_CONFIGURATION_CHANGED.
+Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
+Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGED`.
 
 Please refer to the documentation of the provider you're using to see what events are supported.
 
