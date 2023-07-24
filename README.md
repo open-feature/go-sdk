@@ -123,6 +123,7 @@ boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
 ### Providers
 
 Many providers have already been created by a vendor or member of the OpenFeature community.
+
 Look [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a complete list of available providers.
 
 #### Setting a provider
@@ -194,6 +195,7 @@ TODO: Extend the example to include initialize, ready, events, and shutdown.
 ### Hooks
 
 Many hooks have already been created by member of the OpenFeature community.
+
 Look [here](https://openfeature.dev/ecosystem/?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Go) for a complete list of available hooks.
 
 #### Registering a hook
@@ -259,8 +261,8 @@ The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always log
 ### Named clients
 
 Clients can be given a name.
-A name is a logical identifier which can be used to associate clients with a particular provider. 
-If a name has no associated provider, clients with that name use the global provider.
+A name is a logical identifier which can be used to associate clients with a particular provider.
+If a name has no associated provider, the global provider is used.
 
 ```go
 import "github.com/open-feature/go-sdk/pkg/openfeature"
