@@ -58,7 +58,7 @@ go get github.com/open-feature/go-sdk
 | ✅      | Event Handling                  | Supports event handling for state changes in the provider or flag management system.                          |
 | ✅      | Cleanup and Shutdown            | Provides `Shutdown()` function for cleanup during application shutdown.                                       |
 
-<sub>Implemented: ✅ Partially implemented: ⚠️ Not implemented yet: ❌</sub>
+<sub>Implemented: ✅ - Partially implemented: ⚠️ - Not implemented yet: ❌</sub>
 
 ## 🚀 Usage
 
