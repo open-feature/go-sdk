@@ -14,7 +14,7 @@
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Specification](https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.6.0)
 [![Version](https://img.shields.io/static/v1?label=version&message=v1.5.1&color=purple)](https://github.com/open-feature/go-sdk/releases/tag/v1.5.1) <!-- x-release-please-version -->
-![Intended for Server-side](https://img.shields.io/badge/Intended_for-Server--side-blue.svg)
+[![Intended for Server-side](https://img.shields.io/badge/Intended_for-Server--side-blue.svg)](https://openfeature.dev/specification/glossary/#server-side-sdk)
 [![Go package](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-feature/go-sdk)](https://goreportcard.com/report/github.com/open-feature/go-sdk)
 [![codecov](https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5)](https://codecov.io/gh/open-feature/go-sdk)
@@ -37,7 +37,7 @@ It provides a framework for building extensions and integrations that can be sha
 
 - Go 1.18+
 
-> This library is intended to be used in server-side contexts.
+<sub>This library is intended to be used in server-side contexts.</sub>
 
 ## 📦 Installation
 
