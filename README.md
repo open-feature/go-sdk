@@ -73,14 +73,14 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) fo
 
 | Status | Features                                         | Description                                                                                                |
 | ------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| ✅      | [Modular](#providers)                            | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                      |
-| ✅      | [Targeted Evaluation](#context-aware-evaluation) | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data. |
-| ✅      | [Extensibility](#hooks)                          | Extend the OpenFeature SDK's functionality by accessing the flag evaluation life-cycle.                                 |
-| ✅      | [Logger Integration](#logging)                   | Integrate with popular logging packages.                                                                   |
-| ✅      | [Multi-provider](#named-clients)                 | Utilize multiple providers in a single application.                                 |
-| ✅      | [Eventing](#events)                              | Listen for state changes in the provider or flag management system and react on the events.                |
-| ✅      | [Cleanup and Shutdown](#shutdown)                | Gracefully clean up a provider during application shutdown.             |
-| ✅      | [Modularity and Extensibility](#extending)       | Extend OpenFeature with custom providers and hooks to support your exact use case                        |
+| ✅      | [Providers](#providers)                            | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                      |
+| ✅      | [Context-aware evaluation](#context-aware-evaluation) | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data. |
+| ✅      | [Hooks](#hooks)                          | Extend the OpenFeature SDK's functionality by accessing the flag evaluation life-cycle.                                 |
+| ✅      | [Logging](#logging)                   | Integrate with popular logging packages.                                                                   |
+| ✅      | [Named clients](#named-clients)                 | Utilize multiple providers in a single application.                                 |
+| ✅      | [Eventing](#eventing)                              | Listen for state changes in the provider or flag management system and react on the events.                |
+| ✅      | [Shutdown](#shutdown)                | Gracefully clean up a provider during application shutdown.             |
+| ✅      | [Extending](#extending)       | Extend OpenFeature with custom providers and hooks to support your exact use case                        |
 
 <sub>Implemented: ✅ | Partially implemented: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -194,7 +194,7 @@ clientWithDefault := openfeature.NewClient("")
 clientForCache := openfeature.NewClient("clientForCache")
 ```
 
-### Events
+### Eventing
 
 Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
 Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
