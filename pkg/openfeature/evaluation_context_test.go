@@ -171,3 +171,17 @@ func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {
 		t.Error("mutation of map passed to SetAttributes caused a mutation of its attributes field")
 	}
 }
+
+func TestNewTargetlessEvaluationContext(t *testing.T) {
+	attributes := map[string]interface{}{
+		"foo": "bar",
+	}
+	evalCtx := NewTargetlessEvaluationContext(attributes)
+	if evalCtx.targetingKey != "" {
+		t.Error("targeting key should not be set with NewTargetlessEvaluationContext")
+	}
+
+	if !reflect.DeepEqual(evalCtx.Attributes(), attributes) {
+		t.Errorf("we expect no difference in the attributes")
+	}
+}
