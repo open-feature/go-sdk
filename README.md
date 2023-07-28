@@ -347,6 +347,7 @@ func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints 
 
 > Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs!
 
+<!-- x-hide-in-docs-start -->
 ## ⭐️ Support the project
 
 - Give this repo a ⭐️!
@@ -367,3 +368,4 @@ Interested in contributing? Great, we'd love your help! To get started, take a l
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
+<!-- x-hide-in-docs-end -->
