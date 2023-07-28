@@ -46,3 +46,10 @@ func NewEvaluationContext(targetingKey string, attributes map[string]interface{}
 		attributes:   attrs,
 	}
 }
+
+// NewTargetlessEvaluationContext constructs an EvaluationContext with an empty targeting key
+//
+// attributes - contextual data used in flag evaluation
+func NewTargetlessEvaluationContext(attributes map[string]interface{}) EvaluationContext {
+	return NewEvaluationContext("", attributes)
+}
