@@ -2,8 +2,8 @@
 <!-- x-hide-in-docs-start -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/white/openfeature-horizontal-white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/black/openfeature-horizontal-black.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/white/openfeature-horizontal-white.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/open-feature/community/0e23508c163a6a1ac8c0ced3e4bd78faafe627c7/assets/logo/horizontal/black/openfeature-horizontal-black.svg" />
     <img align="center" alt="OpenFeature Logo">
   </picture>
 </p>
@@ -11,24 +11,39 @@
 <h2 align="center">OpenFeature Go SDK</h2>
 
 <!-- x-hide-in-docs-end -->
-<!-- Add repo status only if it's WIP or Concept -->
-[![Go package](https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg)](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature)
-[![Specification](https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow)](https://github.com/open-feature/spec/tree/v0.6.0)
-[![Go Report Card](https://goreportcard.com/badge/github.com/open-feature/go-sdk)](https://goreportcard.com/report/github.com/open-feature/go-sdk)
-[![codecov](https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5)](https://codecov.io/gh/open-feature/go-sdk)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6601/badge)](https://bestpractices.coreinfrastructure.org/projects/6601)
+<p align="center">
+  <a href="https://github.com/open-feature/spec/tree/v0.6.0">
+    <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow&style=for-the-badge" />
+  </a>
+  <!-- x-release-please-start-version -->
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.5.1">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.5.1&color=blue&style=for-the-badge" />
+  </a>
+  <!-- x-release-please-end -->
+  <br/>
+  <a href="https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature">
+    <img alt="API Reference" src="https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg" />
+  </a>
+  <a href="https://goreportcard.com/report/github.com/open-feature/go-sdk">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-feature/go-sdk" />
+  </a>
+    <a href="https://codecov.io/gh/open-feature/go-sd">
+    <img alt="codecov" src="https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5" />
+  </a>
+    <a href="https://bestpractices.coreinfrastructure.org/projects/660">
+    <img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/6601/badge" />
+  </a>
+</p>
 <!-- x-hide-in-docs-start -->
 
 [OpenFeature](https://openfeature.dev) is an open standard that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
 
 <!-- x-hide-in-docs-end -->
-
 ## 🚀 Quick start
 
 ### Requirements
 
 - Go 1.18+
-
 
 ### Install
 
@@ -82,7 +97,7 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) fo
 | ✅      | [Shutdown](#shutdown)                | Gracefully clean up a provider during application shutdown.             |
 | ✅      | [Extending](#extending)       | Extend OpenFeature with custom providers and hooks to support your exact use case                        |
 
-<sub>Implemented: ✅ | Partially implemented: ⚠️ | Not implemented yet: ❌</sub>
+<sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
 ### Providers
 
@@ -107,8 +122,7 @@ If the flag management system you're using supports targeting, you can provide t
 
 ```go
 // set a value to the global context
-openfeature.SetEvaluationContext(openfeature.NewEvaluationContext(
-    "",
+openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]interface{}{
         "region":  "us-east-1-iah-1a",
     },
@@ -116,8 +130,7 @@ openfeature.SetEvaluationContext(openfeature.NewEvaluationContext(
 
 // set a value to the client context
 client := openfeature.NewClient("my-app")
-client.SetEvaluationContext(openfeature.NewEvaluationContext(
-    "", 
+client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]interface{}{
         "version":  "1.4.6",
     },
@@ -236,7 +249,7 @@ import "github.com/open-feature/go-sdk/pkg/openfeature"
 openfeature.Shutdown()
 ```
 
-## Extend
+## Extending
 
 ### Develop a provider
 
@@ -245,48 +258,67 @@ This can be a new repository or included in [the existing contrib repository](ht
 You’ll then need to write the provider by implementing the `FeatureProvider` interface exported by the OpenFeature SDK.
 
 ```go
-package provider
+package myfeatureprovider
+
+import (
+  "context"
+  "github.com/open-feature/go-sdk/pkg/openfeature"
+)
 
 // MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
 type MyFeatureProvider struct{}
 
 // Metadata returns the metadata of the provider
-func (e MyFeatureProvider) Metadata() Metadata {
-    return Metadata{Name: "MyFeatureProvider"}
+func (i MyFeatureProvider) Metadata() openfeature.Metadata {
+  return openfeature.Metadata{
+    Name: "MyFeatureProvider",
+  }
+}
+
+func (i MyFeatureProvider) Hooks() []openfeature.Hook {
+  // Hooks that should be included with the provider
+  return []openfeature.Hook{}
+}
+
+func (i MyFeatureProvider) Status() openfeature.State {
+  // The state  is typically set during initialization.
+  return openfeature.ReadyState
+}
+
+func (i MyFeatureProvider) Init(evaluationContext EvaluationContext) error {
+  // code to initialize your provider
 }
 
 // BooleanEvaluation returns a boolean flag
-func (e MyFeatureProvider) BooleanEvaluation(flag string, defaultValue bool, evalCtx EvaluationContext) BoolResolutionDetail {
-    // code to evaluate boolean
+func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+  // code to evaluate boolean
 }
 
 // StringEvaluation returns a string flag
-func (e MyFeatureProvider) StringEvaluation(flag string, defaultValue string, evalCtx EvaluationContext) StringResolutionDetail {
-    // code to evaluate string
+func (i MyFeatureProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+  // code to evaluate string
 }
 
 // FloatEvaluation returns a float flag
-func (e MyFeatureProvider) FloatEvaluation(flag string, defaultValue float64, evalCtx EvaluationContext) FloatResolutionDetail {
-    // code to evaluate float
+func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+  // code to evaluate float
 }
 
 // IntEvaluation returns an int flag
-func (e MyFeatureProvider) IntEvaluation(flag string, defaultValue int64, evalCtx EvaluationContext) IntResolutionDetail {
-    // code to evaluate int
+func (e MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+  // code to evaluate int
 }
 
 // ObjectEvaluation returns an object flag
-func (e MyFeatureProvider) ObjectEvaluation(flag string, defaultValue interface{}, evalCtx EvaluationContext) ResolutionDetail {
-    // code to evaluate object
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.ResolutionDetail {
+  // code to evaluate object
 }
 
-// Hooks returns hooks
-func (e MyFeatureProvider) Hooks() []Hook {
-    // code to retrieve hooks
+// Cleanly shutdown the provider
+func (i MyFeatureProvider) Shutdown() {
+  // code to shutdown your provider
 }
 ```
-
-TODO: Extend the example to include initialize, ready, events, and shutdown.
 
 > Built a new provider? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=provider&projects=&template=document-provider.yaml&title=%5BProvider%5D%3A+) so we can add it to the docs!
 
@@ -299,13 +331,17 @@ To satisfy the interface, all methods (`Before`/`After`/`Finally`/`Error`) need 
 To avoid defining empty functions make use of the `UnimplementedHook` struct (which already implements all the empty functions).
 
 ```go
+package myhook
+
+import "github.com/open-feature/go-sdk/pkg/openfeature"
+
 type MyHook struct {
   openfeature.UnimplementedHook
 }
 
 // overrides UnimplementedHook's Error function
 func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints openfeature.HookHints) {
-	log.Println(err)
+  // code that runs when there's an error during a flag evaluation
 }
 ```
 
