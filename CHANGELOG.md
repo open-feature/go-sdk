@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/open-feature/go-sdk/compare/v1.5.1...v1.6.0) (2023-07-28)
+
+
+### Features
+
+* EvaluationContext add constructor without TargetingKey ([#204](https://github.com/open-feature/go-sdk/issues/204)) ([07f4974](https://github.com/open-feature/go-sdk/commit/07f49743ec6ade051a2f5a0aea1662146048b240))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.14 ([#196](https://github.com/open-feature/go-sdk/issues/196)) ([a2987b8](https://github.com/open-feature/go-sdk/commit/a2987b80569c78441b2068f5683d53feef014a1a))
+
 ## [1.5.1](https://github.com/open-feature/go-sdk/compare/v1.5.0...v1.5.1) (2023-07-18)
 
 
