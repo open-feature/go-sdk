@@ -34,16 +34,15 @@ Run unit tests with `make test`.
 
 #### End-to-End tests
 
-The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features) using the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd), [flagd](https://github.com/open-feature/flagd) and [the flagd test module](https://github.com/open-feature/go-sdk-contrib/tree/main/tests/flagd).
+The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features).
+
 If you'd like to run them locally, first pull the `test-harness` git submodule
+
 ```
 git submodule update --init --recursive
 ```
-then start the flagd testbed with 
-```
-docker run -p 8013:8013 -v $PWD/test-harness/testing-flags.json:/testing-flags.json ghcr.io/open-feature/flagd-testbed:latest
-```
- and finally run
+
+and run tests with,
 ```
 make e2e-test
 ```
@@ -51,20 +50,20 @@ make e2e-test
 #### Fuzzing
 
 [Go supports fuzzing natively as of 1.18](https://go.dev/security/fuzz/).
-The fuzzing suite is implemented as an integration of `go-sdk` with the [flagd provider](https://github.com/open-feature/go-sdk-contrib/tree/main/providers/flagd) and [flagd](https://github.com/open-feature/flagd).
-The fuzzing tests are found in [./integration/evaluation_fuzz_test.go](./integration/evaluation_fuzz_test.go), they are dependent on the flagd testbed running, you can start it with
+The fuzzing suite is implemented as an integration of `go-sdk`.
+The fuzzing tests are found in [./integration/evaluation_fuzz_test.go](./e2e/evaluation_fuzz_test.go).
+
+
+To execute a fuzzing test, run the following
 ```
-docker run -p 8013:8013 ghcr.io/open-feature/flagd-testbed:latest
-```
-then, to execute a fuzzing test, run the following
-```
-go test -fuzz=FuzzBooleanEvaluation ./integration/evaluation_fuzz_test.go
+go test -fuzz=FuzzBooleanEvaluation ./e2e/evaluation_fuzz_test.go
 ```
 substituting the name of the fuzz as appropriate.
 
 ### Releases
 
-This repo uses Release Please to release packages. Release Please sets up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged. When Release Please's running PR is merged, any changed artifacts are published.
+This repo uses Release Please to release packages. Release Please set up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged.
+When Release Please PR is merged, any changed artifacts will be published.
 
 ## Contacting us
 
