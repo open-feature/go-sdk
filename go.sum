@@ -233,6 +233,7 @@ github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.14 h1:SJFFwsIRE/i0Q1
 github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.14/go.mod h1:N4f+AHj58CaGQRRgkIcNnDkLjmiJucdql6jQwJ1cmEc=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0 h1:lM+7hfFVwUxQPOyJ9rXn2UR4sCAfOQJKtCU29pU/B+4=
 github.com/open-feature/go-sdk-contrib/tests/flagd v1.1.0/go.mod h1:zw/xpuDy9ziBEKVA1t4VoQtzFc80btAAQCiZkX6y9oQ=
+github.com/open-feature/go-sdk-contrib/tests/flagd v1.2.4/go.mod h1:S27vygP91PapxWCxQhJf29v+w6RCMKp9Q/r4FpJnq88=
 github.com/open-feature/schemas v0.2.8 h1:oA75hJXpOd9SFgmNI2IAxWZkwzQPUDm7Jyyh3q489wM=
 github.com/open-feature/schemas v0.2.8/go.mod h1:vj+rfTsOLlh5PtGGkAbitnJmFPYuTHXTjOy13kzNgKQ=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
