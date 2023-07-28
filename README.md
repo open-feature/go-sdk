@@ -11,7 +11,8 @@
 <h2 align="center">OpenFeature Go SDK</h2>
 
 <!-- x-hide-in-docs-end -->
-<p align="center">
+<!-- The 'github-badges' class is used in the docs -->
+<p align="center" class="github-badges">
   <a href="https://github.com/open-feature/spec/tree/v0.6.0">
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow&style=for-the-badge" />
   </a>
