@@ -118,7 +118,7 @@ This is possible using [named clients](#named-clients), which is covered in more
 ### Context-aware evaluation
 
 Sometimes, the value of a flag must consider some dynamic criteria about the application or user, such as the user's location, IP, email address, or the server's location.
-In OpenFeature, we refer to this as [`targeting`](https://openfeature.dev/specification/glossary#targeting).
+In OpenFeature, we refer to this as [targeting](https://openfeature.dev/specification/glossary#targeting).
 If the flag management system you're using supports targeting, you can provide the input data using the `EvaluationContext`.
 
 ```go
