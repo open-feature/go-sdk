@@ -6,17 +6,17 @@ require (
 	github.com/cucumber/godog v0.12.6
 	github.com/go-logr/logr v1.2.4
 	github.com/golang/mock v1.6.0
-	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.14
+	github.com/open-feature/go-sdk-contrib/providers/flagd v0.1.15
 	github.com/open-feature/go-sdk-contrib/tests/flagd v1.2.4
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/text v0.11.0
 )
 
 require (
-	buf.build/gen/go/open-feature/flagd/bufbuild/connect-go v1.5.2-20230710190440-2333a9579c1a.1 // indirect
-	buf.build/gen/go/open-feature/flagd/protocolbuffers/go v1.29.1-20230317150644-afd1cc2ef580.1 // indirect
+	buf.build/gen/go/open-feature/flagd/bufbuild/connect-go v1.9.0-20230720212818-3675556880a1.1 // indirect
+	buf.build/gen/go/open-feature/flagd/protocolbuffers/go v1.31.0-20230720212818-3675556880a1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bufbuild/connect-go v1.9.0 // indirect
+	github.com/bufbuild/connect-go v1.10.0 // indirect
 	github.com/bufbuild/connect-opentelemetry-go v0.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cucumber/gherkin-go/v19 v19.0.3 // indirect
@@ -34,7 +34,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/open-feature/flagd v0.3.7-0.20230210161723-e906757a4bac // indirect
-	github.com/open-feature/flagd/core v0.6.0 // indirect
+	github.com/open-feature/flagd/core v0.6.2 // indirect
 	github.com/open-feature/schemas v0.2.8 // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
