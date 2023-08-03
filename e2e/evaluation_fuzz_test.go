@@ -2,27 +2,19 @@ package e2e_test
 
 import (
 	"context"
+	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 	"strings"
 	"testing"
-	"time"
-
-	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
 
 func setupFuzzClient(f *testing.F) *openfeature.Client {
 	f.Helper()
 
-	provider := flagd.NewProvider(flagd.WithPort(8013), flagd.WithoutCache())
-	err := openfeature.SetProvider(provider)
+	memoryProvider := memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
+	err := openfeature.SetProvider(memoryProvider)
 	if err != nil {
 		f.Errorf("error setting up provider %v", err)
-	}
-
-	select {
-	case <-provider.IsReady():
-	case <-time.After(500 * time.Millisecond):
-		f.Fatal("provider not ready after 500 milliseconds")
 	}
 
 	return openfeature.NewClient("fuzzing")

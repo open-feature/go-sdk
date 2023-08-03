@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -260,7 +261,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	// drop from active references
 	for i, r := range e.activeSubscriptions {
-		if r == oldReference {
+		if reflect.DeepEqual(oldReference.featureProvider, r.featureProvider) {
 			e.activeSubscriptions = append(e.activeSubscriptions[:i], e.activeSubscriptions[i+1:]...)
 		}
 	}
@@ -355,7 +356,7 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 // isRunning is a helper till we bump to the latest go version with slices.contains support
 func isRunning(provider providerReference, activeProviders []providerReference) bool {
 	for _, activeProvider := range activeProviders {
-		if provider.featureProvider == activeProvider.featureProvider {
+		if reflect.DeepEqual(activeProvider.featureProvider, provider.featureProvider) {
 			return true
 		}
 	}
@@ -365,12 +366,12 @@ func isRunning(provider providerReference, activeProviders []providerReference) 
 
 // isRunning is a helper to check if given provider is already in use
 func isBound(provider providerReference, defaultProvider providerReference, namedProviders []providerReference) bool {
-	if provider.featureProvider == defaultProvider.featureProvider {
+	if reflect.DeepEqual(provider.featureProvider, defaultProvider.featureProvider) {
 		return true
 	}
 
 	for _, namedProvider := range namedProviders {
-		if provider.featureProvider == namedProvider.featureProvider {
+		if reflect.DeepEqual(provider.featureProvider, namedProvider.featureProvider) {
 			return true
 		}
 	}
