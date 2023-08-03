@@ -311,7 +311,7 @@ func (e MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defau
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.ResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
   // code to evaluate object
 }
 
