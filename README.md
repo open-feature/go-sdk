@@ -269,6 +269,8 @@ import (
 // MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
 type MyFeatureProvider struct{}
 
+// Required: Methods below implements openfeature.FeatureProvider interface
+// This is the core interface implementation required from a provider
 // Metadata returns the metadata of the provider
 func (i MyFeatureProvider) Metadata() openfeature.Metadata {
   return openfeature.Metadata{
@@ -276,20 +278,11 @@ func (i MyFeatureProvider) Metadata() openfeature.Metadata {
   }
 }
 
+// Hooks returns a collection of openfeature.Hook defined by this provider
 func (i MyFeatureProvider) Hooks() []openfeature.Hook {
   // Hooks that should be included with the provider
   return []openfeature.Hook{}
 }
-
-func (i MyFeatureProvider) Status() openfeature.State {
-  // The state  is typically set during initialization.
-  return openfeature.ReadyState
-}
-
-func (i MyFeatureProvider) Init(evaluationContext EvaluationContext) error {
-  // code to initialize your provider
-}
-
 // BooleanEvaluation returns a boolean flag
 func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
   // code to evaluate boolean
@@ -315,9 +308,31 @@ func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, de
   // code to evaluate object
 }
 
-// Cleanly shutdown the provider
+// Optional: openfeature.StateHandler implementation
+// Providers can opt-in for initialization & shutdown behavior by implementing this interface
+
+// Init holds initialization logic of the provider
+func (i MyFeatureProvider) Init(evaluationContext openfeature.EvaluationContext) error {
+  // code to initialize your provider
+}
+
+// Status expose the status of the provider
+func (i MyFeatureProvider) Status() openfeature.State {
+  // The state is typically set during initialization.
+  return openfeature.ReadyState
+}
+
+// Shutdown define the shutdown operation of the provider
 func (i MyFeatureProvider) Shutdown() {
   // code to shutdown your provider
+}
+
+// Optional: openfeature.EventHandler implementation.
+// Providers can opt-in for eventing support by implementing this interface
+
+// EventChannel returns the event channel of this provider
+func (i MyFeatureProvider) EventChannel() <-chan openfeature.Event {
+  // expose event channel from this provider. SDK listen to this channel and invoke event handlers
 }
 ```
 
@@ -332,16 +347,17 @@ To satisfy the interface, all methods (`Before`/`After`/`Finally`/`Error`) need 
 To avoid defining empty functions make use of the `UnimplementedHook` struct (which already implements all the empty functions).
 
 ```go
-package myhook
-
-import "github.com/open-feature/go-sdk/pkg/openfeature"
+import (
+  "context"
+  "github.com/open-feature/go-sdk/pkg/openfeature"
+)
 
 type MyHook struct {
   openfeature.UnimplementedHook
 }
 
 // overrides UnimplementedHook's Error function
-func (h MyHook) Error(hookContext openfeature.HookContext, err error, hookHints openfeature.HookHints) {
+func (h MyHook) Error(context context.Context, hookContext openfeature.HookContext, err error, hookHints openfeature.HookHints) {
   // code that runs when there's an error during a flag evaluation
 }
 ```
