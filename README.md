@@ -87,16 +87,16 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) fo
 
 ## 🌟 Features
 
-| Status | Features                                         | Description                                                                                                |
-| ------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| ✅      | [Providers](#providers)                            | Common interface across tools and vendors, avoiding vendor lock-in at the code level.                      |
-| ✅      | [Context-aware evaluation](#context-aware-evaluation) | Context-aware evaluation using `EvaluationContext` for dynamic criteria based on application or user data. |
-| ✅      | [Hooks](#hooks)                          | Extend the OpenFeature SDK's functionality by accessing the flag evaluation life-cycle.                                 |
-| ✅      | [Logging](#logging)                   | Integrate with popular logging packages.                                                                   |
-| ✅      | [Named clients](#named-clients)                 | Utilize multiple providers in a single application.                                 |
-| ✅      | [Eventing](#eventing)                              | Listen for state changes in the provider or flag management system and react on the events.                |
-| ✅      | [Shutdown](#shutdown)                | Gracefully clean up a provider during application shutdown.             |
-| ✅      | [Extending](#extending)       | Extend OpenFeature with custom providers and hooks to support your exact use case                        |
+| Status | Features                        | Description                                                                                                                        |
+| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| ✅      | [Providers](#providers)         | Integrate with a commercial, open source, or in-house feature management tool.                                                     |
+| ✅      | [Targeting](#targeting)         | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context). |
+| ✅      | [Hooks](#hooks)                 | Add functionality to various stages of the flag evaluation life-cycle.                                                             |
+| ✅      | [Logging](#logging)             | Integrate with popular logging packages.                                                                                           |
+| ✅      | [Named clients](#named-clients) | Utilize multiple providers in a single application.                                                                                |
+| ✅      | [Eventing](#eventing)           | React to state changes in the provider or flag management system.                                                                  |
+| ✅      | [Shutdown](#shutdown)           | Gracefully clean up a provider during application shutdown.                                                                        |
+| ✅      | [Extending](#extending)         | Extend OpenFeature with custom providers and hooks.                                                                                |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -115,11 +115,11 @@ openfeature.SetProvider(MyProvider{})
 In some situations, it may be beneficial to register multiple providers in the same application.
 This is possible using [named clients](#named-clients), which is covered in more details below.
 
-### Context-aware evaluation
+### Targeting
 
 Sometimes, the value of a flag must consider some dynamic criteria about the application or user, such as the user's location, IP, email address, or the server's location.
 In OpenFeature, we refer to this as [targeting](https://openfeature.dev/specification/glossary#targeting).
-If the flag management system you're using supports targeting, you can provide the input data using the `EvaluationContext`.
+If the flag management system you're using supports targeting, you can provide the input data using the [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).
 
 ```go
 // set a value to the global context
