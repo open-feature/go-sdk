@@ -28,7 +28,7 @@
   <a href="https://goreportcard.com/report/github.com/open-feature/go-sdk">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-feature/go-sdk" />
   </a>
-    <a href="https://codecov.io/gh/open-feature/go-sd">
+  <a href="https://codecov.io/gh/open-feature/go-sdk">
     <img alt="codecov" src="https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5" />
   </a>
     <a href="https://bestpractices.coreinfrastructure.org/projects/660">
