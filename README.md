@@ -31,7 +31,7 @@
   <a href="https://codecov.io/gh/open-feature/go-sdk">
     <img alt="codecov" src="https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5" />
   </a>
-    <a href="https://bestpractices.coreinfrastructure.org/projects/660">
+    <a href="https://bestpractices.coreinfrastructure.org/projects/6601">
     <img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/6601/badge" />
   </a>
 </p>
