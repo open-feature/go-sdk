@@ -1250,15 +1250,15 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 			t.Errorf("expected %d events, but got %d", 3, readyLen)
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h2) {
+		if !slices.Contains(executor.apiRegistry[ProviderReady], EventCallback(&h2)) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h3) {
+		if !slices.Contains(executor.apiRegistry[ProviderReady], EventCallback(&h3)) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.apiRegistry[ProviderReady], &h3) {
+		if !slices.Contains(executor.apiRegistry[ProviderReady], EventCallback(&h4)) {
 			t.Errorf("expected callback to be present")
 		}
 
@@ -1303,15 +1303,15 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 			t.Errorf("expected %d events in client a, but got %d", 3, readyLen)
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h2) {
+		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], EventCallback(&h2)) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h3) {
+		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], EventCallback(&h3)) {
 			t.Errorf("expected callback to be present")
 		}
 
-		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], &h4) {
+		if !slices.Contains(executor.scopedRegistry["a"].callbacks[ProviderReady], EventCallback(&h4)) {
 			t.Errorf("expected callback to be present")
 		}
 
