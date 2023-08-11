@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.7.0](https://github.com/open-feature/go-sdk/compare/v1.6.0...v1.7.0) (2023-08-11)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update golang.org/x/exp digest to 89c5cff ([#195](https://github.com/open-feature/go-sdk/issues/195)) ([61680ed](https://github.com/open-feature/go-sdk/commit/61680ed2b4dfcff45758e714c348703da82beea3))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/providers/flagd to v0.1.15 ([#206](https://github.com/open-feature/go-sdk/issues/206)) ([6916ff9](https://github.com/open-feature/go-sdk/commit/6916ff9e33332b03d2aeca332c1c65ff032fe786))
+* **deps:** update module github.com/open-feature/go-sdk-contrib/tests/flagd to v1.2.4 ([#201](https://github.com/open-feature/go-sdk/issues/201)) ([ddcc2d4](https://github.com/open-feature/go-sdk/commit/ddcc2d423478256ac62e6ba9ccc75bea86d4110c))
+* **deps:** update module golang.org/x/text to v0.12.0 ([#207](https://github.com/open-feature/go-sdk/issues/207)) ([fc2bc30](https://github.com/open-feature/go-sdk/commit/fc2bc3088dd9dde099a74cdcc68ffb3a12bf5b4f))
+
+
+### ✨ New Features
+
+* in-memory provider for sdk testing ([#192](https://github.com/open-feature/go-sdk/issues/192)) ([366674f](https://github.com/open-feature/go-sdk/commit/366674fe62b9dd0921c0295a7cc47d548618b510))
+
+
+### 🧹 Chore
+
+* fix deps ([#208](https://github.com/open-feature/go-sdk/issues/208)) ([9d0f271](https://github.com/open-feature/go-sdk/commit/9d0f271eaa716a41edf02acfb3adb6d1a667e0aa))
+* fixed link in readme ([dc65937](https://github.com/open-feature/go-sdk/commit/dc659372608ff6828317a648dd5fd73fd58c391e))
+* fixed link to CII best pratices ([439bb02](https://github.com/open-feature/go-sdk/commit/439bb0286e89e4c493c322856215a12e0740d8ec))
+* update readme for inclusion in the docs ([#193](https://github.com/open-feature/go-sdk/issues/193)) ([1152826](https://github.com/open-feature/go-sdk/commit/115282638daa0cecbb408bc04c0c99583ec3ee73))
+
 ## [1.6.0](https://github.com/open-feature/go-sdk/compare/v1.5.1...v1.6.0) (2023-07-28)
 
 
