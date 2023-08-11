@@ -17,8 +17,8 @@
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.6.0&color=yellow&style=for-the-badge" />
   </a>
   <!-- x-release-please-start-version -->
-  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.6.0">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.6.0&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.7.0">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.7.0&color=blue&style=for-the-badge" />
   </a>
   <!-- x-release-please-end -->
   <br/>
