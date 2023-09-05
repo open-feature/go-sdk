@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"testing"
+
 	"github.com/cucumber/godog"
 	"github.com/open-feature/go-sdk/pkg/openfeature"
 	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
-	"strconv"
-	"testing"
 )
 
 var client = openfeature.NewClient("evaluation tests")

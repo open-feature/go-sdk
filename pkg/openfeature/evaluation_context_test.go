@@ -2,9 +2,10 @@ package openfeature
 
 import (
 	"context"
-	"github.com/golang/mock/gomock"
 	"reflect"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,
