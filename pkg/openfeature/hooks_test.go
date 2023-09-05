@@ -893,7 +893,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
-		
+
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
 		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})

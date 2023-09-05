@@ -1,13 +1,14 @@
 package openfeature
 
 import (
-	"github.com/go-logr/logr"
-	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
+
+	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,

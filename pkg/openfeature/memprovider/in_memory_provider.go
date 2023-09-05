@@ -3,6 +3,7 @@ package memprovider
 import (
 	"context"
 	"fmt"
+
 	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
 

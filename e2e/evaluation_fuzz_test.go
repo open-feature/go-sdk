@@ -2,10 +2,11 @@ package e2e_test
 
 import (
 	"context"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
-	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 	"strings"
 	"testing"
+
+	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
 )
 
 func setupFuzzClient(f *testing.F) *openfeature.Client {
