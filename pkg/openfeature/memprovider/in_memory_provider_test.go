@@ -2,8 +2,9 @@ package memprovider
 
 import (
 	"context"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
 	"testing"
+
+	"github.com/open-feature/go-sdk/pkg/openfeature"
 )
 
 func TestInMemoryProvider_boolean(t *testing.T) {
