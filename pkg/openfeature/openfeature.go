@@ -93,7 +93,7 @@ func getProvider() FeatureProvider {
 	return api.getProvider()
 }
 
-// getNamedProviders returns the default provider of the API. Intended to be used by tests
+// getNamedProviders returns the named provider map of the API. Intended to be used by tests
 func getNamedProviders() map[string]FeatureProvider {
 	return api.getNamedProviders()
 }
