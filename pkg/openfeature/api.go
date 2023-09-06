@@ -75,7 +75,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 		return errors.New("provider cannot be set to nil")
 	}
 
-	// Initialize new default provider and shutdown the old one
+	// Initialize new named provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
@@ -89,7 +89,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	return nil
 }
 
-// getNamedProviders return default providers
+// getNamedProviders returns named providers map.
 func (api *evaluationAPI) getNamedProviders() map[string]FeatureProvider {
 	api.mu.RLock()
 	defer api.mu.RUnlock()

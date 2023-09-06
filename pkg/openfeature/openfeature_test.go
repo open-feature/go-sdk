@@ -171,7 +171,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 		select {
 		// short enough wait time, but not too long
 		case <-time.After(100 * time.Millisecond):
-			t.Errorf("shutdown not invoked for old default provider when registering new provider")
+			t.Errorf("shutdown not invoked for old named provider when registering new provider")
 		case <-shutdownSem:
 			break
 		}
