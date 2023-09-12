@@ -163,23 +163,35 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
-// emitOnRegistration fulfils the spec requirement to fire ready events if associated provider is ready
-func (e *eventExecutor) emitOnRegistration(providerReference providerReference, t EventType, c EventCallback) {
-	if t != ProviderReady {
-		return
-	}
-
+// emitOnRegistration fulfils the spec requirement to fire events if the
+// event type and the state of the associated provider are compatible.
+func (e *eventExecutor) emitOnRegistration(
+	providerReference providerReference,
+	eventType EventType,
+	callback EventCallback,
+) {
 	s, ok := (providerReference.featureProvider).(StateHandler)
 	if !ok {
 		// not a state handler, hence ignore state emitting
 		return
 	}
 
-	if s.Status() == ReadyState {
-		(*c)(EventDetails{
-			providerName: (providerReference.featureProvider).Metadata().Name,
+	state := s.Status()
+
+	var message string
+	if state == ReadyState && eventType == ProviderReady {
+		message = "provider is in ready state"
+	} else if state == ErrorState && eventType == ProviderError {
+		message = "provider is in error state"
+	} else if state == StaleState && eventType == ProviderStale {
+		message = "provider is in stale state"
+	}
+
+	if message != "" {
+		(*callback)(EventDetails{
+			providerName: providerReference.featureProvider.Metadata().Name,
 			ProviderEventDetails: ProviderEventDetails{
-				Message: "provider is at ready state",
+				Message: message,
 			},
 		})
 	}

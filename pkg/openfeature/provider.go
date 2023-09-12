@@ -26,6 +26,7 @@ const (
 	NotReadyState State = "NOT_READY"
 	ReadyState    State = "READY"
 	ErrorState    State = "ERROR"
+	StaleState    State = "STALE"
 
 	ProviderReady        EventType = "PROVIDER_READY"
 	ProviderConfigChange EventType = "PROVIDER_CONFIGURATION_CHANGED"

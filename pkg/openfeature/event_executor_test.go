@@ -821,6 +821,208 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 }
 
+// Requirement 5.3.3, Spec version 0.7.0: Handlers attached after the
+// provider is already in the associated state, MUST run immediately
+func TestEventHandler_HandlersRunImmediately(t *testing.T) {
+	t.Run("ready handler runs when provider error", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: ReadyState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 1)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderReady, &callback)
+
+		select {
+		case <-rsp:
+			break
+		case <-time.After(200 * time.Millisecond):
+			t.Errorf("timed out waiting for ready state callback")
+		}
+	})
+
+	t.Run("error handler runs when provider error", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: ErrorState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 1)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderError, &callback)
+
+		select {
+		case <-rsp:
+			break
+		case <-time.After(200 * time.Millisecond):
+			t.Errorf("timed out waiting for ready state callback")
+		}
+	})
+
+	t.Run("stale handler runs when provider stale", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: StaleState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 1)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderStale, &callback)
+
+		select {
+		case <-rsp:
+			break
+		case <-time.After(200 * time.Millisecond):
+			t.Errorf("timed out waiting for ready state callback")
+		}
+	})
+
+	t.Run("non-ready handler does not run when provider ready", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: ReadyState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 3)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderError, &callback)
+		AddHandler(ProviderStale, &callback)
+		AddHandler(ProviderConfigChange, &callback)
+
+		select {
+		case <-rsp:
+			t.Errorf("event must not emit for this handler")
+		case <-time.After(200 * time.Millisecond):
+			break
+		}
+	})
+
+	t.Run("non-error handler does not run when provider error", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: ErrorState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 3)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderReady, &callback)
+		AddHandler(ProviderStale, &callback)
+		AddHandler(ProviderConfigChange, &callback)
+
+		select {
+		case <-rsp:
+			t.Errorf("event must not emit for this handler")
+		case <-time.After(200 * time.Millisecond):
+			break
+		}
+	})
+
+	t.Run("non-stale handler does not run when provider stale", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				State: StaleState,
+			},
+		}
+
+		if err := SetProvider(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		rsp := make(chan EventDetails, 3)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderReady, &callback)
+		AddHandler(ProviderError, &callback)
+		AddHandler(ProviderConfigChange, &callback)
+
+		select {
+		case <-rsp:
+			t.Errorf("event must not emit for this handler")
+		case <-time.After(200 * time.Millisecond):
+			break
+		}
+	})
+}
+
 // non-spec bound validations
 
 func TestEventHandler_multiSubs(t *testing.T) {
