@@ -824,7 +824,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 // Requirement 5.3.3, Spec version 0.7.0: Handlers attached after the
 // provider is already in the associated state, MUST run immediately
 func TestEventHandler_HandlersRunImmediately(t *testing.T) {
-	t.Run("ready handler runs when provider error", func(t *testing.T) {
+	t.Run("ready handler runs when provider ready", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		provider := struct {
@@ -852,7 +852,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		case <-rsp:
 			break
 		case <-time.After(200 * time.Millisecond):
-			t.Errorf("timed out waiting for ready state callback")
+			t.Errorf("timed out waiting for callback")
 		}
 	})
 
@@ -884,7 +884,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		case <-rsp:
 			break
 		case <-time.After(200 * time.Millisecond):
-			t.Errorf("timed out waiting for ready state callback")
+			t.Errorf("timed out waiting for callback")
 		}
 	})
 
@@ -916,7 +916,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		case <-rsp:
 			break
 		case <-time.After(200 * time.Millisecond):
-			t.Errorf("timed out waiting for ready state callback")
+			t.Errorf("timed out waiting for callback")
 		}
 	})
 
