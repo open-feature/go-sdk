@@ -292,30 +292,12 @@ func WithHookHints(hookHints HookHints) Option {
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c *Client) BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error) {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-
-	evalOptions := &EvaluationOptions{}
-	for _, option := range options {
-		option(evalOptions)
-	}
-
-	evalDetails, err := c.evaluate(ctx, flag, Boolean, defaultValue, evalCtx, *evalOptions)
+	details, err := c.BooleanValueDetails(ctx, flag, defaultValue, evalCtx, options...)
 	if err != nil {
 		return defaultValue, err
 	}
 
-	value, ok := evalDetails.Value.(bool)
-	if !ok {
-		err := errors.New("evaluated value is not a boolean")
-		c.logger().Error(
-			err, "invalid flag resolution type", "expectedType", "bool",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
-		return defaultValue, err
-	}
-
-	return value, nil
+	return details.Value, nil
 }
 
 // StringValue performs a flag evaluation that returns a string.
@@ -327,30 +309,12 @@ func (c *Client) BooleanValue(ctx context.Context, flag string, defaultValue boo
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c *Client) StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error) {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-
-	evalOptions := &EvaluationOptions{}
-	for _, option := range options {
-		option(evalOptions)
-	}
-
-	evalDetails, err := c.evaluate(ctx, flag, String, defaultValue, evalCtx, *evalOptions)
+	details, err := c.StringValueDetails(ctx, flag, defaultValue, evalCtx, options...)
 	if err != nil {
 		return defaultValue, err
 	}
 
-	value, ok := evalDetails.Value.(string)
-	if !ok {
-		err := errors.New("evaluated value is not a string")
-		c.logger().Error(
-			err, "invalid flag resolution type", "expectedType", "string",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
-		return defaultValue, err
-	}
-
-	return value, nil
+	return details.Value, nil
 }
 
 // FloatValue performs a flag evaluation that returns a float64.
@@ -362,30 +326,12 @@ func (c *Client) StringValue(ctx context.Context, flag string, defaultValue stri
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c *Client) FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error) {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-
-	evalOptions := &EvaluationOptions{}
-	for _, option := range options {
-		option(evalOptions)
-	}
-
-	evalDetails, err := c.evaluate(ctx, flag, Float, defaultValue, evalCtx, *evalOptions)
+	details, err := c.FloatValueDetails(ctx, flag, defaultValue, evalCtx, options...)
 	if err != nil {
 		return defaultValue, err
 	}
 
-	value, ok := evalDetails.Value.(float64)
-	if !ok {
-		err := errors.New("evaluated value is not a float64")
-		c.logger().Error(
-			err, "invalid flag resolution type", "expectedType", "float64",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
-		return defaultValue, err
-	}
-
-	return value, nil
+	return details.Value, nil
 }
 
 // IntValue performs a flag evaluation that returns an int64.
@@ -397,30 +343,12 @@ func (c *Client) FloatValue(ctx context.Context, flag string, defaultValue float
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c *Client) IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error) {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-
-	evalOptions := &EvaluationOptions{}
-	for _, option := range options {
-		option(evalOptions)
-	}
-
-	evalDetails, err := c.evaluate(ctx, flag, Int, defaultValue, evalCtx, *evalOptions)
+	details, err := c.IntValueDetails(ctx, flag, defaultValue, evalCtx, options...)
 	if err != nil {
 		return defaultValue, err
 	}
 
-	value, ok := evalDetails.Value.(int64)
-	if !ok {
-		err := errors.New("evaluated value is not an int64")
-		c.logger().Error(
-			err, "invalid flag resolution type", "expectedType", "int64",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
-		return defaultValue, err
-	}
-
-	return value, nil
+	return details.Value, nil
 }
 
 // ObjectValue performs a flag evaluation that returns an object.
@@ -432,16 +360,12 @@ func (c *Client) IntValue(ctx context.Context, flag string, defaultValue int64, 
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - options are optional additional evaluation options e.g. WithHooks & WithHookHints
 func (c *Client) ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error) {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-
-	evalOptions := &EvaluationOptions{}
-	for _, option := range options {
-		option(evalOptions)
+	details, err := c.ObjectValueDetails(ctx, flag, defaultValue, evalCtx, options...)
+	if err != nil {
+		return defaultValue, err
 	}
 
-	evalDetails, err := c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
-	return evalDetails.Value, err
+	return details.Value, nil
 }
 
 // BooleanValueDetails performs a flag evaluation that returns an evaluation details struct.
