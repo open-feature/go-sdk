@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.8.0](https://github.com/open-feature/go-sdk/compare/v1.7.0...v1.8.0) (2023-09-26)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module github.com/cucumber/godog to v0.13.0 ([#210](https://github.com/open-feature/go-sdk/issues/210)) ([33c5f2f](https://github.com/open-feature/go-sdk/commit/33c5f2f5de478ee7123ccf0ffe594fcaf4d2555b))
+* **deps:** update module golang.org/x/text to v0.13.0 ([#211](https://github.com/open-feature/go-sdk/issues/211)) ([d850ebc](https://github.com/open-feature/go-sdk/commit/d850ebc5c831ccee5edd490e3c2f019e2188b4ad))
+
+
+### ✨ New Features
+
+* run event handlers immediately, add STALE (0.7.0 compliance) ([#221](https://github.com/open-feature/go-sdk/issues/221)) ([9c0012f](https://github.com/open-feature/go-sdk/commit/9c0012f6762926489d2763b60e486170fdce9c09))
+
+
+### 🧹 Chore
+
+* bump spec badge in readme to v0.7.0 ([#223](https://github.com/open-feature/go-sdk/issues/223)) ([403275e](https://github.com/open-feature/go-sdk/commit/403275e925d5715e8f90d87296b7e3f626f8fb14))
+* **deps:** update codecov/codecov-action action to v4 ([#222](https://github.com/open-feature/go-sdk/issues/222)) ([1ac250b](https://github.com/open-feature/go-sdk/commit/1ac250bc21996d247c38639eb96099e64b10541c))
+* fix golangci-lint version ([#216](https://github.com/open-feature/go-sdk/issues/216)) ([e79382a](https://github.com/open-feature/go-sdk/commit/e79382a748fb914e0fa94a61d292e509094cdc46))
+* fix logo rendering outside of github ([#226](https://github.com/open-feature/go-sdk/issues/226)) ([e2b3586](https://github.com/open-feature/go-sdk/commit/e2b35865b9ca48a5fe772307dd206b46553da51a))
+* revert to CodeCov Action to v3 ([#225](https://github.com/open-feature/go-sdk/issues/225)) ([152416d](https://github.com/open-feature/go-sdk/commit/152416df30e01fe22112105358481eeb2d03a160))
+* sort imports of go files ([#214](https://github.com/open-feature/go-sdk/issues/214)) ([a98950d](https://github.com/open-feature/go-sdk/commit/a98950d3f51a1e3ff4660a8ffeb5dcee50876304))
+* update comments for named provider related function ([#213](https://github.com/open-feature/go-sdk/issues/213)) ([2e670b2](https://github.com/open-feature/go-sdk/commit/2e670b27391e6a1d5b77ad78a18db23e41c43a50))
+
+
+### 📚 Documentation
+
+* Update README.md ([#218](https://github.com/open-feature/go-sdk/issues/218)) ([a2ea804](https://github.com/open-feature/go-sdk/commit/a2ea804bcf53307ee1e3bf92b52de812d1358a4f))
+
+
+### 🔄 Refactoring
+
+* write [T]Value in terms of [T]ValueDetails ([#224](https://github.com/open-feature/go-sdk/issues/224)) ([f554876](https://github.com/open-feature/go-sdk/commit/f554876e5ed32cdb45aaf396ae2214bad28c3c26))
+
 ## [1.7.0](https://github.com/open-feature/go-sdk/compare/v1.6.0...v1.7.0) (2023-08-11)
 
 
