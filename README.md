@@ -298,7 +298,7 @@ func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, def
 }
 
 // IntEvaluation returns an int flag
-func (e MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
   // code to evaluate int
 }
 
