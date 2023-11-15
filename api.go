@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
+	"github.com/open-feature/go-sdk/internal"
 	"golang.org/x/exp/maps"
 )
 

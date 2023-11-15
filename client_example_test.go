@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk"
 )
 
 func ExampleNewClient() {

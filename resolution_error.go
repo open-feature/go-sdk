@@ -1,105 +1,104 @@
 package openfeature
 
-import openfeature "github.com/open-feature/go-sdk"
+import "fmt"
 
-// Deprecated: use github.com/open-feature/go-sdk.ErrorCode, instead.
-type ErrorCode = openfeature.ErrorCode
+type ErrorCode string
 
 const (
 	// ProviderNotReadyCode - the value was resolved before the provider was ready.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	ProviderNotReadyCode = openfeature.ProviderNotReadyCode
+	ProviderNotReadyCode ErrorCode = "PROVIDER_NOT_READY"
 	// FlagNotFoundCode - the flag could not be found.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	FlagNotFoundCode = openfeature.FlagNotFoundCode
+	FlagNotFoundCode ErrorCode = "FLAG_NOT_FOUND"
 	// ParseErrorCode - an error was encountered parsing data, such as a flag configuration.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	ParseErrorCode = openfeature.ParseErrorCode
+	ParseErrorCode ErrorCode = "PARSE_ERROR"
 	// TypeMismatchCode - the type of the flag value does not match the expected type.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	TypeMismatchCode = openfeature.TypeMismatchCode
+	TypeMismatchCode ErrorCode = "TYPE_MISMATCH"
 	// TargetingKeyMissingCode - the provider requires a targeting key and one was not provided in the evaluation context.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	TargetingKeyMissingCode = openfeature.TargetingKeyMissingCode
+	TargetingKeyMissingCode ErrorCode = "TARGETING_KEY_MISSING"
 	// InvalidContextCode - the evaluation context does not meet provider requirements.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	InvalidContextCode = openfeature.InvalidContextCode
+	InvalidContextCode ErrorCode = "INVALID_CONTEXT"
 	// GeneralCode - the error was for a reason not enumerated above.
-	//
-	// Deprecated: use github.com/open-feature/go-sdk.UnknownReason, instead.
-	GeneralCode = openfeature.GeneralCode
+	GeneralCode ErrorCode = "GENERAL"
 )
 
 // ResolutionError is an enumerated error code with an optional message
-//
-// Deprecated: use github.com/open-feature/go-sdk.ResolutionError, instead.
-type ResolutionError = openfeature.ResolutionError
+type ResolutionError struct {
+	// fields are unexported, this means providers are forced to create structs of this type using one of the constructors below.
+	// this effectively emulates an enum
+	code    ErrorCode
+	message string
+}
+
+func (r ResolutionError) Error() string {
+	return fmt.Sprintf("%s: %s", r.code, r.message)
+}
 
 // NewProviderNotReadyResolutionError constructs a resolution error with code PROVIDER_NOT_READY
 //
 // Explanation - The value was resolved before the provider was ready.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewProviderNotReadyResolutionError, instead.
 func NewProviderNotReadyResolutionError(msg string) ResolutionError {
-	return openfeature.NewProviderNotReadyResolutionError(msg)
+	return ResolutionError{
+		code:    ProviderNotReadyCode,
+		message: msg,
+	}
 }
 
 // NewFlagNotFoundResolutionError constructs a resolution error with code FLAG_NOT_FOUND
 //
 // Explanation - The flag could not be found.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewFlagNotFoundResolutionError, instead.
 func NewFlagNotFoundResolutionError(msg string) ResolutionError {
-	return openfeature.NewFlagNotFoundResolutionError(msg)
+	return ResolutionError{
+		code:    FlagNotFoundCode,
+		message: msg,
+	}
 }
 
 // NewParseErrorResolutionError constructs a resolution error with code PARSE_ERROR
 //
 // Explanation - An error was encountered parsing data, such as a flag configuration.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewParseErrorResolutionError, instead.
 func NewParseErrorResolutionError(msg string) ResolutionError {
-	return openfeature.NewParseErrorResolutionError(msg)
+	return ResolutionError{
+		code:    ParseErrorCode,
+		message: msg,
+	}
 }
 
 // NewTypeMismatchResolutionError constructs a resolution error with code TYPE_MISMATCH
 //
 // Explanation - The type of the flag value does not match the expected type.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewTypeMismatchResolutionError, instead.
 func NewTypeMismatchResolutionError(msg string) ResolutionError {
-	return openfeature.NewTypeMismatchResolutionError(msg)
+	return ResolutionError{
+		code:    TypeMismatchCode,
+		message: msg,
+	}
 }
 
 // NewTargetingKeyMissingResolutionError constructs a resolution error with code TARGETING_KEY_MISSING
 //
 // Explanation - The provider requires a targeting key and one was not provided in the evaluation context.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewTargetingKeyMissingResolutionError, instead.
 func NewTargetingKeyMissingResolutionError(msg string) ResolutionError {
-	return openfeature.NewTargetingKeyMissingResolutionError(msg)
+	return ResolutionError{
+		code:    TargetingKeyMissingCode,
+		message: msg,
+	}
 }
 
 // NewInvalidContextResolutionError constructs a resolution error with code INVALID_CONTEXT
 //
 // Explanation - The evaluation context does not meet provider requirements.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewInvalidContextResolutionError, instead.
 func NewInvalidContextResolutionError(msg string) ResolutionError {
-	return openfeature.NewInvalidContextResolutionError(msg)
+	return ResolutionError{
+		code:    InvalidContextCode,
+		message: msg,
+	}
 }
 
 // NewGeneralResolutionError constructs a resolution error with code GENERAL
 //
 // Explanation - The error was for a reason not enumerated above.
-//
-// Deprecated: use github.com/open-feature/go-sdk.NewGeneralResolutionError, instead.
 func NewGeneralResolutionError(msg string) ResolutionError {
-	return openfeature.NewGeneralResolutionError(msg)
+	return ResolutionError{
+		code:    GeneralCode,
+		message: msg,
+	}
 }

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-feature/go-sdk/pkg/openfeature"
-	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
+	"github.com/open-feature/go-sdk"
+	"github.com/open-feature/go-sdk/memprovider"
 )
 
 func setupFuzzClient(f *testing.F) *openfeature.Client {
