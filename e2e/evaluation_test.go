@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/open-feature/go-sdk/pkg/openfeature"
-	"github.com/open-feature/go-sdk/pkg/openfeature/memprovider"
+	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
 var client = openfeature.NewClient("evaluation tests")

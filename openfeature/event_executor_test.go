@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/open-feature/go-sdk/pkg/openfeature/internal"
+	"github.com/open-feature/go-sdk/openfeature/internal"
 	"golang.org/x/exp/slices"
 )
 

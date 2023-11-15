@@ -2,114 +2,80 @@ package openfeature
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/open-feature/go-sdk/openfeature"
 )
 
-// api is the global evaluationAPI. This is a singleton and there can only be one instance.
-// Avoid direct access.
-var api evaluationAPI
-
-// init initializes the OpenFeature evaluation API
-func init() {
-	initSingleton()
-}
-
-func initSingleton() {
-	api = newEvaluationAPI()
-}
-
-// SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from
-// provider status
+// SetProvider sets the default provider. Provider initialization is
+// asynchronous and status can be checked from provider status
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.SetProvider,
+// instead.
 func SetProvider(provider FeatureProvider) error {
-	return api.setProvider(provider)
+	return openfeature.SetProvider(provider)
 }
 
-// SetNamedProvider sets a provider mapped to the given Client name. Provider initialization is asynchronous and
-// status can be checked from provider status
+// SetNamedProvider sets a provider mapped to the given Client name. Provider
+// initialization is asynchronous and status can be checked from provider
+// status
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.SetNamedProvider,
+// instead.
 func SetNamedProvider(clientName string, provider FeatureProvider) error {
-	return api.setNamedProvider(clientName, provider)
+	return openfeature.SetNamedProvider(clientName, provider)
 }
 
 // SetEvaluationContext sets the global evaluation context.
+//
+// Deprecated: use
+// github.com/open-feature/go-sdk/openfeature.SetEvaluationContext, instead.
 func SetEvaluationContext(evalCtx EvaluationContext) {
-	api.setEvaluationContext(evalCtx)
+	openfeature.SetEvaluationContext(evalCtx)
 }
 
 // SetLogger sets the global Logger.
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.SetLogger,
+// instead.
 func SetLogger(l logr.Logger) {
-	api.setLogger(l)
+	openfeature.SetLogger(l)
 }
 
 // ProviderMetadata returns the default provider's metadata
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.ProviderMetadata,
+// instead.
 func ProviderMetadata() Metadata {
-	return api.getProvider().Metadata()
+	return openfeature.ProviderMetadata()
 }
 
 // AddHooks appends to the collection of any previously added hooks
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.AddHooks,
+// instead.
 func AddHooks(hooks ...Hook) {
-	api.addHooks(hooks...)
+	openfeature.AddHooks(hooks...)
 }
 
 // AddHandler allows to add API level event handler
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.AddHandler,
+// instead.
 func AddHandler(eventType EventType, callback EventCallback) {
-	api.eventExecutor.registerApiHandler(eventType, callback)
-}
-
-// addClientHandler is a helper for Client to add an event handler
-func addClientHandler(name string, t EventType, c EventCallback) {
-	api.eventExecutor.registerClientHandler(name, t, c)
+	openfeature.AddHandler(eventType, callback)
 }
 
 // RemoveHandler allows to remove API level event handler
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.RemoveHandler,
+// instead.
 func RemoveHandler(eventType EventType, callback EventCallback) {
-	api.eventExecutor.removeApiHandler(eventType, callback)
-}
-
-// removeClientHandler is a helper for Client to add an event handler
-func removeClientHandler(name string, t EventType, c EventCallback) {
-	api.eventExecutor.removeClientHandler(name, t, c)
-}
-
-// getAPIEventRegistry is a helper for testing
-func getAPIEventRegistry() map[EventType][]EventCallback {
-	return api.eventExecutor.apiRegistry
-}
-
-// getClientRegistry is a helper for testing
-func getClientRegistry(client string) *scopedCallback {
-	if v, ok := api.eventExecutor.scopedRegistry[client]; ok {
-		return &v
-	}
-
-	return nil
+	openfeature.RemoveHandler(eventType, callback)
 }
 
 // Shutdown active providers
+//
+// Deprecated: use github.com/open-feature/go-sdk/openfeature.Shutdown,
+// instead.
 func Shutdown() {
-	api.shutdown()
-}
-
-// getProvider returns the default provider of the API. Intended to be used by tests
-func getProvider() FeatureProvider {
-	return api.getProvider()
-}
-
-// getNamedProviders returns the named provider map of the API. Intended to be used by tests
-func getNamedProviders() map[string]FeatureProvider {
-	return api.getNamedProviders()
-}
-
-// getHooks returns hooks of the API. Intended to be used by tests
-func getHooks() []Hook {
-	return api.getHooks()
-}
-
-// globalLogger return the global logger set at the API
-func globalLogger() logr.Logger {
-	return api.getLogger()
-}
-
-// forTransaction is a helper to retrieve transaction scoped operators by Client.
-// Here, transaction means a flag evaluation.
-func forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
-	return api.forTransaction(clientName)
+	openfeature.Shutdown()
 }
