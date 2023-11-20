@@ -3,7 +3,7 @@ package openfeature_test
 import (
 	"testing"
 
-	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk/openfeature"
 )
 
 func TestNoopProvider_Metadata(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-feature/go-sdk/pkg/openfeature"
+	"github.com/open-feature/go-sdk/openfeature"
 )
 
 func TestInMemoryProvider_boolean(t *testing.T) {
