@@ -1,7 +1,7 @@
 .PHONY: mockgen test lint e2e-test
 mockgen:
-	mockgen -source=pkg/openfeature/provider.go -destination=pkg/openfeature/provider_mock_test.go -package=openfeature
-	mockgen -source=pkg/openfeature/hooks.go -destination=pkg/openfeature/hooks_mock_test.go -package=openfeature
+	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock_test.go -package=openfeature
+	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock_test.go -package=openfeature
 test:
 	go test --short -cover ./...
 e2e-test:

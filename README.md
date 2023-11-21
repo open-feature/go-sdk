@@ -59,7 +59,7 @@ package main
 import (
     "fmt"
     "context"
-    "github.com/open-feature/go-sdk/pkg/openfeature"
+    "github.com/open-feature/go-sdk/openfeature"
 )
 
 func main() {
@@ -194,7 +194,7 @@ A name is a logical identifier which can be used to associate clients with a par
 If a name has no associated provider, the global provider is used.
 
 ```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
+import "github.com/open-feature/go-sdk/openfeature"
 
 // Registering the default provider
 openfeature.SetProvider(NewLocalProvider())
@@ -216,7 +216,7 @@ Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGE
 Please refer to the documentation of the provider you're using to see what events are supported.
 
 ```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
+import "github.com/open-feature/go-sdk/openfeature"
 
 ...
 var readyHandlerCallback = func(details openfeature.EventDetails) {
@@ -244,7 +244,7 @@ The OpenFeature API provides a close function to perform a cleanup of all regist
 This should only be called when your application is in the process of shutting down.
 
 ```go
-import "github.com/open-feature/go-sdk/pkg/openfeature"
+import "github.com/open-feature/go-sdk/openfeature"
 
 openfeature.Shutdown()
 ```
@@ -262,7 +262,7 @@ package myfeatureprovider
 
 import (
   "context"
-  "github.com/open-feature/go-sdk/pkg/openfeature"
+  "github.com/open-feature/go-sdk/openfeature"
 )
 
 // MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
@@ -348,7 +348,7 @@ To avoid defining empty functions make use of the `UnimplementedHook` struct (wh
 ```go
 import (
   "context"
-  "github.com/open-feature/go-sdk/pkg/openfeature"
+  "github.com/open-feature/go-sdk/openfeature"
 )
 
 type MyHook struct {
