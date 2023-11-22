@@ -12,7 +12,7 @@
 
 ### ✨ New Features
 
-* Move all files from pkg/openfeature to openfeature. ([#232](https://github.com/open-feature/go-sdk/issues/232)) ([991726c](https://github.com/open-feature/go-sdk/commit/991726ced66913de916ec47ed5dd1837b6daf203))
+* Repackage SDK from `pkg/openfeature` to `openfeature`. ([#232](https://github.com/open-feature/go-sdk/issues/232)) ([991726c](https://github.com/open-feature/go-sdk/commit/991726ced66913de916ec47ed5dd1837b6daf203))
 
 
 ### 🧹 Chore
