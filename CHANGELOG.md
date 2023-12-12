@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.9.0](https://github.com/open-feature/go-sdk/compare/v1.8.0...v1.9.0) (2023-11-21)
+
+
+### 🐛 Bug Fixes
+
+* change typo in readme ([#228](https://github.com/open-feature/go-sdk/issues/228)) ([6795fe1](https://github.com/open-feature/go-sdk/commit/6795fe16c24c695d58474b82284cf8b697a04a3a))
+* **deps:** update module github.com/go-logr/logr to v1.3.0 ([#230](https://github.com/open-feature/go-sdk/issues/230)) ([6ab7984](https://github.com/open-feature/go-sdk/commit/6ab79842758518ed63dc712c11d824ba11110dc2))
+* **deps:** update module golang.org/x/text to v0.14.0 ([#231](https://github.com/open-feature/go-sdk/issues/231)) ([34fb9d9](https://github.com/open-feature/go-sdk/commit/34fb9d968e6d3b34bd2adca5c1f9aaa833e9e437))
+
+
+### ✨ New Features
+
+* Repackage SDK from `pkg/openfeature` to `openfeature`. ([#232](https://github.com/open-feature/go-sdk/issues/232)) ([991726c](https://github.com/open-feature/go-sdk/commit/991726ced66913de916ec47ed5dd1837b6daf203))
+
+
+### 🧹 Chore
+
+* update package usage ([#235](https://github.com/open-feature/go-sdk/issues/235)) ([97204a4](https://github.com/open-feature/go-sdk/commit/97204a47766913e9156cae1976ed13ec291cdea0))
+* update spec release link ([b8cb413](https://github.com/open-feature/go-sdk/commit/b8cb4132e5f03aacea2e9e519420e0848748be1c))
+
 ## [1.8.0](https://github.com/open-feature/go-sdk/compare/v1.7.0...v1.8.0) (2023-09-26)
 
 
