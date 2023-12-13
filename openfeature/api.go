@@ -167,11 +167,11 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 }
 
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
-// Operations happen concurrently.
+// Operations happen NOT concurrently.
 func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider) {
 	v, ok := newProvider.(StateHandler)
 	if ok && v.Status() == NotReadyState {
-		go func(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
+		func(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
 			err := stateHandler.Init(evalCtx)
 			// emit ready/error event once initialization is complete
 			if err != nil {
@@ -206,7 +206,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, old
 		return
 	}
 
-	go func(forShutdown StateHandler) {
+	func(forShutdown StateHandler) {
 		forShutdown.Shutdown()
 	}(v)
 }
