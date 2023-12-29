@@ -58,6 +58,30 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	return nil
 }
 
+// setProviderAndWait sets the default FeatureProvider of the evaluationAPI. Returns an error if FeatureProvider is nil
+// This is a blocking call and will wait for the provider to be ready
+func (api *evaluationAPI) setProviderAndWait(provider FeatureProvider) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	if provider == nil {
+		return errors.New("default provider cannot be set to nil")
+	}
+
+	// Initialize new default provider and shutdown the old one
+	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.defaultProvider
+	api.defaultProvider = provider
+
+	api.initNewAndShutdownOldSync(provider, oldProvider)
+	err := api.eventExecutor.registerDefaultProvider(provider)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // getProvider returns the default FeatureProvider
 func (api *evaluationAPI) getProvider() FeatureProvider {
 	api.mu.RLock()
