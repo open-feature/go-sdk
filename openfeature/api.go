@@ -49,7 +49,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider) error {
 	oldProvider := api.defaultProvider
 	api.defaultProvider = provider
 
-	api.initNewAndShutdownOld(provider, oldProvider)
+	api.initNewAndShutdownOldAsync(provider, oldProvider)
 	err := api.eventExecutor.registerDefaultProvider(provider)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
 
-	api.initNewAndShutdownOld(provider, oldProvider)
+	api.initNewAndShutdownOldAsync(provider, oldProvider)
 	err := api.eventExecutor.registerNamedEventingProvider(clientName, provider)
 	if err != nil {
 		return err
@@ -166,9 +166,9 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 	return provider, api.hks, api.evalCtx
 }
 
-// initNewAndShutdownOld is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
+// initNewAndShutdownOldAsync is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
 // Operations happen concurrently.
-func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider) {
+func (api *evaluationAPI) initNewAndShutdownOldAsync(newProvider FeatureProvider, oldProvider FeatureProvider) {
 	v, ok := newProvider.(StateHandler)
 	if ok && v.Status() == NotReadyState {
 		go func(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
