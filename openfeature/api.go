@@ -211,6 +211,46 @@ func (api *evaluationAPI) initNewAndShutdownOldAsync(newProvider FeatureProvider
 	}(v)
 }
 
+// initNewAndShutdownOldSync is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
+// Operations happen synchronously.
+func (api *evaluationAPI) initNewAndShutdownOldSync(newProvider FeatureProvider, oldProvider FeatureProvider) {
+	v, ok := newProvider.(StateHandler)
+	if ok && v.Status() == NotReadyState {
+		err := v.Init(api.evalCtx)
+		if err != nil {
+			api.eventExecutor.eventChan <- eventPayload{
+				Event{
+					ProviderName:         newProvider.Metadata().Name,
+					EventType:            ProviderError,
+					ProviderEventDetails: ProviderEventDetails{},
+				}, newProvider,
+			}
+		} else {
+			api.eventExecutor.eventChan <- eventPayload{
+				Event{
+					ProviderName:         newProvider.Metadata().Name,
+					EventType:            ProviderReady,
+					ProviderEventDetails: ProviderEventDetails{},
+				}, newProvider,
+			}
+		}
+	}
+
+	v, ok = oldProvider.(StateHandler)
+
+	// oldProvider can be nil or without state handling capability
+	if oldProvider == nil || !ok {
+		return
+	}
+
+	// check for multiple bindings
+	if oldProvider == api.defaultProvider || contains(oldProvider, maps.Values(api.namedProviders)) {
+		return
+	}
+
+	v.Shutdown()
+}
+
 func contains(provider FeatureProvider, in []FeatureProvider) bool {
 	for _, p := range in {
 		if provider == p {
