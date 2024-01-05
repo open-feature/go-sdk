@@ -27,6 +27,7 @@
   <a href="https://goreportcard.com/report/github.com/open-feature/go-sdk">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-feature/go-sdk" />
   </a>
+<a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-feature%2Fgo-sdk?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-feature%2Fgo-sdk.svg?type=shield"/></a>
   <a href="https://codecov.io/gh/open-feature/go-sdk">
     <img alt="codecov" src="https://codecov.io/gh/open-feature/go-sdk/branch/main/graph/badge.svg?token=FZ17BHNSU5" />
   </a>
@@ -385,3 +386,7 @@ Interested in contributing? Great, we'd love your help! To get started, take a l
 
 Made with [contrib.rocks](https://contrib.rocks).
 <!-- x-hide-in-docs-end -->
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-feature%2Fgo-sdk.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-feature%2Fgo-sdk?ref=badge_large)
