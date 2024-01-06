@@ -190,32 +190,35 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 	return provider, api.hks, api.evalCtx
 }
 
+// initAndNotify is a helper to initialise FeatureProvider and notify the event executor.
+func initAndNotify(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
+	err := stateHandler.Init(evalCtx)
+	// emit ready/error event once initialization is complete
+	if err != nil {
+		eventChan <- eventPayload{
+			Event{
+				ProviderName:         provider.Metadata().Name,
+				EventType:            ProviderError,
+				ProviderEventDetails: ProviderEventDetails{},
+			}, provider,
+		}
+	} else {
+		eventChan <- eventPayload{
+			Event{
+				ProviderName:         provider.Metadata().Name,
+				EventType:            ProviderReady,
+				ProviderEventDetails: ProviderEventDetails{},
+			}, provider,
+		}
+	}
+}
+
 // initNewAndShutdownOldAsync is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
 // Operations happen concurrently.
 func (api *evaluationAPI) initNewAndShutdownOldAsync(newProvider FeatureProvider, oldProvider FeatureProvider) {
 	v, ok := newProvider.(StateHandler)
 	if ok && v.Status() == NotReadyState {
-		go func(provider FeatureProvider, stateHandler StateHandler, evalCtx EvaluationContext, eventChan chan eventPayload) {
-			err := stateHandler.Init(evalCtx)
-			// emit ready/error event once initialization is complete
-			if err != nil {
-				eventChan <- eventPayload{
-					Event{
-						ProviderName:         provider.Metadata().Name,
-						EventType:            ProviderError,
-						ProviderEventDetails: ProviderEventDetails{},
-					}, provider,
-				}
-			} else {
-				eventChan <- eventPayload{
-					Event{
-						ProviderName:         provider.Metadata().Name,
-						EventType:            ProviderReady,
-						ProviderEventDetails: ProviderEventDetails{},
-					}, provider,
-				}
-			}
-		}(newProvider, v, api.evalCtx, api.eventExecutor.eventChan)
+		go initAndNotify(newProvider, v, api.evalCtx, api.eventExecutor.eventChan)
 	}
 
 	v, ok = oldProvider.(StateHandler)
@@ -240,24 +243,7 @@ func (api *evaluationAPI) initNewAndShutdownOldAsync(newProvider FeatureProvider
 func (api *evaluationAPI) initNewAndShutdownOldSync(newProvider FeatureProvider, oldProvider FeatureProvider) {
 	v, ok := newProvider.(StateHandler)
 	if ok && v.Status() == NotReadyState {
-		err := v.Init(api.evalCtx)
-		if err != nil {
-			api.eventExecutor.eventChan <- eventPayload{
-				Event{
-					ProviderName:         newProvider.Metadata().Name,
-					EventType:            ProviderError,
-					ProviderEventDetails: ProviderEventDetails{},
-				}, newProvider,
-			}
-		} else {
-			api.eventExecutor.eventChan <- eventPayload{
-				Event{
-					ProviderName:         newProvider.Metadata().Name,
-					EventType:            ProviderReady,
-					ProviderEventDetails: ProviderEventDetails{},
-				}, newProvider,
-			}
-		}
+		initAndNotify(newProvider, v, api.evalCtx, api.eventExecutor.eventChan)
 	}
 
 	v, ok = oldProvider.(StateHandler)
