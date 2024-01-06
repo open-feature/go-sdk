@@ -17,12 +17,14 @@ func initSingleton() {
 	api = newEvaluationAPI()
 }
 
-// SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from
+// SetProvider sets the default provider. Provider initialization is asynchronous (non-blocking) and status can be checked from
 // provider status
 func SetProvider(provider FeatureProvider) error {
 	return api.setProvider(provider)
 }
 
+// SetProviderAndWait sets the default provider. Provider initialization is synchronous (blocking) and status can be checked from
+// provider status
 func SetProviderAndWait(provider FeatureProvider) error {
 	return api.setProviderAndWait(provider)
 }
