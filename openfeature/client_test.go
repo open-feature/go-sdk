@@ -575,44 +575,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 		}
 	})
 
-	t.Run("Int Wait Provider", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
-		mockProvider := NewMockFeatureProvider(ctrl)
-		var defaultValue int64 = 3
-		mockProvider.EXPECT().Metadata().AnyTimes()
-		mockProvider.EXPECT().Hooks().AnyTimes()
-		mockProvider.EXPECT().IntEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
-			Return(IntResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: ProviderResolutionDetail{
-					ResolutionError: NewGeneralResolutionError("test"),
-				},
-			}).Times(2)
-
-		err := SetProviderAndWait(mockProvider)
-		if err != nil {
-			t.Errorf("error setting up provider %v", err)
-		}
-
-		value, err := client.IntValue(context.Background(), flagKey, defaultValue, evalCtx)
-		if err == nil {
-			t.Error("expected IntValue to return an error, got nil")
-		}
-
-		if value != defaultValue {
-			t.Errorf("expected default value from IntValue, got %v", value)
-		}
-
-		valueDetails, err := client.IntValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
-		if err == nil {
-			t.Error("expected FloatValueDetails to return an error, got nil")
-		}
-
-		if valueDetails.Value != defaultValue {
-			t.Errorf("expected default value from IntValueDetails, got %v", value)
-		}
-	})
-
 	t.Run("Object", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -787,6 +749,87 @@ func TestRequirement_1_4_13(t *testing.T) {
 // Is tested by TestRequirement_4_4_2.
 
 // TODO Requirement_1_6_1
+
+func TestWaitForProvider(t *testing.T) {
+	client := NewClient("test-client")
+	flagKey := "flag-key"
+	evalCtx := EvaluationContext{}
+	flatCtx := flattenContext(evalCtx)
+
+	ctrl := gomock.NewController(t)
+	t.Run("Int Wait Provider", func(t *testing.T) {
+		defer t.Cleanup(initSingleton)
+		mockProvider := NewMockFeatureProvider(ctrl)
+		var defaultValue int64 = 3
+		mockProvider.EXPECT().Metadata().AnyTimes()
+		mockProvider.EXPECT().Hooks().AnyTimes()
+		mockProvider.EXPECT().IntEvaluation(context.Background(), flagKey, defaultValue, flatCtx).
+			Return(IntResolutionDetail{
+				Value: 0,
+				ProviderResolutionDetail: ProviderResolutionDetail{
+					ResolutionError: NewGeneralResolutionError("test"),
+				},
+			}).Times(2)
+
+		err := SetProviderAndWait(mockProvider)
+		if err != nil {
+			t.Errorf("error setting up provider %v", err)
+		}
+
+		value, err := client.IntValue(context.Background(), flagKey, defaultValue, evalCtx)
+		if err == nil {
+			t.Error("expected IntValue to return an error, got nil")
+		}
+
+		if value != defaultValue {
+			t.Errorf("expected default value from IntValue, got %v", value)
+		}
+
+		valueDetails, err := client.IntValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		if err == nil {
+			t.Error("expected FloatValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value != defaultValue {
+			t.Errorf("expected default value from IntValueDetails, got %v", value)
+		}
+	})
+}
+
+func TestWaitForProviderTimeout(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	client := NewClient("test-client")
+
+	ctrl := gomock.NewController(t)
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: false,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError("test"),
+			},
+		})
+
+	err := SetProviderAndWait(mockProvider)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
+	res, err := client.evaluate(
+		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	expectedErrorCode := GeneralCode
+	if res.ErrorCode != expectedErrorCode {
+		t.Errorf("expected error code to be '%s', got '%s'", expectedErrorCode, res.ErrorCode)
+	}
+}
+
 // The `client` SHOULD transform the `evaluation context` using the `provider's` `context transformer` function
 // if one is defined, before passing the result of the transformation to the provider's flag resolution functions.
 
