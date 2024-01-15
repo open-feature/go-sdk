@@ -35,6 +35,12 @@ func SetNamedProvider(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider)
 }
 
+// SetNamedProviderAndWait sets a provider mapped to the given Client name. Provider initialization is synchronous and
+// status can be checked from provider status
+func SetNamedProviderAndWait(clientName string, provider FeatureProvider) error {
+	return api.setNamedProviderAndWait(clientName, provider)
+}
+
 // SetEvaluationContext sets the global evaluation context.
 func SetEvaluationContext(evalCtx EvaluationContext) {
 	api.setEvaluationContext(evalCtx)

@@ -91,6 +91,7 @@ func (api *evaluationAPI) getProvider() FeatureProvider {
 }
 
 // setProvider sets a provider with client name. Returns an error if FeatureProvider is nil
+// Provider initialization is asynchronous and status can be checked from provider status
 func (api *evaluationAPI) setNamedProvider(clientName string, provider FeatureProvider) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
@@ -105,6 +106,31 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	api.namedProviders[clientName] = provider
 
 	api.initNewAndShutdownOldAsync(provider, oldProvider)
+	err := api.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+// setProviderAndWait sets a provider with client name. Returns an error if FeatureProvider is nil
+// This is a blocking call and will wait for the provider to be ready
+func (api *evaluationAPI) setNamedProviderAndWait(clientName string, provider FeatureProvider) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	if provider == nil {
+		return errors.New("provider cannot be set to nil")
+	}
+
+	// Initialize new named provider and shutdown the old one
+	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
+	oldProvider := api.namedProviders[clientName]
+	api.namedProviders[clientName] = provider
+
+	api.initNewAndShutdownOldSync(provider, oldProvider)
 	err := api.eventExecutor.registerNamedEventingProvider(clientName, provider)
 	if err != nil {
 		return err
