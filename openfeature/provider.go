@@ -109,7 +109,7 @@ type Event struct {
 }
 
 type EventDetails struct {
-	providerName string
+	ProviderName string
 	ProviderEventDetails
 }
 

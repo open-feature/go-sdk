@@ -177,8 +177,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			t.Fatalf("timeout - event did not trigger")
 		}
 
-		if result.providerName != eventingProvider.Metadata().Name {
-			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.providerName)
+		if result.ProviderName != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.ProviderName)
 		}
 
 		if result.Message != "ReadyMessage" {
@@ -1120,29 +1120,29 @@ func TestEventHandler_multiSubs(t *testing.T) {
 	globalEvents := make(chan string, 10)
 	go func() {
 		for rsp := range rspGlobal {
-			globalEvents <- rsp.providerName
+			globalEvents <- rsp.ProviderName
 		}
 	}()
 
 	clientAEvents := make(chan string, 10)
 	go func() {
 		for rsp := range rspClientA {
-			if rsp.providerName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.providerName)
+			if rsp.ProviderName != "providerOther" {
+				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
 			}
 
-			clientAEvents <- rsp.providerName
+			clientAEvents <- rsp.ProviderName
 		}
 	}()
 
 	clientBEvents := make(chan string, 10)
 	go func() {
 		for rsp := range rspClientB {
-			if rsp.providerName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.providerName)
+			if rsp.ProviderName != "providerOther" {
+				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
 			}
 
-			clientBEvents <- rsp.providerName
+			clientBEvents <- rsp.ProviderName
 		}
 	}()
 
