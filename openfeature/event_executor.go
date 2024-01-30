@@ -35,7 +35,7 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 		apiRegistry:            map[EventType][]EventCallback{},
 		scopedRegistry:         map[string]scopedCallback{},
 		logger:                 logger,
-		eventChan:              make(chan eventPayload, 1),
+		eventChan:              make(chan eventPayload, 5),
 	}
 
 	executor.startEventListener()
