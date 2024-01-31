@@ -35,7 +35,7 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 		apiRegistry:            map[EventType][]EventCallback{},
 		scopedRegistry:         map[string]scopedCallback{},
 		logger:                 logger,
-		eventChan:              make(chan eventPayload, 1),
+		eventChan:              make(chan eventPayload, 5),
 	}
 
 	executor.startEventListener()
@@ -189,7 +189,7 @@ func (e *eventExecutor) emitOnRegistration(
 
 	if message != "" {
 		(*callback)(EventDetails{
-			providerName: providerReference.featureProvider.Metadata().Name,
+			ProviderName: providerReference.featureProvider.Metadata().Name,
 			ProviderEventDetails: ProviderEventDetails{
 				Message: message,
 			},
@@ -355,7 +355,7 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 		}()
 
 		f(EventDetails{
-			providerName: event.ProviderName,
+			ProviderName: event.ProviderName,
 			ProviderEventDetails: ProviderEventDetails{
 				Message:       event.Message,
 				FlagChanges:   event.FlagChanges,
