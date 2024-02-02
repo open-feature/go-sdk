@@ -252,6 +252,101 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 	})
 }
 
+// The API SHOULD provide functions to set a provider and wait for the initialize function to return or throw.
+func TestRequirement_1_1_2_4(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	t.Run("default provider", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered
+		err := SetProviderAndWait(provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must update variable as call is blocking
+		if initialized != true {
+			t.Errorf("expected initialization, but got false")
+		}
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered
+		err := SetNamedProviderAndWait("someName", provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must update variable as call is blocking
+		if initialized != true {
+			t.Errorf("expected initialization, but got false")
+		}
+	})
+
+	t.Run("async registration to validate by contradiction", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered async
+		err := SetProvider(provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must not update variable as registration is async
+		if initialized != false {
+			t.Errorf("expected uninitialized as async, but got true")
+		}
+	})
+}
+
 // The `API` MUST provide a function to bind a given `provider` to one or more client `name`s.
 // If the client-name already has a bound provider, it is overwritten with the new mapping.
 func TestRequirement_1_1_3(t *testing.T) {
