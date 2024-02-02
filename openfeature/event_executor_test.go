@@ -72,7 +72,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		err := SetProvider(eventingProvider)
+		err := SetProviderAndWait(eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -214,13 +214,13 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	// default provider
-	err := SetProvider(defaultProvider)
+	err := SetProviderAndWait(defaultProvider)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// named provider(associated to name someClient)
-	err = SetNamedProvider("someClient", struct {
+	err = SetNamedProviderAndWait("someClient", struct {
 		FeatureProvider
 		EventHandler
 	}{
@@ -967,7 +967,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			},
 		}
 
-		if err := SetProvider(provider); err != nil {
+		if err := SetProviderAndWait(provider); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1001,7 +1001,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			},
 		}
 
-		if err := SetProvider(provider); err != nil {
+		if err := SetProviderAndWait(provider); err != nil {
 			t.Fatal(err)
 		}
 
