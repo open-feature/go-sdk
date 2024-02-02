@@ -169,9 +169,9 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
 func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider, async bool) {
 	if async {
-		go func() {
-			api.eventExecutor.triggerEvent(initializer(newProvider, api.apiCtx), newProvider)
-		}()
+		go func(executor *eventExecutor, ctx EvaluationContext) {
+			executor.triggerEvent(initializer(newProvider, ctx), newProvider)
+		}(api.eventExecutor, api.apiCtx)
 	} else {
 		api.eventExecutor.triggerEvent(initializer(newProvider, api.apiCtx), newProvider)
 	}

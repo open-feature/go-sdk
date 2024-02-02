@@ -72,7 +72,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		err := SetProviderAndWait(eventingProvider)
+		err := SetProvider(eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			rsp <- details
 		}
 
-		AddHandler(ProviderReady, &callBack)
+		eventType := ProviderConfigChange
+		AddHandler(eventType, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -91,7 +92,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 
 		// trigger event from provider implementation
 		eventingImpl.Invoke(Event{
-			EventType: ProviderReady,
+			EventType: eventType,
 			ProviderEventDetails: ProviderEventDetails{
 				Message:       "ReadyMessage",
 				FlagChanges:   fCh,
@@ -139,7 +140,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		// associated to client name
 		associatedName := "providerForClient"
 
-		err := SetNamedProvider(associatedName, eventingProvider)
+		err := SetNamedProviderAndWait(associatedName, eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,7 +274,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 		eventing,
 	}
 
-	errorCallback := func(e EventDetails) {
+	failingCallback := func(e EventDetails) {
 		panic("callback panic")
 	}
 
@@ -292,9 +293,11 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	successEventType := ProviderStale
+
 	// api level handlers
-	AddHandler(ProviderReady, &errorCallback)
-	AddHandler(ProviderReady, &successAPICallback)
+	AddHandler(ProviderConfigChange, &failingCallback)
+	AddHandler(successEventType, &successAPICallback)
 
 	// provider association
 	providerName := "providerA"
@@ -302,14 +305,14 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	client := NewClient(providerName)
 
 	// client level handlers
-	client.AddHandler(ProviderReady, &errorCallback)
-	client.AddHandler(ProviderReady, &successClientCallback)
+	client.AddHandler(ProviderConfigChange, &failingCallback)
+	client.AddHandler(successEventType, &successClientCallback)
 
 	// trigger events manually
 	go func() {
 		eventing.Invoke(Event{
 			ProviderName:         providerName,
-			EventType:            ProviderReady,
+			EventType:            successEventType,
 			ProviderEventDetails: ProviderEventDetails{},
 		})
 	}()
