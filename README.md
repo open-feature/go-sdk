@@ -43,7 +43,7 @@
 
 ### Requirements
 
-- Go 1.18+
+- Go 1.19+
 
 ### Install
 
