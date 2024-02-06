@@ -24,6 +24,7 @@ func SetProvider(provider FeatureProvider) error {
 }
 
 // SetProviderAndWait sets the default provider and waits for its initialization.
+// Returns an error if initialization cause error
 func SetProviderAndWait(provider FeatureProvider) error {
 	return api.setProvider(provider, false)
 }
@@ -35,6 +36,7 @@ func SetNamedProvider(clientName string, provider FeatureProvider) error {
 }
 
 // SetNamedProviderAndWait sets a provider mapped to the given Client name and waits for its initialization.
+// Returns an error if initialization cause error
 func SetNamedProviderAndWait(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider, false)
 }

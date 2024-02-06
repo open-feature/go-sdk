@@ -49,8 +49,12 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 	oldProvider := api.defaultProvider
 	api.defaultProvider = provider
 
-	api.initNewAndShutdownOld(provider, oldProvider, async)
-	err := api.eventExecutor.registerDefaultProvider(provider)
+	err := api.initNewAndShutdownOld(provider, oldProvider, async)
+	if err != nil {
+		return err
+	}
+
+	err = api.eventExecutor.registerDefaultProvider(provider)
 	if err != nil {
 		return err
 	}
@@ -80,8 +84,12 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
 
-	api.initNewAndShutdownOld(provider, oldProvider, async)
-	err := api.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	err := api.initNewAndShutdownOld(provider, oldProvider, async)
+	if err != nil {
+		return err
+	}
+
+	err = api.eventExecutor.registerNamedEventingProvider(clientName, provider)
 	if err != nil {
 		return err
 	}
@@ -167,34 +175,43 @@ func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []
 }
 
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and shutdown the old FeatureProvider.
-func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider, async bool) {
+func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
 		go func(executor *eventExecutor, ctx EvaluationContext) {
-			executor.triggerEvent(initializer(newProvider, ctx), newProvider)
+			// for async initialization, error is conveyed as an event
+			event, _ := initializer(newProvider, ctx)
+			executor.triggerEvent(event, newProvider)
 		}(api.eventExecutor, api.apiCtx)
 	} else {
-		api.eventExecutor.triggerEvent(initializer(newProvider, api.apiCtx), newProvider)
+		event, err := initializer(newProvider, api.apiCtx)
+		api.eventExecutor.triggerEvent(event, newProvider)
+		if err != nil {
+			return err
+		}
 	}
 
 	v, ok := oldProvider.(StateHandler)
 
 	// oldProvider can be nil or without state handling capability
 	if oldProvider == nil || !ok {
-		return
+		return nil
 	}
 
 	// check for multiple bindings
 	if oldProvider == api.defaultProvider || contains(oldProvider, maps.Values(api.namedProviders)) {
-		return
+		return nil
 	}
 
 	go func(forShutdown StateHandler) {
 		forShutdown.Shutdown()
 	}(v)
+
+	return nil
 }
 
 // initializer is a helper to execute provider initialization and generate appropriate event for the initialization
-func initializer(provider FeatureProvider, apiCtx EvaluationContext) Event {
+// It also returns an error if the initialization resulted in an error
+func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, error) {
 	var event = Event{
 		ProviderName: provider.Metadata().Name,
 		EventType:    ProviderReady,
@@ -206,7 +223,7 @@ func initializer(provider FeatureProvider, apiCtx EvaluationContext) Event {
 	handler, ok := provider.(StateHandler)
 	if !ok {
 		// Note - a provider without state handling capability can be assumed to be ready immediately.
-		return event
+		return event, nil
 	}
 
 	err := handler.Init(apiCtx)
@@ -215,7 +232,7 @@ func initializer(provider FeatureProvider, apiCtx EvaluationContext) Event {
 		event.Message = fmt.Sprintf("Provider initialization error, %v", err)
 	}
 
-	return event
+	return event, err
 }
 
 func contains(provider FeatureProvider, in []FeatureProvider) bool {
