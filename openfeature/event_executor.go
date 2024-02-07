@@ -327,7 +327,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 		}
 	}
 
-	if e.defaultProviderReference.featureProvider != handler {
+	if !reflect.DeepEqual(e.defaultProviderReference.featureProvider, handler) {
 		return
 	}
 

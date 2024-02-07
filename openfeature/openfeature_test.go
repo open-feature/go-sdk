@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -248,6 +249,146 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 			break
 		case <-shutdownSemA:
 			t.Errorf("shutdown called on the provider with multiple references")
+		}
+	})
+}
+
+// The API SHOULD provide functions to set a provider and wait for the initialize function to return or throw.
+func TestRequirement_1_1_2_4(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	t.Run("default provider", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered
+		err := SetProviderAndWait(provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must update variable as call is blocking
+		if initialized != true {
+			t.Errorf("expected initialization, but got false")
+		}
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered
+		err := SetNamedProviderAndWait("someName", provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must update variable as call is blocking
+		if initialized != true {
+			t.Errorf("expected initialization, but got false")
+		}
+	})
+
+	t.Run("error return and eventing", func(t *testing.T) {
+		// given - provider with initialization error & error handlers registered
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					return errors.New("some initialization error")
+				},
+			},
+		}
+
+		errChan := make(chan EventDetails, 1)
+		errHandler := func(details EventDetails) {
+			errChan <- details
+		}
+
+		AddHandler(ProviderError, &errHandler)
+
+		// when
+		err := SetProviderAndWait(provider)
+
+		// then
+		if err == nil {
+			t.Fatal("expected error to be non-nil, but got nil")
+		}
+
+		var errEvent EventDetails
+
+		select {
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("expected error event, but time out waiting for event")
+		case errEvent = <-errChan:
+			break
+		}
+
+		if errEvent.Message == "" {
+			t.Fatal("expected non empty event message, but got empty")
+		}
+
+	})
+
+	t.Run("async registration to validate by contradiction", func(t *testing.T) {
+		// given - a provider with state handling capability, with substantial initializing delay
+		var initialized = false
+
+		provider := struct {
+			FeatureProvider
+			StateHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					<-time.After(200 * time.Millisecond)
+					initialized = true
+					return nil
+				},
+			},
+		}
+
+		// when - registered async
+		err := SetProvider(provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// then - must not update variable as registration is async
+		if initialized != false {
+			t.Errorf("expected uninitialized as async, but got true")
 		}
 	})
 }
