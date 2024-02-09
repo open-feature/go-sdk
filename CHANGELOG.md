@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.10.0](https://github.com/open-feature/go-sdk/compare/v1.9.0...v1.10.0) (2024-02-07)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module github.com/cucumber/godog to v0.14.0 ([#249](https://github.com/open-feature/go-sdk/issues/249)) ([bed4eaa](https://github.com/open-feature/go-sdk/commit/bed4eaa519cfea072041a130036f09b191190f09))
+* **deps:** update module github.com/go-logr/logr to v1.4.0 ([#241](https://github.com/open-feature/go-sdk/issues/241)) ([72e4317](https://github.com/open-feature/go-sdk/commit/72e4317adc1987a932d0493463c673b09b0c4fe0))
+* **deps:** update module github.com/go-logr/logr to v1.4.1 ([#243](https://github.com/open-feature/go-sdk/issues/243)) ([95f592a](https://github.com/open-feature/go-sdk/commit/95f592a50ff669b32a071625029b0566c750c534))
+
+
+### ✨ New Features
+
+* blocking provider mutator ([#251](https://github.com/open-feature/go-sdk/issues/251)) ([6f71fe4](https://github.com/open-feature/go-sdk/commit/6f71fe40505f07fc241953ee9da8ea4edc6e4d35))
+* update to go 1.19 ([#252](https://github.com/open-feature/go-sdk/issues/252)) ([47f8a46](https://github.com/open-feature/go-sdk/commit/47f8a46b7992ce8943170dd7135eb73a9de6d9e2))
+
+
+### 🧹 Chore
+
+* **deps:** update actions/cache action to v4 ([#246](https://github.com/open-feature/go-sdk/issues/246)) ([eaefcc8](https://github.com/open-feature/go-sdk/commit/eaefcc8875693dd08ee634f47d7f053b7b7fc9cf))
+* improve eventing ([#248](https://github.com/open-feature/go-sdk/issues/248)) ([d2c1636](https://github.com/open-feature/go-sdk/commit/d2c1636cd5ea46a4f15083e5d4f90ce54b5fb493))
+
 ## [1.9.0](https://github.com/open-feature/go-sdk/compare/v1.8.0...v1.9.0) (2023-11-21)
 
 
