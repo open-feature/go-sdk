@@ -40,7 +40,7 @@ jobs:
           go-version: ${{ env.DEFAULT_GO_VERSION }}
 
       - name: Install cyclonedx-gomod
-        uses: CycloneDX/gh-gomod-generate-sbom@v1
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
         with:
           version: v1.3.0
 
