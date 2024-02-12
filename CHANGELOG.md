@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/open-feature/go-sdk/compare/v1.10.0...v1.10.1) (2024-02-12)
+
+
+### 🧹 Chore
+
+* **deps:** update actions/checkout action to v4 ([#212](https://github.com/open-feature/go-sdk/issues/212)) ([2944608](https://github.com/open-feature/go-sdk/commit/2944608562d04521fcf92000948a22012e630471))
+
 ## [1.10.0](https://github.com/open-feature/go-sdk/compare/v1.9.0...v1.10.0) (2024-02-07)
 
 
