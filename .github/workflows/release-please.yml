@@ -7,7 +7,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   # Default minimum version of Go to support.
-  DEFAULT_GO_VERSION: 1.19
+  DEFAULT_GO_VERSION: "~1.20"
 
 jobs:
   release-please:
