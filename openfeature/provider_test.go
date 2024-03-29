@@ -8,7 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-// The provider interface MUST define a `metadata` member or accessor, containing a `name` field or accessor
+// The provider interface MUST define a `metadata` member or accessor, containing a `domain` field or accessor
 // of type string, which identifies the provider implementation.
 func TestRequirement_2_1_1(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -26,7 +26,7 @@ func TestRequirement_2_1_1(t *testing.T) {
 	metadata := Metadata{}
 
 	metaValue := reflect.ValueOf(&metadata).Elem()
-	fieldName := "Name"
+	fieldName := "Domain"
 
 	field := metaValue.FieldByName(fieldName)
 	if field == (reflect.Value{}) {

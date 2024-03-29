@@ -28,15 +28,15 @@ func TestRequirement_1_2_1(t *testing.T) {
 }
 
 // The client interface MUST define a `metadata` member or accessor,
-// containing an immutable `name` field or accessor of type string,
-// which corresponds to the `name` value supplied during client creation.
+// containing an immutable `domain` field or accessor of type string,
+// which corresponds to the `domain` value supplied during client creation.
 func TestRequirement_1_2_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	clientName := "test-client"
 	client := NewClient(clientName)
 
-	if client.Metadata().Name() != clientName {
-		t.Errorf("client name not initiated as expected, got %s, want %s", client.Metadata().Name(), clientName)
+	if client.Metadata().Domain() != clientName {
+		t.Errorf("client domain not initiated as expected, got %s, want %s", client.Metadata().Domain(), clientName)
 	}
 }
 

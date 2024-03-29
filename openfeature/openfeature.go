@@ -29,13 +29,13 @@ func SetProviderAndWait(provider FeatureProvider) error {
 	return api.setProvider(provider, false)
 }
 
-// SetNamedProvider sets a provider mapped to the given Client name. Provider initialization is asynchronous and
+// SetNamedProvider sets a provider mapped to the given Client domain. Provider initialization is asynchronous and
 // status can be checked from provider status
 func SetNamedProvider(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider, true)
 }
 
-// SetNamedProviderAndWait sets a provider mapped to the given Client name and waits for its initialization.
+// SetNamedProviderAndWait sets a provider mapped to the given Client domain and waits for its initialization.
 // Returns an error if initialization cause error
 func SetNamedProviderAndWait(clientName string, provider FeatureProvider) error {
 	return api.setNamedProvider(clientName, provider, false)

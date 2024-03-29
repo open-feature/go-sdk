@@ -32,20 +32,20 @@ type IClient interface {
 
 // ClientMetadata provides a client's metadata
 type ClientMetadata struct {
-	name string
+	domain string
 }
 
 // NewClientMetadata constructs ClientMetadata
 // Allows for simplified hook test cases while maintaining immutability
-func NewClientMetadata(name string) ClientMetadata {
+func NewClientMetadata(domain string) ClientMetadata {
 	return ClientMetadata{
-		name: name,
+		domain: domain,
 	}
 }
 
-// Name returns the client's name
-func (cm ClientMetadata) Name() string {
-	return cm.name
+// Domain returns the client's domain
+func (cm ClientMetadata) Domain() string {
+	return cm.domain
 }
 
 // Client implements the behaviour required of an openfeature client
@@ -57,10 +57,10 @@ type Client struct {
 	logger            func() logr.Logger
 }
 
-// NewClient returns a new Client. Name is a unique identifier for this client
+// NewClient returns a new Client. Domain is a unique identifier for this client
 func NewClient(name string) *Client {
 	return &Client{
-		metadata:          ClientMetadata{name: name},
+		metadata:          ClientMetadata{domain: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 		logger:            globalLogger,
@@ -91,12 +91,12 @@ func (c *Client) AddHooks(hooks ...Hook) {
 
 // AddHandler allows to add Client level event handler
 func (c *Client) AddHandler(eventType EventType, callback EventCallback) {
-	addClientHandler(c.metadata.Name(), eventType, callback)
+	addClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // RemoveHandler allows to remove Client level event handler
 func (c *Client) RemoveHandler(eventType EventType, callback EventCallback) {
-	removeClientHandler(c.metadata.Name(), eventType, callback)
+	removeClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // SetEvaluationContext sets the client's evaluation context
@@ -596,7 +596,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := forTransaction(c.metadata.name)
+	provider, globalHooks, globalCtx := forTransaction(c.metadata.domain)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider

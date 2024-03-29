@@ -18,7 +18,7 @@ func TestNoopProvider_Metadata(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			e := openfeature.NoopProvider{}
 			if got := e.Metadata(); got != tt.want {
-				t.Errorf("Name() = %v, want %v", got, tt.want)
+				t.Errorf("Domain() = %v, want %v", got, tt.want)
 			}
 		})
 	}

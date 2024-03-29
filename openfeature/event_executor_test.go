@@ -43,12 +43,12 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 			t.Error("implementation should register default eventing provider")
 		}
 
-		err = executor.registerNamedEventingProvider("name", eventingProvider)
+		err = executor.registerNamedEventingProvider("domain", eventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if _, ok := executor.namedProviderReference["name"]; !ok {
+		if _, ok := executor.namedProviderReference["domain"]; !ok {
 			t.Errorf("implementation should register named eventing provider")
 		}
 	})
@@ -137,7 +137,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			eventingImpl,
 		}
 
-		// associated to client name
+		// associated to client domain
 		associatedName := "providerForClient"
 
 		err := SetNamedProviderAndWait(associatedName, eventingProvider)
@@ -220,7 +220,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// named provider(associated to name someClient)
+	// named provider(associated to domain someClient)
 	err = SetNamedProviderAndWait("someClient", struct {
 		FeatureProvider
 		EventHandler
@@ -672,7 +672,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}
 	})
 
-	t.Run("for name associated handler", func(t *testing.T) {
+	t.Run("for domain associated handler", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		readyEventingProvider := struct {

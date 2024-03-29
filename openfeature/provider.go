@@ -186,7 +186,7 @@ type InterfaceResolutionDetail struct {
 	ProviderResolutionDetail
 }
 
-// Metadata provides provider name
+// Metadata provides provider domain
 type Metadata struct {
 	Name string
 }

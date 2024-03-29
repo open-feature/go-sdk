@@ -42,8 +42,8 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 	return &executor
 }
 
-// scopedCallback is a helper struct to hold client name associated callbacks.
-// Here, the scope correlates to the client and provider name
+// scopedCallback is a helper struct to hold client domain associated callbacks.
+// Here, the scope correlates to the client and provider domain
 type scopedCallback struct {
 	scope     string
 	callbacks map[EventType][]EventCallback

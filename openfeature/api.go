@@ -70,7 +70,7 @@ func (api *evaluationAPI) getProvider() FeatureProvider {
 	return api.defaultProvider
 }
 
-// setProvider sets a provider with client name. Returns an error if FeatureProvider is nil
+// setProvider sets a provider with client domain. Returns an error if FeatureProvider is nil
 func (api *evaluationAPI) setNamedProvider(clientName string, provider FeatureProvider, async bool) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
@@ -159,7 +159,7 @@ func (api *evaluationAPI) getHooks() []Hook {
 }
 
 // forTransaction is a helper to retrieve transaction(flag evaluation) scoped operators.
-// Returns the default FeatureProvider if no provider mapping exist for the given client name.
+// Returns the default FeatureProvider if no provider mapping exist for the given client domain.
 func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
