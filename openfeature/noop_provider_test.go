@@ -11,7 +11,7 @@ func TestNoopProvider_Metadata(t *testing.T) {
 		want openfeature.Metadata
 	}{
 		"Given a NOOP provider, then Metadata() will return NoopProvider": {
-			want: openfeature.Metadata{Name: "NoopProvider"},
+			want: openfeature.Metadata{Domain: "NoopProvider"},
 		},
 	}
 	for name, tt := range tests {

@@ -213,7 +213,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, old
 // It also returns an error if the initialization resulted in an error
 func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, error) {
 	var event = Event{
-		ProviderName: provider.Metadata().Name,
+		ProviderName: provider.Metadata().Domain,
 		EventType:    ProviderReady,
 		ProviderEventDetails: ProviderEventDetails{
 			Message: "Provider initialization successful",

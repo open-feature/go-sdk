@@ -40,7 +40,7 @@ func TestRequirement_1_1_2_1(t *testing.T) {
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProviderName := "mock-provider"
-	mockProvider.EXPECT().Metadata().Return(Metadata{Name: mockProviderName}).AnyTimes()
+	mockProvider.EXPECT().Metadata().Return(Metadata{Domain: mockProviderName}).AnyTimes()
 
 	err := SetProvider(mockProvider)
 	if err != nil {
@@ -402,10 +402,10 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	providerA := NewMockFeatureProvider(ctrl)
-	providerA.EXPECT().Metadata().Return(Metadata{Name: "providerA"}).AnyTimes()
+	providerA.EXPECT().Metadata().Return(Metadata{Domain: "providerA"}).AnyTimes()
 
 	providerB := NewMockFeatureProvider(ctrl)
-	providerB.EXPECT().Metadata().Return(Metadata{Name: "providerB"}).AnyTimes()
+	providerB.EXPECT().Metadata().Return(Metadata{Domain: "providerB"}).AnyTimes()
 
 	err := SetNamedProvider("clientA", providerA)
 	if err != nil {
@@ -436,19 +436,19 @@ func TestRequirement_1_1_3(t *testing.T) {
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
 	provider, _, _ := forTransaction("clientA")
-	if provider.Metadata().Name != "providerA" {
-		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Name)
+	if provider.Metadata().Domain != "providerA" {
+		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Domain)
 	}
 
 	provider, _, _ = forTransaction("clientB")
-	if provider.Metadata().Name != "providerB" {
-		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
+	if provider.Metadata().Domain != "providerB" {
+		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Domain)
 	}
 
 	// Validate overriding: If the client-domain already has a bound provider, it is overwritten with the new mapping.
 
 	providerB2 := NewMockFeatureProvider(ctrl)
-	providerB2.EXPECT().Metadata().Return(Metadata{Name: "providerB2"}).AnyTimes()
+	providerB2.EXPECT().Metadata().Return(Metadata{Domain: "providerB2"}).AnyTimes()
 
 	err = SetNamedProvider("clientB", providerB2)
 	if err != nil {
@@ -463,8 +463,8 @@ func TestRequirement_1_1_3(t *testing.T) {
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
 	provider, _, _ = forTransaction("clientB")
-	if provider.Metadata().Name != "providerB2" {
-		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
+	if provider.Metadata().Domain != "providerB2" {
+		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Domain)
 	}
 }
 
@@ -667,7 +667,7 @@ func TestDefaultClientUsage(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defaultProvider := NewMockFeatureProvider(ctrl)
-	defaultProvider.EXPECT().Metadata().Return(Metadata{Name: "defaultClientReplacement"}).AnyTimes()
+	defaultProvider.EXPECT().Metadata().Return(Metadata{Domain: "defaultClientReplacement"}).AnyTimes()
 
 	err := SetProvider(defaultProvider)
 	if err != nil {
@@ -677,8 +677,8 @@ func TestDefaultClientUsage(t *testing.T) {
 	// Validate provider retrieval by client evaluation
 	provider, _, _ := forTransaction("ClientName")
 
-	if provider.Metadata().Name != "defaultClientReplacement" {
-		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
+	if provider.Metadata().Domain != "defaultClientReplacement" {
+		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Domain)
 	}
 }
 

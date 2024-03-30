@@ -252,11 +252,11 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 
 	metadata := memoryProvider.Metadata()
 
-	if metadata.Name == "" {
+	if metadata.Domain == "" {
 		t.Errorf("expected non-empty name for in-memory provider")
 	}
 
-	if metadata.Name != "InMemoryProvider" {
+	if metadata.Domain != "InMemoryProvider" {
 		t.Errorf("incorrect name for in-memory provider")
 	}
 }

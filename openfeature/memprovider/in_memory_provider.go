@@ -24,7 +24,7 @@ func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
 
 func (i InMemoryProvider) Metadata() openfeature.Metadata {
 	return openfeature.Metadata{
-		Name: "InMemoryProvider",
+		Domain: "InMemoryProvider",
 	}
 }
 
