@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.11.0](https://github.com/open-feature/go-sdk/compare/v1.10.0...v1.11.0) (2024-04-09)
+
+
+### ✨ New Features
+
+* Adding simplified evaluation methods ([#263](https://github.com/open-feature/go-sdk/issues/263)) ([7b610c7](https://github.com/open-feature/go-sdk/commit/7b610c7c5019535ffde98c0ad725a0e73e7703a1))
+
+
+### 🧹 Chore
+
+* **deps:** update actions/checkout action to v4 ([#212](https://github.com/open-feature/go-sdk/issues/212)) ([2944608](https://github.com/open-feature/go-sdk/commit/2944608562d04521fcf92000948a22012e630471))
+* **deps:** update actions/setup-go action to v5 ([#237](https://github.com/open-feature/go-sdk/issues/237)) ([53d9e7e](https://github.com/open-feature/go-sdk/commit/53d9e7e4fd0127b4819de5d4d8c82735ee9d0c83))
+* **deps:** update cyclonedx/gh-gomod-generate-sbom action to v2 ([#179](https://github.com/open-feature/go-sdk/issues/179)) ([b624a43](https://github.com/open-feature/go-sdk/commit/b624a43fc2fa132399543de79b9ecf5008312aaf))
+
 ## [1.10.0](https://github.com/open-feature/go-sdk/compare/v1.9.0...v1.10.0) (2024-02-07)
 
 
