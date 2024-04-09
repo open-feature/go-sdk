@@ -28,6 +28,12 @@ type IClient interface {
 	FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
 	IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
 	ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
+
+	Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool
+	String(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) string
+	Float(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) float64
+	Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64
+	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
 }
 
 // ClientMetadata provides a client's metadata
@@ -56,6 +62,9 @@ type Client struct {
 	evaluationContext EvaluationContext
 	logger            func() logr.Logger
 }
+
+// interface guard to ensure that Client implements IClient
+var _ IClient = (*Client)(nil)
 
 // NewClient returns a new Client. Name is a unique identifier for this client
 func NewClient(name string) *Client {
@@ -578,6 +587,86 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 	}
 
 	return c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+}
+
+// Boolean performs a flag evaluation that returns a boolean. Any error
+// encountered during the evaluation will result in the default value being
+// returned. To explicitly handle errors, use [BooleanValue] or [BooleanValueDetails]
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - flag is the key that uniquely identifies a particular flag
+// - defaultValue is returned if an error occurs
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
+func (c *Client) Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool {
+	value, _ := c.BooleanValue(ctx, flag, defaultValue, evalCtx, options...)
+
+	return value
+}
+
+// String performs a flag evaluation that returns a string. Any error
+// encountered during the evaluation will result in the default value being
+// returned. To explicitly handle errors, use [StringValue] or [StringValueDetails]
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - flag is the key that uniquely identifies a particular flag
+// - defaultValue is returned if an error occurs
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
+func (c *Client) String(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) string {
+	value, _ := c.StringValue(ctx, flag, defaultValue, evalCtx, options...)
+
+	return value
+}
+
+// Float performs a flag evaluation that returns a float64. Any error
+// encountered during the evaluation will result in the default value being
+// returned. To explicitly handle errors, use [FloatValue] or [FloatValueDetails]
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - flag is the key that uniquely identifies a particular flag
+// - defaultValue is returned if an error occurs
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
+func (c *Client) Float(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) float64 {
+	value, _ := c.FloatValue(ctx, flag, defaultValue, evalCtx, options...)
+
+	return value
+}
+
+// Int performs a flag evaluation that returns an int64. Any error
+// encountered during the evaluation will result in the default value being
+// returned. To explicitly handle errors, use [IntValue] or [IntValueDetails]
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - flag is the key that uniquely identifies a particular flag
+// - defaultValue is returned if an error occurs
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
+func (c *Client) Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64 {
+	value, _ := c.IntValue(ctx, flag, defaultValue, evalCtx, options...)
+
+	return value
+}
+
+// Object performs a flag evaluation that returns an object. Any error
+// encountered during the evaluation will result in the default value being
+// returned. To explicitly handle errors, use [ObjectValue] or [ObjectValueDetails]
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - flag is the key that uniquely identifies a particular flag
+// - defaultValue is returned if an error occurs
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - options are optional additional evaluation options e.g. WithHooks & WithHookHints
+func (c *Client) Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{} {
+	value, _ := c.ObjectValue(ctx, flag, defaultValue, evalCtx, options...)
+
+	return value
 }
 
 func (c *Client) evaluate(
