@@ -80,3 +80,52 @@ func ExampleClient_ObjectValue() {
 	fmt.Printf("test-flag value: %v", string(str))
 	// Output: test-flag value: {"foo":"bar"}
 }
+
+func ExampleClient_Boolean() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	if client.Boolean(ctx, "myflag", true, openfeature.EvaluationContext{}) {
+		fmt.Println("myflag is true")
+	} else {
+		fmt.Println("myflag is false")
+	}
+
+	// Output: myflag is true
+}
+
+func ExampleClient_String() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	fmt.Println(client.String(ctx, "myflag", "default", openfeature.EvaluationContext{}))
+
+	// Output: default
+}
+
+func ExampleClient_Float() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	fmt.Println(client.Float(ctx, "myflag", 0.5, openfeature.EvaluationContext{}))
+
+	// Output: 0.5
+}
+
+func ExampleClient_Int() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	fmt.Println(client.Int(ctx, "myflag", 5, openfeature.EvaluationContext{}))
+
+	// Output: 5
+}
+
+func ExampleClient_Object() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	fmt.Println(client.Object(ctx, "myflag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{}))
+
+	// Output: map[foo:bar]
+}
