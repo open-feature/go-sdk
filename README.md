@@ -46,7 +46,7 @@
 Go language version: [1.20](https://go.dev/doc/devel/release#go1.20)
 
 > [!NOTE]
-> OpenFeature Go SDK attempts to support currently maintained Go language version.
+> The OpenFeature Go SDK only supports currently maintained Go language versions.
 
 ### Install
 
