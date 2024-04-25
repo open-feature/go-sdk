@@ -26,7 +26,7 @@ func TestRequirement_2_1_1(t *testing.T) {
 	metadata := Metadata{}
 
 	metaValue := reflect.ValueOf(&metadata).Elem()
-	fieldName := "Domain"
+	fieldName := "Name"
 
 	field := metaValue.FieldByName(fieldName)
 	if field == (reflect.Value{}) {

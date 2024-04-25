@@ -160,7 +160,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 
 		// trigger event from provider implementation
 		eventingImpl.Invoke(Event{
-			ProviderName: eventingProvider.Metadata().Domain,
+			ProviderName: eventingProvider.Metadata().Name,
 			EventType:    ProviderReady,
 			ProviderEventDetails: ProviderEventDetails{
 				Message:       "ReadyMessage",
@@ -178,8 +178,8 @@ func TestEventHandler_Eventing(t *testing.T) {
 			t.Fatalf("timeout - event did not trigger")
 		}
 
-		if result.ProviderName != eventingProvider.Metadata().Domain {
-			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Domain, result.ProviderName)
+		if result.ProviderName != eventingProvider.Metadata().Name {
+			t.Errorf("expected %s, but got %s", eventingProvider.Metadata().Name, result.ProviderName)
 		}
 
 		if result.Message != "ReadyMessage" {
@@ -245,7 +245,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 
 	// invoke default provider
 	eventingImpl.Invoke(Event{
-		ProviderName:         defaultProvider.Metadata().Domain,
+		ProviderName:         defaultProvider.Metadata().Name,
 		EventType:            event,
 		ProviderEventDetails: ProviderEventDetails{},
 	})

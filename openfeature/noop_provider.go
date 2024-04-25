@@ -8,7 +8,7 @@ type NoopProvider struct {
 
 // Metadata returns the metadata of the provider
 func (e NoopProvider) Metadata() Metadata {
-	return Metadata{Domain: "NoopProvider"}
+	return Metadata{Name: "NoopProvider"}
 }
 
 // BooleanEvaluation returns a boolean flag.

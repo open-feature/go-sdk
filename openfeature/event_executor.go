@@ -189,7 +189,7 @@ func (e *eventExecutor) emitOnRegistration(
 
 	if message != "" {
 		(*callback)(EventDetails{
-			ProviderName: providerReference.featureProvider.Metadata().Domain,
+			ProviderName: providerReference.featureProvider.Metadata().Name,
 			ProviderEventDetails: ProviderEventDetails{
 				Message: message,
 			},
@@ -290,7 +290,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		return nil
 	case <-time.After(200 * time.Millisecond):
 		return fmt.Errorf("old event handler %s timeout waiting for handler shutdown",
-			oldReference.featureProvider.Metadata().Domain)
+			oldReference.featureProvider.Metadata().Name)
 	}
 }
 
