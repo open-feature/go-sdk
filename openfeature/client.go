@@ -33,6 +33,7 @@ type IClient interface {
 // ClientMetadata provides a client's metadata
 type ClientMetadata struct {
 	domain string
+	name   string
 }
 
 // NewClientMetadata constructs ClientMetadata
@@ -41,6 +42,12 @@ func NewClientMetadata(domain string) ClientMetadata {
 	return ClientMetadata{
 		domain: domain,
 	}
+}
+
+// Name returns the client's name
+// Deprecated: Name() exists for historical compatibility, use Domain() instead.
+func (cm ClientMetadata) Name() string {
+	return cm.name
 }
 
 // Domain returns the client's domain
