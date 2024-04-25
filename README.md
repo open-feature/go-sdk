@@ -115,7 +115,7 @@ openfeature.SetProvider(MyProvider{})
 ```
 
 In some situations, it may be beneficial to register multiple providers in the same application.
-This is possible using [named clients](#named-clients), which is covered in more details below.
+This is possible using [domains](#domains), which is covered in more details below.
 
 ### Targeting
 
