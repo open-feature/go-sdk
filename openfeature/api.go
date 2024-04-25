@@ -160,13 +160,13 @@ func (api *evaluationAPI) getHooks() []Hook {
 
 // forTransaction is a helper to retrieve transaction(flag evaluation) scoped operators.
 // Returns the default FeatureProvider if no provider mapping exist for the given client domain.
-func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
+func (api *evaluationAPI) forTransaction(clientDomain string) (FeatureProvider, []Hook, EvaluationContext) {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
 	var provider FeatureProvider
 
-	provider = api.namedProviders[clientName]
+	provider = api.namedProviders[clientDomain]
 	if provider == nil {
 		provider = api.defaultProvider
 	}

@@ -122,6 +122,6 @@ func globalLogger() logr.Logger {
 
 // forTransaction is a helper to retrieve transaction scoped operators by Client.
 // Here, transaction means a flag evaluation.
-func forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
-	return api.forTransaction(clientName)
+func forTransaction(clientDomain string) (FeatureProvider, []Hook, EvaluationContext) {
+	return api.forTransaction(clientDomain)
 }
