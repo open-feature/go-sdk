@@ -71,7 +71,7 @@ func (api *evaluationAPI) getProvider() FeatureProvider {
 }
 
 // setProvider sets a provider with client domain. Returns an error if FeatureProvider is nil
-func (api *evaluationAPI) setNamedProvider(clientName string, provider FeatureProvider, async bool) error {
+func (api *evaluationAPI) setNamedProvider(clientDomain string, provider FeatureProvider, async bool) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
@@ -81,15 +81,15 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new named provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	oldProvider := api.namedProviders[clientName]
-	api.namedProviders[clientName] = provider
+	oldProvider := api.namedProviders[clientDomain]
+	api.namedProviders[clientDomain] = provider
 
 	err := api.initNewAndShutdownOld(provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
 
-	err = api.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	err = api.eventExecutor.registerNamedEventingProvider(clientDomain, provider)
 	if err != nil {
 		return err
 	}

@@ -31,14 +31,14 @@ func SetProviderAndWait(provider FeatureProvider) error {
 
 // SetNamedProvider sets a provider mapped to the given Client domain. Provider initialization is asynchronous and
 // status can be checked from provider status
-func SetNamedProvider(clientName string, provider FeatureProvider) error {
-	return api.setNamedProvider(clientName, provider, true)
+func SetNamedProvider(clientDomain string, provider FeatureProvider) error {
+	return api.setNamedProvider(clientDomain, provider, true)
 }
 
 // SetNamedProviderAndWait sets a provider mapped to the given Client domain and waits for its initialization.
 // Returns an error if initialization cause error
-func SetNamedProviderAndWait(clientName string, provider FeatureProvider) error {
-	return api.setNamedProvider(clientName, provider, false)
+func SetNamedProviderAndWait(clientDomain string, provider FeatureProvider) error {
+	return api.setNamedProvider(clientDomain, provider, false)
 }
 
 // SetEvaluationContext sets the global evaluation context.
@@ -67,8 +67,8 @@ func AddHandler(eventType EventType, callback EventCallback) {
 }
 
 // addClientHandler is a helper for Client to add an event handler
-func addClientHandler(name string, t EventType, c EventCallback) {
-	api.eventExecutor.registerClientHandler(name, t, c)
+func addClientHandler(domain string, t EventType, c EventCallback) {
+	api.eventExecutor.registerClientHandler(domain, t, c)
 }
 
 // RemoveHandler allows to remove API level event handler
@@ -77,8 +77,8 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 }
 
 // removeClientHandler is a helper for Client to add an event handler
-func removeClientHandler(name string, t EventType, c EventCallback) {
-	api.eventExecutor.removeClientHandler(name, t, c)
+func removeClientHandler(domain string, t EventType, c EventCallback) {
+	api.eventExecutor.removeClientHandler(domain, t, c)
 }
 
 // getAPIEventRegistry is a helper for testing
