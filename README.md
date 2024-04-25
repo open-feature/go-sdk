@@ -96,7 +96,6 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) fo
 | ✅      | [Hooks](#hooks)                 | Add functionality to various stages of the flag evaluation life-cycle.                                                            |
 | ✅      | [Logging](#logging)             | Integrate with popular logging packages.                                                                                          |
 | ✅      | [Domains](#domains)             | Logically bind clients with providers.|
-| ✅      | [Named clients](#named-clients) | Utilize multiple providers in a single application.                                                                               |
 | ✅      | [Eventing](#eventing)           | React to state changes in the provider or flag management system.                                                                 |
 | ✅      | [Shutdown](#shutdown)           | Gracefully clean up a provider during application shutdown.                                                                       |
 | ✅      | [Extending](#extending)         | Extend OpenFeature with custom providers and hooks.                                                                               |
