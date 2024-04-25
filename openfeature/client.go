@@ -60,7 +60,7 @@ type Client struct {
 // NewClient returns a new Client. Domain is a unique identifier for this client
 func NewClient(domain string) *Client {
 	return &Client{
-		metadata:          ClientMetadata{domain: name},
+		metadata:          ClientMetadata{domain: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 		logger:            globalLogger,
