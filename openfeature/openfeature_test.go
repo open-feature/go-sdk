@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
-
 	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
@@ -27,7 +26,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	if getProvider() != mockProvider {
+	if api.GetProvider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
 	}
 }
@@ -73,7 +72,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 			break
 		}
 
-		if !reflect.DeepEqual(provider, getProvider()) {
+		if !reflect.DeepEqual(provider, api.GetProvider()) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -98,7 +97,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 			break
 		}
 
-		if !reflect.DeepEqual(provider, getNamedProviders()[client]) {
+		if !reflect.DeepEqual(provider, api.GetNamedProviders()[client]) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -417,7 +416,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders := getNamedProviders()
+	namedProviders := api.GetNamedProviders()
 
 	// Validate binding
 
@@ -435,12 +434,12 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ := forTransaction("clientA")
+	provider, _, _ := api.ForEvaluation("clientA")
 	if provider.Metadata().Name != "providerA" {
 		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Name)
 	}
 
-	provider, _, _ = forTransaction("clientB")
+	provider, _, _ = api.ForEvaluation("clientB")
 	if provider.Metadata().Name != "providerB" {
 		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
 	}
@@ -455,14 +454,14 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders = getNamedProviders()
+	namedProviders = api.GetNamedProviders()
 	if namedProviders["clientB"] != providerB2 {
 		t.Errorf("named provider overriding failed")
 	}
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ = forTransaction("clientB")
+	provider, _, _ = api.ForEvaluation("clientB")
 	if provider.Metadata().Name != "providerB2" {
 		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
 	}
@@ -480,7 +479,7 @@ func TestRequirement_1_1_4(t *testing.T) {
 	AddHooks(mockHook)
 	AddHooks(mockHook, mockHook)
 
-	if len(getHooks()) != 3 {
+	if len(api.GetHooks()) != 3 {
 		t.Error("func AddHooks didn't append the list of hooks to the existing collection of hooks")
 	}
 }
@@ -560,25 +559,21 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		client.AddHandler(ProviderStale, &h1)
 		client.AddHandler(ProviderConfigChange, &h1)
 
-		registry := getClientRegistry(clientName)
+		registry := eventing.GetClientRegistry(clientName)
 
-		if registry == nil {
-			t.Fatalf("no event handler registry present for client domain %s", clientName)
-		}
-
-		if len(registry.callbacks[ProviderReady]) < 1 {
+		if len(registry.Callbacks()[ProviderReady]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.callbacks[ProviderError]) < 1 {
+		if len(registry.Callbacks()[ProviderError]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.callbacks[ProviderStale]) < 1 {
+		if len(registry.Callbacks()[ProviderStale]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.callbacks[ProviderConfigChange]) < 1 {
+		if len(registry.Callbacks()[ProviderConfigChange]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
@@ -588,19 +583,19 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		client.RemoveHandler(ProviderStale, &h1)
 		client.RemoveHandler(ProviderConfigChange, &h1)
 
-		if len(registry.callbacks[ProviderReady]) > 0 {
+		if len(registry.Callbacks()[ProviderReady]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.callbacks[ProviderError]) > 0 {
+		if len(registry.Callbacks()[ProviderError]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.callbacks[ProviderStale]) > 0 {
+		if len(registry.Callbacks()[ProviderStale]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.callbacks[ProviderConfigChange]) > 0 {
+		if len(registry.Callbacks()[ProviderConfigChange]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 	})
@@ -615,7 +610,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		AddHandler(ProviderStale, &h1)
 		AddHandler(ProviderConfigChange, &h1)
 
-		registry := getAPIEventRegistry()
+		registry := eventing.GetAPIRegistry()
 
 		if len(registry[ProviderReady]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
@@ -639,7 +634,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		RemoveHandler(ProviderStale, &h1)
 		RemoveHandler(ProviderConfigChange, &h1)
 
-		registry = getAPIEventRegistry()
+		registry = eventing.GetAPIRegistry()
 
 		if len(registry[ProviderReady]) > 0 {
 			t.Errorf("expected empty registrations")
@@ -675,7 +670,7 @@ func TestDefaultClientUsage(t *testing.T) {
 	}
 
 	// Validate provider retrieval by client evaluation
-	provider, _, _ := forTransaction("ClientName")
+	provider, _, _ := api.ForEvaluation("ClientName")
 
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
@@ -689,7 +684,7 @@ func TestLoggerOverride(t *testing.T) {
 	newOverride := internal.Logger{}
 	SetLogger(logr.New(newOverride))
 
-	if !reflect.DeepEqual(globalLogger().GetSink(), newOverride) {
+	if !reflect.DeepEqual(logger.GetSink(), newOverride) {
 		t.Error("logger overriding failed")
 	}
 }

@@ -10,30 +10,36 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+type eventingAPI interface {
+	Eventing
+	GetAPIRegistry() map[EventType][]EventCallback
+	GetClientRegistry(client string) ScopedCallback
+}
+
 // event executor is a registry to connect API and Client event handlers to Providers
 
-// eventExecutor handles events emitted from FeatureProvider. It follows a pub-sub model based on channels.
+// EventExecutor handles events emitted from FeatureProvider. It follows a pub-sub model based on channels.
 // Emitted events are written to eventChan. This model is chosen so that events can be triggered from subscribed
 // feature provider as well as from API(ex:- for initialization events).
 // Usage of channels help with concurrency and adhere to the principal of sharing memory by communication.
-type eventExecutor struct {
+type EventExecutor struct {
 	defaultProviderReference providerReference
 	namedProviderReference   map[string]providerReference
 	activeSubscriptions      []providerReference
 	apiRegistry              map[EventType][]EventCallback
-	scopedRegistry           map[string]scopedCallback
+	scopedRegistry           map[string]ScopedCallback
 	logger                   logr.Logger
 	eventChan                chan eventPayload
 	once                     sync.Once
 	mu                       sync.Mutex
 }
 
-func newEventExecutor(logger logr.Logger) *eventExecutor {
-	executor := eventExecutor{
+func NewEventExecutor(logger logr.Logger) *EventExecutor {
+	executor := EventExecutor{
 		namedProviderReference: map[string]providerReference{},
 		activeSubscriptions:    []providerReference{},
 		apiRegistry:            map[EventType][]EventCallback{},
-		scopedRegistry:         map[string]scopedCallback{},
+		scopedRegistry:         map[string]ScopedCallback{},
 		logger:                 logger,
 		eventChan:              make(chan eventPayload, 5),
 	}
@@ -42,11 +48,26 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 	return &executor
 }
 
-// scopedCallback is a helper struct to hold client domain associated callbacks.
+// ScopedCallback is a helper struct to hold client domain associated callbacks.
 // Here, the scope correlates to the client and provider domain
-type scopedCallback struct {
+type ScopedCallback struct {
 	scope     string
 	callbacks map[EventType][]EventCallback
+}
+
+func (s *ScopedCallback) Callbacks() map[EventType][]EventCallback {
+	return s.callbacks
+}
+
+func (s *ScopedCallback) Scope() string {
+	return s.scope
+}
+
+func newScopedCallback(client string) ScopedCallback {
+	return ScopedCallback{
+		scope:     client,
+		callbacks: map[EventType][]EventCallback{},
+	}
 }
 
 type eventPayload struct {
@@ -54,30 +75,23 @@ type eventPayload struct {
 	handler FeatureProvider
 }
 
-func newScopedCallback(client string) scopedCallback {
-	return scopedCallback{
-		scope:     client,
-		callbacks: map[EventType][]EventCallback{},
-	}
-}
-
 // providerReference is a helper struct to store FeatureProvider with EventHandler capability along with their
-// shutdown semaphore
+// Shutdown semaphore
 type providerReference struct {
 	featureProvider   FeatureProvider
 	shutdownSemaphore chan interface{}
 }
 
 // updateLogger updates the executor's logger
-func (e *eventExecutor) updateLogger(l logr.Logger) {
+func (e *EventExecutor) updateLogger(l logr.Logger) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	e.logger = l
 }
 
-// registerApiHandler adds an API(global) level handler
-func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
+// AddHandler adds an API(global) level handler
+func (e *EventExecutor) AddHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -90,8 +104,8 @@ func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	e.emitOnRegistration(e.defaultProviderReference, t, c)
 }
 
-// removeApiHandler removes an API(global) level handler
-func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
+// RemoveHandler removes an API(global) level handler
+func (e *EventExecutor) RemoveHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -110,8 +124,8 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.apiRegistry[t] = entrySlice
 }
 
-// registerClientHandler registers a client level handler
-func (e *eventExecutor) registerClientHandler(clientDomain string, t EventType, c EventCallback) {
+// RegisterClientHandler registers a client level handler
+func (e *EventExecutor) RegisterClientHandler(clientDomain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -137,8 +151,8 @@ func (e *eventExecutor) registerClientHandler(clientDomain string, t EventType, 
 	e.emitOnRegistration(reference, t, c)
 }
 
-// removeClientHandler removes a client level handler
-func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
+// RemoveClientHandler removes a client level handler
+func (e *EventExecutor) RemoveClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -163,9 +177,17 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	e.scopedRegistry[name].callbacks[t] = entrySlice
 }
 
+func (e *EventExecutor) GetAPIRegistry() map[EventType][]EventCallback {
+	return e.apiRegistry
+}
+
+func (e *EventExecutor) GetClientRegistry(client string) ScopedCallback {
+	return e.scopedRegistry[client]
+}
+
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
-func (e *eventExecutor) emitOnRegistration(
+func (e *EventExecutor) emitOnRegistration(
 	providerReference providerReference,
 	eventType EventType,
 	callback EventCallback,
@@ -198,11 +220,11 @@ func (e *eventExecutor) emitOnRegistration(
 }
 
 // registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
-func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
+func (e *EventExecutor) registerDefaultProvider(provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// register shutdown semaphore for new default provider
+	// register Shutdown semaphore for new default provider
 	sem := make(chan interface{})
 
 	newProvider := providerReference{
@@ -217,11 +239,11 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 }
 
 // registerNamedEventingProvider registers a named FeatureProvider and remove event listener for old named provider
-func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
+func (e *EventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// register shutdown semaphore for new named provider
+	// register Shutdown semaphore for new named provider
 	sem := make(chan interface{})
 
 	newProvider := providerReference{
@@ -235,9 +257,9 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 	return e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
 
-// startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke shutdown
+// startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke Shutdown
 // hook of the old provider if it's not bound by another subscription
-func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) error {
+func (e *EventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) error {
 
 	// check if this provider already actively handled - 1:N binding capability
 	if !isRunning(newProvider, e.activeSubscriptions) {
@@ -264,7 +286,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		}()
 	}
 
-	// shutdown old provider handling
+	// Shutdown old provider handling
 
 	// check if this provider is still bound - 1:N binding capability
 	if isBound(oldReference, e.defaultProviderReference, maps.Values(e.namedProviderReference)) {
@@ -280,22 +302,22 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	_, ok := oldReference.featureProvider.(EventHandler)
 	if !ok {
-		// no shutdown for non event handling provider
+		// no Shutdown for non event handling provider
 		return nil
 	}
 
-	// avoid shutdown lockouts
+	// avoid Shutdown lockouts
 	select {
 	case oldReference.shutdownSemaphore <- "":
 		return nil
 	case <-time.After(200 * time.Millisecond):
-		return fmt.Errorf("old event handler %s timeout waiting for handler shutdown",
+		return fmt.Errorf("old event handler %s timeout waiting for handler Shutdown",
 			oldReference.featureProvider.Metadata().Name)
 	}
 }
 
 // startEventListener trigger the event listening of this executor
-func (e *eventExecutor) startEventListener() {
+func (e *EventExecutor) startEventListener() {
 	e.once.Do(func() {
 		go func() {
 			for payload := range e.eventChan {
@@ -306,7 +328,7 @@ func (e *eventExecutor) startEventListener() {
 }
 
 // triggerEvent performs the actual event handling
-func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
+func (e *EventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -346,7 +368,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 }
 
 // executeHandler is a helper which performs the actual invocation of the callback
-func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event) {
+func (e *EventExecutor) executeHandler(f func(details EventDetails), event Event) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {

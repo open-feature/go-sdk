@@ -62,23 +62,29 @@ func (cm ClientMetadata) Domain() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
-	mx                sync.RWMutex
+	api               evalAPI
+	clientEventing    ClientEvent
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
-	logger            func() logr.Logger
+	logger            logr.Logger
+
+	mx sync.RWMutex
 }
 
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
 // NewClient returns a new Client. Name is a unique identifier for this client
-func NewClient(domain string) *Client {
+func NewClient(name string) *Client {
 	return &Client{
-		metadata:          ClientMetadata{name: domain},
+		api:            api,
+		clientEventing: eventing,
+		logger:         logger,
+
+		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
-		logger:            globalLogger,
 	}
 }
 
@@ -86,7 +92,7 @@ func NewClient(domain string) *Client {
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()
-	c.logger = func() logr.Logger { return l }
+	c.logger = l
 	return c
 }
 
@@ -106,12 +112,12 @@ func (c *Client) AddHooks(hooks ...Hook) {
 
 // AddHandler allows to add Client level event handler
 func (c *Client) AddHandler(eventType EventType, callback EventCallback) {
-	addClientHandler(c.metadata.Domain(), eventType, callback)
+	c.clientEventing.RegisterClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // RemoveHandler allows to remove Client level event handler
 func (c *Client) RemoveHandler(eventType EventType, callback EventCallback) {
-	removeClientHandler(c.metadata.Domain(), eventType, callback)
+	c.clientEventing.RemoveClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // SetEvaluationContext sets the client's evaluation context
@@ -411,7 +417,7 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
 		err := errors.New("evaluated value is not a boolean")
-		c.logger().Error(
+		c.logger.Error(
 			err, "invalid flag resolution type", "expectedType", "boolean",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
@@ -459,7 +465,7 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 	value, ok := evalDetails.Value.(string)
 	if !ok {
 		err := errors.New("evaluated value is not a string")
-		c.logger().Error(
+		c.logger.Error(
 			err, "invalid flag resolution type", "expectedType", "string",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
@@ -507,7 +513,7 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
 		err := errors.New("evaluated value is not a float64")
-		c.logger().Error(
+		c.logger.Error(
 			err, "invalid flag resolution type", "expectedType", "float64",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
@@ -555,7 +561,7 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
 		err := errors.New("evaluated value is not an int64")
-		c.logger().Error(
+		c.logger.Error(
 			err, "invalid flag resolution type", "expectedType", "int64",
 			"gotType", fmt.Sprintf("%T", evalDetails.Value),
 		)
@@ -691,7 +697,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := forTransaction(c.metadata.name)
+	provider, globalHooks, globalCtx := c.api.ForEvaluation(c.metadata.name)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
@@ -714,7 +720,7 @@ func (c *Client) evaluate(
 	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
-		c.logger().Error(
+		c.logger.Error(
 			err, "before hook", "flag", flag, "defaultValue", defaultValue,
 			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
 		)
@@ -752,7 +758,7 @@ func (c *Client) evaluate(
 
 	err = resolution.Error()
 	if err != nil {
-		c.logger().Error(
+		c.logger.Error(
 			err, "flag resolution", "flag", flag, "defaultValue", defaultValue,
 			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(), "errorCode", err,
 			"errMessage", resolution.ResolutionError.message,
@@ -767,7 +773,7 @@ func (c *Client) evaluate(
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
 	if err := c.afterHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
-		c.logger().Error(
+		c.logger.Error(
 			err, "after hook", "flag", flag, "defaultValue", defaultValue,
 			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
 		)
