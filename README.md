@@ -364,6 +364,33 @@ func (h MyHook) Error(context context.Context, hookContext openfeature.HookConte
 
 > Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs!
 
+## Testing
+
+To test interactions with OpenFeature API and Client, you can rely on `openfeature.IOFApi` & `openfeature.IClient` interfaces.
+
+While you may use global methods to interact with the API, it is recommended to obtain the singleton API instance so that you can use appropriate mocks for your testing needs,
+
+```go
+// global helper
+openfeature.SetProvider(myProvider)
+
+// singleton instance - preferred
+apiInstance := openfeature.GetApiInstance()
+apiInstance.SetProvider(myProvider)
+```
+
+Similarly, while you have options (due to historical reasons) to create a client with `openfeature.NewClient()` helper, it is recommended to use API to generate the client which returns an `IClient` instance.
+
+```go
+// global helper
+openfeature.NewClient("myClient")
+
+// using API instance - preferred
+apiInstance := openfeature.GetApiInstance()
+apiInstance.GetClient()
+apiInstance.GetNamedClient("myClient")
+```
+
 <!-- x-hide-in-docs-start -->
 ## ⭐️ Support the project
 

@@ -9,8 +9,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type evalAPI interface {
-	API
+// ofApiImpl is an internal reference interface extending IOFApi
+type ofApiImpl interface {
+	IOFApi
 	GetProvider() FeatureProvider
 	GetNamedProviders() map[string]FeatureProvider
 	GetHooks() []Hook
@@ -42,38 +43,20 @@ func NewEvaluationAPI(eventExecutor *EventExecutor, log logr.Logger) *Evaluation
 	}
 }
 
-// SetProvider sets the default FeatureProvider of the EvaluationAPI.
-// Returns an error if provider registration cause an error
-func (api *EvaluationAPI) SetProvider(provider FeatureProvider, async bool) error {
-	api.mu.Lock()
-	defer api.mu.Unlock()
-
-	if provider == nil {
-		return errors.New("default provider cannot be set to nil")
-	}
-
-	oldProvider := api.defaultProvider
-	api.defaultProvider = provider
-
-	err := api.initNewAndShutdownOld(provider, oldProvider, async)
-	if err != nil {
-		return err
-	}
-
-	err = api.eventExecutor.registerDefaultProvider(provider)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (api *EvaluationAPI) SetProvider(provider FeatureProvider) error {
+	return api.setProvider(provider, true)
 }
 
-// GetProvider returns the default FeatureProvider
-func (api *EvaluationAPI) GetProvider() FeatureProvider {
+func (api *EvaluationAPI) SetProviderAndWait(provider FeatureProvider) error {
+	return api.setProvider(provider, false)
+}
+
+// GetProviderMetadata returns the default FeatureProvider's metadata
+func (api *EvaluationAPI) GetProviderMetadata() Metadata {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
-	return api.defaultProvider
+	return api.defaultProvider.Metadata()
 }
 
 // SetNamedProvider sets a provider with client name. Returns an error if FeatureProvider is nil
@@ -103,12 +86,33 @@ func (api *EvaluationAPI) SetNamedProvider(clientName string, provider FeaturePr
 	return nil
 }
 
+// GetNamedProviderMetadata returns the default FeatureProvider's metadata
+func (api *EvaluationAPI) GetNamedProviderMetadata(name string) Metadata {
+	api.mu.RLock()
+	defer api.mu.RUnlock()
+
+	provider, ok := api.namedProviders[name]
+	if !ok {
+		return ProviderMetadata()
+	}
+
+	return provider.Metadata()
+}
+
 // GetNamedProviders returns named providers map.
 func (api *EvaluationAPI) GetNamedProviders() map[string]FeatureProvider {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
 	return api.namedProviders
+}
+
+func (api *EvaluationAPI) GetClient() IClient {
+	return newClient("", api, api.eventExecutor, api.logger)
+}
+
+func (api *EvaluationAPI) GetNamedClient(clientName string) IClient {
+	return newClient(clientName, api, api.eventExecutor, api.logger)
 }
 
 func (api *EvaluationAPI) SetEvaluationContext(apiCtx EvaluationContext) {
@@ -138,6 +142,16 @@ func (api *EvaluationAPI) GetHooks() []Hook {
 	defer api.mu.RUnlock()
 
 	return api.hks
+}
+
+// AddHandler allows to add API level event handler
+func (api *EvaluationAPI) AddHandler(eventType EventType, callback EventCallback) {
+	api.eventExecutor.AddHandler(eventType, callback)
+}
+
+// RemoveHandler allows to remove API level event handler
+func (api *EvaluationAPI) RemoveHandler(eventType EventType, callback EventCallback) {
+	api.eventExecutor.RemoveHandler(eventType, callback)
 }
 
 func (api *EvaluationAPI) Shutdown() {
@@ -171,6 +185,40 @@ func (api *EvaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []H
 	}
 
 	return provider, api.hks, api.apiCtx
+}
+
+// GetProvider returns the default FeatureProvider
+func (api *EvaluationAPI) GetProvider() FeatureProvider {
+	api.mu.RLock()
+	defer api.mu.RUnlock()
+
+	return api.defaultProvider
+}
+
+// SetProvider sets the default FeatureProvider of the EvaluationAPI.
+// Returns an error if provider registration cause an error
+func (api *EvaluationAPI) setProvider(provider FeatureProvider, async bool) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	if provider == nil {
+		return errors.New("default provider cannot be set to nil")
+	}
+
+	oldProvider := api.defaultProvider
+	api.defaultProvider = provider
+
+	err := api.initNewAndShutdownOld(provider, oldProvider, async)
+	if err != nil {
+		return err
+	}
+
+	err = api.eventExecutor.registerDefaultProvider(provider)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.

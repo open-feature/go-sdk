@@ -10,10 +10,19 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type eventingAPI interface {
-	Eventing
+// eventingImpl is an internal reference interface extending IEventing
+type eventingImpl interface {
+	IEventing
 	GetAPIRegistry() map[EventType][]EventCallback
 	GetClientRegistry(client string) ScopedCallback
+
+	clientEvent
+}
+
+// clientEvent is an internal reference for OpenFeature Client events
+type clientEvent interface {
+	RegisterClientHandler(clientName string, t EventType, c EventCallback)
+	RemoveClientHandler(name string, t EventType, c EventCallback)
 }
 
 // event executor is a registry to connect API and Client event handlers to Providers

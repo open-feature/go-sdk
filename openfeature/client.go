@@ -10,32 +10,6 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// IClient defines the behaviour required of an openfeature client
-type IClient interface {
-	Metadata() ClientMetadata
-	AddHooks(hooks ...Hook)
-	AddHandler(eventType EventType, callback EventCallback)
-	RemoveHandler(eventType EventType, callback EventCallback)
-	SetEvaluationContext(evalCtx EvaluationContext)
-	EvaluationContext() EvaluationContext
-	BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error)
-	StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
-	FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
-	IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
-	ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
-	BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
-	StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
-	FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
-	IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
-	ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
-
-	Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool
-	String(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) string
-	Float(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) float64
-	Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64
-	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
-}
-
 // ClientMetadata provides a client's metadata
 type ClientMetadata struct {
 	name string
@@ -62,8 +36,8 @@ func (cm ClientMetadata) Domain() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
-	api               evalAPI
-	clientEventing    ClientEvent
+	api               ofApiImpl
+	clientEventing    clientEvent
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
@@ -75,13 +49,16 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
-// NewClient returns a new Client. Name is a unique identifier for this client
+// NewClient returns a new IClient. Name is a unique identifier for this client
 func NewClient(name string) *Client {
-	return &Client{
-		api:            api,
-		clientEventing: eventing,
-		logger:         logger,
+	return newClient(name, api, eventing, logger)
+}
 
+func newClient(name string, apiRef ofApiImpl, eventRef clientEvent, log logr.Logger) *Client {
+	return &Client{
+		api:               apiRef,
+		clientEventing:    eventRef,
+		logger:            log,
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},

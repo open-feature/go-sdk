@@ -17,15 +17,18 @@ func TestRequirement_1_1_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
 	ctrl := gomock.NewController(t)
-
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	ofAPI := GetApiInstance()
+
+	// set through instance level
+	err := ofAPI.SetProvider(mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
+	// validate through global level
 	if api.GetProvider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
 	}
@@ -487,17 +490,57 @@ func TestRequirement_1_1_4(t *testing.T) {
 // The API MUST provide a function for retrieving the metadata field of the configured `provider`.
 func TestRequirement_1_1_5(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	defaultProvider := NoopProvider{}
-	if ProviderMetadata() != defaultProvider.Metadata() {
-		t.Error("default global provider's metadata isn't NoopProvider's metadata")
-	}
+
+	t.Run("default provider", func(t *testing.T) {
+		defaultProvider := NoopProvider{}
+		err := SetProvider(defaultProvider)
+		if err != nil {
+			t.Errorf("provider registration failed %v", err)
+		}
+		if ProviderMetadata() != defaultProvider.Metadata() {
+			t.Error("default global provider's metadata isn't NoopProvider's metadata")
+		}
+	})
+
+	t.Run("named provider", func(t *testing.T) {
+		defaultProvider := NoopProvider{}
+		name := "test-provider"
+
+		err := SetNamedProvider(name, defaultProvider)
+		if err != nil {
+			t.Errorf("provider registration failed %v", err)
+		}
+		if NamedProviderMetadata(name) != defaultProvider.Metadata() {
+			t.Error("default global provider's metadata isn't NoopProvider's metadata")
+		}
+	})
 }
 
 // The `API` MUST provide a function for creating a `client` which accepts the following options:
 // - domain (optional): A logical string identifier for the client.
 func TestRequirement_1_1_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	NewClient("test-client")
+
+	t.Run("client from direct invocation", func(t *testing.T) {
+		client := NewClient("test-client")
+		if client == nil {
+			t.Errorf("expected an Client instance, but got invalid")
+		}
+	})
+
+	t.Run("client from api level - no name", func(t *testing.T) {
+		client := api.GetClient()
+		if client == nil {
+			t.Errorf("expected an IClient instance, but got invalid")
+		}
+	})
+
+	t.Run("client from api level - with name", func(t *testing.T) {
+		client := api.GetNamedClient("test-client")
+		if client == nil {
+			t.Errorf("expected an IClient instance, but got invalid")
+		}
+	})
 }
 
 // The client creation function MUST NOT throw, or otherwise abnormally terminate.
