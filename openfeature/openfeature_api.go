@@ -107,10 +107,12 @@ func (api *EvaluationAPI) GetNamedProviders() map[string]FeatureProvider {
 	return api.namedProviders
 }
 
+// GetClient returns a IClient bound to the default provider
 func (api *EvaluationAPI) GetClient() IClient {
 	return newClient("", api, api.eventExecutor, api.logger)
 }
 
+// GetNamedClient returns a IClient bound to the given named provider
 func (api *EvaluationAPI) GetNamedClient(clientName string) IClient {
 	return newClient(clientName, api, api.eventExecutor, api.logger)
 }

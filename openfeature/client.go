@@ -49,7 +49,8 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
-// NewClient returns a new IClient. Name is a unique identifier for this client
+// NewClient returns a new Client. Name is a unique identifier for this client
+// This helper exists for historical reasons. It is recommended to interact with IOFApi to derive IClient instances.
 func NewClient(name string) *Client {
 	return newClient(name, api, eventing, logger)
 }

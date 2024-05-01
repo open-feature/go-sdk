@@ -24,7 +24,8 @@ func initSingleton() {
 	api = NewEvaluationAPI(exec, logger)
 }
 
-// GetApiInstance returns the current singleton IOFApi instance
+// GetApiInstance returns the current singleton IOFApi instance.
+// This is the preferred interface to interact with OpenFeature functionalities
 func GetApiInstance() IOFApi {
 	return api
 }
