@@ -29,7 +29,7 @@ func NewClientMetadata(name string) ClientMetadata {
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.Client, instead.
 type Client = openfeature.Client
 
-// NewClient returns a new Client. Name is a unique identifier for this client
+// NewClient returns a new Client. Domain is a unique identifier for this client
 //
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.NewClient,
 // instead.
