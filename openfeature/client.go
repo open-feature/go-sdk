@@ -38,15 +38,14 @@ type IClient interface {
 
 // ClientMetadata provides a client's metadata
 type ClientMetadata struct {
-	domain string
-	name   string
+	name string
 }
 
 // NewClientMetadata constructs ClientMetadata
 // Allows for simplified hook test cases while maintaining immutability
-func NewClientMetadata(domain string) ClientMetadata {
+func NewClientMetadata(name string) ClientMetadata {
 	return ClientMetadata{
-		domain: domain,
+		name: name,
 	}
 }
 
@@ -58,7 +57,7 @@ func (cm ClientMetadata) Name() string {
 
 // Domain returns the client's domain
 func (cm ClientMetadata) Domain() string {
-	return cm.domain
+	return cm.name
 }
 
 // Client implements the behaviour required of an openfeature client
@@ -76,7 +75,7 @@ var _ IClient = (*Client)(nil)
 // NewClient returns a new Client. Name is a unique identifier for this client
 func NewClient(domain string) *Client {
 	return &Client{
-		metadata:          ClientMetadata{domain: domain},
+		metadata:          ClientMetadata{name: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 		logger:            globalLogger,
@@ -692,7 +691,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := forTransaction(c.metadata.domain)
+	provider, globalHooks, globalCtx := forTransaction(c.metadata.name)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, globalCtx)                                                           // API (global) -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
