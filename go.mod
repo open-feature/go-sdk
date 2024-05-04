@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.4.1
 	github.com/golang/mock v1.6.0
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.15.0
 )
 
 require (
