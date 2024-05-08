@@ -36,7 +36,7 @@ func (cm ClientMetadata) Domain() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
-	api               ofApiImpl
+	api               evaluationImpl
 	clientEventing    clientEvent
 	metadata          ClientMetadata
 	hooks             []Hook
@@ -50,12 +50,12 @@ type Client struct {
 var _ IClient = (*Client)(nil)
 
 // NewClient returns a new Client. Name is a unique identifier for this client
-// This helper exists for historical reasons. It is recommended to interact with IOFApi to derive IClient instances.
+// This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
 func NewClient(name string) *Client {
 	return newClient(name, api, eventing, logger)
 }
 
-func newClient(name string, apiRef ofApiImpl, eventRef clientEvent, log logr.Logger) *Client {
+func newClient(name string, apiRef evaluationImpl, eventRef clientEvent, log logr.Logger) *Client {
 	return &Client{
 		api:               apiRef,
 		clientEventing:    eventRef,
@@ -90,7 +90,7 @@ func (c *Client) AddHooks(hooks ...Hook) {
 
 // AddHandler allows to add Client level event handler
 func (c *Client) AddHandler(eventType EventType, callback EventCallback) {
-	c.clientEventing.RegisterClientHandler(c.metadata.Domain(), eventType, callback)
+	c.clientEventing.AddClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // RemoveHandler allows to remove Client level event handler

@@ -1395,15 +1395,15 @@ func TestEventHandler_Registration(t *testing.T) {
 		executor := NewEventExecutor(logger)
 
 		// Add multiple - client a
-		executor.RegisterClientHandler("a", ProviderReady, &h1)
-		executor.RegisterClientHandler("a", ProviderReady, &h2)
-		executor.RegisterClientHandler("a", ProviderReady, &h3)
-		executor.RegisterClientHandler("a", ProviderReady, &h4)
+		executor.AddClientHandler("a", ProviderReady, &h1)
+		executor.AddClientHandler("a", ProviderReady, &h2)
+		executor.AddClientHandler("a", ProviderReady, &h3)
+		executor.AddClientHandler("a", ProviderReady, &h4)
 
 		// Add single for rest of the client
-		executor.RegisterClientHandler("b", ProviderError, &h2)
-		executor.RegisterClientHandler("c", ProviderStale, &h3)
-		executor.RegisterClientHandler("d", ProviderConfigChange, &h4)
+		executor.AddClientHandler("b", ProviderError, &h2)
+		executor.AddClientHandler("c", ProviderStale, &h3)
+		executor.AddClientHandler("d", ProviderConfigChange, &h4)
 
 		readyLen := len(executor.scopedRegistry["a"].callbacks[ProviderReady])
 		if readyLen != 4 {
@@ -1485,15 +1485,15 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 		executor := NewEventExecutor(logger)
 
 		// Add multiple - client a
-		executor.RegisterClientHandler("a", ProviderReady, &h1)
-		executor.RegisterClientHandler("a", ProviderReady, &h2)
-		executor.RegisterClientHandler("a", ProviderReady, &h3)
-		executor.RegisterClientHandler("a", ProviderReady, &h4)
+		executor.AddClientHandler("a", ProviderReady, &h1)
+		executor.AddClientHandler("a", ProviderReady, &h2)
+		executor.AddClientHandler("a", ProviderReady, &h3)
+		executor.AddClientHandler("a", ProviderReady, &h4)
 
 		// Add single
-		executor.RegisterClientHandler("b", ProviderError, &h2)
-		executor.RegisterClientHandler("c", ProviderStale, &h3)
-		executor.RegisterClientHandler("d", ProviderConfigChange, &h4)
+		executor.AddClientHandler("b", ProviderError, &h2)
+		executor.AddClientHandler("c", ProviderStale, &h3)
+		executor.AddClientHandler("d", ProviderConfigChange, &h4)
 
 		// removal
 		executor.RemoveClientHandler("a", ProviderReady, &h1)

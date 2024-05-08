@@ -5,8 +5,8 @@ import (
 	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
-// api is the global ofApiImpl implementation. This is a singleton and there can only be one instance.
-var api ofApiImpl
+// api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
+var api evaluationImpl
 var eventing eventingImpl
 var logger logr.Logger
 
@@ -21,12 +21,12 @@ func initSingleton() {
 	var exec = NewEventExecutor(logger)
 	eventing = exec
 
-	api = NewEvaluationAPI(exec, logger)
+	api = newEvaluationAPI(exec, logger)
 }
 
-// GetApiInstance returns the current singleton IOFApi instance.
+// GetApiInstance returns the current singleton IEvaluation instance.
 // This is the preferred interface to interact with OpenFeature functionalities
-func GetApiInstance() IOFApi {
+func GetApiInstance() IEvaluation {
 	return api
 }
 

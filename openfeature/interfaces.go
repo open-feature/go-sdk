@@ -2,8 +2,8 @@ package openfeature
 
 import "context"
 
-// IOFApi defines the OpenFeature API contract
-type IOFApi interface {
+// IEvaluation defines the OpenFeature API contract
+type IEvaluation interface {
 	SetProvider(provider FeatureProvider) error
 	SetProviderAndWait(provider FeatureProvider) error
 	GetProviderMetadata() Metadata
@@ -39,7 +39,7 @@ type IClient interface {
 	Float(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) float64
 	Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64
 	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
-	
+
 	IEventing
 }
 

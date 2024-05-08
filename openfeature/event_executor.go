@@ -21,7 +21,7 @@ type eventingImpl interface {
 
 // clientEvent is an internal reference for OpenFeature Client events
 type clientEvent interface {
-	RegisterClientHandler(clientName string, t EventType, c EventCallback)
+	AddClientHandler(clientName string, t EventType, c EventCallback)
 	RemoveClientHandler(name string, t EventType, c EventCallback)
 }
 
@@ -85,7 +85,7 @@ type eventPayload struct {
 }
 
 // providerReference is a helper struct to store FeatureProvider with EventHandler capability along with their
-// Shutdown semaphore
+// shutdown semaphore
 type providerReference struct {
 	featureProvider   FeatureProvider
 	shutdownSemaphore chan interface{}
@@ -134,7 +134,7 @@ func (e *EventExecutor) RemoveHandler(t EventType, c EventCallback) {
 }
 
 // RegisterClientHandler registers a client level handler
-func (e *EventExecutor) RegisterClientHandler(clientDomain string, t EventType, c EventCallback) {
+func (e *EventExecutor) AddClientHandler(clientDomain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -233,7 +233,7 @@ func (e *EventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// register Shutdown semaphore for new default provider
+	// register shutdown semaphore for new default provider
 	sem := make(chan interface{})
 
 	newProvider := providerReference{
@@ -252,7 +252,7 @@ func (e *EventExecutor) registerNamedEventingProvider(associatedClient string, p
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// register Shutdown semaphore for new named provider
+	// register shutdown semaphore for new named provider
 	sem := make(chan interface{})
 
 	newProvider := providerReference{
@@ -266,7 +266,7 @@ func (e *EventExecutor) registerNamedEventingProvider(associatedClient string, p
 	return e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
 
-// startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke Shutdown
+// startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke shutdown
 // hook of the old provider if it's not bound by another subscription
 func (e *EventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) error {
 
@@ -295,7 +295,7 @@ func (e *EventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		}()
 	}
 
-	// Shutdown old provider handling
+	// shutdown old provider handling
 
 	// check if this provider is still bound - 1:N binding capability
 	if isBound(oldReference, e.defaultProviderReference, maps.Values(e.namedProviderReference)) {
@@ -311,16 +311,16 @@ func (e *EventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	_, ok := oldReference.featureProvider.(EventHandler)
 	if !ok {
-		// no Shutdown for non event handling provider
+		// no shutdown for non event handling provider
 		return nil
 	}
 
-	// avoid Shutdown lockouts
+	// avoid shutdown lockouts
 	select {
 	case oldReference.shutdownSemaphore <- "":
 		return nil
 	case <-time.After(200 * time.Millisecond):
-		return fmt.Errorf("old event handler %s timeout waiting for handler Shutdown",
+		return fmt.Errorf("old event handler %s timeout waiting for handler shutdown",
 			oldReference.featureProvider.Metadata().Name)
 	}
 }

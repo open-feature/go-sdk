@@ -366,7 +366,7 @@ func (h MyHook) Error(context context.Context, hookContext openfeature.HookConte
 
 ## Testing
 
-To test interactions with OpenFeature API and Client, you can rely on `openfeature.IOFApi` & `openfeature.IClient` interfaces.
+To test interactions with OpenFeature API and Client, you can rely on `openfeature.IEvaluation` & `openfeature.IClient` interfaces.
 
 While you may use global methods to interact with the API, it is recommended to obtain the singleton API instance so that you can use appropriate mocks for your testing needs,
 
@@ -379,7 +379,7 @@ apiInstance := openfeature.GetApiInstance()
 apiInstance.SetProvider(myProvider)
 ```
 
-Similarly, while you have options (due to historical reasons) to create a client with `openfeature.NewClient()` helper, it is recommended to use API to generate the client which returns an `IClient` instance.
+Similarly, while you have option (due to historical reasons) to create a client with `openfeature.NewClient()` helper, it is recommended to use API to generate the client which returns an `IClient` instance.
 
 ```go
 // global helper
