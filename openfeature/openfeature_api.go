@@ -25,13 +25,13 @@ type evaluationAPI struct {
 	namedProviders  map[string]FeatureProvider
 	hks             []Hook
 	apiCtx          EvaluationContext
-	eventExecutor   *EventExecutor
+	eventExecutor   *eventExecutor
 	logger          logr.Logger
 	mu              sync.RWMutex
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
-func newEvaluationAPI(eventExecutor *EventExecutor, log logr.Logger) *evaluationAPI {
+func newEvaluationAPI(eventExecutor *eventExecutor, log logr.Logger) *evaluationAPI {
 	return &evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
@@ -226,7 +226,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
-		go func(executor *EventExecutor, ctx EvaluationContext) {
+		go func(executor *eventExecutor, ctx EvaluationContext) {
 			// for async initialization, error is conveyed as an event
 			event, _ := initializer(newProvider, ctx)
 			executor.triggerEvent(event, newProvider)

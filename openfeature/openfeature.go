@@ -18,7 +18,7 @@ func init() {
 func initSingleton() {
 	logger = logr.New(internal.Logger{})
 
-	var exec = NewEventExecutor(logger)
+	var exec = newEventExecutor(logger)
 	eventing = exec
 
 	api = newEvaluationAPI(exec, logger)
