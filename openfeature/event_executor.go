@@ -14,7 +14,7 @@ import (
 type eventingImpl interface {
 	IEventing
 	GetAPIRegistry() map[EventType][]EventCallback
-	GetClientRegistry(client string) ScopedCallback
+	GetClientRegistry(client string) scopedCallback
 
 	clientEvent
 }
@@ -36,7 +36,7 @@ type eventExecutor struct {
 	namedProviderReference   map[string]providerReference
 	activeSubscriptions      []providerReference
 	apiRegistry              map[EventType][]EventCallback
-	scopedRegistry           map[string]ScopedCallback
+	scopedRegistry           map[string]scopedCallback
 	logger                   logr.Logger
 	eventChan                chan eventPayload
 	once                     sync.Once
@@ -48,7 +48,7 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 		namedProviderReference: map[string]providerReference{},
 		activeSubscriptions:    []providerReference{},
 		apiRegistry:            map[EventType][]EventCallback{},
-		scopedRegistry:         map[string]ScopedCallback{},
+		scopedRegistry:         map[string]scopedCallback{},
 		logger:                 logger,
 		eventChan:              make(chan eventPayload, 5),
 	}
@@ -57,23 +57,19 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 	return &executor
 }
 
-// ScopedCallback is a helper struct to hold client domain associated callbacks.
+// scopedCallback is a helper struct to hold client domain associated callbacks.
 // Here, the scope correlates to the client and provider domain
-type ScopedCallback struct {
+type scopedCallback struct {
 	scope     string
 	callbacks map[EventType][]EventCallback
 }
 
-func (s *ScopedCallback) Callbacks() map[EventType][]EventCallback {
+func (s *scopedCallback) eventCallbacks() map[EventType][]EventCallback {
 	return s.callbacks
 }
 
-func (s *ScopedCallback) Scope() string {
-	return s.scope
-}
-
-func newScopedCallback(client string) ScopedCallback {
-	return ScopedCallback{
+func newScopedCallback(client string) scopedCallback {
+	return scopedCallback{
 		scope:     client,
 		callbacks: map[EventType][]EventCallback{},
 	}
@@ -190,7 +186,7 @@ func (e *eventExecutor) GetAPIRegistry() map[EventType][]EventCallback {
 	return e.apiRegistry
 }
 
-func (e *eventExecutor) GetClientRegistry(client string) ScopedCallback {
+func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 	return e.scopedRegistry[client]
 }
 

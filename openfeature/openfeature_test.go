@@ -604,19 +604,19 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 		registry := eventing.GetClientRegistry(clientName)
 
-		if len(registry.Callbacks()[ProviderReady]) < 1 {
+		if len(registry.eventCallbacks()[ProviderReady]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.Callbacks()[ProviderError]) < 1 {
+		if len(registry.eventCallbacks()[ProviderError]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.Callbacks()[ProviderStale]) < 1 {
+		if len(registry.eventCallbacks()[ProviderStale]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
-		if len(registry.Callbacks()[ProviderConfigChange]) < 1 {
+		if len(registry.eventCallbacks()[ProviderConfigChange]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
 		}
 
@@ -626,19 +626,19 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		client.RemoveHandler(ProviderStale, &h1)
 		client.RemoveHandler(ProviderConfigChange, &h1)
 
-		if len(registry.Callbacks()[ProviderReady]) > 0 {
+		if len(registry.eventCallbacks()[ProviderReady]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.Callbacks()[ProviderError]) > 0 {
+		if len(registry.eventCallbacks()[ProviderError]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.Callbacks()[ProviderStale]) > 0 {
+		if len(registry.eventCallbacks()[ProviderStale]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 
-		if len(registry.Callbacks()[ProviderConfigChange]) > 0 {
+		if len(registry.eventCallbacks()[ProviderConfigChange]) > 0 {
 			t.Errorf("expected empty registrations")
 		}
 	})
