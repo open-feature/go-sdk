@@ -11,8 +11,8 @@ import (
 
 func ExampleNewClient() {
 	client := openfeature.NewClient("example-client")
-	fmt.Printf("Client Name: %s", client.Metadata().Name())
-	// Output: Client Name: example-client
+	fmt.Printf("Client Domain: %s", client.Metadata().Domain())
+	// Output: Client Domain: example-client
 }
 
 func ExampleClient_BooleanValue() {

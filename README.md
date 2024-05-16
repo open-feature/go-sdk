@@ -89,16 +89,16 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) fo
 
 ## 🌟 Features
 
-| Status | Features                        | Description                                                                                                                        |
-| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| ✅      | [Providers](#providers)         | Integrate with a commercial, open source, or in-house feature management tool.                                                     |
+| Status | Features                        | Description                                                                                                                       |
+| ------ |---------------------------------| --------------------------------------------------------------------------------------------------------------------------------- |
+| ✅      | [Providers](#providers)         | Integrate with a commercial, open source, or in-house feature management tool.                                                    |
 | ✅      | [Targeting](#targeting)         | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context). |
-| ✅      | [Hooks](#hooks)                 | Add functionality to various stages of the flag evaluation life-cycle.                                                             |
-| ✅      | [Logging](#logging)             | Integrate with popular logging packages.                                                                                           |
-| ✅      | [Named clients](#named-clients) | Utilize multiple providers in a single application.                                                                                |
-| ✅      | [Eventing](#eventing)           | React to state changes in the provider or flag management system.                                                                  |
-| ✅      | [Shutdown](#shutdown)           | Gracefully clean up a provider during application shutdown.                                                                        |
-| ✅      | [Extending](#extending)         | Extend OpenFeature with custom providers and hooks.                                                                                |
+| ✅      | [Hooks](#hooks)                 | Add functionality to various stages of the flag evaluation life-cycle.                                                            |
+| ✅      | [Logging](#logging)             | Integrate with popular logging packages.                                                                                          |
+| ✅      | [Domains](#domains)             | Logically bind clients with providers.|
+| ✅      | [Eventing](#eventing)           | React to state changes in the provider or flag management system.                                                                 |
+| ✅      | [Shutdown](#shutdown)           | Gracefully clean up a provider during application shutdown.                                                                       |
+| ✅      | [Extending](#extending)         | Extend OpenFeature with custom providers and hooks.                                                                               |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -115,7 +115,7 @@ openfeature.SetProvider(MyProvider{})
 ```
 
 In some situations, it may be beneficial to register multiple providers in the same application.
-This is possible using [named clients](#named-clients), which is covered in more details below.
+This is possible using [domains](#domains), which is covered in more details below.
 
 ### Targeting
 
@@ -190,11 +190,8 @@ c := openfeature.NewClient("log").WithLogger(l) // set the logger at client leve
 [logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
 The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
 
-### Named clients
-
-Clients can be given a name.
-A name is a logical identifier which can be used to associate clients with a particular provider.
-If a name has no associated provider, the global provider is used.
+### Domains
+Clients can be assigned to a domain. A domain is a logical identifier which can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
 
 ```go
 import "github.com/open-feature/go-sdk/openfeature"
@@ -209,6 +206,7 @@ clientWithDefault := openfeature.NewClient("")
 // A Client backed by NewCachedProvider
 clientForCache := openfeature.NewClient("clientForCache")
 ```
+
 
 ### Eventing
 

@@ -42,8 +42,8 @@ func newEventExecutor(logger logr.Logger) *eventExecutor {
 	return &executor
 }
 
-// scopedCallback is a helper struct to hold client name associated callbacks.
-// Here, the scope correlates to the client and provider name
+// scopedCallback is a helper struct to hold client domain associated callbacks.
+// Here, the scope correlates to the client and provider domain
 type scopedCallback struct {
 	scope     string
 	callbacks map[EventType][]EventCallback
@@ -111,16 +111,16 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 }
 
 // registerClientHandler registers a client level handler
-func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c EventCallback) {
+func (e *eventExecutor) registerClientHandler(clientDomain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.scopedRegistry[clientName]
+	_, ok := e.scopedRegistry[clientDomain]
 	if !ok {
-		e.scopedRegistry[clientName] = newScopedCallback(clientName)
+		e.scopedRegistry[clientDomain] = newScopedCallback(clientDomain)
 	}
 
-	registry := e.scopedRegistry[clientName]
+	registry := e.scopedRegistry[clientDomain]
 
 	if registry.callbacks[t] == nil {
 		registry.callbacks[t] = []EventCallback{c}
@@ -128,7 +128,7 @@ func (e *eventExecutor) registerClientHandler(clientName string, t EventType, c 
 		registry.callbacks[t] = append(registry.callbacks[t], c)
 	}
 
-	reference, ok := e.namedProviderReference[clientName]
+	reference, ok := e.namedProviderReference[clientDomain]
 	if !ok {
 		// fallback to default
 		reference = e.defaultProviderReference

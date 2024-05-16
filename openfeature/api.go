@@ -70,8 +70,8 @@ func (api *evaluationAPI) getProvider() FeatureProvider {
 	return api.defaultProvider
 }
 
-// setProvider sets a provider with client name. Returns an error if FeatureProvider is nil
-func (api *evaluationAPI) setNamedProvider(clientName string, provider FeatureProvider, async bool) error {
+// setProvider sets a provider with client domain. Returns an error if FeatureProvider is nil
+func (api *evaluationAPI) setNamedProvider(clientDomain string, provider FeatureProvider, async bool) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
@@ -81,15 +81,15 @@ func (api *evaluationAPI) setNamedProvider(clientName string, provider FeaturePr
 
 	// Initialize new named provider and shutdown the old one
 	// Provider update must be non-blocking, hence initialization & shutdown happens concurrently
-	oldProvider := api.namedProviders[clientName]
-	api.namedProviders[clientName] = provider
+	oldProvider := api.namedProviders[clientDomain]
+	api.namedProviders[clientDomain] = provider
 
 	err := api.initNewAndShutdownOld(provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
 
-	err = api.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	err = api.eventExecutor.registerNamedEventingProvider(clientDomain, provider)
 	if err != nil {
 		return err
 	}
@@ -159,14 +159,14 @@ func (api *evaluationAPI) getHooks() []Hook {
 }
 
 // forTransaction is a helper to retrieve transaction(flag evaluation) scoped operators.
-// Returns the default FeatureProvider if no provider mapping exist for the given client name.
-func (api *evaluationAPI) forTransaction(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
+// Returns the default FeatureProvider if no provider mapping exist for the given client domain.
+func (api *evaluationAPI) forTransaction(clientDomain string) (FeatureProvider, []Hook, EvaluationContext) {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
 	var provider FeatureProvider
 
-	provider = api.namedProviders[clientName]
+	provider = api.namedProviders[clientDomain]
 	if provider == nil {
 		provider = api.defaultProvider
 	}

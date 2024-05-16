@@ -50,7 +50,13 @@ func NewClientMetadata(name string) ClientMetadata {
 }
 
 // Name returns the client's name
+// Deprecated: Name() exists for historical compatibility, use Domain() instead.
 func (cm ClientMetadata) Name() string {
+	return cm.name
+}
+
+// Domain returns the client's domain
+func (cm ClientMetadata) Domain() string {
 	return cm.name
 }
 
@@ -67,9 +73,9 @@ type Client struct {
 var _ IClient = (*Client)(nil)
 
 // NewClient returns a new Client. Name is a unique identifier for this client
-func NewClient(name string) *Client {
+func NewClient(domain string) *Client {
 	return &Client{
-		metadata:          ClientMetadata{name: name},
+		metadata:          ClientMetadata{name: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 		logger:            globalLogger,
@@ -100,12 +106,12 @@ func (c *Client) AddHooks(hooks ...Hook) {
 
 // AddHandler allows to add Client level event handler
 func (c *Client) AddHandler(eventType EventType, callback EventCallback) {
-	addClientHandler(c.metadata.Name(), eventType, callback)
+	addClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // RemoveHandler allows to remove Client level event handler
 func (c *Client) RemoveHandler(eventType EventType, callback EventCallback) {
-	removeClientHandler(c.metadata.Name(), eventType, callback)
+	removeClientHandler(c.metadata.Domain(), eventType, callback)
 }
 
 // SetEvaluationContext sets the client's evaluation context

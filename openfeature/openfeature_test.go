@@ -214,7 +214,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 		}
 	})
 
-	t.Run("ignore shutdown for multiple references - name client bound", func(t *testing.T) {
+	t.Run("ignore shutdown for multiple references - domain client bound", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		// setup
@@ -393,8 +393,8 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 	})
 }
 
-// The `API` MUST provide a function to bind a given `provider` to one or more client `name`s.
-// If the client-name already has a bound provider, it is overwritten with the new mapping.
+// The `API` MUST provide a function to bind a given `provider` to one or more client `domain`s.
+// If the client-domain already has a bound provider, it is overwritten with the new mapping.
 func TestRequirement_1_1_3(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
@@ -445,7 +445,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
 	}
 
-	// Validate overriding: If the client-name already has a bound provider, it is overwritten with the new mapping.
+	// Validate overriding: If the client-domain already has a bound provider, it is overwritten with the new mapping.
 
 	providerB2 := NewMockFeatureProvider(ctrl)
 	providerB2.EXPECT().Metadata().Return(Metadata{Name: "providerB2"}).AnyTimes()
@@ -495,7 +495,7 @@ func TestRequirement_1_1_5(t *testing.T) {
 }
 
 // The `API` MUST provide a function for creating a `client` which accepts the following options:
-// - name (optional): A logical string identifier for the client.
+// - domain (optional): A logical string identifier for the client.
 func TestRequirement_1_1_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 	NewClient("test-client")
@@ -563,7 +563,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		registry := getClientRegistry(clientName)
 
 		if registry == nil {
-			t.Fatalf("no event handler registry present for client name %s", clientName)
+			t.Fatalf("no event handler registry present for client domain %s", clientName)
 		}
 
 		if len(registry.callbacks[ProviderReady]) < 1 {
@@ -661,7 +661,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 // Non-spec bound validations
 
-// If there is no client name bound provider, then return the default provider
+// If there is no client domain bound provider, then return the default provider
 func TestDefaultClientUsage(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
