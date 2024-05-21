@@ -58,7 +58,7 @@ jobs:
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4.4.0
+        uses: codecov/codecov-action@v4.4.1
         with:
           name: Code Coverage for GO SDK
           fail_ci_if_error: true
