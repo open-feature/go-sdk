@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.12.0](https://github.com/open-feature/go-sdk/compare/v1.11.0...v1.12.0) (2024-05-29)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module github.com/cucumber/godog to v0.14.1 ([#267](https://github.com/open-feature/go-sdk/issues/267)) ([2cf5717](https://github.com/open-feature/go-sdk/commit/2cf5717eadbeff55923ae7a77428c03c3c9f6a70))
+* **deps:** update module github.com/go-logr/logr to v1.4.2 ([#275](https://github.com/open-feature/go-sdk/issues/275)) ([aeb4f6c](https://github.com/open-feature/go-sdk/commit/aeb4f6c96535f379252afe797a2af5b0e88cec36))
+* **deps:** update module golang.org/x/exp to v0.0.0-20240416160154-fe59bbe5cc7f ([#269](https://github.com/open-feature/go-sdk/issues/269)) ([45596a5](https://github.com/open-feature/go-sdk/commit/45596a5e063351e86ca178bac226d8950b51bbcd))
+* **deps:** update module golang.org/x/exp to v0.0.0-20240506185415-9bf2ced13842 ([#272](https://github.com/open-feature/go-sdk/issues/272)) ([1c07c5b](https://github.com/open-feature/go-sdk/commit/1c07c5bdfce2d8fc99cf008b2e57b9262ffa4032))
+* **deps:** update module golang.org/x/text to v0.15.0 ([#271](https://github.com/open-feature/go-sdk/issues/271)) ([dc28442](https://github.com/open-feature/go-sdk/commit/dc28442da78a8adadab7cad984549439ad864722))
+
+
+### ✨ New Features
+
+* Implement domain scoping ([#261](https://github.com/open-feature/go-sdk/issues/261)) ([a9e19dd](https://github.com/open-feature/go-sdk/commit/a9e19dd5ec52bf8d84a8b2e2f6d263d841059d61))
+* isolate interfaces from SDK to improve testability  ([#268](https://github.com/open-feature/go-sdk/issues/268)) ([5e06c45](https://github.com/open-feature/go-sdk/commit/5e06c45fc9b2df1535a4a5d035b7b0c0412e6e6a))
+
+
+### 🧹 Chore
+
+* bump Go to version 1.20 ([#255](https://github.com/open-feature/go-sdk/issues/255)) ([fbec799](https://github.com/open-feature/go-sdk/commit/fbec7995ba57ba407cc43dcba0c4c558ddb0324f))
+* **deps:** update codecov/codecov-action action to v4 ([#250](https://github.com/open-feature/go-sdk/issues/250)) ([a488697](https://github.com/open-feature/go-sdk/commit/a48869773e683bdc95dc61722419b95dba271b71))
+* **deps:** update codecov/codecov-action action to v4.3.1 ([#270](https://github.com/open-feature/go-sdk/issues/270)) ([080a87b](https://github.com/open-feature/go-sdk/commit/080a87bfcac887c65b81fc5141d57000d407eec5))
+* **deps:** update codecov/codecov-action action to v4.4.0 ([#273](https://github.com/open-feature/go-sdk/issues/273)) ([266cfc0](https://github.com/open-feature/go-sdk/commit/266cfc069ca674b3de0915c58106e772fd0a5867))
+* **deps:** update codecov/codecov-action action to v4.4.1 ([#274](https://github.com/open-feature/go-sdk/issues/274)) ([c4ca1a8](https://github.com/open-feature/go-sdk/commit/c4ca1a8e6f8fb2f968e15cc961de2a6741a0a431))
+* **deps:** update goreleaser/goreleaser-action action to v5 ([#219](https://github.com/open-feature/go-sdk/issues/219)) ([71854d4](https://github.com/open-feature/go-sdk/commit/71854d424c6c18ca89179ee0a802936935754a1b))
+
 ## [1.11.0](https://github.com/open-feature/go-sdk/compare/v1.10.0...v1.11.0) (2024-04-09)
 
 
