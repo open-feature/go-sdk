@@ -228,7 +228,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 		flagKey:           flagKey,
 		flagType:          String,
 		defaultValue:      defaultValue,
-		clientMetadata:    client.metadata,
+		clientMetadata:    client.Metadata(),
 		providerMetadata:  mockProvider.Metadata(),
 		evaluationContext: evalCtx,
 	}

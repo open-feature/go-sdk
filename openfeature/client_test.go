@@ -416,7 +416,6 @@ func TestRequirement_1_4_8(t *testing.T) {
 // The MUST NOT abnormally terminate clause of this requirement is satisfied by the error included in the return
 // signatures, as is idiomatic in Go. Errors aren't fatal, the operations won't terminate as a result of an error.
 func TestRequirement_1_4_9(t *testing.T) {
-	client := NewClient("test-client")
 	flagKey := "flag-key"
 	evalCtx := EvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
@@ -425,6 +424,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 	t.Run("Boolean", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -463,6 +464,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 	t.Run("String", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := "default"
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -501,6 +504,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 	t.Run("Float", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := 3.14159
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -539,6 +544,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 	t.Run("Int", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		var defaultValue int64 = 3
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -577,6 +584,8 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 	t.Run("Object", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		type obj struct {
 			foo string
@@ -670,7 +679,6 @@ func TestRequirement_1_4_12(t *testing.T) {
 // the `evaluation details` structure's `flag metadata` field MUST contain that value. Otherwise,
 // it MUST contain an empty record.
 func TestRequirement_1_4_13(t *testing.T) {
-	client := NewClient("test-client")
 	flagKey := "flag-key"
 	evalCtx := EvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
@@ -678,6 +686,8 @@ func TestRequirement_1_4_13(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	t.Run("No Metadata", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -709,6 +719,8 @@ func TestRequirement_1_4_13(t *testing.T) {
 
 	t.Run("Metadata present", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
+
+		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		metadata := FlagMetadata{
@@ -818,7 +830,7 @@ func TestFlattenContext(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			out := flattenContext(test.inCtx)
 			if !reflect.DeepEqual(test.outCtx, out) {
-				t.Fatalf(
+				t.Errorf(
 					"%s, unexpected value received from flatten context, expected %v got %v",
 					name,
 					test.outCtx,
@@ -855,7 +867,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 		context.Background(), "foo", false, evalCtx, WithHooks(hookNilContext),
 	)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 

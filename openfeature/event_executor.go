@@ -10,6 +10,21 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// eventingImpl is an internal reference interface extending IEventing
+type eventingImpl interface {
+	IEventing
+	GetAPIRegistry() map[EventType][]EventCallback
+	GetClientRegistry(client string) scopedCallback
+
+	clientEvent
+}
+
+// clientEvent is an internal reference for OpenFeature Client events
+type clientEvent interface {
+	AddClientHandler(clientName string, t EventType, c EventCallback)
+	RemoveClientHandler(name string, t EventType, c EventCallback)
+}
+
 // event executor is a registry to connect API and Client event handlers to Providers
 
 // eventExecutor handles events emitted from FeatureProvider. It follows a pub-sub model based on channels.
@@ -49,9 +64,8 @@ type scopedCallback struct {
 	callbacks map[EventType][]EventCallback
 }
 
-type eventPayload struct {
-	event   Event
-	handler FeatureProvider
+func (s *scopedCallback) eventCallbacks() map[EventType][]EventCallback {
+	return s.callbacks
 }
 
 func newScopedCallback(client string) scopedCallback {
@@ -59,6 +73,11 @@ func newScopedCallback(client string) scopedCallback {
 		scope:     client,
 		callbacks: map[EventType][]EventCallback{},
 	}
+}
+
+type eventPayload struct {
+	event   Event
+	handler FeatureProvider
 }
 
 // providerReference is a helper struct to store FeatureProvider with EventHandler capability along with their
@@ -76,8 +95,8 @@ func (e *eventExecutor) updateLogger(l logr.Logger) {
 	e.logger = l
 }
 
-// registerApiHandler adds an API(global) level handler
-func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
+// AddHandler adds an API(global) level handler
+func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -90,8 +109,8 @@ func (e *eventExecutor) registerApiHandler(t EventType, c EventCallback) {
 	e.emitOnRegistration(e.defaultProviderReference, t, c)
 }
 
-// removeApiHandler removes an API(global) level handler
-func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
+// RemoveHandler removes an API(global) level handler
+func (e *eventExecutor) RemoveHandler(t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -110,8 +129,8 @@ func (e *eventExecutor) removeApiHandler(t EventType, c EventCallback) {
 	e.apiRegistry[t] = entrySlice
 }
 
-// registerClientHandler registers a client level handler
-func (e *eventExecutor) registerClientHandler(clientDomain string, t EventType, c EventCallback) {
+// AddClientHandler registers a client level handler
+func (e *eventExecutor) AddClientHandler(clientDomain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -137,8 +156,8 @@ func (e *eventExecutor) registerClientHandler(clientDomain string, t EventType, 
 	e.emitOnRegistration(reference, t, c)
 }
 
-// removeClientHandler removes a client level handler
-func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCallback) {
+// RemoveClientHandler removes a client level handler
+func (e *eventExecutor) RemoveClientHandler(name string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -161,6 +180,14 @@ func (e *eventExecutor) removeClientHandler(name string, t EventType, c EventCal
 	}
 
 	e.scopedRegistry[name].callbacks[t] = entrySlice
+}
+
+func (e *eventExecutor) GetAPIRegistry() map[EventType][]EventCallback {
+	return e.apiRegistry
+}
+
+func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
+	return e.scopedRegistry[client]
 }
 
 // emitOnRegistration fulfils the spec requirement to fire events if the
