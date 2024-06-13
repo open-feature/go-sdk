@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.1](https://github.com/open-feature/go-sdk/compare/v1.12.0...v1.12.1) (2024-06-13)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module golang.org/x/text to v0.16.0 ([#277](https://github.com/open-feature/go-sdk/issues/277)) ([80c0235](https://github.com/open-feature/go-sdk/commit/80c0235d26250a739781729855cb0264e19a4409))
+
+
+### 🧹 Chore
+
+* **deps:** update codecov/codecov-action action to v4.5.0 ([#279](https://github.com/open-feature/go-sdk/issues/279)) ([881e019](https://github.com/open-feature/go-sdk/commit/881e019c67873f4b5477355ad90d26cd4530d017))
+
 ## [1.12.0](https://github.com/open-feature/go-sdk/compare/v1.11.0...v1.12.0) (2024-05-29)
 
 
