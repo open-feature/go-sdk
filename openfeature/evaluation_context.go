@@ -65,7 +65,17 @@ func NewTargetlessEvaluationContext(attributes map[string]interface{}) Evaluatio
 // ctx - the context to embed the EvaluationContext in
 // ec - the EvaluationContext to embed into the context
 func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
-	return context.WithValue(ctx, internal.TransactionContextKey, ec)
+	return context.WithValue(ctx, internal.TransactionContext, ec)
+}
+
+// MergeTransactionContext merges the provided EvaluationContext with the current TransactionContext (if it exists)
+//
+// ctx - the context to pull existing TransactionContext from
+// ec - the EvaluationContext to merge with the existing TransactionContext
+func MergeTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
+	oldTc := TransactionContext(ctx)
+	mergedTc := mergeContexts(ec, oldTc)
+	return WithTransactionContext(ctx, mergedTc)
 }
 
 // TransactionContext extracts a EvaluationContext from the current
@@ -74,7 +84,7 @@ func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.C
 //
 // ctx - the context to pull EvaluationContext from
 func TransactionContext(ctx context.Context) EvaluationContext {
-	ec, ok := ctx.Value(internal.TransactionContextKey).(EvaluationContext)
+	ec, ok := ctx.Value(internal.TransactionContext).(EvaluationContext)
 
 	if !ok {
 		return EvaluationContext{}

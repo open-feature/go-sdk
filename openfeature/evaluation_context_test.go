@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -200,5 +201,46 @@ func TestNewTargetlessEvaluationContext(t *testing.T) {
 
 	if !reflect.DeepEqual(evalCtx.Attributes(), attributes) {
 		t.Errorf("we expect no difference in the attributes")
+	}
+}
+
+func TestMergeTransactionContext(t *testing.T) {
+	oldEvalCtx := NewEvaluationContext("old", map[string]interface{}{
+		"old":       true,
+		"overwrite": "old",
+	})
+	newEvalCtx := NewEvaluationContext("new", map[string]interface{}{
+		"new":       true,
+		"overwrite": "new",
+	})
+
+	ctx := WithTransactionContext(context.Background(), oldEvalCtx)
+	ctx = MergeTransactionContext(ctx, newEvalCtx)
+
+	expectedMergedEvalCtx := EvaluationContext{
+		targetingKey: "new",
+		attributes: map[string]interface{}{
+			"old":       true,
+			"new":       true,
+			"overwrite": "new",
+		},
+	}
+
+	finalTransactionContext := TransactionContext(ctx)
+
+	if finalTransactionContext.targetingKey != expectedMergedEvalCtx.targetingKey {
+		t.Errorf(
+			"targetingKey is not expected value, finalTransactionContext.targetingKey: %s, newEvalCtx.targetingKey: %s",
+			finalTransactionContext.TargetingKey(),
+			expectedMergedEvalCtx.TargetingKey(),
+		)
+	}
+
+	if !reflect.DeepEqual(finalTransactionContext.Attributes(), expectedMergedEvalCtx.Attributes()) {
+		t.Errorf(
+			"attributes are not expected value, finalTransactionContext.Attributes(): %v, expectedMergedEvalCtx.Attributes(): %v",
+			finalTransactionContext.Attributes(),
+			expectedMergedEvalCtx.Attributes(),
+		)
 	}
 }
