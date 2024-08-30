@@ -2,7 +2,6 @@ package openfeature
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
