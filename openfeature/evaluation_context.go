@@ -60,21 +60,21 @@ func NewTargetlessEvaluationContext(attributes map[string]interface{}) Evaluatio
 	return NewEvaluationContext("", attributes)
 }
 
-// NewTranscationContext constructs a TranscationContext
+// NewTransactionContext constructs a TransactionContext
 //
 // ctx - the context to embed the EvaluationContext in
 // ec - the EvaluationContext to embed into the context
-func WithTranscationContext(ctx context.Context, ec EvaluationContext) context.Context {
-	return context.WithValue(ctx, internal.TranscationContextKey, ec)
+func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
+	return context.WithValue(ctx, internal.TransactionContextKey, ec)
 }
 
-// TranscationContext extracts a EvaluationContext from the current
+// TransactionContext extracts a EvaluationContext from the current
 // golang.org/x/net/context. if no EvaluationContext exist, it will construct
 // an empty EvaluationContext
 //
 // ctx - the context to pull EvaluationContext from
-func TranscationContext(ctx context.Context) EvaluationContext {
-	ec, ok := ctx.Value(internal.TranscationContextKey).(EvaluationContext)
+func TransactionContext(ctx context.Context) EvaluationContext {
+	ec, ok := ctx.Value(internal.TransactionContextKey).(EvaluationContext)
 
 	if !ok {
 		return EvaluationContext{}

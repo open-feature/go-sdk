@@ -107,7 +107,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 			"user":               2,
 		},
 	}
-	transactionCtx := WithTranscationContext(context.Background(), transactionEvalCtx)
+	transactionCtx := WithTransactionContext(context.Background(), transactionEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -172,7 +172,7 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 
 func TestRequirement_3_3_1(t *testing.T) {
 	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
-		WithTranscationContext(context.Background(), EvaluationContext{})
+		WithTransactionContext(context.Background(), EvaluationContext{})
 	})
 }
 
