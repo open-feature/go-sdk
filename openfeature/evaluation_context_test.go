@@ -83,7 +83,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 	})
 }
 
-// Evaluation context MUST be merged in the order: API (global) - client - invocation,
+// Evaluation context MUST be merged in the order: API (global) - transaction - client - invocation,
 // with duplicate values being overwritten.
 func TestRequirement_3_2_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
@@ -93,11 +93,21 @@ func TestRequirement_3_2_2(t *testing.T) {
 		targetingKey: "API",
 		attributes: map[string]interface{}{
 			"invocationEvalCtx": true,
-			"foo":               2,
-			"user":              2,
+			"foo":               3,
+			"user":              3,
 		},
 	}
 	SetEvaluationContext(apiEvalCtx)
+
+	transactionEvalCtx := EvaluationContext{
+		targetingKey: "Transcation",
+		attributes: map[string]interface{}{
+			"transactionEvalCtx": true,
+			"foo":                2,
+			"user":               2,
+		},
+	}
+	transactionCtx := WithTranscationContext(context.Background(), transactionEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -130,21 +140,21 @@ func TestRequirement_3_2_2(t *testing.T) {
 	expectedMergedEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]interface{}{
-			"apiEvalCtx":        true,
-			"invocationEvalCtx": true,
-			"clientEvalCtx":     true,
-			"foo":               "bar",
-			"user":              1,
+			"apiEvalCtx":         true,
+			"transactionEvalCtx": true,
+			"invocationEvalCtx":  true,
+			"clientEvalCtx":      true,
+			"foo":                "bar",
+			"user":               1,
 		},
 	}
 	flatCtx := flattenContext(expectedMergedEvalCtx)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), flatCtx)
 
-	_, err = client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx)
+	_, err = client.StringValue(transactionCtx, "foo", "bar", invocationEvalCtx)
 	if err != nil {
 		t.Error(err)
 	}
-
 }
 
 func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
@@ -158,6 +168,12 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 	if _, ok := evalCtx.attributes["immutabilityCheck"]; ok {
 		t.Error("mutation of map passed to NewEvaluationContext caused a mutation of its attributes field")
 	}
+}
+
+func TestRequirement_3_3_1(t *testing.T) {
+	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
+		WithTranscationContext(context.Background(), EvaluationContext{})
+	})
 }
 
 func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {

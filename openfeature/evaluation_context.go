@@ -1,5 +1,11 @@
 package openfeature
 
+import (
+	"context"
+
+	"github.com/open-feature/go-sdk/openfeature/internal"
+)
+
 // EvaluationContext provides ambient information for the purposes of flag evaluation
 // The use of the constructor, NewEvaluationContext, is enforced to set EvaluationContext's fields in order
 // to enforce immutability.
@@ -52,4 +58,27 @@ func NewEvaluationContext(targetingKey string, attributes map[string]interface{}
 // attributes - contextual data used in flag evaluation
 func NewTargetlessEvaluationContext(attributes map[string]interface{}) EvaluationContext {
 	return NewEvaluationContext("", attributes)
+}
+
+// NewTranscationContext constructs a TranscationContext
+//
+// ctx - the context to embed the EvaluationContext in
+// ec - the EvaluationContext to embed into the context
+func WithTranscationContext(ctx context.Context, ec EvaluationContext) context.Context {
+	return context.WithValue(ctx, internal.TranscationContextKey, ec)
+}
+
+// TranscationContext extracts a EvaluationContext from the current
+// golang.org/x/net/context. if no EvaluationContext exist, it will construct
+// an empty EvaluationContext
+//
+// ctx - the context to pull EvaluationContext from
+func TranscationContext(ctx context.Context) EvaluationContext {
+	ec, ok := ctx.Value(internal.TranscationContextKey).(EvaluationContext)
+
+	if !ok {
+		return EvaluationContext{}
+	}
+
+	return ec
 }
