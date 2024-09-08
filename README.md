@@ -255,7 +255,7 @@ openfeature.Shutdown()
 ### Transaction Context Propagation
 
 Transaction context is a container for transaction-specific evaluation context (e.g. user id, user agent, IP).
-Transaction context can be set where specific data is available (e.g. an auth service or request handler) and by using the transaction context propagator it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread).
+Transaction context can be set where specific data is available (e.g. an auth service or request handler), and by using the transaction context propagator, it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread).
 
 ```go
 import "github.com/open-feature/go-sdk/openfeature"
