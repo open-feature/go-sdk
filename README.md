@@ -268,7 +268,10 @@ ec := openfeature.TransactionContext(ctx)
 
 // merge an EvaluationContext with the existing TransactionContext, preferring
 // the context that is passed to MergeTransactionContext
-ctx := openfeature.MergeTransactionContext(ctx, openfeature.EvaluationContext{})
+tCtx := openfeature.MergeTransactionContext(ctx, openfeature.EvaluationContext{})
+
+// use TransactionContext in a flag evaluation
+client.BooleanValue(tCtx, ....)
 ```
 
 ## Extending

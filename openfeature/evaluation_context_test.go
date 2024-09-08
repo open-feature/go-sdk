@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,
@@ -172,7 +173,13 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 
 func TestRequirement_3_3_1(t *testing.T) {
 	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
-		WithTransactionContext(context.Background(), EvaluationContext{})
+		ctx := context.Background()
+		ctx = WithTransactionContext(ctx, EvaluationContext{})
+		val, ok := ctx.Value(internal.TransactionContext).(EvaluationContext)
+
+		if !ok {
+			t.Fatalf("failed to find transcation context set from WithTransactionContext: %v", val)
+		}
 	})
 }
 
