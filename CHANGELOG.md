@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.13.0](https://github.com/open-feature/go-sdk/compare/v1.12.0...v1.13.0) (2024-09-09)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module golang.org/x/text to v0.16.0 ([#277](https://github.com/open-feature/go-sdk/issues/277)) ([80c0235](https://github.com/open-feature/go-sdk/commit/80c0235d26250a739781729855cb0264e19a4409))
+* **deps:** update module golang.org/x/text to v0.18.0 ([#281](https://github.com/open-feature/go-sdk/issues/281)) ([ad9db29](https://github.com/open-feature/go-sdk/commit/ad9db29564e84b9c8c9bc51c9a3b0a8f93b8f2e6))
+
+
+### ✨ New Features
+
+* add TransactionContext ([#283](https://github.com/open-feature/go-sdk/issues/283)) ([788151d](https://github.com/open-feature/go-sdk/commit/788151d2fdc69429ef1841cba91ad5fc2103e0ca))
+
+
+### 🧹 Chore
+
+* **deps:** update codecov/codecov-action action to v4.5.0 ([#279](https://github.com/open-feature/go-sdk/issues/279)) ([881e019](https://github.com/open-feature/go-sdk/commit/881e019c67873f4b5477355ad90d26cd4530d017))
+
 ## [1.12.0](https://github.com/open-feature/go-sdk/compare/v1.11.0...v1.12.0) (2024-05-29)
 
 
