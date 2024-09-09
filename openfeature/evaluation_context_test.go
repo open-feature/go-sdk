@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,
@@ -83,7 +84,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 	})
 }
 
-// Evaluation context MUST be merged in the order: API (global) - client - invocation,
+// Evaluation context MUST be merged in the order: API (global) - transaction - client - invocation,
 // with duplicate values being overwritten.
 func TestRequirement_3_2_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
@@ -93,11 +94,21 @@ func TestRequirement_3_2_2(t *testing.T) {
 		targetingKey: "API",
 		attributes: map[string]interface{}{
 			"invocationEvalCtx": true,
-			"foo":               2,
-			"user":              2,
+			"foo":               3,
+			"user":              3,
 		},
 	}
 	SetEvaluationContext(apiEvalCtx)
+
+	transactionEvalCtx := EvaluationContext{
+		targetingKey: "Transcation",
+		attributes: map[string]interface{}{
+			"transactionEvalCtx": true,
+			"foo":                2,
+			"user":               2,
+		},
+	}
+	transactionCtx := WithTransactionContext(context.Background(), transactionEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -130,21 +141,21 @@ func TestRequirement_3_2_2(t *testing.T) {
 	expectedMergedEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]interface{}{
-			"apiEvalCtx":        true,
-			"invocationEvalCtx": true,
-			"clientEvalCtx":     true,
-			"foo":               "bar",
-			"user":              1,
+			"apiEvalCtx":         true,
+			"transactionEvalCtx": true,
+			"invocationEvalCtx":  true,
+			"clientEvalCtx":      true,
+			"foo":                "bar",
+			"user":               1,
 		},
 	}
 	flatCtx := flattenContext(expectedMergedEvalCtx)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), flatCtx)
 
-	_, err = client.StringValue(context.Background(), "foo", "bar", invocationEvalCtx)
+	_, err = client.StringValue(transactionCtx, "foo", "bar", invocationEvalCtx)
 	if err != nil {
 		t.Error(err)
 	}
-
 }
 
 func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
@@ -158,6 +169,18 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 	if _, ok := evalCtx.attributes["immutabilityCheck"]; ok {
 		t.Error("mutation of map passed to NewEvaluationContext caused a mutation of its attributes field")
 	}
+}
+
+func TestRequirement_3_3_1(t *testing.T) {
+	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
+		ctx := context.Background()
+		ctx = WithTransactionContext(ctx, EvaluationContext{})
+		val, ok := ctx.Value(internal.TransactionContext).(EvaluationContext)
+
+		if !ok {
+			t.Fatalf("failed to find transcation context set from WithTransactionContext: %v", val)
+		}
+	})
 }
 
 func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {
@@ -184,5 +207,46 @@ func TestNewTargetlessEvaluationContext(t *testing.T) {
 
 	if !reflect.DeepEqual(evalCtx.Attributes(), attributes) {
 		t.Errorf("we expect no difference in the attributes")
+	}
+}
+
+func TestMergeTransactionContext(t *testing.T) {
+	oldEvalCtx := NewEvaluationContext("old", map[string]interface{}{
+		"old":       true,
+		"overwrite": "old",
+	})
+	newEvalCtx := NewEvaluationContext("new", map[string]interface{}{
+		"new":       true,
+		"overwrite": "new",
+	})
+
+	ctx := WithTransactionContext(context.Background(), oldEvalCtx)
+	ctx = MergeTransactionContext(ctx, newEvalCtx)
+
+	expectedMergedEvalCtx := EvaluationContext{
+		targetingKey: "new",
+		attributes: map[string]interface{}{
+			"old":       true,
+			"new":       true,
+			"overwrite": "new",
+		},
+	}
+
+	finalTransactionContext := TransactionContext(ctx)
+
+	if finalTransactionContext.targetingKey != expectedMergedEvalCtx.targetingKey {
+		t.Errorf(
+			"targetingKey is not expected value, finalTransactionContext.targetingKey: %s, newEvalCtx.targetingKey: %s",
+			finalTransactionContext.TargetingKey(),
+			expectedMergedEvalCtx.TargetingKey(),
+		)
+	}
+
+	if !reflect.DeepEqual(finalTransactionContext.Attributes(), expectedMergedEvalCtx.Attributes()) {
+		t.Errorf(
+			"attributes are not expected value, finalTransactionContext.Attributes(): %v, expectedMergedEvalCtx.Attributes(): %v",
+			finalTransactionContext.Attributes(),
+			expectedMergedEvalCtx.Attributes(),
+		)
 	}
 }

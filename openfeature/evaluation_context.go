@@ -1,5 +1,11 @@
 package openfeature
 
+import (
+	"context"
+
+	"github.com/open-feature/go-sdk/openfeature/internal"
+)
+
 // EvaluationContext provides ambient information for the purposes of flag evaluation
 // The use of the constructor, NewEvaluationContext, is enforced to set EvaluationContext's fields in order
 // to enforce immutability.
@@ -52,4 +58,37 @@ func NewEvaluationContext(targetingKey string, attributes map[string]interface{}
 // attributes - contextual data used in flag evaluation
 func NewTargetlessEvaluationContext(attributes map[string]interface{}) EvaluationContext {
 	return NewEvaluationContext("", attributes)
+}
+
+// NewTransactionContext constructs a TransactionContext
+//
+// ctx - the context to embed the EvaluationContext in
+// ec - the EvaluationContext to embed into the context
+func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
+	return context.WithValue(ctx, internal.TransactionContext, ec)
+}
+
+// MergeTransactionContext merges the provided EvaluationContext with the current TransactionContext (if it exists)
+//
+// ctx - the context to pull existing TransactionContext from
+// ec - the EvaluationContext to merge with the existing TransactionContext
+func MergeTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
+	oldTc := TransactionContext(ctx)
+	mergedTc := mergeContexts(ec, oldTc)
+	return WithTransactionContext(ctx, mergedTc)
+}
+
+// TransactionContext extracts a EvaluationContext from the current
+// golang.org/x/net/context. if no EvaluationContext exist, it will construct
+// an empty EvaluationContext
+//
+// ctx - the context to pull EvaluationContext from
+func TransactionContext(ctx context.Context) EvaluationContext {
+	ec, ok := ctx.Value(internal.TransactionContext).(EvaluationContext)
+
+	if !ok {
+		return EvaluationContext{}
+	}
+
+	return ec
 }
