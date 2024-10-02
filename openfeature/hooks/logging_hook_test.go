@@ -7,12 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"log/slog"
+
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
-	"golang.org/x/exp/slog"
 )
 
-// LoggingHook initializes correctly with valid parameters
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	hook := LoggingHook{
@@ -29,7 +29,6 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	}
 }
 
-// LoggingHook handles nil logger gracefully
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
 	hook := LoggingHook{
 		includeEvaluationContext: false,
@@ -45,30 +44,23 @@ func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
 	}
 }
 
-type testHandler struct {
-	logs []string
-}
-
-func (h *testHandler) Handle(ctx context.Context, r slog.Record) error {
-	var buf bytes.Buffer
-	slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}).Handle(ctx, r)
-	h.logs = append(h.logs, buf.String())
-	return nil
-}
-
-func (h *testHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return h
-}
-
-func (h *testHandler) WithGroup(name string) slog.Handler {
-	return h
-}
-
-func (h *testHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return true
-}
-
 func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
+	// handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+	// handler := &testHandler{}
+	var buf bytes.Buffer
+	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(handler)
+
+	hook := LoggingHook{
+		includeEvaluationContext: false,
+		logger:                   logger,
+	}
+
+	// Check if resultMap contains all key-value pairs from expected
+	testLoggingHookLogsMessagesAsExpected(hook, logger, t, buf)
+}
+
+func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T) {
 	// handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
 	// handler := &testHandler{}
 	var buf bytes.Buffer
@@ -80,6 +72,11 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 		logger:                   logger,
 	}
 
+	// Check if resultMap contains all key-value pairs from expected
+	testLoggingHookLogsMessagesAsExpected(hook, logger, t, buf)
+}
+
+func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger, t *testing.T, buf bytes.Buffer) {
 	if hook.logger != logger {
 		t.Errorf("Expected logger to be %v, got %v", logger, hook.logger)
 	}
@@ -141,8 +138,6 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 			ms[m["msg"].(string)] = m
 		}
 
-		// slog.Info("ms", "ms", ms)
-
 		var expected = map[string]map[string]any{
 			"Before stage": {
 				"provider_name": "InMemoryProvider",
@@ -151,7 +146,6 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 			},
 		}
 
-		// Check if resultMap contains all key-value pairs from expected
 		for key, expectedInnerMap := range expected {
 			resultInnerMap, exists := ms[key]
 			if !exists {
@@ -169,56 +163,26 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 				}
 
 				if hook.includeEvaluationContext {
-					_, exists := resultInnerMap[EVALUATION_CONTEXT_KEY]
+					evaluationContext, exists := resultInnerMap[EVALUATION_CONTEXT_KEY]
 					if !exists {
 						t.Errorf("Inner key %s not found in resultMap[%s]", EVALUATION_CONTEXT_KEY, key)
+					}
+					attributes, attributesExists := evaluationContext.(map[string]any)["Attributes"]
+					if !attributesExists {
+						t.Errorf("attributes do not exist")
+					}
+					color, colorExists := attributes.(map[string]any)["color"]
+					if !colorExists {
+						t.Errorf("color not exist")
+					}
+					if color != "green" {
+						t.Errorf("expected green color in evaluationContext")
+					}
+					if evaluationContext.(map[string]any)["TargetingKey"] != "target1" {
+						t.Errorf("expected TargetingKey in evaluationContext")
 					}
 				}
 			}
 		}
 	})
 }
-
-// LoggingHook includes evaluation context when specified
-func TestLoggingHookIncludesEvaluationContextWhenSpecified(t *testing.T) {
-	// Initialize LoggingHook with includeEvaluationContext set to true
-
-	// Mock slog.Logger
-
-	// Call the function that includes evaluation context
-
-	// Assert the evaluation context is included in the logging
-}
-
-// LoggingHook does not include evaluation context when not specified
-func TestLoggingHookDoesNotIncludeEvaluationContextWhenNotSpecified(t *testing.T) {
-	// Initialize LoggingHook with includeEvaluationContext set to false
-
-	// Mock slog.Logger
-
-	// Call the function that does not include evaluation context
-
-	// Assert the evaluation context is not included in the logging
-}
-
-// func TestLoggingHookEmptyLogger(t *testing.T) {
-// 	// Initialize LoggingHook with empty logger
-// 	hook := LoggingHook{
-// 		includeEvaluationContext: true,
-// 		logger:                   nil,
-// 	}
-
-// 	// Perform the test logic here
-// 	// Assert that the hook handles empty logger gracefully
-// }
-
-// func TestLoggingHookInvalidLoggerConfig(t *testing.T) {
-// 	// Initialize LoggingHook with invalid logger configurations
-// 	hook := LoggingHook{
-// 		includeEvaluationContext: false,
-// 		logger:                   &slog.Logger{}, // Invalid logger configuration
-// 	}
-
-// 	// Perform the test logic here
-// 	// Assert that the hook handles invalid logger configurations
-// }

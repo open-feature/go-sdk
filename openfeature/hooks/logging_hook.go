@@ -3,9 +3,10 @@ package hooks
 import (
 	"context"
 
+	"log/slog"
+
 	"github.com/open-feature/go-sdk/openfeature"
 	of "github.com/open-feature/go-sdk/openfeature"
-	"golang.org/x/exp/slog"
 )
 
 const (
@@ -33,7 +34,12 @@ func NewLoggingHook(logger *slog.Logger, includeEvaluationContext bool) (*Loggin
 	}, nil
 }
 
-func (l LoggingHook) buildArgs(hookContext openfeature.HookContext) []interface{} {
+type MarshaledEvaluationContext struct {
+	TargetingKey string
+	Attributes   map[string]interface{}
+}
+
+func (l LoggingHook) buildArgs(hookContext openfeature.HookContext) ([]interface{}, error) {
 
 	args := []interface{}{
 		DOMAIN_KEY, hookContext.ClientMetadata().Domain(),
@@ -42,22 +48,36 @@ func (l LoggingHook) buildArgs(hookContext openfeature.HookContext) []interface{
 		DEFAULT_VALUE_KEY, hookContext.DefaultValue(),
 	}
 	if l.includeEvaluationContext {
-		args = append(args, EVALUATION_CONTEXT_KEY, hookContext.EvaluationContext())
+		marshaledEvaluationContext := MarshaledEvaluationContext{
+			TargetingKey: hookContext.EvaluationContext().TargetingKey(),
+			Attributes:   hookContext.EvaluationContext().Attributes(),
+		}
+		// evaluationContextJson, err := println("%v", hookContext.EvaluationContext())
+		// if err != nil {
+		// 	return nil, err
+		// }
+		args = append(args, EVALUATION_CONTEXT_KEY, marshaledEvaluationContext)
 	}
 
-	return args
+	return args, nil
 }
 
 func (h *LoggingHook) Before(ctx context.Context, hookContext openfeature.HookContext,
 	hint openfeature.HookHints) (*openfeature.EvaluationContext, error) {
-	var args = h.buildArgs(hookContext)
+	var args, err = h.buildArgs(hookContext)
+	if err != nil {
+		return nil, err
+	}
 	h.logger.Debug("Before stage", args...)
 	return nil, nil
 }
 
 func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 	flagEvaluationDetails of.InterfaceEvaluationDetails, hookHints of.HookHints) error {
-	args := h.buildArgs(hookContext)
+	var args, err = h.buildArgs(hookContext)
+	if err != nil {
+		return err
+	}
 	args = append(args, REASON_KEY, flagEvaluationDetails.Reason)
 	args = append(args, VARIANT_KEY, flagEvaluationDetails.Variant)
 	args = append(args, VALUE_KEY, flagEvaluationDetails.Value)
@@ -66,7 +86,10 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 }
 
 func (h *LoggingHook) Error(ctx context.Context, hookContext openfeature.HookContext, err error, hint openfeature.HookHints) {
-	args := h.buildArgs(hookContext)
+	var args, _ = h.buildArgs(hookContext)
+	// if e != nil { // TODO ??
+	// 	return nil, err
+	// }
 	args = append(args, ERROR_CODE_KEY, err) // TODO ??
 	h.logger.Error("Error stage", args...)
 }
