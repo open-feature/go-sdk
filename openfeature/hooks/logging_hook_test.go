@@ -182,9 +182,6 @@ func prepareOutput(buf *bytes.Buffer, t *testing.T) map[string]map[string]any {
 		if err := json.Unmarshal(line, &m); err != nil {
 			t.Fatal(err)
 		}
-
-		slog.Info("object", "m", m)
-
 		ms[m["msg"].(string)] = m
 	}
 	return ms

@@ -51,10 +51,10 @@ var _ IClient = (*Client)(nil)
 // NewClient returns a new Client. Name is a unique identifier for this client
 // This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
 func NewClient(name string) *Client {
-	return newClient(name, api, eventing, logger)
+	return newClient(name, api, eventing)
 }
 
-func newClientV2(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
+func newClient(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
 	return &Client{
 		api:               apiRef,
 		clientEventing:    eventRef,
@@ -64,18 +64,7 @@ func newClientV2(name string, apiRef evaluationImpl, eventRef clientEvent) *Clie
 	}
 }
 
-// Deprecated: use func newClientV2(name string, apiRef evaluationImpl, eventRef clientEvent) *Client instead
-func newClient(name string, apiRef evaluationImpl, eventRef clientEvent, log logr.Logger) *Client {
-	return &Client{
-		api:               apiRef,
-		clientEventing:    eventRef,
-		metadata:          ClientMetadata{name: name},
-		hooks:             []Hook{},
-		evaluationContext: EvaluationContext{},
-	}
-}
-
-// Deprecated: use func newClientV2(name string, apiRef evaluationImpl, eventRef clientEvent) *Client instead
+// Deprecated
 // WithLogger sets the logger of the client
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()

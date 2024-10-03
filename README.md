@@ -177,9 +177,6 @@ value, err := client.BooleanValue(
 
 Note that in accordance with the OpenFeature specification, the SDK doesn't generally log messages during flag evaluation.
 
-[logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
-The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
-
 #### Logging Hook
 
 The GO SDK includes a `LoggingHook`, which logs detailed information at key points during flag evaluation, using [slog](https://pkg.go.dev/log/slog) structured logging API.
