@@ -175,21 +175,17 @@ value, err := client.BooleanValue(
 
 ### Logging
 
-The standard Go log package is used by default to show error logs.
-This can be overridden using the structured logging, [logr](https://github.com/go-logr/logr) API, allowing integration to any package.
-There are already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive) for many of the popular logger packages.
-
-```go
-var l logr.Logger
-l = integratedlogr.New() // replace with your chosen integrator
-
-openfeature.SetLogger(l) // set the logger at global level
-
-c := openfeature.NewClient("log").WithLogger(l) // set the logger at client level
-```
+Note that in accordance with the OpenFeature specification, the SDK doesn't generally log messages during flag evaluation.
 
 [logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
 The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
+
+#### Logging Hook
+
+The GO SDK includes a `LoggingHook`, which logs detailed information at key points during flag evaluation, using [slog](https://pkg.go.dev/log/slog) structured logging API.
+This hook can be particularly helpful for troubleshooting and debugging; simply attach it at the global, client or invocation level and ensure your log level is set to "debug".
+
+See [hooks](#hooks) for more information on configuring hooks.
 
 ### Domains
 Clients can be assigned to a domain. A domain is a logical identifier which can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.

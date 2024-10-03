@@ -2,10 +2,8 @@ package hooks
 
 import (
 	"context"
-
 	"log/slog"
 
-	"github.com/open-feature/go-sdk/openfeature"
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
@@ -39,7 +37,7 @@ type MarshaledEvaluationContext struct {
 	Attributes   map[string]interface{}
 }
 
-func (l LoggingHook) buildArgs(hookContext openfeature.HookContext) ([]interface{}, error) {
+func (l LoggingHook) buildArgs(hookContext of.HookContext) ([]interface{}, error) {
 
 	args := []interface{}{
 		DOMAIN_KEY, hookContext.ClientMetadata().Domain(),
@@ -52,18 +50,14 @@ func (l LoggingHook) buildArgs(hookContext openfeature.HookContext) ([]interface
 			TargetingKey: hookContext.EvaluationContext().TargetingKey(),
 			Attributes:   hookContext.EvaluationContext().Attributes(),
 		}
-		// evaluationContextJson, err := println("%v", hookContext.EvaluationContext())
-		// if err != nil {
-		// 	return nil, err
-		// }
 		args = append(args, EVALUATION_CONTEXT_KEY, marshaledEvaluationContext)
 	}
 
 	return args, nil
 }
 
-func (h *LoggingHook) Before(ctx context.Context, hookContext openfeature.HookContext,
-	hint openfeature.HookHints) (*openfeature.EvaluationContext, error) {
+func (h *LoggingHook) Before(ctx context.Context, hookContext of.HookContext,
+	hint of.HookHints) (*of.EvaluationContext, error) {
 	var args, err = h.buildArgs(hookContext)
 	if err != nil {
 		return nil, err
@@ -85,15 +79,12 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 	return nil
 }
 
-func (h *LoggingHook) Error(ctx context.Context, hookContext openfeature.HookContext, err error, hint openfeature.HookHints) {
+func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err error, hint of.HookHints) {
 	var args, _ = h.buildArgs(hookContext)
-	// if e != nil { // TODO ??
-	// 	return nil, err
-	// }
 	args = append(args, ERROR_CODE_KEY, err) // TODO ??
 	h.logger.Error("Error stage", args...)
 }
 
-func (h *LoggingHook) Finally(ctx context.Context, hCtx openfeature.HookContext, hint openfeature.HookHints) {
+func (h *LoggingHook) Finally(ctx context.Context, hCtx of.HookContext, hint of.HookHints) {
 
 }
