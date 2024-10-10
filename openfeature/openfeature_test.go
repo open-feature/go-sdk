@@ -6,9 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
-	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
@@ -717,18 +715,6 @@ func TestDefaultClientUsage(t *testing.T) {
 
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
-	}
-}
-
-// Ability to override default logger
-func TestLoggerOverride(t *testing.T) {
-	defer t.Cleanup(initSingleton)
-
-	newOverride := internal.Logger{}
-	SetLogger(logr.New(newOverride))
-
-	if !reflect.DeepEqual(logger.GetSink(), newOverride) {
-		t.Error("logger overriding failed")
 	}
 }
 
