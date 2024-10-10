@@ -21,7 +21,7 @@
   </a>
   <!-- x-release-please-end -->
   <br/>
-  <a href="https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature">
+  <a href="https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature">
     <img alt="API Reference" src="https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg" />
   </a>
   <a href="https://goreportcard.com/report/github.com/open-feature/go-sdk">
@@ -85,7 +85,7 @@ Try this example in the [Go Playground](https://go.dev/play/p/3v6jbaGGldA).
 
 ### API Reference
 
-See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/pkg/openfeature) for the complete API documentation.
+See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature) for the complete API documentation.
 
 ## 🌟 Features
 
