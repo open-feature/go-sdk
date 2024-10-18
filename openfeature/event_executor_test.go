@@ -6,13 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/open-feature/go-sdk/openfeature/internal"
 	"golang.org/x/exp/slices"
 )
 
 func init() {
-	logger = logr.New(internal.Logger{})
+
 }
 
 // Requirement 5.1.1 The provider MAY define a mechanism for signaling the occurrence of one of a set of events,
@@ -31,7 +29,7 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 			eventingImpl,
 		}
 
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
 			t.Fatal(err)
@@ -1173,7 +1171,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 			&ProviderEventing{},
 		}
 
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
@@ -1215,7 +1213,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 			},
 		}
 
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
@@ -1266,7 +1264,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 			},
 		}
 
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		err := executor.registerNamedEventingProvider("clientA", eventingProvider)
 		if err != nil {
@@ -1317,7 +1315,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 			},
 		}
 
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		err := executor.registerNamedEventingProvider("clientA", eventingProvider)
 		if err != nil {
@@ -1354,7 +1352,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1392,7 +1390,7 @@ func TestEventHandler_Registration(t *testing.T) {
 	})
 
 	t.Run("Client handlers", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1429,7 +1427,7 @@ func TestEventHandler_Registration(t *testing.T) {
 
 func TestEventHandler_APIRemoval(t *testing.T) {
 	t.Run("API level removal", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1482,7 +1480,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 	})
 
 	t.Run("Client level removal", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1539,7 +1537,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 	})
 
 	t.Run("remove handlers that were not added", func(t *testing.T) {
-		executor := newEventExecutor(logger)
+		executor := newEventExecutor()
 
 		// removal of non-added handlers shall not panic
 		executor.RemoveHandler(ProviderReady, &h1)

@@ -15,7 +15,10 @@ type evaluationImpl interface {
 	GetProvider() FeatureProvider
 	GetNamedProviders() map[string]FeatureProvider
 	GetHooks() []Hook
+
+	// Deprecated
 	SetLogger(l logr.Logger)
+
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
 }
 
@@ -26,18 +29,16 @@ type evaluationAPI struct {
 	hks             []Hook
 	apiCtx          EvaluationContext
 	eventExecutor   *eventExecutor
-	logger          logr.Logger
 	mu              sync.RWMutex
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
-func newEvaluationAPI(eventExecutor *eventExecutor, log logr.Logger) *evaluationAPI {
+func newEvaluationAPI(eventExecutor *eventExecutor) *evaluationAPI {
 	return &evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
 		apiCtx:          EvaluationContext{},
-		logger:          log,
 		mu:              sync.RWMutex{},
 		eventExecutor:   eventExecutor,
 	}
@@ -109,12 +110,12 @@ func (api *evaluationAPI) GetNamedProviders() map[string]FeatureProvider {
 
 // GetClient returns a IClient bound to the default provider
 func (api *evaluationAPI) GetClient() IClient {
-	return newClient("", api, api.eventExecutor, api.logger)
+	return newClient("", api, api.eventExecutor)
 }
 
 // GetNamedClient returns a IClient bound to the given named provider
 func (api *evaluationAPI) GetNamedClient(clientName string) IClient {
-	return newClient(clientName, api, api.eventExecutor, api.logger)
+	return newClient(clientName, api, api.eventExecutor)
 }
 
 func (api *evaluationAPI) SetEvaluationContext(apiCtx EvaluationContext) {
@@ -124,12 +125,9 @@ func (api *evaluationAPI) SetEvaluationContext(apiCtx EvaluationContext) {
 	api.apiCtx = apiCtx
 }
 
+// Deprecated
 func (api *evaluationAPI) SetLogger(l logr.Logger) {
-	api.mu.Lock()
-	defer api.mu.Unlock()
 
-	api.logger = l
-	api.eventExecutor.updateLogger(l)
 }
 
 func (api *evaluationAPI) AddHooks(hooks ...Hook) {
