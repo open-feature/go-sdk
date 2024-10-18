@@ -344,7 +344,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 
 	// then run client handlers
 	for name, reference := range e.namedProviderReference {
-		if reference.featureProvider != handler {
+		if !reflect.DeepEqual(reference.featureProvider, handler) {
 			// unassociated client, continue to next
 			continue
 		}
