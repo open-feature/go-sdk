@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.13.1](https://github.com/open-feature/go-sdk/compare/v1.13.0...v1.13.1) (2024-10-18)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module golang.org/x/text to v0.19.0 ([#290](https://github.com/open-feature/go-sdk/issues/290)) ([cd5b89a](https://github.com/open-feature/go-sdk/commit/cd5b89a5c404b374612295c22f8ec31a409bc033))
+* Prevent panic when setting non-comparable named providers ([#286](https://github.com/open-feature/go-sdk/issues/286)) ([01953bb](https://github.com/open-feature/go-sdk/commit/01953bb18a1f80e9ce3d90f2ed146332cf611d64))
+
+
+### 🧹 Chore
+
+* **deps:** update codecov/codecov-action action to v4.6.0 ([#287](https://github.com/open-feature/go-sdk/issues/287)) ([368336f](https://github.com/open-feature/go-sdk/commit/368336f303b80be2298441fcb7440c29205c9b0e))
+
+
+### 📚 Documentation
+
+* update Go package manager link ([#292](https://github.com/open-feature/go-sdk/issues/292)) ([3551f3c](https://github.com/open-feature/go-sdk/commit/3551f3c08610b5acd1a40fb4c30d88100bfbd258))
+
 ## [1.13.0](https://github.com/open-feature/go-sdk/compare/v1.12.0...v1.13.0) (2024-09-09)
 
 
