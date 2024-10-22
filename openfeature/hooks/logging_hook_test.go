@@ -25,7 +25,7 @@ func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
 
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	hook, err := NewCustomLoggingHook(logger, true)
+	hook, err := NewCustomLoggingHook(true, logger)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -40,7 +40,7 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 }
 
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
-	hook, err := NewCustomLoggingHook(nil, false)
+	hook, err := NewCustomLoggingHook(false, nil)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -59,7 +59,7 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(logger, false)
+	hook, err := NewCustomLoggingHook(false, logger)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -73,7 +73,7 @@ func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(logger, true)
+	hook, err := NewCustomLoggingHook(true, logger)
 	if err != nil {
 		t.Error("expected no error")
 	}

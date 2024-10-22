@@ -26,10 +26,10 @@ type LoggingHook struct {
 }
 
 func NewLoggingHook(includeEvaluationContext bool) (*LoggingHook, error) {
-	return NewCustomLoggingHook(slog.Default(), includeEvaluationContext)
+	return NewCustomLoggingHook(includeEvaluationContext, slog.Default())
 }
 
-func NewCustomLoggingHook(logger *slog.Logger, includeEvaluationContext bool) (*LoggingHook, error) {
+func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) (*LoggingHook, error) {
 	return &LoggingHook{
 		logger:                   logger,
 		includeEvaluationContext: includeEvaluationContext,
