@@ -13,9 +13,19 @@ import (
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
+func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
+	hook, err := NewLoggingHook(true)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if hook == nil {
+		t.Fatal("expected a valid LoggingHook, got nil")
+	}
+}
+
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	hook, err := NewLoggingHook(logger, true)
+	hook, err := NewCustomLoggingHook(logger, true)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -30,7 +40,7 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 }
 
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
-	hook, err := NewLoggingHook(nil, false)
+	hook, err := NewCustomLoggingHook(nil, false)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -45,13 +55,11 @@ func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
 }
 
 func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
-	// handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
-	// handler := &testHandler{}
 	var buf *bytes.Buffer = new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewLoggingHook(logger, false)
+	hook, err := NewCustomLoggingHook(logger, false)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -61,13 +69,11 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 }
 
 func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T) {
-	// handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
-	// handler := &testHandler{}
 	var buf *bytes.Buffer = new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewLoggingHook(logger, true)
+	hook, err := NewCustomLoggingHook(logger, true)
 	if err != nil {
 		t.Error("expected no error")
 	}
@@ -94,7 +100,10 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 		},
 	})
 
-	openfeature.SetProviderAndWait(memoryProvider)
+	err := openfeature.SetProviderAndWait(memoryProvider)
+	if err != nil {
+		t.Error("error setting provider", err)
+	}
 	openfeature.AddHooks(&hook)
 	client := openfeature.NewClient("test-app")
 
@@ -164,7 +173,6 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
 				"flag_key":      "non-existing",
-				"error_code":    "error code: FLAG_NOT_FOUND: flag for key non-existing not found",
 			},
 		}
 
