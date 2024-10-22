@@ -13,7 +13,8 @@ const (
 )
 
 type InMemoryProvider struct {
-	flags map[string]InMemoryFlag
+	flags  map[string]InMemoryFlag
+	events map[string][]InMemoryEvent
 }
 
 func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
@@ -130,6 +131,14 @@ func (i InMemoryProvider) Hooks() []openfeature.Hook {
 	return []openfeature.Hook{}
 }
 
+func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
+	i.events[trackingEventName] = append(i.events[trackingEventName], InMemoryEvent{
+		Value:             details.Value(),
+		Data:              details.Fields(),
+		ContextAttributes: evalCtx.Attributes(),
+	})
+}
+
 func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.ProviderResolutionDetail, bool) {
 	memoryFlag, ok := i.flags[flag]
 	if !ok {
@@ -198,4 +207,10 @@ func (flag *InMemoryFlag) Resolve(defaultValue interface{}, evalCtx openfeature.
 		Reason:  openfeature.StaticReason,
 		Variant: flag.DefaultVariant,
 	}
+}
+
+type InMemoryEvent struct {
+	Value             float64
+	Data              map[string]interface{}
+	ContextAttributes map[string]interface{}
 }

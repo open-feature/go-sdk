@@ -173,6 +173,27 @@ value, err := client.BooleanValue(
 )
 ```
 
+### Tracking
+
+The [tracking API](https://openfeature.dev/specification/sections/tracking/) allows you to use OpenFeature abstractions and objects to associate user actions with feature flag evaluations.
+This is essential for robust experimentation powered by feature flags.
+For example, a flag enhancing the appearance of a UI component might drive user engagement to a new feature; to test this hypothesis, telemetry collected by a [hook](#hooks) or [provider](#providers) can be associated with telemetry reported in the client's `track` function.
+
+```go
+// initilize a client
+client := openfeature.NewClient('my-app')
+
+// trigger tracking event action
+client.Track(
+    context.Background(), 
+    'visited-promo-page', 
+    openfeature.EvaluationContext{}, 
+    openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"),
+    )
+```
+
+Note that some providers may not support tracking; check the documentation for your provider for more information.
+
 ### Logging
 
 The standard Go log package is used by default to show error logs.

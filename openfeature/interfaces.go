@@ -41,10 +41,16 @@ type IClient interface {
 	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
 
 	IEventing
+	ITracking
 }
 
 // IEventing defines the OpenFeature eventing contract
 type IEventing interface {
 	AddHandler(eventType EventType, callback EventCallback)
 	RemoveHandler(eventType EventType, callback EventCallback)
+}
+
+// ITracking defines the Tracking contract
+type ITracking interface {
+	Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
 }

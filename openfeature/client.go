@@ -659,6 +659,35 @@ func (c *Client) Object(ctx context.Context, flag string, defaultValue interface
 	return value
 }
 
+// Track performs an action for tracking for occurrence  of a particular action or application state.
+//
+// Parameters:
+// - ctx is the standard go context struct used to manage requests (e.g. timeouts)
+// - trackingEventName is the event name to track
+// - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
+// - trackingEventDetails defines optional data pertinent to a particular
+func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails) {
+	provider, evalCtx := c.ForTracking(ctx, evalCtx)
+	provider.Track(ctx, trackingEventName, evalCtx, details)
+}
+
+// ForTracking return the TrackingHandler and the combination of EvaluationContext from api, transaction, client and invocation.
+//
+// The returned evaluation context MUST be merged in the order, with duplicate values being overwritten:
+// - API (global; lowest precedence)
+// - transaction
+// - client
+// - invocation (highest precedence)
+func (c *Client) ForTracking(ctx context.Context, evalCtx EvaluationContext) (TrackingHandler, EvaluationContext) {
+	provider, _, apiCtx := c.api.ForEvaluation(c.metadata.name)
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), apiCtx)
+	trackingProvider, ok := provider.(TrackingHandler)
+	if !ok {
+		trackingProvider = NoopProvider{}
+	}
+	return trackingProvider, evalCtx
+}
+
 func (c *Client) evaluate(
 	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
 ) (InterfaceEvaluationDetails, error) {
