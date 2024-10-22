@@ -5,19 +5,17 @@ on:
     branches:
       - main
   pull_request:
-env:
-  # Default minimum version of Go to support.
-  DEFAULT_GO_VERSION: "~1.20"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.DEFAULT_GO_VERSION }}
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          go-version-file: 'go.mod'
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -36,14 +34,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.DEFAULT_GO_VERSION }}
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
