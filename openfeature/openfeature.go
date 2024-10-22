@@ -66,7 +66,6 @@ func SetEvaluationContext(evalCtx EvaluationContext) {
 // Deprecated
 // SetLogger sets the global Logger.
 func SetLogger(l logr.Logger) {
-
 }
 
 // AddHooks appends to the collection of any previously added hooks
