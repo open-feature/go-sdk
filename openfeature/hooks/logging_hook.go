@@ -84,9 +84,9 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 }
 
 func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err error, hint of.HookHints) {
-	args, err := h.buildArgs(hookContext)
-	if err != nil {
-		slog.Error("Error building args", "error", err)
+	args, buildArgsErr := h.buildArgs(hookContext)
+	if buildArgsErr != nil {
+		slog.Error("Error building args", "error", buildArgsErr)
 	}
 	args = append(args, ERROR_CODE_KEY, err)
 	h.logger.Error("Error stage", args...)
