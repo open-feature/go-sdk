@@ -182,6 +182,41 @@ Note that in accordance with the OpenFeature specification, the SDK doesn't gene
 The GO SDK includes a `LoggingHook`, which logs detailed information at key points during flag evaluation, using [slog](https://pkg.go.dev/log/slog) structured logging API.
 This hook can be particularly helpful for troubleshooting and debugging; simply attach it at the global, client or invocation level and ensure your log level is set to "debug".
 
+##### Usage example
+
+```go
+import "github.com/open-feature/go-sdk/openfeature"
+
+client := openfeature.NewClient("test-client")
+
+memoryProvider := memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
+
+err := openfeature.SetProviderAndWait(memoryProvider)
+if err != nil {
+  // handle error
+}
+
+// add a hook globally, to run on all evaluations
+var programLevel = new(slog.LevelVar)
+programLevel.Set(slog.LevelDebug)
+h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+slog.SetDefault(slog.New(h))
+
+hook, err := NewLoggingHook(false)
+if err != nil {
+  // handle error
+}
+
+openfeature.AddHooks(hook)
+
+client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.EvaluationContext{})
+
+```
+
+###### Output
+> {"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}  
+{"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
+
 See [hooks](#hooks) for more information on configuring hooks.
 
 ### Domains

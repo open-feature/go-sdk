@@ -13,7 +13,6 @@ const (
 	FLAG_KEY_KEY           = "flag_key"
 	DEFAULT_VALUE_KEY      = "default_value"
 	EVALUATION_CONTEXT_KEY = "evaluation_context"
-	ERROR_CODE_KEY         = "error_code"
 	ERROR_MESSAGE_KEY      = "error_message"
 	REASON_KEY             = "reason"
 	VARIANT_KEY            = "variant"
@@ -88,7 +87,7 @@ func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err
 	if buildArgsErr != nil {
 		slog.Error("Error building args", "error", buildArgsErr)
 	}
-	args = append(args, ERROR_CODE_KEY, err)
+	args = append(args, ERROR_MESSAGE_KEY, err)
 	h.logger.Error("Error stage", args...)
 }
 
