@@ -185,23 +185,13 @@ This hook can be particularly helpful for troubleshooting and debugging; simply 
 ##### Usage example
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
-
-client := openfeature.NewClient("test-client")
-
-memoryProvider := memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
-
-err := openfeature.SetProviderAndWait(memoryProvider)
-if err != nil {
-  // handle error
-}
-
-// add a hook globally, to run on all evaluations
+// configure slog
 var programLevel = new(slog.LevelVar)
 programLevel.Set(slog.LevelDebug)
 h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
 slog.SetDefault(slog.New(h))
 
+// add a hook globally, to run on all evaluations
 hook, err := NewLoggingHook(false)
 if err != nil {
   // handle error
