@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/open-feature/go-sdk/compare/v1.13.1...v1.14.0) (2024-10-23)
+
+
+### ✨ New Features
+
+* add logging hook, rm logging from evaluation ([#289](https://github.com/open-feature/go-sdk/issues/289)) ([7850eec](https://github.com/open-feature/go-sdk/commit/7850eec993f7570ab2603c52edfccea7a36f8a09))
+
+
+### 🧹 Chore
+
+* require go 1.21 ([#294](https://github.com/open-feature/go-sdk/issues/294)) ([ddfffdd](https://github.com/open-feature/go-sdk/commit/ddfffddf52c1cbd48e0c40a828f33d3342824706))
+
 ## [1.13.1](https://github.com/open-feature/go-sdk/compare/v1.13.0...v1.13.1) (2024-10-18)
 
 
