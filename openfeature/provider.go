@@ -66,9 +66,9 @@ type StateHandler interface {
 	Status() State
 }
 
-// TrackingHandler is the contract for tracking
+// Tracker is the contract for tracking
 // FeatureProvider can opt in for this behavior by implementing the interface
-type TrackingHandler interface {
+type Tracker interface {
 	Track(ctx context.Context, trackingEventName string, evaluationContext EvaluationContext, details TrackingEventDetails)
 }
 
@@ -235,10 +235,13 @@ func (t TrackingEventDetails) Field(key string) interface{} {
 	return t.fields[key]
 }
 
-// SetValue update the value of TrackingEventDetails.
-func (t TrackingEventDetails) SetValue(value float64) TrackingEventDetails {
-	t.value = value
-	return t
+// Copy return a new TrackingEventDetails with new value.
+// It will copy details of old TrackingEventDetails into the new one to ensure the immutability.
+func (t TrackingEventDetails) Copy(value float64) TrackingEventDetails {
+	return TrackingEventDetails{
+		value:  value,
+		fields: t.Fields(),
+	}
 }
 
 // Value retrieves the value of TrackingEventDetails.

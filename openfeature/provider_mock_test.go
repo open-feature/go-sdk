@@ -195,39 +195,39 @@ func (mr *MockStateHandlerMockRecorder) Status() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockStateHandler)(nil).Status))
 }
 
-// MockTrackingHandler is a mock of TrackingHandler interface.
-type MockTrackingHandler struct {
+// MockTracker is a mock of Tracker interface.
+type MockTracker struct {
 	ctrl     *gomock.Controller
-	recorder *MockTrackingHandlerMockRecorder
+	recorder *MockTrackerMockRecorder
 }
 
-// MockTrackingHandlerMockRecorder is the mock recorder for MockTrackingHandler.
-type MockTrackingHandlerMockRecorder struct {
-	mock *MockTrackingHandler
+// MockTrackerMockRecorder is the mock recorder for MockTracker.
+type MockTrackerMockRecorder struct {
+	mock *MockTracker
 }
 
-// NewMockTrackingHandler creates a new mock instance.
-func NewMockTrackingHandler(ctrl *gomock.Controller) *MockTrackingHandler {
-	mock := &MockTrackingHandler{ctrl: ctrl}
-	mock.recorder = &MockTrackingHandlerMockRecorder{mock}
+// NewMockTracker creates a new mock instance.
+func NewMockTracker(ctrl *gomock.Controller) *MockTracker {
+	mock := &MockTracker{ctrl: ctrl}
+	mock.recorder = &MockTrackerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTrackingHandler) EXPECT() *MockTrackingHandlerMockRecorder {
+func (m *MockTracker) EXPECT() *MockTrackerMockRecorder {
 	return m.recorder
 }
 
 // Track mocks base method.
-func (m *MockTrackingHandler) Track(ctx context.Context, trackingEventName string, evaluationContext EvaluationContext, details TrackingEventDetails) {
+func (m *MockTracker) Track(ctx context.Context, trackingEventName string, evaluationContext EvaluationContext, details TrackingEventDetails) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Track", ctx, trackingEventName, evaluationContext, details)
 }
 
 // Track indicates an expected call of Track.
-func (mr *MockTrackingHandlerMockRecorder) Track(ctx, trackingEventName, evaluationContext, details interface{}) *gomock.Call {
+func (mr *MockTrackerMockRecorder) Track(ctx, trackingEventName, evaluationContext, details interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Track", reflect.TypeOf((*MockTrackingHandler)(nil).Track), ctx, trackingEventName, evaluationContext, details)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Track", reflect.TypeOf((*MockTracker)(nil).Track), ctx, trackingEventName, evaluationContext, details)
 }
 
 // MockEventHandler is a mock of EventHandler interface.

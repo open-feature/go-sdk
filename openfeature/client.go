@@ -667,21 +667,21 @@ func (c *Client) Object(ctx context.Context, flag string, defaultValue interface
 // - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 // - trackingEventDetails defines optional data pertinent to a particular
 func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails) {
-	provider, evalCtx := c.ForTracking(ctx, evalCtx)
+	provider, evalCtx := c.forTracking(ctx, evalCtx)
 	provider.Track(ctx, trackingEventName, evalCtx, details)
 }
 
-// ForTracking return the TrackingHandler and the combination of EvaluationContext from api, transaction, client and invocation.
+// forTracking return the TrackingHandler and the combination of EvaluationContext from api, transaction, client and invocation.
 //
 // The returned evaluation context MUST be merged in the order, with duplicate values being overwritten:
 // - API (global; lowest precedence)
 // - transaction
 // - client
 // - invocation (highest precedence)
-func (c *Client) ForTracking(ctx context.Context, evalCtx EvaluationContext) (TrackingHandler, EvaluationContext) {
+func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tracker, EvaluationContext) {
 	provider, _, apiCtx := c.api.ForEvaluation(c.metadata.name)
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), apiCtx)
-	trackingProvider, ok := provider.(TrackingHandler)
+	trackingProvider, ok := provider.(Tracker)
 	if !ok {
 		trackingProvider = NoopProvider{}
 	}

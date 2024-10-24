@@ -796,8 +796,9 @@ func TestRequirement_6_1(t *testing.T) {
 // - invocation (highest precedence)
 
 // Requirement_6_1_4
-// If the client's `track` function is called and the associated provider does not implement tracking, the client's `track` function MUST no-op.,
-func TestForTracking(t *testing.T) {
+// If the client's `track` function is called and the associated provider does not implement tracking, the client's `track` function MUST no-op.
+// Allow backward compatible to non-Tracker Provider
+func TestTrack(t *testing.T) {
 	type inputCtx struct {
 		api        EvaluationContext
 		txn        EvaluationContext
@@ -805,28 +806,23 @@ func TestForTracking(t *testing.T) {
 		invocation EvaluationContext
 	}
 
-	ctrl := gomock.NewController(t)
-	mockNonTrackingProvider := NewMockFeatureProvider(ctrl)
-	mockNonTrackingProvider.EXPECT().Metadata().AnyTimes()
-
-	// mockTrackingProvider is a feature provider that implements tracking handler contract.
-	mockTrackingProvider := struct {
-		*MockTrackingHandler
-		*MockFeatureProvider
-	}{
-		MockTrackingHandler: NewMockTrackingHandler(ctrl),
-		MockFeatureProvider: NewMockFeatureProvider(ctrl),
+	type testcase struct {
+		inCtx     inputCtx
+		eventName string
+		outCtx    EvaluationContext
+		// allow asserting the input to provider
+		provider func(tc *testcase, ctrl *gomock.Controller) FeatureProvider
 	}
 
-	mockTrackingProvider.MockFeatureProvider.EXPECT().Metadata().AnyTimes()
+	// mockTrackingProvider is a feature provider that implements tracker contract.
+	type mockTrackingProvider struct {
+		*MockTracker
+		*MockFeatureProvider
+	}
 
-	tests := map[string]struct {
-		inCtx         inputCtx
-		inputProvider FeatureProvider
-		outCtx        EvaluationContext
-		outputHandler TrackingHandler
-	}{
+	tests := map[string]*testcase{
 		"merging in correct order": {
+			eventName: "example-event",
 			inCtx: inputCtx{
 				api: EvaluationContext{
 					attributes: map[string]interface{}{
@@ -855,7 +851,6 @@ func TestForTracking(t *testing.T) {
 					},
 				},
 			},
-			inputProvider: mockNonTrackingProvider,
 			outCtx: EvaluationContext{
 				attributes: map[string]interface{}{
 					"1": "api",
@@ -864,44 +859,51 @@ func TestForTracking(t *testing.T) {
 					"4": "invocation",
 				},
 			},
-			outputHandler: NoopProvider{},
+			provider: func(tc *testcase, ctrl *gomock.Controller) FeatureProvider {
+				provider := &mockTrackingProvider{
+					MockTracker:         NewMockTracker(ctrl),
+					MockFeatureProvider: NewMockFeatureProvider(ctrl),
+				}
+
+				provider.MockFeatureProvider.EXPECT().Metadata().AnyTimes()
+				// assert if Track is called once with evalCtx expected
+				provider.MockTracker.EXPECT().Track(gomock.Any(), tc.eventName, tc.outCtx, TrackingEventDetails{}).Times(1)
+
+				return provider
+			},
 		},
-		"non tracking provider": {
-			inputProvider: mockNonTrackingProvider,
-			outputHandler: NoopProvider{},
-		},
-		"expect no-op provider": {
-			inputProvider: mockTrackingProvider,
-			outputHandler: mockTrackingProvider,
+		"do no-op if Provider do not implement Tracker": {
+			inCtx:     inputCtx{},
+			eventName: "example-event",
+			outCtx:    EvaluationContext{},
+			provider: func(tc *testcase, ctrl *gomock.Controller) FeatureProvider {
+				provider := NewMockFeatureProvider(ctrl)
+
+				provider.EXPECT().Metadata().AnyTimes()
+
+				return provider
+			},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// arrange
+			ctrl := gomock.NewController(t)
+			provider := test.provider(test, ctrl)
+
 			client := NewClient("test-client")
-			_ = client.api.SetProviderAndWait(test.inputProvider)
+			_ = client.api.SetProviderAndWait(provider)
 
 			client.evaluationContext = test.inCtx.client
 			client.api.SetEvaluationContext(test.inCtx.api)
 			ctx := WithTransactionContext(context.Background(), test.inCtx.txn)
 
 			// action
-			handler, evalCtx := client.ForTracking(ctx, test.inCtx.invocation)
+			client.Track(ctx, test.eventName, test.inCtx.invocation, TrackingEventDetails{})
 
 			// assert
-			if !reflect.DeepEqual(evalCtx.Attributes(), test.outCtx.Attributes()) {
-				t.Errorf(
-					"%s, unexpected value received from flatten context, expected %v got %v",
-					name,
-					test.outCtx,
-					evalCtx,
-				)
-			}
-
-			if !reflect.DeepEqual(handler, test.outputHandler) {
-				t.Errorf("%s, unexpected handler received, expect %T got %T", name, test.outputHandler, handler)
-			}
+			ctrl.Finish()
 		})
 	}
 }
