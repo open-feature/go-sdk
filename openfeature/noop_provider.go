@@ -72,5 +72,4 @@ func (e NoopProvider) Hooks() []Hook {
 }
 
 func (e NoopProvider) Track(ctx context.Context, eventName string, evalCtx EvaluationContext, details TrackingEventDetails) {
-	return
 }
