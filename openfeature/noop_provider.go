@@ -70,3 +70,6 @@ func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, default
 func (e NoopProvider) Hooks() []Hook {
 	return []Hook{}
 }
+
+func (e NoopProvider) Track(ctx context.Context, eventName string, evalCtx EvaluationContext, details TrackingEventDetails) {
+}

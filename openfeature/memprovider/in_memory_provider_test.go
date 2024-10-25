@@ -260,3 +260,8 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 		t.Errorf("incorrect name for in-memory provider")
 	}
 }
+
+func TestInMemoryProvider_Track(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+	memoryProvider.Track(context.Background(), "example-event-name", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+}
