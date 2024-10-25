@@ -891,12 +891,15 @@ func TestTrack(t *testing.T) {
 			// arrange
 			ctrl := gomock.NewController(t)
 			provider := test.provider(test, ctrl)
-
 			client := NewClient("test-client")
+
+			// use different api in this client to avoid racing when changing global context
+			client.api = newEvaluationAPI(newEventExecutor(logger), logger)
+
+			client.api.SetEvaluationContext(test.inCtx.api)
 			_ = client.api.SetProviderAndWait(provider)
 
 			client.evaluationContext = test.inCtx.client
-			client.api.SetEvaluationContext(test.inCtx.api)
 			ctx := WithTransactionContext(context.Background(), test.inCtx.txn)
 
 			// action
