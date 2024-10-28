@@ -196,24 +196,46 @@ Note that some providers may not support tracking; check the documentation for y
 
 ### Logging
 
-The standard Go log package is used by default to show error logs.
-This can be overridden using the structured logging, [logr](https://github.com/go-logr/logr) API, allowing integration to any package.
-There are already [integration implementations](https://github.com/go-logr/logr#implementations-non-exhaustive) for many of the popular logger packages.
+Note that in accordance with the OpenFeature specification, the SDK doesn't generally log messages during flag evaluation.
+
+#### Logging Hook
+
+The GO SDK includes a `LoggingHook`, which logs detailed information at key points during flag evaluation, using [slog](https://pkg.go.dev/log/slog) structured logging API.
+This hook can be particularly helpful for troubleshooting and debugging; simply attach it at the global, client or invocation level and ensure your log level is set to "debug".
+
+##### Usage example
 
 ```go
-var l logr.Logger
-l = integratedlogr.New() // replace with your chosen integrator
+// configure slog
+var programLevel = new(slog.LevelVar)
+programLevel.Set(slog.LevelDebug)
+h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+slog.SetDefault(slog.New(h))
 
-openfeature.SetLogger(l) // set the logger at global level
+// add a hook globally to run on all evaluations
+hook, err := NewLoggingHook(false)
+if err != nil {
+  // handle error
+}
 
-c := openfeature.NewClient("log").WithLogger(l) // set the logger at client level
+openfeature.AddHooks(hook)
+
+client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.EvaluationContext{})
+
 ```
 
-[logr](https://github.com/go-logr/logr) uses incremental verbosity levels (akin to named levels but in integer form).
-The SDK logs `info` at level `0` and `debug` at level `1`. Errors are always logged.
+###### Output
+
+```sh
+{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}  
+{"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
+```
+
+See [hooks](#hooks) for more information on configuring hooks.
 
 ### Domains
-Clients can be assigned to a domain. A domain is a logical identifier which can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
+
+Clients can be assigned to a domain. A domain is a logical identifier that can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
 
 ```go
 import "github.com/open-feature/go-sdk/openfeature"
@@ -228,7 +250,6 @@ clientWithDefault := openfeature.NewClient("")
 // A Client backed by NewCachedProvider
 clientForCache := openfeature.NewClient("clientForCache")
 ```
-
 
 ### Eventing
 

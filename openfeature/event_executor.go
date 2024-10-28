@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-logr/logr"
+	"log/slog"
+
 	"golang.org/x/exp/maps"
 )
 
@@ -37,19 +38,17 @@ type eventExecutor struct {
 	activeSubscriptions      []providerReference
 	apiRegistry              map[EventType][]EventCallback
 	scopedRegistry           map[string]scopedCallback
-	logger                   logr.Logger
 	eventChan                chan eventPayload
 	once                     sync.Once
 	mu                       sync.Mutex
 }
 
-func newEventExecutor(logger logr.Logger) *eventExecutor {
+func newEventExecutor() *eventExecutor {
 	executor := eventExecutor{
 		namedProviderReference: map[string]providerReference{},
 		activeSubscriptions:    []providerReference{},
 		apiRegistry:            map[EventType][]EventCallback{},
 		scopedRegistry:         map[string]scopedCallback{},
-		logger:                 logger,
 		eventChan:              make(chan eventPayload, 5),
 	}
 
@@ -85,14 +84,6 @@ type eventPayload struct {
 type providerReference struct {
 	featureProvider   FeatureProvider
 	shutdownSemaphore chan interface{}
-}
-
-// updateLogger updates the executor's logger
-func (e *eventExecutor) updateLogger(l logr.Logger) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.logger = l
 }
 
 // AddHandler adds an API(global) level handler
@@ -377,7 +368,7 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				e.logger.Info("recovered from a panic")
+				slog.Info("recovered from a panic")
 			}
 		}()
 

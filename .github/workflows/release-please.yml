@@ -6,8 +6,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  # Default minimum version of Go to support.
-  DEFAULT_GO_VERSION: "~1.20"
 
 jobs:
   release-please:
@@ -37,7 +35,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.DEFAULT_GO_VERSION }}
+          go-version-file: 'go.mod'
 
       - name: Install cyclonedx-gomod
         uses: CycloneDX/gh-gomod-generate-sbom@v2
