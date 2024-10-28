@@ -191,7 +191,7 @@ programLevel.Set(slog.LevelDebug)
 h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
 slog.SetDefault(slog.New(h))
 
-// add a hook globally, to run on all evaluations
+// add a hook globally to run on all evaluations
 hook, err := NewLoggingHook(false)
 if err != nil {
   // handle error
@@ -204,13 +204,17 @@ client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.
 ```
 
 ###### Output
-> {"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}  
+
+```sh
+{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}  
 {"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
+```
 
 See [hooks](#hooks) for more information on configuring hooks.
 
 ### Domains
-Clients can be assigned to a domain. A domain is a logical identifier which can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
+
+Clients can be assigned to a domain. A domain is a logical identifier that can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
 
 ```go
 import "github.com/open-feature/go-sdk/openfeature"
@@ -225,7 +229,6 @@ clientWithDefault := openfeature.NewClient("")
 // A Client backed by NewCachedProvider
 clientForCache := openfeature.NewClient("clientForCache")
 ```
-
 
 ### Eventing
 
