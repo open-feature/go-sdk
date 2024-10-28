@@ -894,7 +894,7 @@ func TestTrack(t *testing.T) {
 			client := NewClient("test-client")
 
 			// use different api in this client to avoid racing when changing global context
-			client.api = newEvaluationAPI(newEventExecutor(logger), logger)
+			client.api = newEvaluationAPI(newEventExecutor())
 
 			client.api.SetEvaluationContext(test.inCtx.api)
 			_ = client.api.SetProviderAndWait(provider)
