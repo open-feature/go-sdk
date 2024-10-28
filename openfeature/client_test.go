@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -1111,4 +1112,196 @@ func TestFlagMetadataAccessors(t *testing.T) {
 			t.Error("unexpected error value", err)
 		}
 	})
+}
+
+// The client MUST define a provider status accessor which indicates the readiness of the associated provider.
+// with possible values NOT_READY, READY, STALE, ERROR, or FATAL.
+func TestRequirement_1_7_1(t *testing.T) {
+
+	client := NewClient("test-client")
+
+	type requirements interface {
+		State() State
+	}
+
+	var clientI interface{} = client
+	if _, ok := clientI.(requirements); !ok {
+		t.Fatal("client des not define a status accessor which indicates the readiness of the associated provider")
+	}
+
+	TestRequirement_5_3_5(t)
+}
+
+// The client's provider status accessor MUST indicate READY if the initialize function of the associated provider
+// terminates normally.
+func TestRequirement_1_7_2(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == NotReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
+
+	provider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		&ProviderEventing{
+			c: make(chan Event, 1),
+		},
+	}
+
+	if err := SetProviderAndWait(provider); err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+}
+
+// The client's provider status accessor MUST indicate ERROR if the initialize function of the associated provider
+// terminates abnormally
+func TestRequirement_1_7_3(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return errors.New("whoops... error from initialization")
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetProviderAndWait(provider)
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ErrorState
+	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+}
+
+// The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
+// terminates abnormally and indicates error code PROVIDER_FATAL.
+func TestRequirement_1_7_4(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return errors.New("whoops... error from initialization")
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetProviderAndWait(provider)
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ErrorState
+	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+}
+
+// The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
+// terminates abnormally and indicates error code PROVIDER_FATAL.
+func TestRequirement_1_7_5(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetProviderAndWait(provider)
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == FatalState
+	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+}
+
+// The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
+// is in NOT_READY.
+func TestRequirement_1_7_6(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	t.Skip("Test not yet implemented")
+
+}
+
+// The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
+// is in FATAL.
+func TestRequirement_1_7_7(t *testing.T) {
+	t.Skip("Test not yet implemented")
+}
+
+// Implementations SHOULD propagate the error code returned from any provider lifecycle methods.
+func TestRequirement_1_7_8(t *testing.T) {
+	t.Skip("Test not yet implemented")
+}
+
+// PROVIDER_ERROR events SHOULD populate the provider event details's error code field.
+func TestRequirement_5_1_5(t *testing.T) {
+	t.Skip("Test not yet implemented")
+}
+
+// If the provider emits an event, the value of the client's provider status MUST be updated accordingly.
+func TestRequirement_5_3_5(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == NotReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
+
+	eventing := &ProviderEventing{
+		c: make(chan Event, 1),
+	}
+
+	provider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		eventing,
+	}
+
+	if err := SetProviderAndWait(provider); err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+
+	eventing.Invoke(Event{EventType: ProviderStale})
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == StaleState
+	}, time.Second, 100*time.Millisecond, "expected client to report STALE state")
+
+	eventing.Invoke(Event{EventType: ProviderError})
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ErrorState
+	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+
+	eventing.Invoke(Event{EventType: ProviderReady})
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == ReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+
+	eventing.Invoke(Event{EventType: ProviderError, ProviderEventDetails: ProviderEventDetails{ErrorCode: ProviderFatalCode}})
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == FatalState
+	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
+
 }

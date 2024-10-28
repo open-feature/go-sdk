@@ -757,7 +757,6 @@ func setupProviderWithSemaphores() (struct {
 		shutdownF: func() {
 			shutdownSem <- ""
 		},
-		State: NotReadyState,
 	}
 
 	eventing := &ProviderEventing{

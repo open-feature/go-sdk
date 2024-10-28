@@ -27,6 +27,7 @@ const (
 	ReadyState    State = "READY"
 	ErrorState    State = "ERROR"
 	StaleState    State = "STALE"
+	FatalState    State = "FATAL"
 
 	ProviderReady        EventType = "PROVIDER_READY"
 	ProviderConfigChange EventType = "PROVIDER_CONFIGURATION_CHANGED"
@@ -63,7 +64,6 @@ type State string
 type StateHandler interface {
 	Init(evaluationContext EvaluationContext) error
 	Shutdown()
-	Status() State
 }
 
 // NoopStateHandler is a noop StateHandler implementation
@@ -99,6 +99,7 @@ type ProviderEventDetails struct {
 	Message       string
 	FlagChanges   []string
 	EventMetadata map[string]interface{}
+	ErrorCode     ErrorCode
 }
 
 // Event is an event emitted by a FeatureProvider.

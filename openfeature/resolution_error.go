@@ -7,6 +7,8 @@ type ErrorCode string
 const (
 	// ProviderNotReadyCode - the value was resolved before the provider was ready.
 	ProviderNotReadyCode ErrorCode = "PROVIDER_NOT_READY"
+	// ProviderFatalCode - a fatal provider error occured
+	ProviderFatalCode ErrorCode = "PROVIDER_FATAL"
 	// FlagNotFoundCode - the flag could not be found.
 	FlagNotFoundCode ErrorCode = "FLAG_NOT_FOUND"
 	// ParseErrorCode - an error was encountered parsing data, such as a flag configuration.

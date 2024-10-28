@@ -40,6 +40,8 @@ type IClient interface {
 	Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64
 	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
 
+	State() State
+
 	IEventing
 }
 

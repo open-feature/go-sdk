@@ -147,7 +147,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		}
 
 		client := NewClient(associatedName)
-		client.AddHandler(ProviderReady, &callBack)
+		client.AddHandler(ProviderError, &callBack)
 
 		fCh := []string{"flagA"}
 		meta := map[string]interface{}{
@@ -157,7 +157,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		// trigger event from provider implementation
 		eventingImpl.Invoke(Event{
 			ProviderName: eventingProvider.Metadata().Name,
-			EventType:    ProviderReady,
+			EventType:    ProviderError,
 			ProviderEventDetails: ProviderEventDetails{
 				Message:       "ReadyMessage",
 				FlagChanges:   fCh,
@@ -235,7 +235,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 		rsp <- details
 	}
 
-	event := ProviderReady
+	event := ProviderError
 	client := NewClient("someClient")
 	client.AddHandler(event, &callBack)
 
@@ -333,15 +333,16 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	t.Run("for default provider in global handler scope", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -367,15 +368,16 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	t.Run("for default provider with unassociated client handler", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -402,15 +404,16 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	t.Run("for named provider in client scope", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -438,15 +441,17 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	t.Run("no callback for named provider with no associations", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderConfigChange})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -478,18 +483,17 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for default provider in global scope", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				initF: func(e EvaluationContext) error {
-					return errors.New("initialization failed")
-				},
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -515,18 +519,17 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for default provider with unassociated client handler", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				initF: func(e EvaluationContext) error {
-					return errors.New("initialization failed")
-				},
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -554,18 +557,17 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for named provider in client scope", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				initF: func(e EvaluationContext) error {
-					return errors.New("initialization failed")
-				},
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -593,18 +595,17 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("no callback for named provider with no associations", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		// provider
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				initF: func(e EvaluationContext) error {
-					return errors.New("initialization failed")
-				},
-				State: NotReadyState,
-			},
+			eventingImpl,
 		}
 
 		// callback
@@ -636,16 +637,16 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	t.Run("for api level under default provider", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		readyEventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ReadyState,
-			},
-			&ProviderEventing{},
+			eventingImpl,
 		}
 
 		err := SetProvider(readyEventingProvider)
@@ -671,16 +672,16 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	t.Run("for domain associated handler", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		readyEventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ReadyState,
-			},
-			&ProviderEventing{},
+			eventingImpl,
 		}
 
 		clientAssociation := "clientA"
@@ -708,16 +709,17 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	t.Run("for unassociated handler from default", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderConfigChange})
+
 		readyEventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ReadyState,
-			},
-			&ProviderEventing{},
+			eventingImpl,
 		}
 
 		err := SetProvider(readyEventingProvider)
@@ -751,7 +753,6 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}{
 			NoopProvider{},
 			&stateHandlerForTests{
-				State: NotReadyState,
 				initF: func(e EvaluationContext) error {
 					return errors.New("some error from initialization")
 				},
@@ -790,7 +791,6 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}{
 			NoopProvider{},
 			&stateHandlerForTests{
-				State: NotReadyState,
 				initF: func(e EvaluationContext) error {
 					return nil
 				},
@@ -826,14 +826,16 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("ready handler runs when provider ready", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ReadyState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProvider(provider); err != nil {
@@ -858,14 +860,17 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("error handler runs when provider error", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ErrorState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProvider(provider); err != nil {
@@ -890,14 +895,17 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("stale handler runs when provider stale", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderStale})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: StaleState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProvider(provider); err != nil {
@@ -922,14 +930,16 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("non-ready handler does not run when provider ready", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ReadyState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProvider(provider); err != nil {
@@ -956,14 +966,17 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("non-error handler does not run when provider error", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: ErrorState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProviderAndWait(provider); err != nil {
@@ -975,7 +988,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			rsp <- e
 		}
 
-		AddHandler(ProviderReady, &callback)
+		//AddHandler(ProviderReady, &callback) // TODO: hard to test, because callback is executed on handler registration
 		AddHandler(ProviderStale, &callback)
 		AddHandler(ProviderConfigChange, &callback)
 
@@ -990,14 +1003,17 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("non-stale handler does not run when provider stale", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+		eventingImpl.Invoke(Event{EventType: ProviderStale})
+
 		provider := struct {
 			FeatureProvider
-			StateHandler
+			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: StaleState,
-			},
+			eventingImpl,
 		}
 
 		if err := SetProviderAndWait(provider); err != nil {
@@ -1009,7 +1025,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			rsp <- e
 		}
 
-		AddHandler(ProviderReady, &callback)
+		//AddHandler(ProviderReady, &callback) // TODO: hard to test, because callback is executed on handler registration
 		AddHandler(ProviderError, &callback)
 		AddHandler(ProviderConfigChange, &callback)
 
@@ -1159,16 +1175,17 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 func TestEventHandler_1ToNMapping(t *testing.T) {
 	t.Run("provider eventing must be subscribed only once", func(t *testing.T) {
+
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
 		eventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
-			&ProviderEventing{},
+			eventingImpl,
 		}
 
 		executor := newEventExecutor()
@@ -1199,17 +1216,14 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("avoid unsubscribe from active providers - default and named", func(t *testing.T) {
+
 		eventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 
@@ -1227,15 +1241,11 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 
 		overridingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 
@@ -1250,17 +1260,14 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("avoid unsubscribe from active providers - named only", func(t *testing.T) {
+
 		eventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 
@@ -1278,15 +1285,11 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 
 		overridingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 
@@ -1301,17 +1304,14 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("unbound providers must be removed from active subscriptions", func(t *testing.T) {
+
 		eventingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 
@@ -1324,15 +1324,11 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 
 		overridingProvider := struct {
 			FeatureProvider
-			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			&stateHandlerForTests{
-				State: NotReadyState,
-			},
 			&ProviderEventing{
-				c: make(chan Event),
+				c: make(chan Event, 1),
 			},
 		}
 

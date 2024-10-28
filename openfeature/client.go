@@ -41,6 +41,7 @@ type Client struct {
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
+	name              string
 
 	mx sync.RWMutex
 }
@@ -56,12 +57,17 @@ func NewClient(name string) *Client {
 
 func newClient(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
 	return &Client{
+		name:              name,
 		api:               apiRef,
 		clientEventing:    eventRef,
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
+}
+
+func (c *Client) State() State {
+	return c.clientEventing.State(c.name)
 }
 
 // Deprecated
