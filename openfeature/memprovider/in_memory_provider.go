@@ -133,7 +133,7 @@ func (i InMemoryProvider) Hooks() []openfeature.Hook {
 }
 
 func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
-	i.trackingEvents[trackingEventName] = append(i.events[trackingEventName], InMemoryEvent{
+	i.trackingEvents[trackingEventName] = append(i.trackingEvents[trackingEventName], InMemoryEvent{
 		Value:             details.Value(),
 		Data:              details.Fields(),
 		ContextAttributes: evalCtx.Attributes(),
