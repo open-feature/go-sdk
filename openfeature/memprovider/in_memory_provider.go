@@ -14,7 +14,7 @@ const (
 
 type InMemoryProvider struct {
 	flags  map[string]InMemoryFlag
-	events map[string][]InMemoryEvent
+	trackingEvents map[string][]InMemoryEvent
 }
 
 func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
