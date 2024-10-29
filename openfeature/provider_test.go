@@ -112,8 +112,8 @@ func TestTrackingEventDetails_Add(t *testing.T) {
 				tc.inputDetails.Add(key, value)
 			}
 
-			if !reflect.DeepEqual(tc.inputDetails.Fields(), tc.addKeyPair) {
-				t.Errorf("added key-pair %v not match with input key-pair %v", tc.addKeyPair, tc.inputDetails.Fields())
+			if !reflect.DeepEqual(tc.inputDetails.Attributes(), tc.addKeyPair) {
+				t.Errorf("added key-pair %v not match with input key-pair %v", tc.addKeyPair, tc.inputDetails.Attributes())
 			}
 		})
 	}

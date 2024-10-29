@@ -13,13 +13,13 @@ const (
 )
 
 type InMemoryProvider struct {
-	flags  map[string]InMemoryFlag
+	flags          map[string]InMemoryFlag
 	trackingEvents map[string][]InMemoryEvent
 }
 
 func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
 	return InMemoryProvider{
-		flags:  from,
+		flags:          from,
 		trackingEvents: map[string][]InMemoryEvent{},
 	}
 }
@@ -135,7 +135,7 @@ func (i InMemoryProvider) Hooks() []openfeature.Hook {
 func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
 	i.trackingEvents[trackingEventName] = append(i.trackingEvents[trackingEventName], InMemoryEvent{
 		Value:             details.Value(),
-		Data:              details.Fields(),
+		Data:              details.Attributes(),
 		ContextAttributes: evalCtx.Attributes(),
 	})
 }
