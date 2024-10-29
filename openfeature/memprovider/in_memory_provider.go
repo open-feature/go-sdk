@@ -20,7 +20,7 @@ type InMemoryProvider struct {
 func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
 	return InMemoryProvider{
 		flags:  from,
-		events: map[string][]InMemoryEvent{},
+		trackingEvents: map[string][]InMemoryEvent{},
 	}
 }
 
