@@ -28,8 +28,15 @@ type TestAwareProvider struct {
 
 // SetProvider sets a given `FeatureProvider` for a given test.
 func (tp TestAwareProvider) SetProvider(test *testing.T, fp openfeature.FeatureProvider) {
-	storeGoroutineLocal(testNameKey, test.Name())
+	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), fp)
+}
+
+// Cleanup deletes the test provider bound to the current test and should be executed after each test execution
+// e.g. using a defer statement.
+func (tp TestAwareProvider) Cleanup() {
+	tp.providers.Delete(getGoroutineLocal())
+	deleteGoroutineLocal()
 }
 
 func (tp TestAwareProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
@@ -62,7 +69,7 @@ func (tp TestAwareProvider) Metadata() openfeature.Metadata {
 
 func (tp TestAwareProvider) getProvider() openfeature.FeatureProvider {
 	// Retrieve the test name from the goroutine-local storage.
-	testName, ok := getGoroutineLocal(testNameKey).(string)
+	testName, ok := getGoroutineLocal().(string)
 	if !ok {
 		panic("unable to detect test name")
 	}
@@ -84,15 +91,20 @@ func (tp TestAwareProvider) getProvider() openfeature.FeatureProvider {
 
 var goroutineLocalData sync.Map
 
-func storeGoroutineLocal(key, value interface{}) {
+func storeGoroutineLocal(value interface{}) {
 	gID := getGoroutineID()
-	goroutineLocalData.Store(fmt.Sprintf("%d_%v", gID, key), value)
+	goroutineLocalData.Store(fmt.Sprintf("%d_%v", gID, testNameKey), value)
 }
 
-func getGoroutineLocal(key interface{}) interface{} {
+func getGoroutineLocal() interface{} {
 	gID := getGoroutineID()
-	value, _ := goroutineLocalData.Load(fmt.Sprintf("%d_%v", gID, key))
+	value, _ := goroutineLocalData.Load(fmt.Sprintf("%d_%v", gID, testNameKey))
 	return value
+}
+
+func deleteGoroutineLocal() {
+	gID := getGoroutineID()
+	goroutineLocalData.Delete(fmt.Sprintf("%d_%v", gID, testNameKey))
 }
 
 func getGoroutineID() uint64 {

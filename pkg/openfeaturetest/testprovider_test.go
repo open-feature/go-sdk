@@ -64,6 +64,7 @@ func TestParallelSingletonUsage(t *testing.T) {
 		tt := tt
 		name := name
 		t.Run(name, func(t *testing.T) {
+			defer testProvider.Cleanup()
 			t.Parallel()
 			testProvider.SetProvider(t, tt.givenProvider)
 
