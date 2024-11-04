@@ -3,75 +3,77 @@ package openfeaturetest
 import (
 	"context"
 	"fmt"
-	"github.com/open-feature/go-sdk/openfeature"
 	"runtime"
 	"sync"
 	"testing"
+
+	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
 const testNameKey = "testName"
 
-// NewTestAwareProvider creates a new `TestAwareProvider`
-func NewTestAwareProvider() TestAwareProvider {
-	return TestAwareProvider{
+// NewTestProvider creates a new `TestAwareProvider`
+func NewTestProvider() TestProvider {
+	return TestProvider{
 		providers: &sync.Map{},
 	}
 }
 
-// TestAwareProvider can be used in parallel unit tests. It holds a map of unit test name to `openfeature.FeatureProvider`s.
-// Before executing the test, specify the actual (in memory) provider that's going to  be used for the specific test using the
-// `SetProvider` method.
-type TestAwareProvider struct {
+// TestProvider is the recommended way to defined flags within the scope of a test.
+// It uses the InMemoryProvider, with flags scoped per test.
+// Before executing a test, specify the flag values to be used for the specific test using the
+type TestProvider struct {
 	openfeature.NoopProvider
 	providers *sync.Map
 }
 
-// SetProvider sets a given `FeatureProvider` for a given test.
-func (tp TestAwareProvider) SetProvider(test *testing.T, fp openfeature.FeatureProvider) {
+// UsingFlags sets flags for the scope of a test
+func (tp TestProvider) UsingFlags(test *testing.T, flags map[string]memprovider.InMemoryFlag) {
 	storeGoroutineLocal(test.Name())
-	tp.providers.Store(test.Name(), fp)
+	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
 }
 
 // Cleanup deletes the test provider bound to the current test and should be executed after each test execution
 // e.g. using a defer statement.
-func (tp TestAwareProvider) Cleanup() {
+func (tp TestProvider) Cleanup() {
 	tp.providers.Delete(getGoroutineLocal())
 	deleteGoroutineLocal()
 }
 
-func (tp TestAwareProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+func (tp TestProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
 	return tp.getProvider().BooleanEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestAwareProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+func (tp TestProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
 	return tp.getProvider().StringEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestAwareProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+func (tp TestProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
 	return tp.getProvider().FloatEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestAwareProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (tp TestProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
 	return tp.getProvider().IntEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestAwareProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, flCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, flCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
 	return tp.getProvider().ObjectEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestAwareProvider) Hooks() []openfeature.Hook {
+func (tp TestProvider) Hooks() []openfeature.Hook {
 	return tp.NoopProvider.Hooks()
 }
 
-func (tp TestAwareProvider) Metadata() openfeature.Metadata {
+func (tp TestProvider) Metadata() openfeature.Metadata {
 	return tp.NoopProvider.Metadata()
 }
 
-func (tp TestAwareProvider) getProvider() openfeature.FeatureProvider {
+func (tp TestProvider) getProvider() openfeature.FeatureProvider {
 	// Retrieve the test name from the goroutine-local storage.
 	testName, ok := getGoroutineLocal().(string)
 	if !ok {
-		panic("unable to detect test name")
+		panic("unable to detect test name; be sure to call `UsingFlags`	in the scope of a test (in T.run)!")
 	}
 
 	// Load the feature provider corresponding to the test name.

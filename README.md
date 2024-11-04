@@ -390,29 +390,66 @@ func (h MyHook) Error(context context.Context, hookContext openfeature.HookConte
 
 ## Testing
 
-To test interactions with OpenFeature API and Client, you can rely on `openfeature.IEvaluation` & `openfeature.IClient` interfaces.
+The SDK provides a `NewTestProvider` which allows you to set flags for the scope of a test.
+The `TestProvider` is thread-safe and can be used in tests that run in parallel.
 
-While you may use global methods to interact with the API, it is recommended to obtain the singleton API instance so that you can use appropriate mocks for your testing needs,
-
-```go
-// global helper
-openfeature.SetProvider(myProvider)
-
-// singleton instance - preferred
-apiInstance := openfeature.GetApiInstance()
-apiInstance.SetProvider(myProvider)
-```
-
-Similarly, while you have option (due to historical reasons) to create a client with `openfeature.NewClient()` helper, it is recommended to use API to generate the client which returns an `IClient` instance.
+Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean them up with `testProvider.Cleanup()`
 
 ```go
-// global helper
-openfeature.NewClient("myClient")
+testProvider := NewTestProvider()
+err := openfeature.GetApiInstance().SetProvider(testProvider)
+if err != nil {
+  t.Errorf("unable to set provider")
+}
 
-// using API instance - preferred
-apiInstance := openfeature.GetApiInstance()
-apiInstance.GetClient()
-apiInstance.GetNamedClient("myClient")
+// configure flags for this test suite
+tests := map[string]struct {
+  flags map[string]memprovider.InMemoryFlag
+  want  bool
+}{
+  "test when flag is true": {
+    flags: map[string]memprovider.InMemoryFlag{
+      "my_flag": {
+        State:          memprovider.Enabled,
+        DefaultVariant: "on",
+        Variants: map[string]any{
+          "on": true,
+        },
+      },
+    },
+    want: true,
+  },
+  "test when flag is false": {
+    flags: map[string]memprovider.InMemoryFlag{
+      "my_flag": {
+        State:          memprovider.Enabled,
+        DefaultVariant: "off",
+        Variants: map[string]any{
+          "off": false,
+        },
+      },
+    },
+    want: false,
+  },
+}
+
+for name, tt := range tests {
+  tt := tt
+  name := name
+  t.Run(name, func(t *testing.T) {
+
+    // be sure to clean up your flags
+    defer testProvider.Cleanup()
+    testProvider.UsingFlags(t, tt.flags)
+
+    // your code under test
+    got := functionUnderTest()
+
+    if got != tt.want {
+      t.Fatalf("uh oh, value is not as expected: got %v, want %v", got, tt.want)
+    }
+  })
+}
 ```
 
 <!-- x-hide-in-docs-start -->
