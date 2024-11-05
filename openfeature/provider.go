@@ -66,6 +66,12 @@ type StateHandler interface {
 	Status() State
 }
 
+// Tracker is the contract for tracking
+// FeatureProvider can opt in for this behavior by implementing the interface
+type Tracker interface {
+	Track(ctx context.Context, trackingEventName string, evaluationContext EvaluationContext, details TrackingEventDetails)
+}
+
 // NoopStateHandler is a noop StateHandler implementation
 // Status always set to ReadyState to comply with specification
 type NoopStateHandler struct {
@@ -189,4 +195,56 @@ type InterfaceResolutionDetail struct {
 // Metadata provides provider name
 type Metadata struct {
 	Name string
+}
+
+// TrackingEventDetails provides a tracking details with float64 value
+type TrackingEventDetails struct {
+	value      float64
+	attributes map[string]interface{}
+}
+
+// NewTrackingEventDetails return TrackingEventDetails associated with numeric value value
+func NewTrackingEventDetails(value float64) TrackingEventDetails {
+	return TrackingEventDetails{
+		value:      value,
+		attributes: make(map[string]interface{}),
+	}
+}
+
+// Add insert new key-value pair into TrackingEventDetails and return the TrackingEventDetails itself.
+// If the key already exists in TrackingEventDetails, it will be replaced.
+//
+// Usage: trackingEventDetails.Add('active-time', 2).Add('unit': 'seconds')
+func (t TrackingEventDetails) Add(key string, value interface{}) TrackingEventDetails {
+	t.attributes[key] = value
+	return t
+}
+
+// Attributes return a map contains the key-value pairs stored in TrackingEventDetails.
+func (t TrackingEventDetails) Attributes() map[string]interface{} {
+	// copy fields to new map to prevent mutation (maps are passed by reference)
+	fields := make(map[string]interface{}, len(t.attributes))
+	for key, value := range t.attributes {
+		fields[key] = value
+	}
+	return fields
+}
+
+// Attribute retrieves the attribute with the given key.
+func (t TrackingEventDetails) Attribute(key string) interface{} {
+	return t.attributes[key]
+}
+
+// Copy return a new TrackingEventDetails with new value.
+// It will copy details of old TrackingEventDetails into the new one to ensure the immutability.
+func (t TrackingEventDetails) Copy(value float64) TrackingEventDetails {
+	return TrackingEventDetails{
+		value:      value,
+		attributes: t.Attributes(),
+	}
+}
+
+// Value retrieves the value of TrackingEventDetails.
+func (t TrackingEventDetails) Value() float64 {
+	return t.value
 }

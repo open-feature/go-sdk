@@ -129,3 +129,21 @@ func ExampleClient_Object() {
 
 	// Output: map[foo:bar]
 }
+
+func ExampleClient_Track() {
+	ctx := context.Background()
+	client := openfeature.NewClient("example-client")
+
+	evaluationContext := openfeature.EvaluationContext{}
+
+	// example tracking event recording that a subject reached a page associated with a business goal
+	client.Track(ctx, "visited-promo-page", evaluationContext, openfeature.TrackingEventDetails{})
+
+	// example tracking event recording that a subject performed an action associated with a business goal, with the tracking event details having a particular numeric value
+	client.Track(ctx, "clicked-checkout", evaluationContext, openfeature.NewTrackingEventDetails(99.77))
+
+	// example tracking event recording that a subject performed an action associated with a business goal, with the tracking event details having a particular numeric value
+	client.Track(ctx, "clicked-checkout", evaluationContext, openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"))
+
+	// Output:
+}
