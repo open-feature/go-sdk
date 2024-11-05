@@ -60,3 +60,61 @@ func TestRequirement_2_2_1(t *testing.T) {
 // including boolean, numeric, string, and structure.
 //
 // Is satisfied by TestRequirement_2_2.
+
+func TestTrackingEventDetails_Copy(t *testing.T) {
+	tests := map[string]struct {
+		inputDetails TrackingEventDetails
+		copiedValue  float64
+		outputDetail TrackingEventDetails
+	}{
+		"copied correctly": {
+			inputDetails: NewTrackingEventDetails(1).Add("foo", "bar"),
+			copiedValue:  2,
+			outputDetail: NewTrackingEventDetails(2).Add("foo", "bar"),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			copiedDetails := tc.inputDetails.Copy(tc.copiedValue)
+
+			if !reflect.DeepEqual(copiedDetails, tc.outputDetail) {
+				t.Errorf("copied value %v doesn't match the expected value  %v", copiedDetails, tc.outputDetail)
+			}
+		})
+	}
+}
+
+func TestTrackingEventDetails_Add(t *testing.T) {
+	type dummyStruct struct {
+		qux string
+	}
+
+	tests := map[string]struct {
+		inputDetails TrackingEventDetails
+		addKeyPair   map[string]interface{}
+	}{
+		"added correctly": {
+			inputDetails: NewTrackingEventDetails(1),
+			addKeyPair: map[string]interface{}{
+				"foo": "bar",
+				"baz": 1,
+				"qux": dummyStruct{
+					qux: "qux",
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			for key, value := range tc.addKeyPair {
+				tc.inputDetails.Add(key, value)
+			}
+
+			if !reflect.DeepEqual(tc.inputDetails.Attributes(), tc.addKeyPair) {
+				t.Errorf("added key-pair %v not match with input key-pair %v", tc.addKeyPair, tc.inputDetails.Attributes())
+			}
+		})
+	}
+}
