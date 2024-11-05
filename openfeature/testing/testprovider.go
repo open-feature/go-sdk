@@ -22,7 +22,7 @@ func NewTestProvider() TestProvider {
 
 // TestProvider is the recommended way to defined flags within the scope of a test.
 // It uses the InMemoryProvider, with flags scoped per test.
-// Before executing a test, specify the flag values to be used for the specific test using the
+// Before executing a test, specify the flag values to be used for the specific test using the UsingFlags function
 type TestProvider struct {
 	openfeature.NoopProvider
 	providers *sync.Map
