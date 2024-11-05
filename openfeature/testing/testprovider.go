@@ -34,7 +34,7 @@ func (tp TestProvider) UsingFlags(test *testing.T, flags map[string]memprovider.
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
 }
 
-// Cleanup deletes the test provider bound to the current test and should be executed after each test execution
+// Cleanup deletes the flags provider bound to the current test and should be executed after each test execution
 // e.g. using a defer statement.
 func (tp TestProvider) Cleanup() {
 	tp.providers.Delete(getGoroutineLocal())
