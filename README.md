@@ -417,6 +417,11 @@ The `TestProvider` is thread-safe and can be used in tests that run in parallel.
 Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean them up with `testProvider.Cleanup()`
 
 ```go
+import (
+ 	"github.com/open-feature/go-sdk/openfeature"
+  "github.com/open-feature/go-sdk/openfeature/testing"
+)
+
 testProvider := NewTestProvider()
 err := openfeature.GetApiInstance().SetProvider(testProvider)
 if err != nil {

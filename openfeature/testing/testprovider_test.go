@@ -1,4 +1,4 @@
-package openfeaturetest
+package testing
 
 import (
 	"context"
