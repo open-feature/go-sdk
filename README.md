@@ -439,7 +439,7 @@ Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean t
 
 ```go
 import (
- 	"github.com/open-feature/go-sdk/openfeature"
+  "github.com/open-feature/go-sdk/openfeature"
   "github.com/open-feature/go-sdk/openfeature/testing"
 )
 
