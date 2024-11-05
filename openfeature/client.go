@@ -41,7 +41,6 @@ type Client struct {
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
-	logger            logr.Logger
 
 	mx sync.RWMutex
 }
@@ -52,25 +51,24 @@ var _ IClient = (*Client)(nil)
 // NewClient returns a new Client. Name is a unique identifier for this client
 // This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
 func NewClient(name string) *Client {
-	return newClient(name, api, eventing, logger)
+	return newClient(name, api, eventing)
 }
 
-func newClient(name string, apiRef evaluationImpl, eventRef clientEvent, log logr.Logger) *Client {
+func newClient(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
 	return &Client{
 		api:               apiRef,
 		clientEventing:    eventRef,
-		logger:            log,
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
 }
 
+// Deprecated
 // WithLogger sets the logger of the client
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()
-	c.logger = l
 	return c
 }
 
@@ -395,10 +393,6 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
 		err := errors.New("evaluated value is not a boolean")
-		c.logger.Error(
-			err, "invalid flag resolution type", "expectedType", "boolean",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
 		boolEvalDetails := BooleanEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
@@ -443,10 +437,6 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 	value, ok := evalDetails.Value.(string)
 	if !ok {
 		err := errors.New("evaluated value is not a string")
-		c.logger.Error(
-			err, "invalid flag resolution type", "expectedType", "string",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
 		strEvalDetails := StringEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
@@ -491,10 +481,6 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
 		err := errors.New("evaluated value is not a float64")
-		c.logger.Error(
-			err, "invalid flag resolution type", "expectedType", "float64",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
 		floatEvalDetails := FloatEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
@@ -539,10 +525,6 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
 		err := errors.New("evaluated value is not an int64")
-		c.logger.Error(
-			err, "invalid flag resolution type", "expectedType", "int64",
-			"gotType", fmt.Sprintf("%T", evalDetails.Value),
-		)
 		intEvalDetails := IntEvaluationDetails{
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
@@ -698,10 +680,6 @@ func (c *Client) evaluate(
 	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
-		c.logger.Error(
-			err, "before hook", "flag", flag, "defaultValue", defaultValue,
-			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
-		)
 		err = fmt.Errorf("before hook: %w", err)
 		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
@@ -736,11 +714,6 @@ func (c *Client) evaluate(
 
 	err = resolution.Error()
 	if err != nil {
-		c.logger.Error(
-			err, "flag resolution", "flag", flag, "defaultValue", defaultValue,
-			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(), "errorCode", err,
-			"errMessage", resolution.ResolutionError.message,
-		)
 		err = fmt.Errorf("error code: %w", err)
 		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
@@ -751,10 +724,6 @@ func (c *Client) evaluate(
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
 	if err := c.afterHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
-		c.logger.Error(
-			err, "after hook", "flag", flag, "defaultValue", defaultValue,
-			"evaluationContext", evalCtx, "evaluationOptions", options, "type", flagType.String(),
-		)
 		err = fmt.Errorf("after hook: %w", err)
 		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
 		return evalDetails, err
