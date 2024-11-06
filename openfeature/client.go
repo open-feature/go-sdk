@@ -659,6 +659,14 @@ func (c *Client) evaluate(
 		},
 	}
 
+	if c.State() == NotReadyState {
+		return evalDetails, ProviderNotReadyError
+	}
+
+	if c.State() == FatalState {
+		return evalDetails, ProviderFatalError
+	}
+
 	if !utf8.Valid([]byte(flag)) {
 		return evalDetails, NewParseErrorResolutionError("flag key is not a UTF-8 encoded string")
 	}

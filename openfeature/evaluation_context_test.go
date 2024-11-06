@@ -113,12 +113,12 @@ func TestRequirement_3_2_2(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	client := NewClient("test")
+	client := GetApiInstance().GetNamedClient(t.Name())
 	clientEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]interface{}{
