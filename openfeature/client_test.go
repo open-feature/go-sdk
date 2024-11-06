@@ -1136,9 +1136,10 @@ func TestRequirement_1_7_1(t *testing.T) {
 // terminates normally.
 func TestRequirement_1_7_2(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == NotReadyState
-	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
 
 	provider := struct {
 		FeatureProvider
@@ -1150,12 +1151,13 @@ func TestRequirement_1_7_2(t *testing.T) {
 		},
 	}
 
-	if err := SetProviderAndWait(provider); err != nil {
+	if err := SetNamedProviderAndWait(t.Name(), provider); err != nil {
 		t.Fatalf("failed to set up provider: %v", err)
 	}
-	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ReadyState
-	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ReadyState {
+		t.Fatalf("expected client to report READY state")
+	}
 }
 
 // The client's provider status accessor MUST indicate ERROR if the initialize function of the associated provider
@@ -1176,10 +1178,11 @@ func TestRequirement_1_7_3(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetProviderAndWait(provider)
-	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ErrorState
-	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
 }
 
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
@@ -1200,11 +1203,12 @@ func TestRequirement_1_7_4(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetProviderAndWait(provider)
+	_ = SetNamedProviderAndWait(t.Name(), provider)
 
-	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ErrorState
-	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
 }
 
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
@@ -1225,11 +1229,12 @@ func TestRequirement_1_7_5(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetProviderAndWait(provider)
+	_ = SetNamedProviderAndWait(t.Name(), provider)
 
-	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == FatalState
-	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+	if GetApiInstance().GetNamedClient(t.Name()).State() != FatalState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
 }
 
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
@@ -1276,32 +1281,32 @@ func TestRequirement_5_3_5(t *testing.T) {
 		eventing,
 	}
 
-	if err := SetProviderAndWait(provider); err != nil {
+	if err := SetNamedProviderAndWait(t.Name(), provider); err != nil {
 		t.Fatalf("failed to set up provider: %v", err)
 	}
 
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ReadyState
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderStale})
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == StaleState
+		return GetApiInstance().GetNamedClient(t.Name()).State() == StaleState
 	}, time.Second, 100*time.Millisecond, "expected client to report STALE state")
 
 	eventing.Invoke(Event{EventType: ProviderError})
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ErrorState
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ErrorState
 	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
 
 	eventing.Invoke(Event{EventType: ProviderReady})
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == ReadyState
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderError, ProviderEventDetails: ProviderEventDetails{ErrorCode: ProviderFatalCode}})
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == FatalState
+		return GetApiInstance().GetNamedClient(t.Name()).State() == FatalState
 	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
 
 }
