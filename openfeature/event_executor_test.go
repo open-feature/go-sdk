@@ -988,9 +988,15 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			rsp <- e
 		}
 
-		//AddHandler(ProviderReady, &callback) // TODO: hard to test, because callback is executed on handler registration
+		AddHandler(ProviderReady, &callback)
+		<-rsp // ignore first READY event which gets emitted after registration
 		AddHandler(ProviderStale, &callback)
 		AddHandler(ProviderConfigChange, &callback)
+
+		// assert client transitioned to ERROR
+		eventually(t, func() bool {
+			return GetApiInstance().GetClient().State() == ErrorState
+		}, time.Second, time.Millisecond*100, "")
 
 		select {
 		case <-rsp:
@@ -1025,9 +1031,15 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			rsp <- e
 		}
 
-		//AddHandler(ProviderReady, &callback) // TODO: hard to test, because callback is executed on handler registration
+		AddHandler(ProviderReady, &callback)
+		<-rsp // ignore first READY event which gets emitted after registration
 		AddHandler(ProviderError, &callback)
 		AddHandler(ProviderConfigChange, &callback)
+
+		// assert client transitioned to STALE
+		eventually(t, func() bool {
+			return GetApiInstance().GetClient().State() == StaleState
+		}, time.Second, time.Millisecond*100, "")
 
 		select {
 		case <-rsp:
