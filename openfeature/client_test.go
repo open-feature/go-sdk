@@ -1232,18 +1232,77 @@ func TestRequirement_1_7_5(t *testing.T) {
 // is in NOT_READY.
 func TestRequirement_1_7_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	t.Skip("Test not yet implemented")
+
+	ctrl := gomock.NewController(t)
+	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderNotReadyError, gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+
+	client := GetApiInstance().GetNamedClient(t.Name())
+	client.AddHooks(mockHook)
+
+	if client.State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
+
+	defaultVal := true
+	res, err := client.BooleanValue(context.Background(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if res != defaultVal {
+		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
+	}
 
 }
 
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
 // is in FATAL.
 func TestRequirement_1_7_7(t *testing.T) {
-	t.Skip("Test not yet implemented")
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+
+	ctrl := gomock.NewController(t)
+	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderFatalError, gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+
+	client := GetApiInstance().GetNamedClient(t.Name())
+	client.AddHooks(mockHook)
+
+	if client.State() != FatalState {
+		t.Fatalf("expected client to report FATAL state")
+	}
+
+	defaultVal := true
+	res, err := client.BooleanValue(context.Background(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if res != defaultVal {
+		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
+	}
 }
 
 // Implementations SHOULD propagate the error code returned from any provider lifecycle methods.
 func TestRequirement_1_7_8(t *testing.T) {
+
 	t.Skip("Test not yet implemented")
 }
 

@@ -659,14 +659,6 @@ func (c *Client) evaluate(
 		},
 	}
 
-	if c.State() == NotReadyState {
-		return evalDetails, ProviderNotReadyError
-	}
-
-	if c.State() == FatalState {
-		return evalDetails, ProviderFatalError
-	}
-
 	if !utf8.Valid([]byte(flag)) {
 		return evalDetails, NewParseErrorResolutionError("flag key is not a UTF-8 encoded string")
 	}
@@ -691,6 +683,18 @@ func (c *Client) evaluate(
 	defer func() {
 		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, options)
 	}()
+
+	// short circuit if provider is in NOT READY state
+	if c.State() == NotReadyState {
+		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderNotReadyError, options)
+		return evalDetails, ProviderNotReadyError
+	}
+
+	// short circuit if provider is in FATAL state
+	if c.State() == FatalState {
+		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderFatalError, options)
+		return evalDetails, ProviderFatalError
+	}
 
 	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
