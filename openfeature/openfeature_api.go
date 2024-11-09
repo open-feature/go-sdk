@@ -9,19 +9,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// evaluationImpl is an internal reference interface extending IEvaluation
-type evaluationImpl interface {
-	IEvaluation
-	GetProvider() FeatureProvider
-	GetNamedProviders() map[string]FeatureProvider
-	GetHooks() []Hook
-
-	// Deprecated
-	SetLogger(l logr.Logger)
-
-	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
-}
-
 // evaluationAPI wraps OpenFeature evaluation API functionalities
 type evaluationAPI struct {
 	defaultProvider FeatureProvider
