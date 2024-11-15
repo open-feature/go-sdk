@@ -756,6 +756,153 @@ func TestRequirement_1_4_13(t *testing.T) {
 // The `client` SHOULD transform the `evaluation context` using the `provider's` `context transformer` function
 // if one is defined, before passing the result of the transformation to the provider's flag resolution functions.
 
+// TestRequirement_6_1 tests the 6.1.1 and 6.1.2 requirements by asserting that the returned client matches the interface
+// defined by the 6.1.1 and 6.1.2 requirements
+
+// Requirement_6_1_1
+// The `client` MUST define a function for tracking the occurrence of a particular action or application state,
+// with parameters `tracking event name` (string, required), `evaluation context` (optional) and `tracking event details` (optional),
+// which returns nothing.
+
+// Requirement_6_1_2
+// The `client` MUST define a function for tracking the occurrence of a particular action or application state,
+// with parameters `tracking event name` (string, required) and `tracking event details` (optional), which returns nothing.
+func TestRequirement_6_1(t *testing.T) {
+	client := NewClient("test-client")
+
+	type requirements interface {
+		Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
+	}
+
+	var clientI interface{} = client
+	if _, ok := clientI.(requirements); !ok {
+		t.Error("client returned by NewClient doesn't implement the 1.6.* requirements interface")
+	}
+}
+
+// Requirement_6_1_3
+// The evaluation context passed to the provider's track function MUST be merged in the order, with duplicate values being overwritten:
+// - API (global; lowest precedence)
+// - transaction
+// - client
+// - invocation (highest precedence)
+
+// Requirement_6_1_4
+// If the client's `track` function is called and the associated provider does not implement tracking, the client's `track` function MUST no-op.
+// Allow backward compatible to non-Tracker Provider
+func TestTrack(t *testing.T) {
+	type inputCtx struct {
+		api        EvaluationContext
+		txn        EvaluationContext
+		client     EvaluationContext
+		invocation EvaluationContext
+	}
+
+	type testcase struct {
+		inCtx     inputCtx
+		eventName string
+		outCtx    EvaluationContext
+		// allow asserting the input to provider
+		provider func(tc *testcase, ctrl *gomock.Controller) FeatureProvider
+	}
+
+	// mockTrackingProvider is a feature provider that implements tracker contract.
+	type mockTrackingProvider struct {
+		*MockTracker
+		*MockFeatureProvider
+	}
+
+	tests := map[string]*testcase{
+		"merging in correct order": {
+			eventName: "example-event",
+			inCtx: inputCtx{
+				api: EvaluationContext{
+					attributes: map[string]interface{}{
+						"1": "api",
+						"2": "api",
+						"3": "api",
+						"4": "api",
+					},
+				},
+				txn: EvaluationContext{
+					attributes: map[string]interface{}{
+						"2": "txn",
+						"3": "txn",
+						"4": "txn",
+					},
+				},
+				client: EvaluationContext{
+					attributes: map[string]interface{}{
+						"3": "client",
+						"4": "client",
+					},
+				},
+				invocation: EvaluationContext{
+					attributes: map[string]interface{}{
+						"4": "invocation",
+					},
+				},
+			},
+			outCtx: EvaluationContext{
+				attributes: map[string]interface{}{
+					"1": "api",
+					"2": "txn",
+					"3": "client",
+					"4": "invocation",
+				},
+			},
+			provider: func(tc *testcase, ctrl *gomock.Controller) FeatureProvider {
+				provider := &mockTrackingProvider{
+					MockTracker:         NewMockTracker(ctrl),
+					MockFeatureProvider: NewMockFeatureProvider(ctrl),
+				}
+
+				provider.MockFeatureProvider.EXPECT().Metadata().AnyTimes()
+				// assert if Track is called once with evalCtx expected
+				provider.MockTracker.EXPECT().Track(gomock.Any(), tc.eventName, tc.outCtx, TrackingEventDetails{}).Times(1)
+
+				return provider
+			},
+		},
+		"do no-op if Provider do not implement Tracker": {
+			inCtx:     inputCtx{},
+			eventName: "example-event",
+			outCtx:    EvaluationContext{},
+			provider: func(tc *testcase, ctrl *gomock.Controller) FeatureProvider {
+				provider := NewMockFeatureProvider(ctrl)
+
+				provider.EXPECT().Metadata().AnyTimes()
+
+				return provider
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// arrange
+			ctrl := gomock.NewController(t)
+			provider := test.provider(test, ctrl)
+			client := NewClient("test-client")
+
+			// use different api in this client to avoid racing when changing global context
+			client.api = newEvaluationAPI(newEventExecutor())
+
+			client.api.SetEvaluationContext(test.inCtx.api)
+			_ = client.api.SetProviderAndWait(provider)
+
+			client.evaluationContext = test.inCtx.client
+			ctx := WithTransactionContext(context.Background(), test.inCtx.txn)
+
+			// action
+			client.Track(ctx, test.eventName, test.inCtx.invocation, TrackingEventDetails{})
+
+			// assert
+			ctrl.Finish()
+		})
+	}
+}
+
 func TestFlattenContext(t *testing.T) {
 	tests := map[string]struct {
 		inCtx  EvaluationContext

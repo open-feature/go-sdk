@@ -43,10 +43,16 @@ type IClient interface {
 	State() State
 
 	IEventing
+	ITracking
 }
 
 // IEventing defines the OpenFeature eventing contract
 type IEventing interface {
 	AddHandler(eventType EventType, callback EventCallback)
 	RemoveHandler(eventType EventType, callback EventCallback)
+}
+
+// ITracking defines the Tracking contract
+type ITracking interface {
+	Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
 }
