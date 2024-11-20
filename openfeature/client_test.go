@@ -82,7 +82,7 @@ func TestRequirement_1_2_2(t *testing.T) {
 // it's to be considered abnormal execution, and the supplied `default value` should be returned.
 func TestRequirements_1_3(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client, _, _ := newTestClient("test-client", t)
+	client := NewClient("test-client")
 
 	type requirements interface {
 		BooleanValue(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (bool, error)
@@ -103,7 +103,7 @@ func TestRequirements_1_3(t *testing.T) {
 // and `evaluation options` (optional), which returns an `evaluation details` structure.
 func TestRequirement_1_4_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client, _, _ := newTestClient("test-client", t)
+	client := NewClient("test-client")
 
 	type requirements interface {
 		BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
