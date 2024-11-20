@@ -24,7 +24,10 @@ type eventingImpl interface {
 type clientEvent interface {
 	AddClientHandler(clientName string, t EventType, c EventCallback)
 	RemoveClientHandler(name string, t EventType, c EventCallback)
+	State(domain string) State
 }
+
+const defaultClient = ""
 
 // event executor is a registry to connect API and Client event handlers to Providers
 
@@ -33,6 +36,7 @@ type clientEvent interface {
 // feature provider as well as from API(ex:- for initialization events).
 // Usage of channels help with concurrency and adhere to the principal of sharing memory by communication.
 type eventExecutor struct {
+	states                   sync.Map
 	defaultProviderReference providerReference
 	namedProviderReference   map[string]providerReference
 	activeSubscriptions      []providerReference
@@ -45,6 +49,7 @@ type eventExecutor struct {
 
 func newEventExecutor() *eventExecutor {
 	executor := eventExecutor{
+		states:                 sync.Map{},
 		namedProviderReference: map[string]providerReference{},
 		activeSubscriptions:    []providerReference{},
 		apiRegistry:            map[EventType][]EventCallback{},
@@ -97,7 +102,7 @@ func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
 		e.apiRegistry[t] = append(e.apiRegistry[t], c)
 	}
 
-	e.emitOnRegistration(e.defaultProviderReference, t, c)
+	e.emitOnRegistration(defaultClient, e.defaultProviderReference, t, c)
 }
 
 // RemoveHandler removes an API(global) level handler
@@ -144,7 +149,7 @@ func (e *eventExecutor) AddClientHandler(clientDomain string, t EventType, c Eve
 		reference = e.defaultProviderReference
 	}
 
-	e.emitOnRegistration(reference, t, c)
+	e.emitOnRegistration(clientDomain, reference, t, c)
 }
 
 // RemoveClientHandler removes a client level handler
@@ -183,18 +188,11 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
-func (e *eventExecutor) emitOnRegistration(
-	providerReference providerReference,
-	eventType EventType,
-	callback EventCallback,
-) {
-	s, ok := (providerReference.featureProvider).(StateHandler)
+func (e *eventExecutor) emitOnRegistration(clientDomain string, providerReference providerReference, eventType EventType, callback EventCallback) {
+	state, ok := e.states.Load(clientDomain)
 	if !ok {
-		// not a state handler, hence ignore state emitting
 		return
 	}
-
-	state := s.Status()
 
 	var message string
 	if state == ReadyState && eventType == ProviderReady {
@@ -213,6 +211,14 @@ func (e *eventExecutor) emitOnRegistration(
 			},
 		})
 	}
+}
+
+func (e *eventExecutor) State(domain string) State {
+	s, ok := e.states.Load(domain)
+	if !ok {
+		return NotReadyState
+	}
+	return s.(State)
 }
 
 // registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
@@ -340,6 +346,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 			continue
 		}
 
+		e.states.Store(name, stateFromEvent(event))
 		for _, c := range e.scopedRegistry[name].callbacks[event.EventType] {
 			e.executeHandler(*c, event)
 		}
@@ -349,7 +356,9 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 		return
 	}
 
-	// handling the default provider - invoke default provider bound (no provider associated) handlers by filtering
+	// handling the default provider
+	e.states.Store(defaultClient, stateFromEvent(event))
+	// invoke default provider bound (no provider associated) handlers by filtering
 	for clientName, registry := range e.scopedRegistry {
 		if _, ok := e.namedProviderReference[clientName]; ok {
 			// association exist, skip and check next

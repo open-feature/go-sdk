@@ -16,6 +16,9 @@ func ExampleNewClient() {
 }
 
 func ExampleClient_BooleanValue() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.BooleanValue(
 		context.Background(), "test-flag", true, openfeature.EvaluationContext{},
@@ -29,6 +32,9 @@ func ExampleClient_BooleanValue() {
 }
 
 func ExampleClient_StringValue() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.StringValue(
 		context.Background(), "test-flag", "openfeature", openfeature.EvaluationContext{},
@@ -42,6 +48,9 @@ func ExampleClient_StringValue() {
 }
 
 func ExampleClient_FloatValue() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.FloatValue(
 		context.Background(), "test-flag", 0.55, openfeature.EvaluationContext{},
@@ -55,6 +64,9 @@ func ExampleClient_FloatValue() {
 }
 
 func ExampleClient_IntValue() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.IntValue(
 		context.Background(), "test-flag", 3, openfeature.EvaluationContext{},
@@ -68,6 +80,9 @@ func ExampleClient_IntValue() {
 }
 
 func ExampleClient_ObjectValue() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.ObjectValue(
 		context.Background(), "test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{},
@@ -82,6 +97,9 @@ func ExampleClient_ObjectValue() {
 }
 
 func ExampleClient_Boolean() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	ctx := context.Background()
 	client := openfeature.NewClient("example-client")
 
@@ -95,6 +113,9 @@ func ExampleClient_Boolean() {
 }
 
 func ExampleClient_String() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	ctx := context.Background()
 	client := openfeature.NewClient("example-client")
 
@@ -104,6 +125,9 @@ func ExampleClient_String() {
 }
 
 func ExampleClient_Float() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	ctx := context.Background()
 	client := openfeature.NewClient("example-client")
 
@@ -113,6 +137,9 @@ func ExampleClient_Float() {
 }
 
 func ExampleClient_Int() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	ctx := context.Background()
 	client := openfeature.NewClient("example-client")
 
@@ -122,6 +149,9 @@ func ExampleClient_Int() {
 }
 
 func ExampleClient_Object() {
+	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
+		log.Fatalf("error setting up provider %v", err)
+	}
 	ctx := context.Background()
 	client := openfeature.NewClient("example-client")
 

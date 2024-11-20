@@ -41,6 +41,7 @@ type Client struct {
 	metadata          ClientMetadata
 	hooks             []Hook
 	evaluationContext EvaluationContext
+	domain            string
 
 	mx sync.RWMutex
 }
@@ -56,12 +57,18 @@ func NewClient(name string) *Client {
 
 func newClient(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
 	return &Client{
+		domain:            name,
 		api:               apiRef,
 		clientEventing:    eventRef,
 		metadata:          ClientMetadata{name: name},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
+}
+
+// State returns the state of the associated provider
+func (c *Client) State() State {
+	return c.clientEventing.State(c.domain)
 }
 
 // Deprecated
@@ -705,6 +712,18 @@ func (c *Client) evaluate(
 	defer func() {
 		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, options)
 	}()
+
+	// short circuit if provider is in NOT READY state
+	if c.State() == NotReadyState {
+		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderNotReadyError, options)
+		return evalDetails, ProviderNotReadyError
+	}
+
+	// short circuit if provider is in FATAL state
+	if c.State() == FatalState {
+		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderFatalError, options)
+		return evalDetails, ProviderFatalError
+	}
 
 	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx

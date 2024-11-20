@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -108,7 +109,6 @@ func TestRequirement_1_4_1(t *testing.T) {
 // by the configured `provider`, if the field is set.
 func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := NewClient("test-client")
 	const (
 		booleanValue = true
 		stringValue  = "str"
@@ -134,7 +134,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait("test-client", mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -151,7 +151,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, false, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").BooleanValueDetails(context.Background(), flagKey, false, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -170,7 +170,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -195,7 +195,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").FloatValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -220,7 +220,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").IntValueDetails(context.Background(), flagKey, 0, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -245,7 +245,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 				},
 			})
 
-		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, nil, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").ObjectValueDetails(context.Background(), flagKey, nil, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -267,12 +267,14 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 // argument passed to the detailed flag evaluation method.
 func TestRequirement_1_4_4(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := NewClient("test-client")
+	if err := SetNamedProviderAndWait("test-client", NoopProvider{}); err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
 
 	flagKey := "foo"
 
 	t.Run("BooleanValueDetails", func(t *testing.T) {
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, true, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").BooleanValueDetails(context.Background(), flagKey, true, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -285,7 +287,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("StringValueDetails", func(t *testing.T) {
-		evDetails, err := client.StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").StringValueDetails(context.Background(), flagKey, "", EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -298,7 +300,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("FloatValueDetails", func(t *testing.T) {
-		evDetails, err := client.FloatValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").FloatValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -311,7 +313,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("IntValueDetails", func(t *testing.T) {
-		evDetails, err := client.IntValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").IntValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -324,7 +326,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	})
 
 	t.Run("ObjectValueDetails", func(t *testing.T) {
-		evDetails, err := client.ObjectValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient("test-client").ObjectValueDetails(context.Background(), flagKey, 1, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -341,7 +343,6 @@ func TestRequirement_1_4_4(t *testing.T) {
 // `error code` field MUST contain an `error code`.
 func TestRequirement_1_4_7(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := NewClient("test-client")
 
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -355,12 +356,12 @@ func TestRequirement_1_4_7(t *testing.T) {
 			},
 		})
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	res, err := client.evaluate(
+	res, err := GetApiInstance().GetNamedClient(t.Name()).(*Client).evaluate(
 		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
@@ -377,7 +378,6 @@ func TestRequirement_1_4_7(t *testing.T) {
 // in the `evaluation details` SHOULD indicate an error.
 func TestRequirement_1_4_8(t *testing.T) {
 	defer t.Cleanup(initSingleton)
-	client := NewClient("test-client")
 
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -390,12 +390,12 @@ func TestRequirement_1_4_8(t *testing.T) {
 				ResolutionError: NewGeneralResolutionError("test"),
 			},
 		})
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	res, err := client.evaluate(
+	res, err := GetApiInstance().GetNamedClient(t.Name()).(*Client).evaluate(
 		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
@@ -425,7 +425,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Boolean", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -438,12 +437,12 @@ func TestRequirement_1_4_9(t *testing.T) {
 				},
 			}).Times(2)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		value, err := client.BooleanValue(context.Background(), flagKey, defaultValue, evalCtx)
+		value, err := GetApiInstance().GetNamedClient(t.Name()).BooleanValue(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected BooleanValue to return an error, got nil")
 		}
@@ -452,7 +451,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from BooleanValue, got %v", value)
 		}
 
-		valueDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		valueDetails, err := GetApiInstance().GetNamedClient(t.Name()).BooleanValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected BooleanValueDetails to return an error, got nil")
 		}
@@ -465,7 +464,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := "default"
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -478,12 +476,12 @@ func TestRequirement_1_4_9(t *testing.T) {
 				},
 			}).Times(2)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		value, err := client.StringValue(context.Background(), flagKey, defaultValue, evalCtx)
+		value, err := GetApiInstance().GetNamedClient(t.Name()).StringValue(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected StringValue to return an error, got nil")
 		}
@@ -492,7 +490,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from StringValue, got %v", value)
 		}
 
-		valueDetails, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		valueDetails, err := GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected StringValueDetails to return an error, got nil")
 		}
@@ -505,7 +503,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Float", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := 3.14159
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -518,12 +515,12 @@ func TestRequirement_1_4_9(t *testing.T) {
 				},
 			}).Times(2)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		value, err := client.FloatValue(context.Background(), flagKey, defaultValue, evalCtx)
+		value, err := GetApiInstance().GetNamedClient(t.Name()).FloatValue(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected FloatValue to return an error, got nil")
 		}
@@ -532,7 +529,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from FloatValue, got %v", value)
 		}
 
-		valueDetails, err := client.FloatValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		valueDetails, err := GetApiInstance().GetNamedClient(t.Name()).FloatValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected FloatValueDetails to return an error, got nil")
 		}
@@ -545,7 +542,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Int", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		var defaultValue int64 = 3
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -558,12 +554,12 @@ func TestRequirement_1_4_9(t *testing.T) {
 				},
 			}).Times(2)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		value, err := client.IntValue(context.Background(), flagKey, defaultValue, evalCtx)
+		value, err := GetApiInstance().GetNamedClient(t.Name()).IntValue(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected IntValue to return an error, got nil")
 		}
@@ -572,7 +568,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from IntValue, got %v", value)
 		}
 
-		valueDetails, err := client.IntValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		valueDetails, err := GetApiInstance().GetNamedClient(t.Name()).IntValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected FloatValueDetails to return an error, got nil")
 		}
@@ -585,7 +581,6 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Object", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		type obj struct {
 			foo string
@@ -600,12 +595,12 @@ func TestRequirement_1_4_9(t *testing.T) {
 				},
 			}).Times(2)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		value, err := client.ObjectValue(context.Background(), flagKey, defaultValue, evalCtx)
+		value, err := GetApiInstance().GetNamedClient(t.Name()).ObjectValue(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected ObjectValue to return an error, got nil")
 		}
@@ -614,7 +609,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from ObjectValue, got %v", value)
 		}
 
-		valueDetails, err := client.ObjectValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
+		valueDetails, err := GetApiInstance().GetNamedClient(t.Name()).ObjectValueDetails(context.Background(), flagKey, defaultValue, evalCtx)
 		if err == nil {
 			t.Error("expected ObjectValueDetails to return an error, got nil")
 		}
@@ -645,7 +640,7 @@ func TestRequirement_1_4_12(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -658,8 +653,7 @@ func TestRequirement_1_4_12(t *testing.T) {
 			},
 		})
 
-	client := NewClient("test")
-	evalDetails, err := client.evaluate(
+	evalDetails, err := GetApiInstance().GetNamedClient(t.Name()).(*Client).evaluate(
 		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
@@ -687,7 +681,6 @@ func TestRequirement_1_4_13(t *testing.T) {
 	t.Run("No Metadata", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -700,12 +693,12 @@ func TestRequirement_1_4_13(t *testing.T) {
 				},
 			}).Times(1)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient(t.Name()).BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -720,7 +713,6 @@ func TestRequirement_1_4_13(t *testing.T) {
 	t.Run("Metadata present", func(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
-		client := NewClient("test-client")
 		mockProvider := NewMockFeatureProvider(ctrl)
 		defaultValue := true
 		metadata := FlagMetadata{
@@ -736,12 +728,12 @@ func TestRequirement_1_4_13(t *testing.T) {
 				},
 			}).Times(1)
 
-		err := SetProvider(mockProvider)
+		err := SetNamedProviderAndWait(t.Name(), mockProvider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		evDetails, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
+		evDetails, err := GetApiInstance().GetNamedClient(t.Name()).BooleanValueDetails(context.Background(), flagKey, defaultValue, EvaluationContext{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -998,14 +990,14 @@ func TestBeforeHookNilContext(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
 	hookNilContext := UnimplementedHook{}
 
-	client := NewClient("test")
+	client := GetApiInstance().GetNamedClient(t.Name())
 	attributes := map[string]interface{}{"should": "persist"}
 	evalCtx := EvaluationContext{attributes: attributes}
 	mockProvider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), attributes)
@@ -1028,7 +1020,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -1041,8 +1033,8 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 			},
 		})
 
-	client := NewClient("test")
-	evalDetails, err := client.evaluate(
+	client := GetApiInstance().GetNamedClient(t.Name())
+	evalDetails, err := client.(*Client).evaluate(
 		context.Background(), "foo", Boolean, true, EvaluationContext{}, EvaluationOptions{},
 	)
 	if err == nil {
@@ -1081,7 +1073,7 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 			return nil, nil
 		})
 
-	err := SetProvider(mockProvider1)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider1)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -1091,7 +1083,7 @@ func TestSwitchingProvidersMidEvaluationCausesNoImpactToEvaluation(t *testing.T)
 	mockProvider1Hook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	mockProvider1Hook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-	client := NewClient("test")
+	client := GetApiInstance().GetNamedClient(t.Name())
 	_, err = client.BooleanValue(context.Background(), "foo", true, EvaluationContext{})
 	if err != nil {
 		t.Error(err)
@@ -1110,7 +1102,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	err := SetProvider(mockProvider)
+	err := SetNamedProviderAndWait(t.Name(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -1124,7 +1116,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 			},
 		})
 
-	client := NewClient("test")
+	client := GetApiInstance().GetNamedClient(t.Name())
 	evDetails, err := client.ObjectValueDetails(context.Background(), "foo", nil, EvaluationContext{})
 	if err != nil {
 		t.Errorf("should not return an error: %s", err.Error())
@@ -1258,4 +1250,260 @@ func TestFlagMetadataAccessors(t *testing.T) {
 			t.Error("unexpected error value", err)
 		}
 	})
+}
+
+// The client MUST define a provider status accessor which indicates the readiness of the associated provider.
+// with possible values NOT_READY, READY, STALE, ERROR, or FATAL.
+func TestRequirement_1_7_1(t *testing.T) {
+
+	client := NewClient("test-client")
+
+	type requirements interface {
+		State() State
+	}
+
+	var clientI interface{} = client
+	if _, ok := clientI.(requirements); !ok {
+		t.Fatal("client des not define a status accessor which indicates the readiness of the associated provider")
+	}
+
+	TestRequirement_5_3_5(t)
+}
+
+// The client's provider status accessor MUST indicate READY if the initialize function of the associated provider
+// terminates normally.
+func TestRequirement_1_7_2(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
+
+	provider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		&ProviderEventing{
+			c: make(chan Event, 1),
+		},
+	}
+
+	if err := SetNamedProviderAndWait(t.Name(), provider); err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ReadyState {
+		t.Fatalf("expected client to report READY state")
+	}
+}
+
+// The client's provider status accessor MUST indicate ERROR if the initialize function of the associated provider
+// terminates abnormally
+func TestRequirement_1_7_3(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return errors.New("whoops... error from initialization")
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
+}
+
+// The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
+// terminates abnormally and indicates error code PROVIDER_FATAL.
+func TestRequirement_1_7_4(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return errors.New("whoops... error from initialization")
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
+}
+
+// The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
+// terminates abnormally and indicates error code PROVIDER_FATAL.
+func TestRequirement_1_7_5(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+
+	if GetApiInstance().GetNamedClient(t.Name()).State() != FatalState {
+		t.Fatalf("expected client to report ERROR state")
+	}
+
+}
+
+// The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
+// is in NOT_READY.
+func TestRequirement_1_7_6(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	ctrl := gomock.NewController(t)
+	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderNotReadyError, gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+
+	client := GetApiInstance().GetNamedClient(t.Name())
+	client.AddHooks(mockHook)
+
+	if client.State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
+
+	defaultVal := true
+	res, err := client.BooleanValue(context.Background(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if res != defaultVal {
+		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
+	}
+
+}
+
+// The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
+// is in FATAL.
+func TestRequirement_1_7_7(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+	provider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = SetNamedProviderAndWait(t.Name(), provider)
+
+	ctrl := gomock.NewController(t)
+	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderFatalError, gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+
+	client := GetApiInstance().GetNamedClient(t.Name())
+	client.AddHooks(mockHook)
+
+	if client.State() != FatalState {
+		t.Fatalf("expected client to report FATAL state")
+	}
+
+	defaultVal := true
+	res, err := client.BooleanValue(context.Background(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if res != defaultVal {
+		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
+	}
+}
+
+// Implementations SHOULD propagate the error code returned from any provider lifecycle methods.
+func TestRequirement_1_7_8(t *testing.T) {
+
+	t.Skip("Test not yet implemented")
+}
+
+// PROVIDER_ERROR events SHOULD populate the provider event details's error code field.
+func TestRequirement_5_1_5(t *testing.T) {
+	t.Skip("Test not yet implemented")
+}
+
+// If the provider emits an event, the value of the client's provider status MUST be updated accordingly.
+func TestRequirement_5_3_5(t *testing.T) {
+	defer t.Cleanup(initSingleton)
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetClient().State() == NotReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
+
+	eventing := &ProviderEventing{
+		c: make(chan Event, 1),
+	}
+
+	provider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		eventing,
+	}
+
+	if err := SetNamedProviderAndWait(t.Name(), provider); err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+
+	eventually(t, func() bool {
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+
+	eventing.Invoke(Event{EventType: ProviderStale})
+	eventually(t, func() bool {
+		return GetApiInstance().GetNamedClient(t.Name()).State() == StaleState
+	}, time.Second, 100*time.Millisecond, "expected client to report STALE state")
+
+	eventing.Invoke(Event{EventType: ProviderError})
+	eventually(t, func() bool {
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ErrorState
+	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
+
+	eventing.Invoke(Event{EventType: ProviderReady})
+	eventually(t, func() bool {
+		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
+	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
+
+	eventing.Invoke(Event{EventType: ProviderError, ProviderEventDetails: ProviderEventDetails{ErrorCode: ProviderFatalCode}})
+	eventually(t, func() bool {
+		return GetApiInstance().GetNamedClient(t.Name()).State() == FatalState
+	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
+
 }

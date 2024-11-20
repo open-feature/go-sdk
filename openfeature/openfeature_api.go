@@ -74,7 +74,7 @@ func (api *evaluationAPI) SetNamedProvider(clientName string, provider FeaturePr
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
 
-	err := api.initNewAndShutdownOld(provider, oldProvider, async)
+	err := api.initNewAndShutdownOld(clientName, provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 	oldProvider := api.defaultProvider
 	api.defaultProvider = provider
 
-	err := api.initNewAndShutdownOld(provider, oldProvider, async)
+	err := api.initNewAndShutdownOld("", provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
@@ -222,15 +222,17 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 }
 
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
-func (api *evaluationAPI) initNewAndShutdownOld(newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
+func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
 		go func(executor *eventExecutor, ctx EvaluationContext) {
 			// for async initialization, error is conveyed as an event
 			event, _ := initializer(newProvider, ctx)
+			executor.states.Store(clientName, stateFromEventOrError(event, nil))
 			executor.triggerEvent(event, newProvider)
 		}(api.eventExecutor, api.apiCtx)
 	} else {
 		event, err := initializer(newProvider, api.apiCtx)
+		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
 		api.eventExecutor.triggerEvent(event, newProvider)
 		if err != nil {
 			return err
@@ -277,6 +279,13 @@ func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, err
 	if err != nil {
 		event.EventType = ProviderError
 		event.Message = fmt.Sprintf("Provider initialization error, %v", err)
+		var initErr *ProviderInitError
+		if errors.As(err, &initErr) {
+			event.EventType = ProviderError
+			event.ErrorCode = initErr.ErrorCode
+			event.Message = initErr.Message
+		}
+
 	}
 
 	return event, err
@@ -290,4 +299,41 @@ func contains(provider FeatureProvider, in []FeatureProvider) bool {
 	}
 
 	return false
+}
+
+var statesMap = map[EventType]func(ProviderEventDetails) State{
+	ProviderReady:        func(_ ProviderEventDetails) State { return ReadyState },
+	ProviderConfigChange: func(_ ProviderEventDetails) State { return ReadyState },
+	ProviderStale:        func(_ ProviderEventDetails) State { return StaleState },
+	ProviderError: func(e ProviderEventDetails) State {
+		if e.ErrorCode == ProviderFatalCode {
+			return FatalState
+		}
+		return ErrorState
+	},
+}
+
+func stateFromEventOrError(event Event, err error) State {
+	if err != nil {
+		return stateFromError(err)
+	}
+	return stateFromEvent(event)
+}
+
+func stateFromEvent(event Event) State {
+	if stateFn, ok := statesMap[event.EventType]; ok {
+		return stateFn(event.ProviderEventDetails)
+	}
+	return NotReadyState // default
+}
+
+func stateFromError(err error) State {
+	var e *ProviderInitError
+	switch {
+	case errors.As(err, &e):
+		if e.ErrorCode == ProviderFatalCode {
+			return FatalState
+		}
+	}
+	return ErrorState // default
 }

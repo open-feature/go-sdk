@@ -1,5 +1,10 @@
 package openfeature
 
+import (
+	"testing"
+	"time"
+)
+
 // Test Utils
 
 // event handlers
@@ -30,7 +35,6 @@ func init() {
 type stateHandlerForTests struct {
 	initF     func(e EvaluationContext) error
 	shutdownF func()
-	State
 }
 
 func (s *stateHandlerForTests) Init(e EvaluationContext) error {
@@ -46,10 +50,6 @@ func (s *stateHandlerForTests) Shutdown() {
 	}
 }
 
-func (s *stateHandlerForTests) Status() State {
-	return s.State
-}
-
 // ProviderEventing is an eventing implementation with invoke capability
 type ProviderEventing struct {
 	c chan Event
@@ -61,4 +61,19 @@ func (s ProviderEventing) Invoke(e Event) {
 
 func (s ProviderEventing) EventChannel() <-chan Event {
 	return s.c
+}
+
+func eventually(t *testing.T, condition func() bool, timeout, interval time.Duration, errMsg string) {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(interval)
+	}
+
+	t.Fatalf("condition not met: %s", errMsg)
 }
