@@ -54,13 +54,24 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
       - name: Run unit tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -short -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./...
       - name: Run e2e tests
-        run: go test -race --coverprofile=coverage.out -covermode=atomic ./e2e/... 
-      - name: Upload coverage to Codecov
+        run: go test -race -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/...
+      - name: Upload coverage to Codecov (unit)
         uses: codecov/codecov-action@v4.6.0
         with:
-          name: Code Coverage for GO SDK
+          name: Code Coverage for GO SDK (unit)
+          files: ./coverage-unit.out
+          flags: unit
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
+      - name: Upload coverage to Codecov (e2e)
+        uses: codecov/codecov-action@v4.6.0
+        with:
+          name: Code Coverage for GO SDK (e2e)
+          files: ./coverage-e2e.out
+          flags: e2e
           fail_ci_if_error: true
           verbose: true
           token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
