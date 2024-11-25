@@ -20,8 +20,8 @@ func SetProvider(provider FeatureProvider) error {
 //
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.SetNamedProvider,
 // instead.
-func SetNamedProvider(clientName string, provider FeatureProvider) error {
-	return openfeature.SetNamedProvider(clientName, provider)
+func SetNamedProvider(domain string, provider FeatureProvider) error {
+	return openfeature.SetNamedProvider(domain, provider)
 }
 
 // SetEvaluationContext sets the global evaluation context.

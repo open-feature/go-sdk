@@ -43,14 +43,14 @@ func ProviderMetadata() Metadata {
 
 // SetNamedProvider sets a provider mapped to the given Client domain. Provider initialization is asynchronous and
 // status can be checked from provider status
-func SetNamedProvider(clientDomain string, provider FeatureProvider) error {
-	return api.SetNamedProvider(clientDomain, provider, true)
+func SetNamedProvider(domain string, provider FeatureProvider) error {
+	return api.SetNamedProvider(domain, provider, true)
 }
 
 // SetNamedProviderAndWait sets a provider mapped to the given Client domain and waits for its initialization.
 // Returns an error if initialization cause error
-func SetNamedProviderAndWait(clientDomain string, provider FeatureProvider) error {
-	return api.SetNamedProvider(clientDomain, provider, false)
+func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
+	return api.SetNamedProvider(domain, provider, false)
 }
 
 // NamedProviderMetadata returns the named provider's Metadata
