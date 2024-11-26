@@ -12,26 +12,26 @@ import (
 
 // ClientMetadata provides a client's metadata
 type ClientMetadata struct {
-	name string
+	domain string
 }
 
 // NewClientMetadata constructs ClientMetadata
 // Allows for simplified hook test cases while maintaining immutability
-func NewClientMetadata(name string) ClientMetadata {
+func NewClientMetadata(domain string) ClientMetadata {
 	return ClientMetadata{
-		name: name,
+		domain: domain,
 	}
 }
 
-// Name returns the client's name
+// Name returns the client's domain name
 // Deprecated: Name() exists for historical compatibility, use Domain() instead.
 func (cm ClientMetadata) Name() string {
-	return cm.name
+	return cm.domain
 }
 
 // Domain returns the client's domain
 func (cm ClientMetadata) Domain() string {
-	return cm.name
+	return cm.domain
 }
 
 // Client implements the behaviour required of an openfeature client
@@ -51,16 +51,16 @@ var _ IClient = (*Client)(nil)
 
 // NewClient returns a new Client. Name is a unique identifier for this client
 // This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
-func NewClient(name string) *Client {
-	return newClient(name, api, eventing)
+func NewClient(domain string) *Client {
+	return newClient(domain, api, eventing)
 }
 
-func newClient(name string, apiRef evaluationImpl, eventRef clientEvent) *Client {
+func newClient(domain string, apiRef evaluationImpl, eventRef clientEvent) *Client {
 	return &Client{
-		domain:            name,
+		domain:            domain,
 		api:               apiRef,
 		clientEventing:    eventRef,
-		metadata:          ClientMetadata{name: name},
+		metadata:          ClientMetadata{domain: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
@@ -668,7 +668,7 @@ func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx Ev
 // - client
 // - invocation (highest precedence)
 func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tracker, EvaluationContext) {
-	provider, _, apiCtx := c.api.ForEvaluation(c.metadata.name)
+	provider, _, apiCtx := c.api.ForEvaluation(c.metadata.domain)
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), apiCtx)
 	trackingProvider, ok := provider.(Tracker)
 	if !ok {
@@ -693,7 +693,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := c.api.ForEvaluation(c.metadata.name)
+	provider, globalHooks, globalCtx := c.api.ForEvaluation(c.metadata.domain)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalCtx)                                  // API (global) -> transaction -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
