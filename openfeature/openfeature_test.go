@@ -526,14 +526,14 @@ func TestRequirement_1_1_6(t *testing.T) {
 		}
 	})
 
-	t.Run("client from api level - no name", func(t *testing.T) {
+	t.Run("client from api level - no domain", func(t *testing.T) {
 		client := api.GetClient()
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")
 		}
 	})
 
-	t.Run("client from api level - with name", func(t *testing.T) {
+	t.Run("client from api level - with domain", func(t *testing.T) {
 		client := api.GetNamedClient("test-client")
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")

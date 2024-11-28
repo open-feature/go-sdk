@@ -110,16 +110,16 @@ func (e *eventExecutor) RemoveHandler(t EventType, c EventCallback) {
 }
 
 // AddClientHandler registers a client level handler
-func (e *eventExecutor) AddClientHandler(clientDomain string, t EventType, c EventCallback) {
+func (e *eventExecutor) AddClientHandler(domain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.scopedRegistry[clientDomain]
+	_, ok := e.scopedRegistry[domain]
 	if !ok {
-		e.scopedRegistry[clientDomain] = newScopedCallback(clientDomain)
+		e.scopedRegistry[domain] = newScopedCallback(domain)
 	}
 
-	registry := e.scopedRegistry[clientDomain]
+	registry := e.scopedRegistry[domain]
 
 	if registry.callbacks[t] == nil {
 		registry.callbacks[t] = []EventCallback{c}
@@ -127,27 +127,27 @@ func (e *eventExecutor) AddClientHandler(clientDomain string, t EventType, c Eve
 		registry.callbacks[t] = append(registry.callbacks[t], c)
 	}
 
-	reference, ok := e.namedProviderReference[clientDomain]
+	reference, ok := e.namedProviderReference[domain]
 	if !ok {
 		// fallback to default
 		reference = e.defaultProviderReference
 	}
 
-	e.emitOnRegistration(clientDomain, reference, t, c)
+	e.emitOnRegistration(domain, reference, t, c)
 }
 
 // RemoveClientHandler removes a client level handler
-func (e *eventExecutor) RemoveClientHandler(name string, t EventType, c EventCallback) {
+func (e *eventExecutor) RemoveClientHandler(domain string, t EventType, c EventCallback) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	_, ok := e.scopedRegistry[name]
+	_, ok := e.scopedRegistry[domain]
 	if !ok {
 		// nothing to remove
 		return
 	}
 
-	entrySlice := e.scopedRegistry[name].callbacks[t]
+	entrySlice := e.scopedRegistry[domain].callbacks[t]
 	if entrySlice == nil {
 		// nothing to remove
 		return
@@ -159,7 +159,7 @@ func (e *eventExecutor) RemoveClientHandler(name string, t EventType, c EventCal
 		}
 	}
 
-	e.scopedRegistry[name].callbacks[t] = entrySlice
+	e.scopedRegistry[domain].callbacks[t] = entrySlice
 }
 
 func (e *eventExecutor) GetAPIRegistry() map[EventType][]EventCallback {
@@ -172,8 +172,8 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
-func (e *eventExecutor) emitOnRegistration(clientDomain string, providerReference providerReference, eventType EventType, callback EventCallback) {
-	state, ok := e.states.Load(clientDomain)
+func (e *eventExecutor) emitOnRegistration(domain string, providerReference providerReference, eventType EventType, callback EventCallback) {
+	state, ok := e.states.Load(domain)
 	if !ok {
 		return
 	}
@@ -324,14 +324,14 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// then run client handlers
-	for name, reference := range e.namedProviderReference {
+	for domain, reference := range e.namedProviderReference {
 		if !reflect.DeepEqual(reference.featureProvider, handler) {
 			// unassociated client, continue to next
 			continue
 		}
 
-		e.states.Store(name, stateFromEvent(event))
-		for _, c := range e.scopedRegistry[name].callbacks[event.EventType] {
+		e.states.Store(domain, stateFromEvent(event))
+		for _, c := range e.scopedRegistry[domain].callbacks[event.EventType] {
 			e.executeHandler(*c, event)
 		}
 	}
@@ -343,8 +343,8 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	// handling the default provider
 	e.states.Store(defaultClient, stateFromEvent(event))
 	// invoke default provider bound (no provider associated) handlers by filtering
-	for clientName, registry := range e.scopedRegistry {
-		if _, ok := e.namedProviderReference[clientName]; ok {
+	for domain, registry := range e.scopedRegistry {
+		if _, ok := e.namedProviderReference[domain]; ok {
 			// association exist, skip and check next
 			continue
 		}

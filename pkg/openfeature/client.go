@@ -20,8 +20,8 @@ type ClientMetadata = openfeature.ClientMetadata
 //
 // Deprecated: use
 // github.com/open-feature/go-sdk/openfeature.NewClientMetadata, instead.
-func NewClientMetadata(name string) ClientMetadata {
-	return openfeature.NewClientMetadata(name)
+func NewClientMetadata(domain string) ClientMetadata {
+	return openfeature.NewClientMetadata(domain)
 }
 
 // Client implements the behaviour required of an openfeature client
@@ -29,12 +29,12 @@ func NewClientMetadata(name string) ClientMetadata {
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.Client, instead.
 type Client = openfeature.Client
 
-// NewClient returns a new Client. Name is a unique identifier for this client
+// NewClient returns a new Client. Domain is a unique identifier for this client
 //
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.NewClient,
 // instead.
-func NewClient(name string) *Client {
-	return openfeature.NewClient(name)
+func NewClient(domain string) *Client {
+	return openfeature.NewClient(domain)
 }
 
 // Type represents the type of a flag
