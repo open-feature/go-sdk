@@ -189,7 +189,7 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
 func (e *eventExecutor) emitOnRegistration(domain string, providerReference providerReference, eventType EventType, callback EventCallback) {
-	state, ok := e.states.Load(domain)
+	state, ok := e.loadState(domain)
 	if !ok {
 		return
 	}
@@ -213,12 +213,19 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 	}
 }
 
-func (e *eventExecutor) State(domain string) State {
-	s, ok := e.states.Load(domain)
+func (e *eventExecutor) loadState(domain string) (State, bool) {
+	state, ok := e.states.Load(domain)
 	if !ok {
-		return NotReadyState
+		if state, ok = e.states.Load(defaultClient); !ok {
+			return NotReadyState, false
+		}
 	}
-	return s.(State)
+	return state.(State), true
+}
+
+func (e *eventExecutor) State(domain string) State {
+	state, _ := e.loadState(domain)
+	return state
 }
 
 // registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
