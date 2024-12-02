@@ -1439,7 +1439,10 @@ func TestRequirement_1_7_7(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetNamedProviderAndWait(t.Name(), provider)
+	err := SetNamedProviderAndWait(t.Name(), provider)
+	if err == nil {
+		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
+	}
 
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
