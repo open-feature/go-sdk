@@ -27,7 +27,7 @@ type clientEvent interface {
 	State(domain string) State
 }
 
-const defaultClient = ""
+const defaultDomain = ""
 
 // event executor is a registry to connect API and Client event handlers to Providers
 
@@ -102,7 +102,7 @@ func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
 		e.apiRegistry[t] = append(e.apiRegistry[t], c)
 	}
 
-	e.emitOnRegistration(defaultClient, e.defaultProviderReference, t, c)
+	e.emitOnRegistration(defaultDomain, e.defaultProviderReference, t, c)
 }
 
 // RemoveHandler removes an API(global) level handler
@@ -216,7 +216,7 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 func (e *eventExecutor) loadState(domain string) (State, bool) {
 	state, ok := e.states.Load(domain)
 	if !ok {
-		if state, ok = e.states.Load(defaultClient); !ok {
+		if state, ok = e.states.Load(defaultDomain); !ok {
 			return NotReadyState, false
 		}
 	}
@@ -364,7 +364,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// handling the default provider
-	e.states.Store(defaultClient, stateFromEvent(event))
+	e.states.Store(defaultDomain, stateFromEvent(event))
 	// invoke default provider bound (no provider associated) handlers by filtering
 	for domain, registry := range e.scopedRegistry {
 		if _, ok := e.namedProviderReference[domain]; ok {
