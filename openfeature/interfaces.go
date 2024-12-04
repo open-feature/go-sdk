@@ -1,6 +1,9 @@
 package openfeature
 
-import "context"
+import (
+	"context"
+	"github.com/go-logr/logr"
+)
 
 // IEvaluation defines the OpenFeature API contract
 type IEvaluation interface {
@@ -55,4 +58,34 @@ type IEventing interface {
 // ITracking defines the Tracking contract
 type ITracking interface {
 	Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
+}
+
+// evaluationImpl is an internal reference interface extending IEvaluation
+type evaluationImpl interface {
+	IEvaluation
+	GetProvider() FeatureProvider
+	GetNamedProviders() map[string]FeatureProvider
+	GetHooks() []Hook
+
+	// Deprecated
+	SetLogger(l logr.Logger)
+
+	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
+}
+
+// eventingImpl is an internal reference interface extending IEventing
+type eventingImpl interface {
+	IEventing
+	GetAPIRegistry() map[EventType][]EventCallback
+	GetClientRegistry(client string) scopedCallback
+
+	clientEvent
+}
+
+// clientEvent is an internal reference for OpenFeature Client events
+type clientEvent interface {
+	AddClientHandler(clientName string, t EventType, c EventCallback)
+	RemoveClientHandler(name string, t EventType, c EventCallback)
+
+	State(domain string) State
 }

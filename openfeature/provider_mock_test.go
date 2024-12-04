@@ -181,20 +181,6 @@ func (mr *MockStateHandlerMockRecorder) Shutdown() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockStateHandler)(nil).Shutdown))
 }
 
-// Status mocks base method.
-func (m *MockStateHandler) Status() State {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Status")
-	ret0, _ := ret[0].(State)
-	return ret0
-}
-
-// Status indicates an expected call of Status.
-func (mr *MockStateHandlerMockRecorder) Status() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockStateHandler)(nil).Status))
-}
-
 // MockTracker is a mock of Tracker interface.
 type MockTracker struct {
 	ctrl     *gomock.Controller
