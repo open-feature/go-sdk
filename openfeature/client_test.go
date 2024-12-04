@@ -3,6 +3,7 @@ package openfeature
 import (
 	"context"
 	"errors"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -1385,7 +1386,24 @@ func TestRequirement_1_7_6(t *testing.T) {
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderNotReadyError, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
 
-	client := GetApiInstance().GetNamedClient(t.Name())
+	notReadyEventingProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				<-time.After(math.MaxInt)
+				return nil
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	_ = GetApiInstance().SetProvider(notReadyEventingProvider)
+
+	client := GetApiInstance().GetNamedClient("somOtherClient")
 	client.AddHooks(mockHook)
 
 	if client.State() != NotReadyState {
@@ -1401,7 +1419,6 @@ func TestRequirement_1_7_6(t *testing.T) {
 	if res != defaultVal {
 		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
 	}
-
 }
 
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
@@ -1422,7 +1439,10 @@ func TestRequirement_1_7_7(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetNamedProviderAndWait(t.Name(), provider)
+	err := SetNamedProviderAndWait(t.Name(), provider)
+	if err == nil {
+		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
+	}
 
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)

@@ -27,7 +27,7 @@ type clientEvent interface {
 	State(domain string) State
 }
 
-const defaultClient = ""
+const defaultDomain = ""
 
 // event executor is a registry to connect API and Client event handlers to Providers
 
@@ -102,7 +102,7 @@ func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
 		e.apiRegistry[t] = append(e.apiRegistry[t], c)
 	}
 
-	e.emitOnRegistration(defaultClient, e.defaultProviderReference, t, c)
+	e.emitOnRegistration(defaultDomain, e.defaultProviderReference, t, c)
 }
 
 // RemoveHandler removes an API(global) level handler
@@ -189,7 +189,7 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
 func (e *eventExecutor) emitOnRegistration(domain string, providerReference providerReference, eventType EventType, callback EventCallback) {
-	state, ok := e.states.Load(domain)
+	state, ok := e.loadState(domain)
 	if !ok {
 		return
 	}
@@ -213,12 +213,19 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 	}
 }
 
-func (e *eventExecutor) State(domain string) State {
-	s, ok := e.states.Load(domain)
+func (e *eventExecutor) loadState(domain string) (State, bool) {
+	state, ok := e.states.Load(domain)
 	if !ok {
-		return NotReadyState
+		if state, ok = e.states.Load(defaultDomain); !ok {
+			return NotReadyState, false
+		}
 	}
-	return s.(State)
+	return state.(State), true
+}
+
+func (e *eventExecutor) State(domain string) State {
+	state, _ := e.loadState(domain)
+	return state
 }
 
 // registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
@@ -357,7 +364,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// handling the default provider
-	e.states.Store(defaultClient, stateFromEvent(event))
+	e.states.Store(defaultDomain, stateFromEvent(event))
 	// invoke default provider bound (no provider associated) handlers by filtering
 	for domain, registry := range e.scopedRegistry {
 		if _, ok := e.namedProviderReference[domain]; ok {

@@ -1,7 +1,9 @@
 package openfeature
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -716,6 +718,47 @@ func TestDefaultClientUsage(t *testing.T) {
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
 	}
+}
+
+func TestLateBindingOfDefaultProvider(t *testing.T) {
+	// we are expecting
+	expectedResultUnboundProvider := "default-value-from-unbound-provider"
+	expectedResultFromLateDefaultProvider := "value-from-late-default-provider"
+
+	ctrl := gomock.NewController(t)
+	defaultProvider := NewMockFeatureProvider(ctrl)
+	defaultProvider.EXPECT().Metadata().Return(Metadata{Name: "defaultClientReplacement"}).AnyTimes()
+	defaultProvider.EXPECT().Hooks().AnyTimes().Return([]Hook{})
+	defaultProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(StringResolutionDetail{Value: expectedResultFromLateDefaultProvider})
+
+	client := NewClient("app")
+	strResult, err := client.StringValue(context.TODO(), "flag", expectedResultUnboundProvider, EvaluationContext{})
+	if err != nil {
+		if err != nil {
+			t.Errorf("flag evaluation failed %v", err)
+		}
+	}
+
+	if strResult != expectedResultUnboundProvider {
+		t.Errorf("expected %s, but got %s", expectedResultUnboundProvider, strResult)
+	}
+
+	err = SetProviderAndWait(defaultProvider)
+	if err != nil {
+		t.Errorf("provider registration failed %v", err)
+	}
+
+	strResult, err = client.StringValue(context.TODO(), "flag", "default", EvaluationContext{})
+	if err != nil {
+		if err != nil {
+			t.Errorf("flag evaluation failed %v", err)
+		}
+	}
+
+	if strResult != expectedResultFromLateDefaultProvider {
+		t.Errorf("expected %s, but got %s", expectedResultFromLateDefaultProvider, strResult)
+	}
+	fmt.Println(strResult)
 }
 
 // Nil providers are not accepted for default and named providers

@@ -638,7 +638,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
+			c: make(chan Event),
 		}
 
 		readyEventingProvider := struct {
@@ -673,7 +673,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
+			c: make(chan Event),
 		}
 
 		readyEventingProvider := struct {
@@ -685,7 +685,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}
 
 		clientAssociation := "clientA"
-		err := SetNamedProvider(clientAssociation, readyEventingProvider)
+		err := SetNamedProviderAndWait(clientAssociation, readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -695,7 +695,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient(clientAssociation)
+		client := api.GetNamedClient(clientAssociation)
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -710,9 +710,8 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		defer t.Cleanup(initSingleton)
 
 		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
+			c: make(chan Event),
 		}
-		eventingImpl.Invoke(Event{EventType: ProviderConfigChange})
 
 		readyEventingProvider := struct {
 			FeatureProvider
@@ -722,7 +721,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			eventingImpl,
 		}
 
-		err := SetProvider(readyEventingProvider)
+		err := SetProviderAndWait(readyEventingProvider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -732,7 +731,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := api.GetNamedClient("someClient")
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -770,7 +769,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := api.GetNamedClient("someClient")
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -1357,7 +1356,6 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 }
 
 // Contract tests - registration & removal
-
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
 		executor := newEventExecutor()

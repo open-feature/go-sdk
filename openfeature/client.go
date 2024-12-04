@@ -713,16 +713,19 @@ func (c *Client) evaluate(
 		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, options)
 	}()
 
-	// short circuit if provider is in NOT READY state
-	if c.State() == NotReadyState {
-		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderNotReadyError, options)
-		return evalDetails, ProviderNotReadyError
-	}
+        // bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
+	if _, ok := provider.(NoopProvider); !ok {
+		// short circuit if provider is in NOT READY state
+		if c.State() == NotReadyState {
+			c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderNotReadyError, options)
+			return evalDetails, ProviderNotReadyError
+		}
 
-	// short circuit if provider is in FATAL state
-	if c.State() == FatalState {
-		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderFatalError, options)
-		return evalDetails, ProviderFatalError
+		// short circuit if provider is in FATAL state
+		if c.State() == FatalState {
+			c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderFatalError, options)
+			return evalDetails, ProviderFatalError
+		}
 	}
 
 	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
