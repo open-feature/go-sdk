@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.14.0](https://github.com/open-feature/go-sdk/compare/v1.13.1...v1.14.0) (2024-12-04)
+
+
+### 🐛 Bug Fixes
+
+* consider default client when loading states ([d906d6f](https://github.com/open-feature/go-sdk/commit/d906d6fe3e228d18e93c2d07be53ef07fb787083))
+* consider default client when loading states ([#309](https://github.com/open-feature/go-sdk/issues/309)) ([d906d6f](https://github.com/open-feature/go-sdk/commit/d906d6fe3e228d18e93c2d07be53ef07fb787083))
+* **deps:** update module github.com/cucumber/godog to v0.15.0 ([#300](https://github.com/open-feature/go-sdk/issues/300)) ([dc66ed3](https://github.com/open-feature/go-sdk/commit/dc66ed366b781e09a56ddcfee7eec270ce13868c))
+* **deps:** update module golang.org/x/text to v0.20.0 ([#301](https://github.com/open-feature/go-sdk/issues/301)) ([efab565](https://github.com/open-feature/go-sdk/commit/efab565e5679717bcb35cec2b9e5b106b7baed77))
+* **deps:** update module golang.org/x/text to v0.21.0 ([#311](https://github.com/open-feature/go-sdk/issues/311)) ([3d1615a](https://github.com/open-feature/go-sdk/commit/3d1615a8f4e873a128f4060467a970b15bf1c15e))
+
+
+### ✨ New Features
+
+* add logging hook, rm logging from evaluation ([#289](https://github.com/open-feature/go-sdk/issues/289)) ([7850eec](https://github.com/open-feature/go-sdk/commit/7850eec993f7570ab2603c52edfccea7a36f8a09))
+* Implement Tracking in Go ([#297](https://github.com/open-feature/go-sdk/issues/297)) ([dee5ec7](https://github.com/open-feature/go-sdk/commit/dee5ec72a9ec3da272804032a8fc8f469f36345c))
+* make provider interface "stateless" as per spec 0.8.0 ([#299](https://github.com/open-feature/go-sdk/issues/299)) ([510b2a6](https://github.com/open-feature/go-sdk/commit/510b2a6fdb54567e4bce93a2cd3eeeab5ec0a168))
+* TestProvider for easy, parallel-safe testing ([#295](https://github.com/open-feature/go-sdk/issues/295)) ([3e3d0b1](https://github.com/open-feature/go-sdk/commit/3e3d0b17b56938d09514ca30059403ab916d2291))
+
+
+### 🧹 Chore
+
+* fix coverage uploads to Codecov ([#306](https://github.com/open-feature/go-sdk/issues/306)) ([96d86ba](https://github.com/open-feature/go-sdk/commit/96d86bac249d8eb26cfbe445bd2739d12a5e5686))
+* require go 1.21 ([#294](https://github.com/open-feature/go-sdk/issues/294)) ([ddfffdd](https://github.com/open-feature/go-sdk/commit/ddfffddf52c1cbd48e0c40a828f33d3342824706))
+* run e2e tests in ci, add sm pull to makefile ([#298](https://github.com/open-feature/go-sdk/issues/298)) ([8675832](https://github.com/open-feature/go-sdk/commit/8675832174d876eccd73378ff86eb21ded2016b8))
+* use correct term "domain" instead of name/clientName in code ([#305](https://github.com/open-feature/go-sdk/issues/305)) ([73c0e85](https://github.com/open-feature/go-sdk/commit/73c0e85795c8c0a0ccb70c7d3babee0f3c8e2fd5))
+
+
+### 📚 Documentation
+
+* update readme to be included in the docs ([13444e7](https://github.com/open-feature/go-sdk/commit/13444e73dec4c5a14136e6b88d776c68527d7963))
+
 ## [1.13.1](https://github.com/open-feature/go-sdk/compare/v1.13.0...v1.13.1) (2024-10-18)
 
 
