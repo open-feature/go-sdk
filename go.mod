@@ -1,12 +1,14 @@
 module github.com/open-feature/go-sdk
 
-go 1.21
+go 1.22.0
+
+toolchain go1.23.4
 
 require (
 	github.com/cucumber/godog v0.15.0
 	github.com/go-logr/logr v1.4.2
 	github.com/golang/mock v1.6.0
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
+	golang.org/x/exp v0.0.0-20241210194714-1829a127f884
 	golang.org/x/text v0.21.0
 )
 
