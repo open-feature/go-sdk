@@ -2,6 +2,7 @@
 mockgen:
 	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock_test.go -package=openfeature
 	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock_test.go -package=openfeature
+	mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock_test.go -package=openfeature
 test:
 	go test --short -cover ./...
 e2e-test:
