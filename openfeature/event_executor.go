@@ -2,7 +2,6 @@ package openfeature
 
 import (
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -66,13 +65,6 @@ func newScopedCallback(client string) scopedCallback {
 type eventPayload struct {
 	event   Event
 	handler FeatureProvider
-}
-
-// providerReference is a helper struct to store FeatureProvider with EventHandler capability along with their
-// shutdown semaphore
-type providerReference struct {
-	featureProvider   FeatureProvider
-	shutdownSemaphore chan interface{}
 }
 
 // AddHandler adds an API(global) level handler
@@ -217,14 +209,7 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// register shutdown semaphore for new default provider
-	sem := make(chan interface{})
-
-	newProvider := providerReference{
-		featureProvider:   provider,
-		shutdownSemaphore: sem,
-	}
-
+	newProvider := newProviderRef(provider)
 	oldProvider := e.defaultProviderReference
 	e.defaultProviderReference = newProvider
 
@@ -235,14 +220,7 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
-	// register shutdown semaphore for new named provider
-	sem := make(chan interface{})
-
-	newProvider := providerReference{
-		featureProvider:   provider,
-		shutdownSemaphore: sem,
-	}
+	newProvider := newProviderRef(provider)
 
 	oldProvider := e.namedProviderReference[associatedClient]
 	e.namedProviderReference[associatedClient] = newProvider
@@ -288,7 +266,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	// drop from active references
 	for i, r := range e.activeSubscriptions {
-		if reflect.DeepEqual(oldReference.featureProvider, r.featureProvider) {
+		if oldReference.equals(r) {
 			e.activeSubscriptions = append(e.activeSubscriptions[:i], e.activeSubscriptions[i+1:]...)
 		}
 	}
@@ -332,8 +310,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 
 	// then run client handlers
 	for domain, reference := range e.namedProviderReference {
-		if !reflect.DeepEqual(reference.featureProvider, handler) {
-			// unassociated client, continue to next
+		if !reference.equals(newProviderRef(handler)) {
 			continue
 		}
 
@@ -343,7 +320,7 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 		}
 	}
 
-	if !reflect.DeepEqual(e.defaultProviderReference.featureProvider, handler) {
+	if !e.defaultProviderReference.equals(newProviderRef(handler)) {
 		return
 	}
 
@@ -386,25 +363,23 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 // isRunning is a helper till we bump to the latest go version with slices.contains support
 func isRunning(provider providerReference, activeProviders []providerReference) bool {
 	for _, activeProvider := range activeProviders {
-		if reflect.DeepEqual(activeProvider.featureProvider, provider.featureProvider) {
+		if activeProvider.equals(provider) {
 			return true
 		}
 	}
-
 	return false
 }
 
 // isRunning is a helper to check if given provider is already in use
 func isBound(provider providerReference, defaultProvider providerReference, namedProviders []providerReference) bool {
-	if reflect.DeepEqual(provider.featureProvider, defaultProvider.featureProvider) {
+	if provider.equals(defaultProvider) {
 		return true
 	}
 
 	for _, namedProvider := range namedProviders {
-		if reflect.DeepEqual(provider.featureProvider, namedProvider.featureProvider) {
+		if provider.equals(namedProvider) {
 			return true
 		}
 	}
-
 	return false
 }
