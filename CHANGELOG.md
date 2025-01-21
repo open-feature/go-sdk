@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.1](https://github.com/open-feature/go-sdk/compare/v1.14.0...v1.14.1) (2025-01-21)
+
+
+### 🐛 Bug Fixes
+
+* internal provider comparison causing race conditions in tests ([440072f](https://github.com/open-feature/go-sdk/commit/440072f917b4d767e2d4b7ad0a9c73b358d2818b))
+* internal provider comparison causing race conditions in tests ([#312](https://github.com/open-feature/go-sdk/issues/312)) ([440072f](https://github.com/open-feature/go-sdk/commit/440072f917b4d767e2d4b7ad0a9c73b358d2818b))
+
+
+### 📚 Documentation
+
+* add missing entry for "tracking" in feature table ([#313](https://github.com/open-feature/go-sdk/issues/313)) ([890bfd0](https://github.com/open-feature/go-sdk/commit/890bfd0d00ee267890c67f7e3b1c88abd24ebb87))
+
 ## [1.14.0](https://github.com/open-feature/go-sdk/compare/v1.13.1...v1.14.0) (2024-12-04)
 
 
