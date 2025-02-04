@@ -29,7 +29,7 @@ type TestProvider struct {
 }
 
 // UsingFlags sets flags for the scope of a test
-func (tp TestProvider) UsingFlags(test *testing.T, flags map[string]memprovider.InMemoryFlag) {
+func (tp TestProvider) UsingFlags(test testing.TB, flags map[string]memprovider.InMemoryFlag) {
 	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
 }
