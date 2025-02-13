@@ -3,10 +3,10 @@ package openfeature
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"golang.org/x/exp/maps"
 )
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
@@ -234,7 +234,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 	}
 
 	// check for multiple bindings
-	if oldProvider == api.defaultProvider || contains(oldProvider, maps.Values(api.namedProviders)) {
+	if oldProvider == api.defaultProvider || slices.Contains(mapValues(api.namedProviders), oldProvider) {
 		return nil
 	}
 
@@ -276,16 +276,6 @@ func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, err
 	}
 
 	return event, err
-}
-
-func contains(provider FeatureProvider, in []FeatureProvider) bool {
-	for _, p := range in {
-		if provider == p {
-			return true
-		}
-	}
-
-	return false
 }
 
 var statesMap = map[EventType]func(ProviderEventDetails) State{
