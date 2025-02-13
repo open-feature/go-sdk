@@ -79,6 +79,21 @@ The full list of available types is:
  - `chore`: Other changes that don't modify src or test files
  - `revert`: Reverts a previous commit
 
+#### Developer Certificate of Origin
+
+The [Developer Certificate of Origin (DCO)](https://developercertificate.org/) is a lightweight way for contributors to certify that they wrote or otherwise have the right to submit the code they are contributing to the project.
+To sign off that they adhere to these requirements, all commits need to have a `Signed-off-by` line, like:
+
+```
+fix: solve all the problems
+
+Signed-off-by: John Doe <jd@example.org>
+```
+
+This is easy to add by using the [`-s`/`--signoff`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) flag to `git commit`.
+
+More  info is available in the [OpenFeature community docs](https://openfeature.dev/community/technical-guidelines/#developer-certificate-of-origin).
+
 ### Releases
 
 This repo uses Release Please to release packages. Release Please set up a running PR that tracks all changes for the library components, and maintains the versions according to conventional commits, generated when PRs are merged.
