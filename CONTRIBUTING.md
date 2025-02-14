@@ -92,7 +92,7 @@ Signed-off-by: John Doe <jd@example.org>
 
 This is easy to add by using the [`-s`/`--signoff`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) flag to `git commit`.
 
-More  info is available in the [OpenFeature community docs](https://openfeature.dev/community/technical-guidelines/#developer-certificate-of-origin).
+More info is available in the [OpenFeature community docs](https://openfeature.dev/community/technical-guidelines/#developer-certificate-of-origin).
 
 ### Releases
 
