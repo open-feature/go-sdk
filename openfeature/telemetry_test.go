@@ -55,6 +55,7 @@ func TestCreateEvaluationEvent_1_3_1_BasicEvent(t *testing.T) {
 		t.Errorf("Expected event body 'VALUE' to be 'true', got '%v'", event.Body[TelemetryBody])
 	}
 }
+
 func TestCreateEvaluationEvent_1_4_6_WithVariant(t *testing.T) {
 	flagKey := "test-flag"
 	mockProviderMetadata := Metadata{
@@ -96,9 +97,6 @@ func TestCreateEvaluationEvent_1_4_6_WithVariant(t *testing.T) {
 		t.Errorf("Expected event attribute 'VARIANT' to be 'true', got '%s'", event.Attributes[TelemetryVariant])
 	}
 
-	if event.Attributes[TelemetryReason] != strings.ToLower(string(UnknownReason)) {
-		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(UnknownReason)), event.Attributes[TelemetryReason])
-	}
 }
 func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 	flagKey := "test-flag"
@@ -125,7 +123,7 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 				FlagMetadata: FlagMetadata{
 					TelemetryFlagMetaFlagSetId: "test-set",
 					TelemetryFlagMetaContextId: "metadata-context",
-					TelemetryFlagMetaVersion: "v1.0",
+					TelemetryFlagMetaVersion:   "v1.0",
 				},
 			},
 		},
@@ -136,7 +134,7 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 	if event.Attributes[TelemetryFlagMetaFlagSetId] != "test-set" {
 		t.Errorf("Expected 'Flag SetID' in Flag Metadata name to be 'test-set', got '%s'", event.Attributes[TelemetryFlagMetaFlagSetId])
 	}
-	
+
 	if event.Attributes[TelemetryFlagMetaContextId] != "metadata-context" {
 		t.Errorf("Expected 'Flag ContextID' in Flag Metadata name to be 'metadata-context', got '%s'", event.Attributes[TelemetryFlagMetaContextId])
 	}
@@ -145,9 +143,74 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 		t.Errorf("Expected 'Flag Version' in Flag Metadata name to be 'v1.0', got '%s'", event.Attributes[TelemetryFlagMetaVersion])
 	}
 }
-func TestCreateEvaluationEvent_WithErrors(t *testing.T) {
+func TestCreateEvaluationEvent_1_4_8_WithErrors(t *testing.T) {
+	flagKey := "test-flag"
+	mockProviderMetadata := Metadata{
+		Name: "test-provider",
+	}
+	mockClientMetadata := ClientMetadata{
+		domain: "test-client",
+	}
+	mockHookContext := HookContext{
+		flagKey:          flagKey,
+		flagType:         Boolean,
+		defaultValue:     true,
+		clientMetadata:   mockClientMetadata,
+		providerMetadata: mockProviderMetadata,
+	}
 
+	mockDetails := InterfaceEvaluationDetails{
+		Value: false,
+		EvaluationDetails: EvaluationDetails{
+			FlagKey: flagKey,
+			ResolutionDetail: ResolutionDetail{
+				Reason:       ErrorReason,
+				ErrorCode:    GeneralCode,
+				ErrorMessage: "a test error",
+				FlagMetadata: FlagMetadata{},
+			},
+		},
+	}
+
+	event := CreateEvaluationEvent(mockHookContext, mockDetails)
+
+	if event.Attributes[TelemetryErrorCode] != GeneralCode {
+		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[TelemetryErrorCode])
+	}
+
+	if event.Attributes[TelemetryErrorMsg] != "a test error" {
+		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[TelemetryErrorMsg])
+	}
 }
-func TestCreateEvaluationEvent_withUnknownReason(t *testing.T) {
+func TestCreateEvaluationEvent_1_4_7_WithUnknownReason(t *testing.T) {
+	flagKey := "test-flag"
+	mockProviderMetadata := Metadata{
+		Name: "test-provider",
+	}
+	mockClientMetadata := ClientMetadata{
+		domain: "test-client",
+	}
+	mockHookContext := HookContext{
+		flagKey:          flagKey,
+		flagType:         Boolean,
+		defaultValue:     true,
+		clientMetadata:   mockClientMetadata,
+		providerMetadata: mockProviderMetadata,
+	}
 
+	mockDetails := InterfaceEvaluationDetails{
+		Value: false,
+		EvaluationDetails: EvaluationDetails{
+			FlagKey: flagKey,
+			ResolutionDetail: ResolutionDetail{
+				FlagMetadata: FlagMetadata{},
+			},
+		},
+	}
+
+	event := CreateEvaluationEvent(mockHookContext, mockDetails)
+
+	if event.Attributes[TelemetryReason] != strings.ToLower(string(UnknownReason)) {
+		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(UnknownReason)), event.Attributes[TelemetryReason])
+	}
 }
