@@ -1,16 +1,16 @@
 package openfeature
 
-import "strings"
+import (
+	"strings"
+)
 
 type EvaluationEvent struct {
-	Name string
+	Name       string
 	Attributes map[string]interface{}
-	Data map[string]interface{}
+	Body       map[string]interface{}
 }
 
-const ( 
-	FlagEvaluationEventName string = "feature_flag.evaluation"
-
+const (
 	// The OpenTelemetry compliant event attributes for flag evaluation.
 	// Specification: https://opentelemetry.io/docs/specs/semconv/feature-flags/feature-flags-logs/
 
@@ -34,6 +34,8 @@ const (
 	// OpenTelemetry event body.
 	// Specification: https://opentelemetry.io/docs/specs/semconv/feature-flags/feature-flags-logs/
 	TelemetryBody string = "value"
+
+	FlagEvaluationEventName string = "feature_flag.evaluation"
 )
 
 func CreateEvaluationEvent(hookContext HookContext, evalDetails InterfaceEvaluationDetails) EvaluationEvent {
@@ -42,16 +44,18 @@ func CreateEvaluationEvent(hookContext HookContext, evalDetails InterfaceEvaluat
 		TelemetryProvider: hookContext.providerMetadata.Name,
 	}
 
-	if evalDetails.ResolutionDetail.Reason == "" {
+	if evalDetails.ResolutionDetail.Reason != "" {
+		attributes[TelemetryReason] = strings.ToLower(string(evalDetails.ResolutionDetail.Reason))
+	} else {
 		attributes[TelemetryReason] = strings.ToLower(string(UnknownReason))
 	}
 
-	data := map[string]interface{}{}
+	body := map[string]interface{}{}
 
 	if evalDetails.Variant != "" {
 		attributes[TelemetryVariant] = evalDetails.Variant
 	} else {
-		data[TelemetryBody] = evalDetails.Value
+		body[TelemetryBody] = evalDetails.Value
 	}
 
 	contextID, exists := evalDetails.FlagMetadata[TelemetryFlagMetaContextId]
@@ -68,9 +72,26 @@ func CreateEvaluationEvent(hookContext HookContext, evalDetails InterfaceEvaluat
 		attributes[TelemetryFlagSetID] = setID
 	}
 
+	version, exists := evalDetails.FlagMetadata[TelemetryFlagMetaVersion]
+	if exists && version != "" {
+		attributes[TelemetryVersion] = version
+	}
+
+	if evalDetails.ResolutionDetail.Reason == ErrorReason {
+		if evalDetails.ResolutionDetail.ErrorCode != "" {
+			attributes[TelemetryErrorCode] = evalDetails.ResolutionDetail.ErrorCode
+		} else {
+			attributes[TelemetryErrorCode] = GeneralCode
+		}
+
+		if evalDetails.ResolutionDetail.ErrorMessage != "" {
+			attributes[TelemetryErrorMsg] = evalDetails.ResolutionDetail.ErrorMessage
+		}
+	}
+
 	return EvaluationEvent{
-		Name: FlagEvaluationEventName,
+		Name:       FlagEvaluationEventName,
 		Attributes: attributes,
-		Data: data,
+		Body:       body,
 	}
 }
