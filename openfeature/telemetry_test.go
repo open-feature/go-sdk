@@ -165,7 +165,46 @@ func TestCreateEvaluationEvent_1_4_8_WithErrors(t *testing.T) {
 			FlagKey: flagKey,
 			ResolutionDetail: ResolutionDetail{
 				Reason:       ErrorReason,
-				ErrorCode:    GeneralCode,
+				ErrorCode:    FlagNotFoundCode,
+				ErrorMessage: "a test error",
+				FlagMetadata: FlagMetadata{},
+			},
+		},
+	}
+
+	event := CreateEvaluationEvent(mockHookContext, mockDetails)
+
+	if event.Attributes[TelemetryErrorCode] != FlagNotFoundCode {
+		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[TelemetryErrorCode])
+	}
+
+	if event.Attributes[TelemetryErrorMsg] != "a test error" {
+		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[TelemetryErrorMsg])
+	}
+}
+
+func TestCreateEvaluationEvent_1_4_8_WithGeneralErrors(t *testing.T) {
+	flagKey := "test-flag"
+	mockProviderMetadata := Metadata{
+		Name: "test-provider",
+	}
+	mockClientMetadata := ClientMetadata{
+		domain: "test-client",
+	}
+	mockHookContext := HookContext{
+		flagKey:          flagKey,
+		flagType:         Boolean,
+		defaultValue:     true,
+		clientMetadata:   mockClientMetadata,
+		providerMetadata: mockProviderMetadata,
+	}
+
+	mockDetails := InterfaceEvaluationDetails{
+		Value: false,
+		EvaluationDetails: EvaluationDetails{
+			FlagKey: flagKey,
+			ResolutionDetail: ResolutionDetail{
+				Reason:       ErrorReason,
 				ErrorMessage: "a test error",
 				FlagMetadata: FlagMetadata{},
 			},
