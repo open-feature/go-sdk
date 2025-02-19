@@ -38,54 +38,52 @@ const (
 	FlagEvaluationEventName string = "feature_flag.evaluation"
 )
 
-func CreateEvaluationEvent(hookContext HookContext, evalDetails InterfaceEvaluationDetails) EvaluationEvent {
+func CreateEvaluationEvent(hookContext HookContext, details InterfaceEvaluationDetails) EvaluationEvent {
 	attributes := map[string]interface{}{
 		TelemetryKey: hookContext.flagKey,
 		TelemetryProvider: hookContext.providerMetadata.Name,
 	}
 
-	if evalDetails.ResolutionDetail.Reason != "" {
-		attributes[TelemetryReason] = strings.ToLower(string(evalDetails.ResolutionDetail.Reason))
+	if details.EvaluationDetails.ResolutionDetail.Reason != "" {
+		attributes[TelemetryReason] = strings.ToLower(string(details.ResolutionDetail.Reason))
 	} else {
 		attributes[TelemetryReason] = strings.ToLower(string(UnknownReason))
 	}
 
 	body := map[string]interface{}{}
 
-	if evalDetails.Variant != "" {
-		attributes[TelemetryVariant] = evalDetails.Variant
+	if details.Variant != "" {
+		attributes[TelemetryVariant] = details.EvaluationDetails.ResolutionDetail.Variant
 	} else {
-		body[TelemetryBody] = evalDetails.Value
+		body[TelemetryBody] = details.Value
 	}
 
-	contextID, exists := evalDetails.FlagMetadata[TelemetryFlagMetaContextId]
-	if !exists || contextID == "" {
+	contextID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaContextId]
+	if exists && contextID != "" {
+		attributes[TelemetryFlagMetaContextId] = contextID
+	} else {
 		contextID = hookContext.evaluationContext.targetingKey
 	}
 
-	if contextID != "" {
-		attributes[TelemetryContextID] = contextID
+	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
+	if exists {
+		attributes[TelemetryFlagMetaFlagSetId] = setID
 	}
 
-	setID, exists := evalDetails.FlagMetadata[TelemetryFlagMetaFlagSetId]
-	if exists && setID != "" {
-		attributes[TelemetryFlagSetID] = setID
+	version, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaVersion]
+	if exists {
+		attributes[TelemetryFlagMetaVersion] = version
 	}
 
-	version, exists := evalDetails.FlagMetadata[TelemetryFlagMetaVersion]
-	if exists && version != "" {
-		attributes[TelemetryVersion] = version
-	}
-
-	if evalDetails.ResolutionDetail.Reason == ErrorReason {
-		if evalDetails.ResolutionDetail.ErrorCode != "" {
-			attributes[TelemetryErrorCode] = evalDetails.ResolutionDetail.ErrorCode
+	if details.EvaluationDetails.ResolutionDetail.Reason == ErrorReason {
+		if details.ResolutionDetail.ErrorCode != "" {
+			attributes[TelemetryErrorCode] = details.ResolutionDetail.ErrorCode
 		} else {
 			attributes[TelemetryErrorCode] = GeneralCode
 		}
 
-		if evalDetails.ResolutionDetail.ErrorMessage != "" {
-			attributes[TelemetryErrorMsg] = evalDetails.ResolutionDetail.ErrorMessage
+		if details.ResolutionDetail.ErrorMessage != "" {
+			attributes[TelemetryErrorMsg] = details.ResolutionDetail.ErrorMessage
 		}
 	}
 
