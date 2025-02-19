@@ -3,10 +3,9 @@ package openfeature
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 func init() {

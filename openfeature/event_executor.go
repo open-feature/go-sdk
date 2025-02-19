@@ -2,12 +2,10 @@ package openfeature
 
 import (
 	"fmt"
+	"log/slog"
+	"slices"
 	"sync"
 	"time"
-
-	"log/slog"
-
-	"golang.org/x/exp/maps"
 )
 
 const defaultDomain = ""
@@ -260,7 +258,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	// shutdown old provider handling
 
 	// check if this provider is still bound - 1:N binding capability
-	if isBound(oldReference, e.defaultProviderReference, maps.Values(e.namedProviderReference)) {
+	if isBound(oldReference, e.defaultProviderReference, mapValues(e.namedProviderReference)) {
 		return nil
 	}
 
@@ -360,26 +358,22 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 	}()
 }
 
-// isRunning is a helper till we bump to the latest go version with slices.contains support
-func isRunning(provider providerReference, activeProviders []providerReference) bool {
-	for _, activeProvider := range activeProviders {
-		if activeProvider.equals(provider) {
-			return true
-		}
+// mapValues is a helper until we bump to a go version with maps.Values and slices.Collect
+func mapValues[K comparable, V any](m map[K]V) []V {
+	var values []V
+	for _, value := range m {
+		values = append(values, value)
 	}
-	return false
+	return values
 }
 
-// isRunning is a helper to check if given provider is already in use
-func isBound(provider providerReference, defaultProvider providerReference, namedProviders []providerReference) bool {
-	if provider.equals(defaultProvider) {
-		return true
-	}
+// isRunning is a helper to check if the given provider is in the given list of providers
+func isRunning(provider providerReference, activeProviders []providerReference) bool {
+	return slices.ContainsFunc(activeProviders, provider.equals)
+}
 
-	for _, namedProvider := range namedProviders {
-		if provider.equals(namedProvider) {
-			return true
-		}
-	}
-	return false
+// isBound is a helper to check if given provider is in the given provider or list of providers
+func isBound(provider providerReference, defaultProvider providerReference, namedProviders []providerReference) bool {
+	return provider.equals(defaultProvider) ||
+		slices.ContainsFunc(namedProviders, provider.equals)
 }
