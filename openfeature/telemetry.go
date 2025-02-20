@@ -62,7 +62,7 @@ func CreateEvaluationEvent(hookContext HookContext, details InterfaceEvaluationD
 	if exists && contextID != "" {
 		attributes[TelemetryFlagMetaContextId] = contextID
 	} else {
-		contextID = hookContext.evaluationContext.targetingKey
+		attributes[TelemetryFlagMetaContextId] = hookContext.evaluationContext.targetingKey
 	}
 
 	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
