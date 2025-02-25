@@ -1,13 +1,15 @@
-package openfeature
+package telemetry
 
 import (
 	"strings"
+
+	"github.com/open-feature/go-sdk/openfeature"
 )
 
 type EvaluationEvent struct {
 	Name       string
-	Attributes map[string]interface{}
-	Body       map[string]interface{}
+	Attributes map[string]any
+	Body       map[string]any
 }
 
 const (
@@ -38,19 +40,19 @@ const (
 	FlagEvaluationEventName string = "feature_flag.evaluation"
 )
 
-func CreateEvaluationEvent(hookContext HookContext, details InterfaceEvaluationDetails) EvaluationEvent {
-	attributes := map[string]interface{}{
-		TelemetryKey: hookContext.flagKey,
-		TelemetryProvider: hookContext.providerMetadata.Name,
+func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeature.InterfaceEvaluationDetails) EvaluationEvent {
+	attributes := map[string]any{
+		TelemetryKey: hookContext.FlagKey(),
+		TelemetryProvider: hookContext.ProviderMetadata().Name,
 	}
 
 	if details.EvaluationDetails.ResolutionDetail.Reason != "" {
 		attributes[TelemetryReason] = strings.ToLower(string(details.ResolutionDetail.Reason))
 	} else {
-		attributes[TelemetryReason] = strings.ToLower(string(UnknownReason))
+		attributes[TelemetryReason] = strings.ToLower(string(openfeature.UnknownReason))
 	}
 
-	body := map[string]interface{}{}
+	body := map[string]any{}
 
 	if details.Variant != "" {
 		attributes[TelemetryVariant] = details.EvaluationDetails.ResolutionDetail.Variant
@@ -62,7 +64,7 @@ func CreateEvaluationEvent(hookContext HookContext, details InterfaceEvaluationD
 	if exists && contextID != "" {
 		attributes[TelemetryFlagMetaContextId] = contextID
 	} else {
-		attributes[TelemetryFlagMetaContextId] = hookContext.evaluationContext.targetingKey
+		attributes[TelemetryFlagMetaContextId] = hookContext.EvaluationContext().TargetingKey()
 	}
 
 	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
@@ -75,11 +77,11 @@ func CreateEvaluationEvent(hookContext HookContext, details InterfaceEvaluationD
 		attributes[TelemetryFlagMetaVersion] = version
 	}
 
-	if details.EvaluationDetails.ResolutionDetail.Reason == ErrorReason {
+	if details.EvaluationDetails.ResolutionDetail.Reason == openfeature.ErrorReason {
 		if details.ResolutionDetail.ErrorCode != "" {
 			attributes[TelemetryErrorCode] = details.ResolutionDetail.ErrorCode
 		} else {
-			attributes[TelemetryErrorCode] = GeneralCode
+			attributes[TelemetryErrorCode] = openfeature.GeneralCode
 		}
 
 		if details.ResolutionDetail.ErrorMessage != "" {
