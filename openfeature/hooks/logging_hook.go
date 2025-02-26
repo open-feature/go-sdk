@@ -91,6 +91,6 @@ func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err
 	h.logger.Error("Error stage", args...)
 }
 
-func (h *LoggingHook) Finally(ctx context.Context, hCtx of.HookContext, hint of.HookHints) {
+func (h *LoggingHook) Finally(ctx context.Context, hCtx of.HookContext,flagEvaluationDetails of.InterfaceEvaluationDetails, hint of.HookHints) {
 
 }

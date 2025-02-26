@@ -76,13 +76,13 @@ func (mr *MockHookMockRecorder) Error(ctx, hookContext, err, hookHints interface
 }
 
 // Finally mocks base method.
-func (m *MockHook) Finally(ctx context.Context, hookContext HookContext, hookHints HookHints) {
+func (m *MockHook) Finally(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Finally", ctx, hookContext, hookHints)
 }
 
 // Finally indicates an expected call of Finally.
-func (mr *MockHookMockRecorder) Finally(ctx, hookContext, hookHints interface{}) *gomock.Call {
+func (mr *MockHookMockRecorder) Finally(ctx, hookContext, flagEvaluationDetails, hookHints interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Finally", reflect.TypeOf((*MockHook)(nil).Finally), ctx, hookContext, hookHints)
 }
