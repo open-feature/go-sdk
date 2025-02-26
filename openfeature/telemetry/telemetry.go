@@ -61,20 +61,20 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 	}
 
 	contextID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaContextId]
-	if exists && contextID != "" {
-		attributes[TelemetryFlagMetaContextId] = contextID
-	} else {
-		attributes[TelemetryFlagMetaContextId] = hookContext.EvaluationContext().TargetingKey()
-	}
-
+	if !exists {
+		contextID = hookContext.EvaluationContext().TargetingKey()
+	} 
+	
+	attributes[TelemetryContextID] = contextID
+	
 	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
 	if exists {
-		attributes[TelemetryFlagMetaFlagSetId] = setID
+		attributes[TelemetryFlagSetID] = setID
 	}
 
 	version, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaVersion]
 	if exists {
-		attributes[TelemetryFlagMetaVersion] = version
+		attributes[TelemetryVersion] = version
 	}
 
 	if details.EvaluationDetails.ResolutionDetail.Reason == openfeature.ErrorReason {

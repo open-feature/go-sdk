@@ -134,15 +134,15 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[TelemetryFlagMetaFlagSetId] != "test-set" {
+	if event.Attributes[TelemetryFlagSetID] != "test-set" {
 		t.Errorf("Expected 'Flag SetID' in Flag Metadata name to be 'test-set', got '%s'", event.Attributes[TelemetryFlagMetaFlagSetId])
 	}
 
-	if event.Attributes[TelemetryFlagMetaContextId] != "metadata-context" {
+	if event.Attributes[TelemetryContextID] != "metadata-context" {
 		t.Errorf("Expected 'Flag ContextID' in Flag Metadata name to be 'metadata-context', got '%s'", event.Attributes[TelemetryFlagMetaContextId])
 	}
 
-	if event.Attributes[TelemetryFlagMetaVersion] != "v1.0" {
+	if event.Attributes[TelemetryVersion] != "v1.0" {
 		t.Errorf("Expected 'Flag Version' in Flag Metadata name to be 'v1.0', got '%s'", event.Attributes[TelemetryFlagMetaVersion])
 	}
 }
