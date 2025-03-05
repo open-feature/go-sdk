@@ -9,7 +9,7 @@ type Hook interface {
 	Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
 	After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
 	Error(ctx context.Context, hookContext HookContext, err error, hookHints HookHints)
-	Finally(ctx context.Context, hookContext HookContext, hookHints HookHints)
+	Finally(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints)
 }
 
 // HookHints contains a map of hints for hooks
@@ -108,4 +108,4 @@ func (UnimplementedHook) After(context.Context, HookContext, InterfaceEvaluation
 	return nil
 }
 func (UnimplementedHook) Error(context.Context, HookContext, error, HookHints) {}
-func (UnimplementedHook) Finally(context.Context, HookContext, HookHints)      {}
+func (UnimplementedHook) Finally(context.Context, HookContext, InterfaceEvaluationDetails, HookHints)      {}

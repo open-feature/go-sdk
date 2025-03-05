@@ -710,7 +710,7 @@ func (c *Client) evaluate(
 	}
 
 	defer func() {
-		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, options)
+		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options)
 	}()
 
         // bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
@@ -828,9 +828,9 @@ func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Ho
 	}
 }
 
-func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, options EvaluationOptions) {
+func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions) {
 	for _, hook := range hooks {
-		hook.Finally(ctx, hookCtx, options.hookHints)
+		hook.Finally(ctx, hookCtx,evalDetails, options.hookHints)
 	}
 }
 
