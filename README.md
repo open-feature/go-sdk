@@ -71,7 +71,7 @@ func main() {
     // Create a new client
     client := openfeature.NewClient("app")
     // Evaluate your feature flag
-    v2Enabled, _ := client.BooleanValue(
+    v2Enabled := client.Boolean(
         context.Background(), "v2_enabled", true, openfeature.EvaluationContext{},
     )
     // Use the returned flag value
@@ -81,7 +81,7 @@ func main() {
 }
 ```
 
-Try this example in the [Go Playground](https://go.dev/play/p/3v6jbaGGldA).
+Try this example in the [Go Playground](https://go.dev/play/p/k0wqE8LPdR_X).
 
 ### API Reference
 
