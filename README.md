@@ -113,7 +113,7 @@ If the provider you're looking for hasn't been created yet, see the [develop a p
 Once you've added a provider as a dependency, it can be registered with OpenFeature like this:
 
 ```go
-openfeature.SetProvider(MyProvider{})
+openfeature.SetProviderAndWait(MyProvider{})
 ```
 
 In some situations, it may be beneficial to register multiple providers in the same application.
@@ -186,9 +186,9 @@ client := openfeature.NewClient('my-app')
 
 // trigger tracking event action
 client.Track(
-    context.Background(), 
-    'visited-promo-page', 
-    openfeature.EvaluationContext{}, 
+    context.Background(),
+    'visited-promo-page',
+    openfeature.EvaluationContext{},
     openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"),
     )
 ```
@@ -228,7 +228,7 @@ client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.
 ###### Output
 
 ```sh
-{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}  
+{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}
 {"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
 ```
 
@@ -242,7 +242,7 @@ Clients can be assigned to a domain. A domain is a logical identifier that can b
 import "github.com/open-feature/go-sdk/openfeature"
 
 // Registering the default provider
-openfeature.SetProvider(NewLocalProvider())
+openfeature.SetProviderAndWait(NewLocalProvider())
 // Registering a named provider
 openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
 
@@ -445,7 +445,7 @@ import (
 )
 
 testProvider := NewTestProvider()
-err := openfeature.GetApiInstance().SetProvider(testProvider)
+err := openfeature.GetApiInstance().SetProviderAndWait(testProvider)
 if err != nil {
   t.Errorf("unable to set provider")
 }
