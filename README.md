@@ -81,7 +81,7 @@ func main() {
 }
 ```
 
-Try this example in the [Go Playground](https://go.dev/play/p/k0wqE8LPdR_X).
+Try this example in the [Go Playground](https://go.dev/play/p/fSSK8s42hA2).
 
 ### API Reference
 
