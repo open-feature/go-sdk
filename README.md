@@ -67,7 +67,7 @@ import (
 
 func main() {
     // Register your feature flag provider
-    openfeature.SetProvider(openfeature.NoopProvider{})
+    openfeature.SetProviderAndWait(openfeature.NoopProvider{})
     // Create a new client
     client := openfeature.NewClient("app")
     // Evaluate your feature flag
