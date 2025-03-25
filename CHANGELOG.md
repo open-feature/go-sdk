@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.15.0](https://github.com/open-feature/go-sdk/compare/v1.14.1...v1.15.0) (2025-03-25)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module golang.org/x/text to v0.22.0 ([#315](https://github.com/open-feature/go-sdk/issues/315)) ([06e9304](https://github.com/open-feature/go-sdk/commit/06e93041fc916d607b42f295498915a6ce5993e1))
+
+
+### ✨ New Features
+
+* add evaluation details to finally hook ([#328](https://github.com/open-feature/go-sdk/issues/328)) ([63de64a](https://github.com/open-feature/go-sdk/commit/63de64af7fb1b82aa224e5991f4a17f111df83c3))
+* add OTel event creation util func ([#325](https://github.com/open-feature/go-sdk/issues/325)) ([3c70dc2](https://github.com/open-feature/go-sdk/commit/3c70dc2b50d5f088a92926ee09bceaebfc8595a1))
+* loosen test instance interface to support various test frameworks ([#317](https://github.com/open-feature/go-sdk/issues/317)) ([ce4920a](https://github.com/open-feature/go-sdk/commit/ce4920ad0dde1023da06082d81cb3b682b133c7c))
+
+
+### 🧹 Chore
+
+* **deps:** update codecov/codecov-action action to v5 ([#303](https://github.com/open-feature/go-sdk/issues/303)) ([44a74c3](https://github.com/open-feature/go-sdk/commit/44a74c3d603aa51d2cc36adad091c056bd2225d5))
+* **deps:** update codecov/codecov-action action to v5.4.0 ([#329](https://github.com/open-feature/go-sdk/issues/329)) ([a55418d](https://github.com/open-feature/go-sdk/commit/a55418d9ab2bae4c4d8a922c6928fb441e79f5fa))
+* update renovate config to utilize general openfeature one ([#334](https://github.com/open-feature/go-sdk/issues/334)) ([58a2a17](https://github.com/open-feature/go-sdk/commit/58a2a1743c8a461d3e073e1f8f6aa8c59648c1a9))
+
+
+### 📚 Documentation
+
+* add PR title and DCO rules to CONTRIBUTING.md ([#321](https://github.com/open-feature/go-sdk/issues/321)) ([c2eb5af](https://github.com/open-feature/go-sdk/commit/c2eb5af651dfec4dc099892bc53a5d8a84b895e1))
+* Use `SetProviderAndWait` in README ([#332](https://github.com/open-feature/go-sdk/issues/332)) ([a7dbd93](https://github.com/open-feature/go-sdk/commit/a7dbd931903eb9734ac1119fdd1226f233e3944d))
+* Use `SetProviderAndWait` in README example ([#333](https://github.com/open-feature/go-sdk/issues/333)) ([74eaac3](https://github.com/open-feature/go-sdk/commit/74eaac3804c3041a0ae798bff14a30baa099608c))
+* use shorthand eval syntax ([#331](https://github.com/open-feature/go-sdk/issues/331)) ([69d31fe](https://github.com/open-feature/go-sdk/commit/69d31fe089e96693375075a6ae600f3b88ae6422))
+
+
+### 🔄 Refactoring
+
+* remove dependency on golang.org/x/exp ([#320](https://github.com/open-feature/go-sdk/issues/320)) ([38e2300](https://github.com/open-feature/go-sdk/commit/38e2300c67a8316bfb0e319dddfaa95236bc9edc))
+
 ## [1.14.1](https://github.com/open-feature/go-sdk/compare/v1.14.0...v1.14.1) (2025-01-21)
 
 
