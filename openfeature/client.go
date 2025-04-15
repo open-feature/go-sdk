@@ -42,6 +42,7 @@ type Client struct {
 	hooks             []Hook
 	evaluationContext EvaluationContext
 	domain            string
+	logger            logr.Logger
 
 	mx sync.RWMutex
 }
@@ -63,6 +64,7 @@ func newClient(domain string, apiRef evaluationImpl, eventRef clientEvent) *Clie
 		metadata:          ClientMetadata{domain: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
+		logger:            logr.Discard(),
 	}
 }
 
@@ -76,6 +78,7 @@ func (c *Client) State() State {
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()
+	c.logger = l
 	return c
 }
 
@@ -713,7 +716,7 @@ func (c *Client) evaluate(
 		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options)
 	}()
 
-        // bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
+	// bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
@@ -830,7 +833,7 @@ func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Ho
 
 func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions) {
 	for _, hook := range hooks {
-		hook.Finally(ctx, hookCtx,evalDetails, options.hookHints)
+		hook.Finally(ctx, hookCtx, evalDetails, options.hookHints)
 	}
 }
 
