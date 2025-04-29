@@ -721,6 +721,7 @@ func TestDefaultClientUsage(t *testing.T) {
 }
 
 func TestLateBindingOfDefaultProvider(t *testing.T) {
+	defer t.Cleanup(initSingleton)
 	// we are expecting
 	expectedResultUnboundProvider := "default-value-from-unbound-provider"
 	expectedResultFromLateDefaultProvider := "value-from-late-default-provider"
