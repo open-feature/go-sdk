@@ -1,10 +1,11 @@
 .PHONY: mockgen test lint e2e-test
 mockgen:
-	mockgen -source=openfeature/provider.go -destination=openfeature/mocks/provider.go -package=mocks
-	mockgen -source=openfeature/hooks.go -destination=openfeature/mocks/hooks.go -package=mocks
-	mockgen -source=openfeature/interfaces.go -destination=openfeature/mocks/interfaces.go -package=mocks
-	sed -i.old $$'1s;^;//go:build testtools\\n\\n;' openfeature/mocks/*.go
-	rm -f openfeature/mocks/*.go.old
+	go install go.uber.org/mock/mockgen@latest
+	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature
+	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock.go -package=openfeature
+	mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock.go -package=openfeature
+	sed -i.old $$'1s;^;//go:build testtools\\n\\n;' openfeature/*_mock.go
+	rm -f openfeature/*_mock.go.old
 
 test:
 	go test --short -tags testtools -cover ./...
