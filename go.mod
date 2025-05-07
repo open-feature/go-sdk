@@ -7,7 +7,6 @@ toolchain go1.24.1
 require (
 	github.com/cucumber/godog v0.15.0
 	github.com/go-logr/logr v1.4.2
-	github.com/golang/mock v1.6.0
 	go.uber.org/mock v0.5.2
 	golang.org/x/text v0.22.0
 )
