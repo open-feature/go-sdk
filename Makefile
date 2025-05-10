@@ -4,8 +4,9 @@ mockgen:
 	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature
 	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock.go -package=openfeature
 	mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock.go -package=openfeature
-	sed -i.old $$'1s;^;//go:build testtools\\n\\n;' openfeature/*_mock.go
-	rm -f openfeature/*_mock.go.old
+	mockgen -source=openfeature/multiprovider/strategies.go -destination=openfeature/multiprovider/strategies_mock.go -package multiprovider
+	sed -i.old $$'1s;^;//go:build testtools\\n\\n;' **/*_mock.go
+	rm -f **/*_mock.go.old
 
 test:
 	go test --short -tags testtools -cover ./...
