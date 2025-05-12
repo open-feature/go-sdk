@@ -8,5 +8,4 @@ test:
 e2e-test:
 	 git submodule update --init --recursive && go test -race -cover ./e2e/...
 lint:
-	go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.1
-	${GOPATH}/bin/golangci-lint run --deadline=3m --timeout=3m ./... # Run linters
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 run --timeout=3m ./...
