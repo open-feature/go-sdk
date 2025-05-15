@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/open-feature/go-sdk/openfeature/internal"
+	"go.uber.org/mock/gomock"
 )
 
 // The `evaluation context` structure MUST define an optional `targeting key` field of type string,

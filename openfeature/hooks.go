@@ -107,5 +107,8 @@ func (UnimplementedHook) Before(context.Context, HookContext, HookHints) (*Evalu
 func (UnimplementedHook) After(context.Context, HookContext, InterfaceEvaluationDetails, HookHints) error {
 	return nil
 }
+
 func (UnimplementedHook) Error(context.Context, HookContext, error, HookHints) {}
-func (UnimplementedHook) Finally(context.Context, HookContext, InterfaceEvaluationDetails, HookHints)      {}
+
+func (UnimplementedHook) Finally(context.Context, HookContext, InterfaceEvaluationDetails, HookHints) {
+}

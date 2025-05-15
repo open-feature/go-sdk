@@ -500,6 +500,13 @@ for name, tt := range tests {
 }
 ```
 
+### Mocks
+
+Mocks are also available for testing purposes for all interfaces within the OpenFeature SDK. These are primarily
+intended for internal use for testing the SDK, but have been exported to ease the testing burden for any extensions
+or custom components (e.g. hooks & providers). These mocks are not include in builds by default. The build tag 
+`testtools` must be used to have the mocks included in builds.
+
 <!-- x-hide-in-docs-start -->
 ## ⭐️ Support the project
 
