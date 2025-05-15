@@ -404,8 +404,8 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
 		}
-		boolEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
-		boolEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+		boolEvalDetails.ErrorCode = TypeMismatchCode
+		boolEvalDetails.ErrorMessage = err.Error()
 
 		return boolEvalDetails, err
 	}
@@ -448,8 +448,8 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
 		}
-		strEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
-		strEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+		strEvalDetails.ErrorCode = TypeMismatchCode
+		strEvalDetails.ErrorMessage = err.Error()
 
 		return strEvalDetails, err
 	}
@@ -492,8 +492,8 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
 		}
-		floatEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
-		floatEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+		floatEvalDetails.ErrorCode = TypeMismatchCode
+		floatEvalDetails.ErrorMessage = err.Error()
 
 		return floatEvalDetails, err
 	}
@@ -536,8 +536,8 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 			Value:             defaultValue,
 			EvaluationDetails: evalDetails.EvaluationDetails,
 		}
-		intEvalDetails.EvaluationDetails.ErrorCode = TypeMismatchCode
-		intEvalDetails.EvaluationDetails.ErrorMessage = err.Error()
+		intEvalDetails.ErrorCode = TypeMismatchCode
+		intEvalDetails.ErrorMessage = err.Error()
 
 		return intEvalDetails, err
 	}

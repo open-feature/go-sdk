@@ -43,7 +43,7 @@
 
 ### Requirements
 
-Go language version: [1.20](https://go.dev/doc/devel/release#go1.20)
+Go language version: [1.23](https://go.dev/doc/devel/release#go1.23.0)
 
 > [!NOTE]
 > The OpenFeature Go SDK only supports currently maintained Go language versions.

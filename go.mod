@@ -1,6 +1,6 @@
 module github.com/open-feature/go-sdk
 
-go 1.21
+go 1.23.0
 
 require (
 	github.com/cucumber/godog v0.15.0
