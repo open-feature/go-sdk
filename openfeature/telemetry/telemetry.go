@@ -16,22 +16,21 @@ const (
 	// The OpenTelemetry compliant event attributes for flag evaluation.
 	// Specification: https://opentelemetry.io/docs/specs/semconv/feature-flags/feature-flags-logs/
 
-	TelemetryKey string = "feature_flag.key"
+	TelemetryKey       string = "feature_flag.key"
 	TelemetryErrorCode string = "error.type"
-	TelemetryVariant string = "feature_flag.variant"
+	TelemetryVariant   string = "feature_flag.variant"
 	TelemetryContextID string = "feature_flag.context.id"
-	TelemetryErrorMsg string = "feature_flag.evaluation.error.message"
-	TelemetryReason string = "feature_flag.evaluation.reason"
-	TelemetryProvider string = "feature_flag.provider_name"
+	TelemetryErrorMsg  string = "feature_flag.evaluation.error.message"
+	TelemetryReason    string = "feature_flag.evaluation.reason"
+	TelemetryProvider  string = "feature_flag.provider_name"
 	TelemetryFlagSetID string = "feature_flag.set.id"
-	TelemetryVersion string = "feature_flag.version"
-
+	TelemetryVersion   string = "feature_flag.version"
 
 	// Well-known flag metadata attributes for telemetry events.
 	// Specification: https://openfeature.dev/specification/appendix-d#flag-metadata
 	TelemetryFlagMetaContextId string = "contextId"
 	TelemetryFlagMetaFlagSetId string = "flagSetId"
-	TelemetryFlagMetaVersion string = "version"
+	TelemetryFlagMetaVersion   string = "version"
 
 	// OpenTelemetry event body.
 	// Specification: https://opentelemetry.io/docs/specs/semconv/feature-flags/feature-flags-logs/
@@ -42,7 +41,7 @@ const (
 
 func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeature.InterfaceEvaluationDetails) EvaluationEvent {
 	attributes := map[string]any{
-		TelemetryKey: hookContext.FlagKey(),
+		TelemetryKey:      hookContext.FlagKey(),
 		TelemetryProvider: hookContext.ProviderMetadata().Name,
 	}
 
@@ -63,10 +62,10 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 	contextID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaContextId]
 	if !exists {
 		contextID = hookContext.EvaluationContext().TargetingKey()
-	} 
-	
+	}
+
 	attributes[TelemetryContextID] = contextID
-	
+
 	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
 	if exists {
 		attributes[TelemetryFlagSetID] = setID

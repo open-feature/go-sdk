@@ -3,12 +3,11 @@ package openfeature
 import (
 	"context"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"math"
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/golang/mock/gomock"
 )
 
 type clientMocks struct {
