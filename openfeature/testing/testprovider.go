@@ -28,7 +28,9 @@ type TestProvider struct {
 }
 
 // UsingFlags sets flags for the scope of a test
-func (tp TestProvider) UsingFlags(test interface{ Name() string }, flags map[string]memprovider.InMemoryFlag) {
+type TestFramework = interface{ Name() string }
+
+func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovider.InMemoryFlag) {
 	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
 }
