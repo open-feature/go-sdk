@@ -3,4 +3,4 @@
 #
 # Managed by Peribolos: https://github.com/open-feature/community/blob/main/config/open-feature/sdk-golang/workgroup.yaml
 #
-* @open-feature/sdk-golang-maintainers
+* @open-feature/sdk-golang-maintainers @open-feature/maintainers

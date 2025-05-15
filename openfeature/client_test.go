@@ -3,12 +3,11 @@ package openfeature
 import (
 	"context"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"math"
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/golang/mock/gomock"
 )
 
 type clientMocks struct {
@@ -1314,7 +1313,7 @@ func TestRequirement_1_7_6(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderNotReadyError, gomock.Any())
-	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 	notReadyEventingProvider := struct {
 		FeatureProvider
@@ -1377,7 +1376,7 @@ func TestRequirement_1_7_7(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderFatalError, gomock.Any())
-	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any())
+	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 	client := GetApiInstance().GetNamedClient(t.Name())
 	client.AddHooks(mockHook)

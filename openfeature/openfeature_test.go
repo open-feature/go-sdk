@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
@@ -721,6 +721,7 @@ func TestDefaultClientUsage(t *testing.T) {
 }
 
 func TestLateBindingOfDefaultProvider(t *testing.T) {
+	defer t.Cleanup(initSingleton)
 	// we are expecting
 	expectedResultUnboundProvider := "default-value-from-unbound-provider"
 	expectedResultFromLateDefaultProvider := "value-from-late-default-provider"
