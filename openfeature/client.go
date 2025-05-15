@@ -42,6 +42,7 @@ type Client struct {
 	hooks             []Hook
 	evaluationContext EvaluationContext
 	domain            string
+	logger            logr.Logger
 
 	mx sync.RWMutex
 }
@@ -63,6 +64,7 @@ func newClient(domain string, apiRef evaluationImpl, eventRef clientEvent) *Clie
 		metadata:          ClientMetadata{domain: domain},
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
+		logger:            logr.Discard(),
 	}
 }
 
@@ -76,6 +78,7 @@ func (c *Client) State() State {
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()
+	c.logger = l
 	return c
 }
 
