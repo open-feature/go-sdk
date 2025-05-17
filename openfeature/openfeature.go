@@ -3,8 +3,10 @@ package openfeature
 import "github.com/go-logr/logr"
 
 // api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
-var api evaluationImpl
-var eventing eventingImpl
+var (
+	api      evaluationImpl
+	eventing eventingImpl
+)
 
 // init initializes the OpenFeature evaluation API
 func init() {
@@ -12,7 +14,7 @@ func init() {
 }
 
 func initSingleton() {
-	var exec = newEventExecutor()
+	exec := newEventExecutor()
 	eventing = exec
 
 	api = newEvaluationAPI(exec)
@@ -63,8 +65,9 @@ func SetEvaluationContext(evalCtx EvaluationContext) {
 	api.SetEvaluationContext(evalCtx)
 }
 
-// Deprecated
 // SetLogger sets the global Logger.
+//
+// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 func SetLogger(l logr.Logger) {
 }
 

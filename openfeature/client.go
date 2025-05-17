@@ -24,7 +24,8 @@ func NewClientMetadata(domain string) ClientMetadata {
 }
 
 // Name returns the client's domain name
-// Deprecated: Name() exists for historical compatibility, use Domain() instead.
+//
+// Deprecated: Name() exists for historical compatibility, use [ClientMetadata.Domain] instead.
 func (cm ClientMetadata) Name() string {
 	return cm.domain
 }
@@ -71,8 +72,9 @@ func (c *Client) State() State {
 	return c.clientEventing.State(c.domain)
 }
 
-// Deprecated
 // WithLogger sets the logger of the client
+//
+// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()

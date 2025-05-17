@@ -112,9 +112,8 @@ func (api *evaluationAPI) SetEvaluationContext(apiCtx EvaluationContext) {
 	api.apiCtx = apiCtx
 }
 
-// Deprecated
+// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 func (api *evaluationAPI) SetLogger(l logr.Logger) {
-
 }
 
 func (api *evaluationAPI) AddHooks(hooks ...Hook) {
@@ -248,7 +247,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 // initializer is a helper to execute provider initialization and generate appropriate event for the initialization
 // It also returns an error if the initialization resulted in an error
 func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, error) {
-	var event = Event{
+	event := Event{
 		ProviderName: provider.Metadata().Name,
 		EventType:    ProviderReady,
 		ProviderEventDetails: ProviderEventDetails{
