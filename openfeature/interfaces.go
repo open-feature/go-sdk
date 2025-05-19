@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 )
 
@@ -67,7 +68,7 @@ type evaluationImpl interface {
 	GetNamedProviders() map[string]FeatureProvider
 	GetHooks() []Hook
 
-	// Deprecated
+	// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 	SetLogger(l logr.Logger)
 
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
