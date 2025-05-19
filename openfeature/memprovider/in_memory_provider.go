@@ -102,7 +102,7 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	}
 }
 
-func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.InterfaceResolutionDetail{
@@ -113,7 +113,7 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 
 	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
 
-	var result interface{}
+	var result any
 	if resolveFlag != nil {
 		result = resolveFlag
 	} else {
@@ -156,7 +156,7 @@ func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provide
 // helpers
 
 // genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail
-func genericResolve[T comparable](value interface{}, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
+func genericResolve[T comparable](value any, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
 	v, ok := value.(T)
 
 	if ok {
@@ -175,19 +175,19 @@ type State string
 
 // ContextEvaluator is a callback to perform openfeature.EvaluationContext backed evaluations.
 // This is a callback implemented by the flag definer.
-type ContextEvaluator *func(this InMemoryFlag, evalCtx openfeature.FlattenedContext) (interface{}, openfeature.ProviderResolutionDetail)
+type ContextEvaluator *func(this InMemoryFlag, evalCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail)
 
 // InMemoryFlag is the feature flag representation accepted by InMemoryProvider
 type InMemoryFlag struct {
 	Key              string
 	State            State
 	DefaultVariant   string
-	Variants         map[string]interface{}
+	Variants         map[string]any
 	ContextEvaluator ContextEvaluator
 }
 
-func (flag *InMemoryFlag) Resolve(defaultValue interface{}, evalCtx openfeature.FlattenedContext) (
-	interface{}, openfeature.ProviderResolutionDetail) {
+func (flag *InMemoryFlag) Resolve(defaultValue any, evalCtx openfeature.FlattenedContext) (
+	any, openfeature.ProviderResolutionDetail) {
 
 	// check the state
 	if flag.State == Disabled {
@@ -212,6 +212,6 @@ func (flag *InMemoryFlag) Resolve(defaultValue interface{}, evalCtx openfeature.
 
 type InMemoryEvent struct {
 	Value             float64
-	Data              map[string]interface{}
-	ContextAttributes map[string]interface{}
+	Data              map[string]any
+	ContextAttributes map[string]any
 }

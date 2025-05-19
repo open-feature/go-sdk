@@ -21,7 +21,7 @@ type HookHints = openfeature.HookHints
 //
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.NewHookHints,
 // instead.
-func NewHookHints(mapOfHints map[string]interface{}) HookHints {
+func NewHookHints(mapOfHints map[string]any) HookHints {
 	return openfeature.NewHookHints(mapOfHints)
 }
 
@@ -39,7 +39,7 @@ type HookContext = openfeature.HookContext
 func NewHookContext(
 	flagKey string,
 	flagType Type,
-	defaultValue interface{},
+	defaultValue any,
 	clientMetadata ClientMetadata,
 	providerMetadata Metadata,
 	evaluationContext EvaluationContext,

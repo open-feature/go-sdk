@@ -18,7 +18,7 @@ func TestRequirement_2_1_1(t *testing.T) {
 		Metadata() Metadata
 	}
 
-	var mockProviderI interface{} = mockProvider
+	var mockProviderI any = mockProvider
 	if _, ok := mockProviderI.(requirements); !ok {
 		t.Error("provider interface doesn't define the Metadata signature")
 	}
@@ -46,10 +46,10 @@ func TestRequirement_2_2_1(t *testing.T) {
 		StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail
 		FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail
 		IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
-		ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
+		ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx FlattenedContext) InterfaceResolutionDetail
 	}
 
-	var mockProviderI interface{} = mockProvider
+	var mockProviderI any = mockProvider
 	if _, ok := mockProviderI.(requirements); !ok {
 		t.Error("provider interface doesn't define the evaluation signatures")
 	}
@@ -92,11 +92,11 @@ func TestTrackingEventDetails_Add(t *testing.T) {
 
 	tests := map[string]struct {
 		inputDetails TrackingEventDetails
-		addKeyPair   map[string]interface{}
+		addKeyPair   map[string]any
 	}{
 		"added correctly": {
 			inputDetails: NewTrackingEventDetails(1),
-			addKeyPair: map[string]interface{}{
+			addKeyPair: map[string]any{
 				"foo": "bar",
 				"baz": 1,
 				"qux": dummyStruct{

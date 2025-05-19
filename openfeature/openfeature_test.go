@@ -777,7 +777,7 @@ func TestForNilProviders(t *testing.T) {
 	}
 }
 
-func use(vals ...interface{}) {
+func use(vals ...any) {
 	for _, val := range vals {
 		_ = val
 	}
@@ -787,9 +787,9 @@ func setupProviderWithSemaphores() (struct {
 	FeatureProvider
 	StateHandler
 	EventHandler
-}, chan interface{}, chan interface{}) {
-	intiSem := make(chan interface{}, 1)
-	shutdownSem := make(chan interface{}, 1)
+}, chan any, chan any) {
+	intiSem := make(chan any, 1)
+	shutdownSem := make(chan any, 1)
 
 	sh := &stateHandlerForTests{
 		// Semaphore must be invoked

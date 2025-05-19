@@ -12,11 +12,11 @@ import (
 // https://openfeature.dev/specification/sections/evaluation-context
 type EvaluationContext struct {
 	targetingKey string // uniquely identifying the subject (end-user, or client service) of a flag evaluation
-	attributes   map[string]interface{}
+	attributes   map[string]any
 }
 
 // Attribute retrieves the attribute with the given key
-func (e EvaluationContext) Attribute(key string) interface{} {
+func (e EvaluationContext) Attribute(key string) any {
 	return e.attributes[key]
 }
 
@@ -26,9 +26,9 @@ func (e EvaluationContext) TargetingKey() string {
 }
 
 // Attributes returns a copy of the EvaluationContext's attributes
-func (e EvaluationContext) Attributes() map[string]interface{} {
+func (e EvaluationContext) Attributes() map[string]any {
 	// copy attributes to new map to prevent mutation (maps are passed by reference)
-	attrs := make(map[string]interface{}, len(e.attributes))
+	attrs := make(map[string]any, len(e.attributes))
 	for key, value := range e.attributes {
 		attrs[key] = value
 	}
@@ -40,9 +40,9 @@ func (e EvaluationContext) Attributes() map[string]interface{} {
 //
 // targetingKey - uniquely identifying the subject (end-user, or client service) of a flag evaluation
 // attributes - contextual data used in flag evaluation
-func NewEvaluationContext(targetingKey string, attributes map[string]interface{}) EvaluationContext {
+func NewEvaluationContext(targetingKey string, attributes map[string]any) EvaluationContext {
 	// copy attributes to new map to avoid reference being externally available, thereby enforcing immutability
-	attrs := make(map[string]interface{}, len(attributes))
+	attrs := make(map[string]any, len(attributes))
 	for key, value := range attributes {
 		attrs[key] = value
 	}
@@ -56,7 +56,7 @@ func NewEvaluationContext(targetingKey string, attributes map[string]interface{}
 // NewTargetlessEvaluationContext constructs an EvaluationContext with an empty targeting key
 //
 // attributes - contextual data used in flag evaluation
-func NewTargetlessEvaluationContext(attributes map[string]interface{}) EvaluationContext {
+func NewTargetlessEvaluationContext(attributes map[string]any) EvaluationContext {
 	return NewEvaluationContext("", attributes)
 }
 

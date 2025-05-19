@@ -111,7 +111,7 @@ func FuzzObjectEvaluation(f *testing.F) {
 	f.Add("FoO", "true")
 	f.Add("FoO234", "-1.23")
 	f.Add("FoO2\b34", "1")
-	f.Fuzz(func(t *testing.T, flagKey string, defaultValue string) { // interface{} is not supported, using a string
+	f.Fuzz(func(t *testing.T, flagKey string, defaultValue string) { // any is not supported, using a string
 		res, err := client.ObjectValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {

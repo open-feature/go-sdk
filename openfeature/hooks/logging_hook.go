@@ -37,12 +37,12 @@ func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) (*
 
 type MarshaledEvaluationContext struct {
 	TargetingKey string
-	Attributes   map[string]interface{}
+	Attributes   map[string]any
 }
 
-func (l LoggingHook) buildArgs(hookContext of.HookContext) ([]interface{}, error) {
+func (l LoggingHook) buildArgs(hookContext of.HookContext) ([]any, error) {
 
-	args := []interface{}{
+	args := []any{
 		DOMAIN_KEY, hookContext.ClientMetadata().Domain(),
 		PROVIDER_NAME_KEY, hookContext.ProviderMetadata().Name,
 		FLAG_KEY_KEY, hookContext.FlagKey(),
