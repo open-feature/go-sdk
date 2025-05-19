@@ -19,15 +19,19 @@ const (
 	VALUE_KEY              = "value"
 )
 
+// LoggingHook is a [of.Hook] that logs the flag evaluation lifecycle.
 type LoggingHook struct {
 	includeEvaluationContext bool
 	logger                   *slog.Logger
 }
 
+// NewLoggingHook returns a new [LoggingHook] with the default logger.
+// To provide a custom logger, use [NewCustomLoggingHook].
 func NewLoggingHook(includeEvaluationContext bool) (*LoggingHook, error) {
 	return NewCustomLoggingHook(includeEvaluationContext, slog.Default())
 }
 
+// NewCustomLoggingHook returns a new [LoggingHook] with the provided logger.
 func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) (*LoggingHook, error) {
 	return &LoggingHook{
 		logger:                   logger,
