@@ -54,7 +54,7 @@ func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
 }
 
 func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
-	var buf *bytes.Buffer = new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
