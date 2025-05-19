@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"testing"
-
-	"log/slog"
 
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
@@ -128,15 +127,17 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 
 		ms := prepareOutput(buf, t)
 
-		var expected = map[string]map[string]any{
+		expected := map[string]map[string]any{
 			"Before stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
+				"stage":         "before",
 			},
 			"After stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
 				"flag_key":      "boolFlag",
+				"stage":         "after",
 			},
 		}
 
@@ -164,15 +165,17 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 
 		ms := prepareOutput(buf, t)
 
-		var expected = map[string]map[string]any{
+		expected := map[string]map[string]any{
 			"Before stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
+				"stage":         "before",
 			},
 			"Error stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
 				"flag_key":      "non-existing",
+				"stage":         "error",
 			},
 		}
 
