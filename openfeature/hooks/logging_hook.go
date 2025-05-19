@@ -17,6 +17,7 @@ const (
 	REASON_KEY             = "reason"
 	VARIANT_KEY            = "variant"
 	VALUE_KEY              = "value"
+	STAGE_KEY              = "stage"
 )
 
 // LoggingHook is a [of.Hook] that logs the flag evaluation lifecycle.
@@ -64,6 +65,7 @@ func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {
 
 func (h *LoggingHook) Before(ctx context.Context, hookContext of.HookContext, hookHints of.HookHints) (*of.EvaluationContext, error) {
 	args := h.buildArgs(hookContext)
+	args = append(args, slog.String(STAGE_KEY, "before"))
 	h.logger.LogAttrs(ctx, slog.LevelDebug, "Before stage", args...)
 	return nil, nil
 }
@@ -76,6 +78,7 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 		slog.String(REASON_KEY, string(flagEvaluationDetails.Reason)),
 		slog.String(VARIANT_KEY, flagEvaluationDetails.Variant),
 		slog.Any(VALUE_KEY, flagEvaluationDetails.Value),
+		slog.String(STAGE_KEY, "after"),
 	)
 	h.logger.LogAttrs(ctx, slog.LevelDebug, "After stage", args...)
 	return nil
@@ -83,7 +86,10 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 
 func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err error, hookHints of.HookHints) {
 	args := h.buildArgs(hookContext)
-	args = append(args, slog.Any(ERROR_MESSAGE_KEY, err))
+	args = append(args,
+		slog.Any(ERROR_MESSAGE_KEY, err),
+		slog.String(STAGE_KEY, "error"),
+	)
 	h.logger.LogAttrs(ctx, slog.LevelError, "Error stage", args...)
 }
 
