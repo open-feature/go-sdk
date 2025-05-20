@@ -91,7 +91,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			Key:            "boolFlag",
 			State:          memprovider.Enabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},
@@ -113,7 +113,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			false,
 			openfeature.NewEvaluationContext(
 				"target1",
-				map[string]interface{}{
+				map[string]any{
 					"color": "green",
 				},
 			),
@@ -151,7 +151,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			false,
 			openfeature.NewEvaluationContext(
 				"target1",
-				map[string]interface{}{
+				map[string]any{
 					"color": "green",
 				},
 			),

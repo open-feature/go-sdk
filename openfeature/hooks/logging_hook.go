@@ -42,7 +42,7 @@ func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) (*
 
 type MarshaledEvaluationContext struct {
 	TargetingKey string
-	Attributes   map[string]interface{}
+	Attributes   map[string]any
 }
 
 func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {

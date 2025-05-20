@@ -36,7 +36,7 @@ func TestRequirement_3_1_2(t *testing.T) {
 		t.Errorf("expected EvaluationContext.attributes key to be string, got %s", tpe.Key().Kind())
 	}
 	if tpe.Elem().Kind() != reflect.Interface {
-		t.Errorf("expected EvaluationContext.attributes value to be interface{}, got %s", tpe.Elem().Kind())
+		t.Errorf("expected EvaluationContext.attributes value to be any, got %s", tpe.Elem().Kind())
 	}
 }
 
@@ -55,7 +55,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 			SetEvaluationContext(evalCtx EvaluationContext)
 		}
 
-		var clientI interface{} = client
+		var clientI any = client
 		if _, ok := clientI.(requirement); !ok {
 			t.Error("client doesn't implement the required SetEvaluationContext func signature")
 		}
@@ -69,15 +69,15 @@ func TestRequirement_3_2_1(t *testing.T) {
 			StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
 			FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 			IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
-			ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
+			ObjectValue(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (any, error)
 			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
 			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
 			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
 			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
-			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
+			ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 		}
 
-		var clientI interface{} = client
+		var clientI any = client
 		if _, ok := clientI.(requirement); !ok {
 			t.Error("client doesn't implement the required func signatures containing EvaluationContext")
 		}
@@ -92,7 +92,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	apiEvalCtx := EvaluationContext{
 		targetingKey: "API",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"invocationEvalCtx": true,
 			"foo":               3,
 			"user":              3,
@@ -102,7 +102,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	transactionEvalCtx := EvaluationContext{
 		targetingKey: "Transcation",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"transactionEvalCtx": true,
 			"foo":                2,
 			"user":               2,
@@ -121,7 +121,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	client := GetApiInstance().GetNamedClient(t.Name())
 	clientEvalCtx := EvaluationContext{
 		targetingKey: "Client",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"clientEvalCtx": true,
 			"foo":           1,
 			"user":          1,
@@ -131,7 +131,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 
 	invocationEvalCtx := EvaluationContext{
 		targetingKey: "",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"apiEvalCtx": true,
 			"foo":        "bar",
 		},
@@ -140,7 +140,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 	mockProvider.EXPECT().Hooks().AnyTimes()
 	expectedMergedEvalCtx := EvaluationContext{
 		targetingKey: "Client",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"apiEvalCtx":         true,
 			"transactionEvalCtx": true,
 			"invocationEvalCtx":  true,
@@ -159,7 +159,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 }
 
 func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
-	attributes := map[string]interface{}{
+	attributes := map[string]any{
 		"foo": "bar",
 	}
 	evalCtx := NewEvaluationContext("foo", attributes)
@@ -184,7 +184,7 @@ func TestRequirement_3_3_1(t *testing.T) {
 }
 
 func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {
-	evalCtx := NewEvaluationContext("foo", map[string]interface{}{
+	evalCtx := NewEvaluationContext("foo", map[string]any{
 		"foo": "bar",
 	})
 
@@ -197,7 +197,7 @@ func TestEvaluationContext_AttributesFuncNotPassedByReference(t *testing.T) {
 }
 
 func TestNewTargetlessEvaluationContext(t *testing.T) {
-	attributes := map[string]interface{}{
+	attributes := map[string]any{
 		"foo": "bar",
 	}
 	evalCtx := NewTargetlessEvaluationContext(attributes)
@@ -211,11 +211,11 @@ func TestNewTargetlessEvaluationContext(t *testing.T) {
 }
 
 func TestMergeTransactionContext(t *testing.T) {
-	oldEvalCtx := NewEvaluationContext("old", map[string]interface{}{
+	oldEvalCtx := NewEvaluationContext("old", map[string]any{
 		"old":       true,
 		"overwrite": "old",
 	})
-	newEvalCtx := NewEvaluationContext("new", map[string]interface{}{
+	newEvalCtx := NewEvaluationContext("new", map[string]any{
 		"new":       true,
 		"overwrite": "new",
 	})
@@ -225,7 +225,7 @@ func TestMergeTransactionContext(t *testing.T) {
 
 	expectedMergedEvalCtx := EvaluationContext{
 		targetingKey: "new",
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"old":       true,
 			"new":       true,
 			"overwrite": "new",

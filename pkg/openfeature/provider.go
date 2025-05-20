@@ -173,7 +173,7 @@ type FloatResolutionDetail = openfeature.FloatResolutionDetail
 // github.com/open-feature/go-sdk/openfeature.IntResolutionDetail, instead.
 type IntResolutionDetail = openfeature.IntResolutionDetail
 
-// InterfaceResolutionDetail provides a resolution detail with interface{} type
+// InterfaceResolutionDetail provides a resolution detail with any type
 //
 // Deprecated: use
 // github.com/open-feature/go-sdk/openfeature.InterfaceResolutionDetail,

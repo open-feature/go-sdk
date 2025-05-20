@@ -14,17 +14,17 @@ type Hook interface {
 
 // HookHints contains a map of hints for hooks
 type HookHints struct {
-	mapOfHints map[string]interface{}
+	mapOfHints map[string]any
 }
 
 // NewHookHints constructs HookHints
-func NewHookHints(mapOfHints map[string]interface{}) HookHints {
+func NewHookHints(mapOfHints map[string]any) HookHints {
 	return HookHints{mapOfHints: mapOfHints}
 }
 
 // Value returns the value at the given key in the underlying map.
 // Maintains immutability of the map.
-func (h HookHints) Value(key string) interface{} {
+func (h HookHints) Value(key string) any {
 	return h.mapOfHints[key]
 }
 
@@ -32,7 +32,7 @@ func (h HookHints) Value(key string) interface{} {
 type HookContext struct {
 	flagKey           string
 	flagType          Type
-	defaultValue      interface{}
+	defaultValue      any
 	clientMetadata    ClientMetadata
 	providerMetadata  Metadata
 	evaluationContext EvaluationContext
@@ -49,7 +49,7 @@ func (h HookContext) FlagType() Type {
 }
 
 // DefaultValue returns the hook context's default value
-func (h HookContext) DefaultValue() interface{} {
+func (h HookContext) DefaultValue() any {
 	return h.defaultValue
 }
 
@@ -73,7 +73,7 @@ func (h HookContext) EvaluationContext() EvaluationContext {
 func NewHookContext(
 	flagKey string,
 	flagType Type,
-	defaultValue interface{},
+	defaultValue any,
 	clientMetadata ClientMetadata,
 	providerMetadata Metadata,
 	evaluationContext EvaluationContext,
