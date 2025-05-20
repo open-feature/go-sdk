@@ -13,7 +13,7 @@ func TestInMemoryProvider_boolean(t *testing.T) {
 			Key:            "boolFlag",
 			State:          Enabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},
@@ -38,7 +38,7 @@ func TestInMemoryProvider_String(t *testing.T) {
 			Key:            "stringFlag",
 			State:          Enabled,
 			DefaultVariant: "stringOne",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"stringOne": "hello",
 				"stringTwo": "GoodBye",
 			},
@@ -63,7 +63,7 @@ func TestInMemoryProvider_Float(t *testing.T) {
 			Key:            "floatFlag",
 			State:          Enabled,
 			DefaultVariant: "fOne",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"fOne": 1.1,
 				"fTwo": 2.2,
 			},
@@ -88,7 +88,7 @@ func TestInMemoryProvider_Int(t *testing.T) {
 			Key:            "intFlag",
 			State:          Enabled,
 			DefaultVariant: "max",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"min": -9223372036854775808,
 				"max": 9223372036854775807,
 			},
@@ -113,7 +113,7 @@ func TestInMemoryProvider_Object(t *testing.T) {
 			Key:            "objectFlag",
 			State:          Enabled,
 			DefaultVariant: "A",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"A": "SomeResult",
 				"B": "OtherResult",
 			},
@@ -135,7 +135,7 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 	var variantKey = "VariantSelector"
 
 	// simple context handling - variant is selected from key and returned
-	var evaluator = func(callerFlag InMemoryFlag, evalCtx openfeature.FlattenedContext) (interface{}, openfeature.ProviderResolutionDetail) {
+	var evaluator = func(callerFlag InMemoryFlag, evalCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail) {
 		s := evalCtx[variantKey]
 		return callerFlag.Variants[s.(string)], openfeature.ProviderResolutionDetail{}
 	}
@@ -145,7 +145,7 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 			Key:            "contextFlag",
 			State:          Enabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},
@@ -157,7 +157,7 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 
 	t.Run("test with context", func(t *testing.T) {
 
-		evaluation := memoryProvider.BooleanEvaluation(ctx, "contextFlag", true, map[string]interface{}{
+		evaluation := memoryProvider.BooleanEvaluation(ctx, "contextFlag", true, map[string]any{
 			variantKey: "false",
 		})
 
@@ -195,7 +195,7 @@ func TestInMemoryProvider_TypeMismatch(t *testing.T) {
 			Key:            "boolFlag",
 			State:          Enabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},
@@ -224,7 +224,7 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 			Key:            "boolFlag",
 			State:          Disabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},

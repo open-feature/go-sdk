@@ -219,7 +219,7 @@ func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, fl
 func theResolvedObjectValueShouldBeContainFieldsAndWithValuesAndRespectively(
 	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int) error {
 
-	got, ok := ctx.Value(ctxStorageKey{}).(map[string]interface{})
+	got, ok := ctx.Value(ctxStorageKey{}).(map[string]any)
 	if !ok {
 		return errors.New("no flag resolution result")
 	}
@@ -454,7 +454,7 @@ func theResolvedObjectDetailsValueShouldBeContainFieldsAndWithValuesAndRespectiv
 		return err
 	}
 
-	content, ok := gotResDetail.Value.(map[string]interface{})
+	content, ok := gotResDetail.Value.(map[string]any)
 	if !ok {
 		return errors.New("unexpected value format")
 	}
@@ -516,7 +516,7 @@ func theVariantShouldBeAndTheReasonShouldBe(ctx context.Context, variant, reason
 func contextContainsKeysWithValues(
 	ctx context.Context, ctxKey1, ctxKey2, ctxKey3, ctxKey4, ctxValue1, ctxValue2 string, ctxValue3 int64, ctxValue4 string,
 ) (context.Context, error) {
-	evalCtx := openfeature.NewEvaluationContext("", map[string]interface{}{
+	evalCtx := openfeature.NewEvaluationContext("", map[string]any{
 		ctxKey1: boolOrString(ctxValue1),
 		ctxKey2: boolOrString(ctxValue2),
 		ctxKey3: ctxValue3,
@@ -778,7 +778,7 @@ func getFirstInterfaceEvaluationDetails(ctx context.Context) (openfeature.Interf
 	return openfeature.InterfaceEvaluationDetails{}, errors.New("no evaluation detail found in context")
 }
 
-func boolOrString(str string) interface{} {
+func boolOrString(str string) any {
 	boolean, err := strconv.ParseBool(str)
 	if err != nil {
 		return str

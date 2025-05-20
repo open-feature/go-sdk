@@ -35,7 +35,7 @@ func TestRequirement_4_1_2(t *testing.T) {
 		ProviderMetadata() Metadata
 	}
 
-	var hookI interface{} = hookCtx
+	var hookI any = hookCtx
 	if _, ok := hookI.(requirements); !ok {
 		t.Error("HookContext doesn't implement the 4.1.2 requirements interface")
 	}
@@ -81,7 +81,7 @@ func TestRequirement_4_2_1(t *testing.T) {
 		t.Errorf("expected HookHints key to be string, got %s", tpe.Key().Kind())
 	}
 	if tpe.Elem().Kind() != reflect.Interface {
-		t.Errorf("expected HookHints element to be interface{}, got %s", tpe.Elem().Kind())
+		t.Errorf("expected HookHints element to be any, got %s", tpe.Elem().Kind())
 	}
 }
 
@@ -188,7 +188,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 			Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
 		}
 
-		var hookI interface{} = mockHook
+		var hookI any = mockHook
 		if _, ok := hookI.(requirement); !ok {
 			t.Error("hook doesn't implement the required Before func signature")
 		}
@@ -215,7 +215,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	flagKey := "foo"
 	defaultValue := "bar"
 	evalCtx := EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"is": "a test",
 		},
 	}
@@ -232,7 +232,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 	}
 	hook1EvalCtxResult := &EvaluationContext{targetingKey: "mockHook1"}
 	mockHook1.EXPECT().Before(gomock.Any(), hook1Ctx, gomock.Any()).Return(hook1EvalCtxResult, nil)
-	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, map[string]interface{}{
+	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, map[string]any{
 		"is":         "a test",
 		TargetingKey: "mockHook1",
 	})
@@ -272,7 +272,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	client := GetApiInstance().GetNamedClient(t.Name())
 
 	apiEvalCtx := EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"key":            "api context",
 			"lowestPriority": true,
 		},
@@ -280,7 +280,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	SetEvaluationContext(apiEvalCtx)
 
 	clientEvalCtx := EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"key":            "client context",
 			"lowestPriority": false,
 			"beatsClient":    false,
@@ -291,7 +291,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	flagKey := "foo"
 	defaultValue := "bar"
 	invEvalCtx := EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"key":         "invocation context",
 			"on":          true,
 			"beatsClient": true,
@@ -301,7 +301,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
 	hookEvalCtxResult := &EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"key":        "hook value",
 			"multiplier": 3,
 		},
@@ -310,7 +310,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 
 	// assert that the EvaluationContext returned by Before hooks is merged with the invocation EvaluationContext
 	expectedMergedContext := EvaluationContext{
-		attributes: map[string]interface{}{
+		attributes: map[string]any{
 			"key":            "hook value", // hook takes precedence
 			"multiplier":     3,
 			"on":             true,
@@ -371,7 +371,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 			After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
 		}
 
-		var hookI interface{} = mockHook
+		var hookI any = mockHook
 		if _, ok := hookI.(requirement); !ok {
 			t.Error("hook doesn't implement the required After func signature")
 		}
@@ -481,7 +481,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			Error(ctx context.Context, hookContext HookContext, err error, hookHints HookHints)
 		}
 
-		var hookI interface{} = mockHook
+		var hookI any = mockHook
 		if _, ok := hookI.(requirement); !ok {
 			t.Error("hook doesn't implement the required Error func signature")
 		}
@@ -556,7 +556,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 			Finally(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints)
 		}
 
-		var hookI interface{} = mockHook
+		var hookI any = mockHook
 		if _, ok := hookI.(requirement); !ok {
 			t.Error("hook doesn't implement the required Finally func signature")
 		}
@@ -583,7 +583,7 @@ func TestRequirement_4_4_1(t *testing.T) {
 			AddHooks(hooks ...Hook)
 		}
 
-		var clientI interface{} = client
+		var clientI any = client
 		if _, ok := clientI.(requirement); !ok {
 			t.Error("client doesn't implement the required AddHooks func signature")
 		}
@@ -596,7 +596,7 @@ func TestRequirement_4_4_1(t *testing.T) {
 			Hooks() []Hook
 		}
 
-		var providerI interface{} = mockProvider
+		var providerI any = mockProvider
 		if _, ok := providerI.(requirement); !ok {
 			t.Error("provider doesn't implement the required Hooks retrieval func signature")
 		}
@@ -611,15 +611,15 @@ func TestRequirement_4_4_1(t *testing.T) {
 			StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
 			FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 			IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
-			ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
+			ObjectValue(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (any, error)
 			BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
 			StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
 			FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
 			IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
-			ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
+			ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 		}
 
-		var clientI interface{} = client
+		var clientI any = client
 		if _, ok := clientI.(requirement); !ok {
 			t.Error("client doesn't implement the required func signatures containing EvaluationOptions")
 		}
@@ -864,7 +864,7 @@ func TestRequirement_4_4_7(t *testing.T) {
 // `Flag evaluation options` MAY contain `hook hints`, a map of data to be provided to hook invocations.
 func TestRequirement_4_5_1(t *testing.T) {
 	evalOptions := &EvaluationOptions{}
-	option := WithHookHints(NewHookHints(map[string]interface{}{"foo": "bar"}))
+	option := WithHookHints(NewHookHints(map[string]any{"foo": "bar"}))
 	option(evalOptions)
 	if evalOptions.hookHints.Value("foo") != "bar" {
 		t.Error("hook hints not set to EvaluationOptions")
@@ -895,7 +895,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
-		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
+		hookHints := NewHookHints(map[string]any{"foo": "bar"})
 
 		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), hookHints)
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), hookHints)
@@ -928,7 +928,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
-		hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
+		hookHints := NewHookHints(map[string]any{"foo": "bar"})
 
 		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced"))
 		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), hookHints)
@@ -943,7 +943,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 
 // The hook MUST NOT alter the `hook hints` structure.
 func TestRequirement_4_5_3(t *testing.T) {
-	hookHints := NewHookHints(map[string]interface{}{"foo": "bar"})
+	hookHints := NewHookHints(map[string]any{"foo": "bar"})
 
 	metaValue := reflect.ValueOf(&hookHints).Elem()
 
