@@ -18,7 +18,7 @@ type EvaluationContext = openfeature.EvaluationContext
 //
 // Deprecated: use
 // github.com/open-feature/go-sdk/openfeature.NewEvaluationContext, instead.
-func NewEvaluationContext(targetingKey string, attributes map[string]interface{}) EvaluationContext {
+func NewEvaluationContext(targetingKey string, attributes map[string]any) EvaluationContext {
 	return openfeature.NewEvaluationContext(targetingKey, attributes)
 }
 
@@ -29,6 +29,6 @@ func NewEvaluationContext(targetingKey string, attributes map[string]interface{}
 // Deprecated: use
 // github.com/open-feature/go-sdk/openfeature.NewTargetlessEvaluationContext,
 // instead.
-func NewTargetlessEvaluationContext(attributes map[string]interface{}) EvaluationContext {
+func NewTargetlessEvaluationContext(attributes map[string]any) EvaluationContext {
 	return openfeature.NewTargetlessEvaluationContext(attributes)
 }

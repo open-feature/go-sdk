@@ -128,7 +128,7 @@ If the flag management system you're using supports targeting, you can provide t
 ```go
 // set a value to the global context
 openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
-    map[string]interface{}{
+    map[string]any{
         "region":  "us-east-1-iah-1a",
     },
 ))
@@ -136,7 +136,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 // set a value to the client context
 client := openfeature.NewClient("my-app")
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
-    map[string]interface{}{
+    map[string]any{
         "version":  "1.4.6",
     },
 ))
@@ -144,7 +144,7 @@ client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 // set a value to the invocation context
 evalCtx := openfeature.NewEvaluationContext(
     "user-123",
-    map[string]interface{}{
+    map[string]any{
         "company": "Initech",
     },
 )
@@ -371,7 +371,7 @@ func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defau
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
   // code to evaluate object
 }
 

@@ -93,10 +93,10 @@ func TestRequirements_1_3(t *testing.T) {
 		StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
 		FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 		IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
-		ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
+		ObjectValue(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (any, error)
 	}
 
-	var clientI interface{} = client
+	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
 		t.Error("client returned by NewClient doesn't implement the 1.3.* requirements interface")
 	}
@@ -114,10 +114,10 @@ func TestRequirement_1_4_1(t *testing.T) {
 		StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
 		FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
 		IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
-		ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
+		ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 	}
 
-	var clientI interface{} = client
+	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
 		t.Error("client returned by NewClient doesn't implement the 1.4.1 requirements interface")
 	}
@@ -142,7 +142,7 @@ const (
 	incorrectReason  = "Incorrect reason returned!"
 )
 
-var objectValue = map[string]interface{}{"foo": 1, "bar": true, "baz": "buz"}
+var objectValue = map[string]any{"foo": 1, "bar": true, "baz": "buz"}
 
 // Requirement_1_4_2
 // The `evaluation details` structure's `value` field MUST contain the evaluated flag value.
@@ -780,7 +780,7 @@ func TestRequirement_6_1(t *testing.T) {
 		Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
 	}
 
-	var clientI interface{} = client
+	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
 		t.Error("client returned by NewClient doesn't implement the 1.6.* requirements interface")
 	}
@@ -823,7 +823,7 @@ func TestTrack(t *testing.T) {
 			eventName: "example-event",
 			inCtx: inputCtx{
 				api: EvaluationContext{
-					attributes: map[string]interface{}{
+					attributes: map[string]any{
 						"1": "api",
 						"2": "api",
 						"3": "api",
@@ -831,26 +831,26 @@ func TestTrack(t *testing.T) {
 					},
 				},
 				txn: EvaluationContext{
-					attributes: map[string]interface{}{
+					attributes: map[string]any{
 						"2": "txn",
 						"3": "txn",
 						"4": "txn",
 					},
 				},
 				client: EvaluationContext{
-					attributes: map[string]interface{}{
+					attributes: map[string]any{
 						"3": "client",
 						"4": "client",
 					},
 				},
 				invocation: EvaluationContext{
-					attributes: map[string]interface{}{
+					attributes: map[string]any{
 						"4": "invocation",
 					},
 				},
 			},
 			outCtx: EvaluationContext{
-				attributes: map[string]interface{}{
+				attributes: map[string]any{
 					"1": "api",
 					"2": "txn",
 					"3": "client",
@@ -907,7 +907,7 @@ func TestFlattenContext(t *testing.T) {
 	}{
 		"happy path": {
 			inCtx: EvaluationContext{
-				attributes: map[string]interface{}{
+				attributes: map[string]any{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
@@ -923,7 +923,7 @@ func TestFlattenContext(t *testing.T) {
 		},
 		"no targeting key": {
 			inCtx: EvaluationContext{
-				attributes: map[string]interface{}{
+				attributes: map[string]any{
 					"1": "string",
 					"2": 0.01,
 					"3": false,
@@ -938,7 +938,7 @@ func TestFlattenContext(t *testing.T) {
 		"duplicated key": {
 			inCtx: EvaluationContext{
 				targetingKey: "user",
-				attributes: map[string]interface{}{
+				attributes: map[string]any{
 					TargetingKey: "not user",
 					"1":          "string",
 					"2":          0.01,
@@ -987,7 +987,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 	mocks := hydratedMocksForClientTests(t, 1)
 	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 
-	attributes := map[string]interface{}{"should": "persist"}
+	attributes := map[string]any{"should": "persist"}
 	evalCtx := EvaluationContext{attributes: attributes}
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), attributes)
 
@@ -1034,7 +1034,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 
 	variant := "variant1"
 	reason := TargetingMatchReason
-	var value interface{} = nil
+	var value any = nil
 
 	mocks := hydratedMocksForClientTests(t, 1)
 	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
@@ -1192,7 +1192,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 		State() State
 	}
 
-	var clientI interface{} = client
+	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
 		t.Fatal("client des not define a status accessor which indicates the readiness of the associated provider")
 	}

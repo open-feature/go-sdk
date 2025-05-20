@@ -24,7 +24,8 @@ func NewClientMetadata(domain string) ClientMetadata {
 }
 
 // Name returns the client's domain name
-// Deprecated: Name() exists for historical compatibility, use Domain() instead.
+//
+// Deprecated: Name() exists for historical compatibility, use [ClientMetadata.Domain] instead.
 func (cm ClientMetadata) Name() string {
 	return cm.domain
 }
@@ -71,8 +72,9 @@ func (c *Client) State() State {
 	return c.clientEventing.State(c.domain)
 }
 
-// Deprecated
 // WithLogger sets the logger of the client
+//
+// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 func (c *Client) WithLogger(l logr.Logger) *Client {
 	c.mx.Lock()
 	defer c.mx.Unlock()
@@ -167,7 +169,7 @@ type IntEvaluationDetails struct {
 }
 
 type InterfaceEvaluationDetails struct {
-	Value interface{}
+	Value any
 	EvaluationDetails
 }
 
@@ -182,7 +184,7 @@ type ResolutionDetail struct {
 // FlagMetadata is a structure which supports definition of arbitrary properties, with keys of type string, and values
 // of type boolean, string, int64 or float64. This structure is populated by a provider for use by an Application
 // Author (via the Evaluation API) or an Application Integrator (via hooks).
-type FlagMetadata map[string]interface{}
+type FlagMetadata map[string]any
 
 // GetString fetch string value from FlagMetadata.
 // Returns an error if the key does not exist, or, the value is of the wrong type
@@ -363,7 +365,7 @@ func (c *Client) IntValue(ctx context.Context, flag string, defaultValue int64, 
 //   - defaultValue is returned if an error occurs
 //   - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 //   - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c *Client) ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error) {
+func (c *Client) ObjectValue(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (any, error) {
 	details, err := c.ObjectValueDetails(ctx, flag, defaultValue, evalCtx, options...)
 	if err != nil {
 		return defaultValue, err
@@ -556,7 +558,7 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 //   - defaultValue is returned if an error occurs
 //   - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 //   - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error) {
+func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error) {
 	c.mx.RLock()
 	defer c.mx.RUnlock()
 
@@ -642,7 +644,7 @@ func (c *Client) Int(ctx context.Context, flag string, defaultValue int64, evalC
 //   - defaultValue is returned if an error occurs
 //   - evalCtx is the evaluation context used in a flag evaluation (not to be confused with ctx)
 //   - options are optional additional evaluation options e.g. WithHooks & WithHookHints
-func (c *Client) Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{} {
+func (c *Client) Object(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) any {
 	value, _ := c.ObjectValue(ctx, flag, defaultValue, evalCtx, options...)
 
 	return value
@@ -678,7 +680,7 @@ func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tr
 }
 
 func (c *Client) evaluate(
-	ctx context.Context, flag string, flagType Type, defaultValue interface{}, evalCtx EvaluationContext, options EvaluationOptions,
+	ctx context.Context, flag string, flagType Type, defaultValue any, evalCtx EvaluationContext, options EvaluationOptions,
 ) (InterfaceEvaluationDetails, error) {
 	evalDetails := InterfaceEvaluationDetails{
 		Value: defaultValue,

@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 )
 
@@ -30,18 +31,18 @@ type IClient interface {
 	StringValue(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (string, error)
 	FloatValue(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (float64, error)
 	IntValue(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (int64, error)
-	ObjectValue(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (interface{}, error)
+	ObjectValue(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (any, error)
 	BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
 	StringValueDetails(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) (StringEvaluationDetails, error)
 	FloatValueDetails(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) (FloatEvaluationDetails, error)
 	IntValueDetails(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) (IntEvaluationDetails, error)
-	ObjectValueDetails(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
+	ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (InterfaceEvaluationDetails, error)
 
 	Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool
 	String(ctx context.Context, flag string, defaultValue string, evalCtx EvaluationContext, options ...Option) string
 	Float(ctx context.Context, flag string, defaultValue float64, evalCtx EvaluationContext, options ...Option) float64
 	Int(ctx context.Context, flag string, defaultValue int64, evalCtx EvaluationContext, options ...Option) int64
-	Object(ctx context.Context, flag string, defaultValue interface{}, evalCtx EvaluationContext, options ...Option) interface{}
+	Object(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) any
 
 	State() State
 
@@ -67,7 +68,7 @@ type evaluationImpl interface {
 	GetNamedProviders() map[string]FeatureProvider
 	GetHooks() []Hook
 
-	// Deprecated
+	// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
 	SetLogger(l logr.Logger)
 
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
