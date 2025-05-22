@@ -68,7 +68,7 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 }
 
 func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T) {
-	var buf *bytes.Buffer = new(bytes.Buffer)
+	var buf = new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
@@ -184,7 +184,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 }
 
 func prepareOutput(buf *bytes.Buffer, t *testing.T) map[string]map[string]any {
-	var ms map[string]map[string]any = make(map[string]map[string]any)
+	var ms = make(map[string]map[string]any)
 	for _, line := range bytes.Split(buf.Bytes(), []byte{'\n'}) {
 		if len(line) == 0 {
 			continue

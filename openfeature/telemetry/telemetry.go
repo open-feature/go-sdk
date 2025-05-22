@@ -45,8 +45,8 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 		TelemetryProvider: hookContext.ProviderMetadata().Name,
 	}
 
-	if details.EvaluationDetails.ResolutionDetail.Reason != "" {
-		attributes[TelemetryReason] = strings.ToLower(string(details.ResolutionDetail.Reason))
+	if details.Reason != "" {
+		attributes[TelemetryReason] = strings.ToLower(string(details.Reason))
 	} else {
 		attributes[TelemetryReason] = strings.ToLower(string(openfeature.UnknownReason))
 	}
@@ -54,37 +54,37 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 	body := map[string]any{}
 
 	if details.Variant != "" {
-		attributes[TelemetryVariant] = details.EvaluationDetails.ResolutionDetail.Variant
+		attributes[TelemetryVariant] = details.Variant
 	} else {
 		body[TelemetryBody] = details.Value
 	}
 
-	contextID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaContextId]
+	contextID, exists := details.FlagMetadata[TelemetryFlagMetaContextId]
 	if !exists {
 		contextID = hookContext.EvaluationContext().TargetingKey()
 	}
 
 	attributes[TelemetryContextID] = contextID
 
-	setID, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaFlagSetId]
+	setID, exists := details.FlagMetadata[TelemetryFlagMetaFlagSetId]
 	if exists {
 		attributes[TelemetryFlagSetID] = setID
 	}
 
-	version, exists := details.EvaluationDetails.ResolutionDetail.FlagMetadata[TelemetryFlagMetaVersion]
+	version, exists := details.FlagMetadata[TelemetryFlagMetaVersion]
 	if exists {
 		attributes[TelemetryVersion] = version
 	}
 
-	if details.EvaluationDetails.ResolutionDetail.Reason == openfeature.ErrorReason {
-		if details.ResolutionDetail.ErrorCode != "" {
-			attributes[TelemetryErrorCode] = details.ResolutionDetail.ErrorCode
+	if details.Reason == openfeature.ErrorReason {
+		if details.ErrorCode != "" {
+			attributes[TelemetryErrorCode] = details.ErrorCode
 		} else {
 			attributes[TelemetryErrorCode] = openfeature.GeneralCode
 		}
 
-		if details.ResolutionDetail.ErrorMessage != "" {
-			attributes[TelemetryErrorMsg] = details.ResolutionDetail.ErrorMessage
+		if details.ErrorMessage != "" {
+			attributes[TelemetryErrorMsg] = details.ErrorMessage
 		}
 	}
 

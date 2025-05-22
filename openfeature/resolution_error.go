@@ -121,7 +121,7 @@ func (e *ProviderInitError) Error() string {
 
 var (
 	// ProviderNotReadyError signifies that an operation failed because the provider is in a NOT_READY state.
-	ProviderNotReadyError = errors.New("provider not yet initialized")
+	ProviderNotReadyError = errors.New("provider not yet initialized") //nolint:staticcheck // Renaming this would be a breaking change
 	// ProviderFatalError signifies that an operation failed because the provider is in a FATAL state.
-	ProviderFatalError = errors.New("provider is in an irrecoverable error state")
+	ProviderFatalError = errors.New("provider is in an irrecoverable error state") //nolint:staticcheck // Renaming this would be a breaking change
 )
