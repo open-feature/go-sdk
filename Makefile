@@ -1,4 +1,6 @@
-.PHONY: mockgen test lint e2e-test docs
+GOLANGCI_LINT_VERSION:=v2.1.6
+
+.PHONY: mockgen
 mockgen:
 	go install go.uber.org/mock/mockgen@latest
 	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature
@@ -7,11 +9,22 @@ mockgen:
 	sed -i.old $$'1s;^;//go:build testtools\\n\\n;' openfeature/*_mock.go
 	rm -f openfeature/*_mock.go.old
 
+.PHONY: test
 test:
 	go test --short -tags testtools -cover ./...
+
+.PHONY: e2e-test
 e2e-test:
 	git submodule update --init --recursive && go test -tags testtools -race -cover ./e2e/...
+
+.PHONY: lint
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 run --build-tags testtools --timeout=3m ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...
+
+.PHONY: fix
+fix:
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./... --fix
+
+.PHONY: docs
 docs:
 	go run golang.org/x/pkgsite/cmd/pkgsite@latest -open .
