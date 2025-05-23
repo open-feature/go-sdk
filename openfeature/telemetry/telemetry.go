@@ -1,3 +1,4 @@
+// Package telemetry provides utilities for extracting data from the OpenFeature SDK for use in telemetry signals.
 package telemetry
 
 import (
@@ -6,10 +7,21 @@ import (
 	"github.com/open-feature/go-sdk/openfeature"
 )
 
+// EvaluationEvent represents an event that is emitted when a flag is evaluated.
+// It is intended to be used to record flag evaluation events as OpenTelemetry log records.
+// See the OpenFeature specification [Appendix D: Observability] and
+// the OpenTelemetry [Semantic conventions for feature flags in logs] for more information.
+//
+// [Appendix D: Observability]: https://openfeature.dev/specification/appendix-d
+// [Semantic conventions for feature flags in logs]: https://opentelemetry.io/docs/specs/semconv/feature-flags/feature-flags-logs/
 type EvaluationEvent struct {
-	Name       string
+	// Name is the name of the event.
+	// It is always "feature_flag.evaluation".
+	Name string
+	// Attributes represents the event's attributes.
 	Attributes map[string]any
-	Body       map[string]any
+	// Body is the flag's value and is only present if the flag's variant is empty.
+	Body map[string]any
 }
 
 const (
@@ -39,6 +51,8 @@ const (
 	FlagEvaluationEventName string = "feature_flag.evaluation"
 )
 
+// CreateEvaluationEvent creates an [EvaluationEvent].
+// It is intended to be used in the `Finally` stage of an [openfeature.Hook].
 func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeature.InterfaceEvaluationDetails) EvaluationEvent {
 	attributes := map[string]any{
 		TelemetryKey:      hookContext.FlagKey(),
