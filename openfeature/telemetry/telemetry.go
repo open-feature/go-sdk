@@ -32,8 +32,8 @@ const (
 	ResultVariantKey string = "feature_flag.result.variant"
 	ErrorMessageKey  string = "error.message"
 	ContextIDKey     string = "feature_flag.context.id"
-	ProviderKey      string = "feature_flag.provider.name"
-	ReasonKey        string = "feature_flag.result.reason"
+	ProviderNameKey  string = "feature_flag.provider.name"
+	ResultReasonKey  string = "feature_flag.result.reason"
 	FlagSetIDKey     string = "feature_flag.set.id"
 	VersionKey       string = "feature_flag.version"
 )
@@ -51,13 +51,13 @@ const (
 // It is intended to be used in the `Finally` stage of a [openfeature.Hook].
 func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeature.InterfaceEvaluationDetails) EvaluationEvent {
 	attributes := map[string]any{
-		FlagKey:     hookContext.FlagKey(),
-		ProviderKey: hookContext.ProviderMetadata().Name,
+		FlagKey:         hookContext.FlagKey(),
+		ProviderNameKey: hookContext.ProviderMetadata().Name,
 	}
 
-	attributes[ReasonKey] = strings.ToLower(string(openfeature.UnknownReason))
+	attributes[ResultReasonKey] = strings.ToLower(string(openfeature.UnknownReason))
 	if details.Reason != "" {
-		attributes[ReasonKey] = strings.ToLower(string(details.Reason))
+		attributes[ResultReasonKey] = strings.ToLower(string(details.Reason))
 	}
 
 	body := make(map[string]any)

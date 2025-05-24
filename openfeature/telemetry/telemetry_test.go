@@ -45,12 +45,12 @@ func TestCreateEvaluationEvent_1_3_1_BasicEvent(t *testing.T) {
 		t.Errorf("Expected event attribute 'KEY' to be '%s', got '%s'", flagKey, event.Attributes[FlagKey])
 	}
 
-	if event.Attributes[ReasonKey] != strings.ToLower(string(openfeature.StaticReason)) {
-		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.StaticReason)), event.Attributes[ReasonKey])
+	if event.Attributes[ResultReasonKey] != strings.ToLower(string(openfeature.StaticReason)) {
+		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.StaticReason)), event.Attributes[ResultReasonKey])
 	}
 
-	if event.Attributes[ProviderKey] != "test-provider" {
-		t.Errorf("Expected provider name to be 'test-provider', got '%s'", event.Attributes[ProviderKey])
+	if event.Attributes[ProviderNameKey] != "test-provider" {
+		t.Errorf("Expected provider name to be 'test-provider', got '%s'", event.Attributes[ProviderNameKey])
 	}
 
 	if event.Body[ResultValueKey] != true {
@@ -253,7 +253,7 @@ func TestCreateEvaluationEvent_1_4_7_WithUnknownReason(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[ReasonKey] != strings.ToLower(string(openfeature.UnknownReason)) {
-		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.UnknownReason)), event.Attributes[ReasonKey])
+	if event.Attributes[ResultReasonKey] != strings.ToLower(string(openfeature.UnknownReason)) {
+		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.UnknownReason)), event.Attributes[ResultReasonKey])
 	}
 }
