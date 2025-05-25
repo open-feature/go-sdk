@@ -28,21 +28,16 @@ type LoggingHook struct {
 
 // NewLoggingHook returns a new [LoggingHook] with the default logger.
 // To provide a custom logger, use [NewCustomLoggingHook].
-func NewLoggingHook(includeEvaluationContext bool) (*LoggingHook, error) {
+func NewLoggingHook(includeEvaluationContext bool) *LoggingHook {
 	return NewCustomLoggingHook(includeEvaluationContext, slog.Default())
 }
 
 // NewCustomLoggingHook returns a new [LoggingHook] with the provided logger.
-func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) (*LoggingHook, error) {
+func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) *LoggingHook {
 	return &LoggingHook{
 		logger:                   logger,
 		includeEvaluationContext: includeEvaluationContext,
-	}, nil
-}
-
-type MarshaledEvaluationContext struct {
-	TargetingKey string
-	Attributes   map[string]any
+	}
 }
 
 func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {
@@ -53,11 +48,11 @@ func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {
 		slog.Any(DEFAULT_VALUE_KEY, hookContext.DefaultValue()),
 	}
 	if h.includeEvaluationContext {
-		marshaledEvaluationContext := MarshaledEvaluationContext{
-			TargetingKey: hookContext.EvaluationContext().TargetingKey(),
-			Attributes:   hookContext.EvaluationContext().Attributes(),
-		}
-		args = append(args, slog.Any(EVALUATION_CONTEXT_KEY, marshaledEvaluationContext))
+		args = append(args,
+			slog.Group(EVALUATION_CONTEXT_KEY,
+				slog.String("targeting_key", hookContext.EvaluationContext().TargetingKey()),
+				slog.Any("attributes", hookContext.EvaluationContext().Attributes()),
+			))
 	}
 
 	return args

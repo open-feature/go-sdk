@@ -13,10 +13,7 @@ import (
 )
 
 func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
-	hook, err := NewLoggingHook(true)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	hook := NewLoggingHook(true)
 	if hook == nil {
 		t.Fatal("expected a valid LoggingHook, got nil")
 	}
@@ -24,10 +21,7 @@ func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
 
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	hook, err := NewCustomLoggingHook(true, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewCustomLoggingHook(true, logger)
 
 	if hook.logger != logger {
 		t.Errorf("Expected logger to be %v, got %v", logger, hook.logger)
@@ -39,10 +33,7 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 }
 
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
-	hook, err := NewCustomLoggingHook(false, nil)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewCustomLoggingHook(false, nil)
 
 	if hook.logger != nil {
 		t.Errorf("Expected logger to be nil, got %v", hook.logger)
@@ -58,24 +49,18 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(false, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewCustomLoggingHook(false, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)
 }
 
 func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T) {
-	var buf = new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(true, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewCustomLoggingHook(true, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)
@@ -184,7 +169,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 }
 
 func prepareOutput(buf *bytes.Buffer, t *testing.T) map[string]map[string]any {
-	var ms = make(map[string]map[string]any)
+	ms := make(map[string]map[string]any)
 	for _, line := range bytes.Split(buf.Bytes(), []byte{'\n'}) {
 		if len(line) == 0 {
 			continue
@@ -220,7 +205,7 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 				if !exists {
 					t.Errorf("Inner key %s not found in resultMap[%s]", EVALUATION_CONTEXT_KEY, key)
 				}
-				attributes, attributesExists := evaluationContext.(map[string]any)["Attributes"]
+				attributes, attributesExists := evaluationContext.(map[string]any)["attributes"]
 				if !attributesExists {
 					t.Errorf("attributes do not exist")
 				}
@@ -231,8 +216,8 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 				if color != "green" {
 					t.Errorf("expected green color in evaluationContext")
 				}
-				if evaluationContext.(map[string]any)["TargetingKey"] != "target1" {
-					t.Errorf("expected TargetingKey in evaluationContext")
+				if evaluationContext.(map[string]any)["targeting_key"] != "target1" {
+					t.Errorf("expected targeting_key in evaluationContext")
 				}
 			}
 		}
