@@ -20,8 +20,6 @@ type EvaluationEvent struct {
 	Name string
 	// Attributes represents the event's attributes.
 	Attributes map[string]any
-	// Body is the flag's value and is only present if the flag's variant is empty.
-	Body map[string]any
 }
 
 // The OpenTelemetry compliant event attributes for flag evaluation.
@@ -60,12 +58,10 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 		attributes[ResultReasonKey] = strings.ToLower(string(details.Reason))
 	}
 
-	body := make(map[string]any)
-
 	if details.Variant != "" {
 		attributes[ResultVariantKey] = details.Variant
 	} else {
-		body[ResultValueKey] = details.Value
+		attributes[ResultValueKey] = details.Value
 	}
 
 	attributes[ContextIDKey] = hookContext.EvaluationContext().TargetingKey()
@@ -85,7 +81,6 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 		return EvaluationEvent{
 			Name:       FlagEvaluationKey,
 			Attributes: attributes,
-			Body:       body,
 		}
 	}
 
@@ -101,6 +96,5 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 	return EvaluationEvent{
 		Name:       FlagEvaluationKey,
 		Attributes: attributes,
-		Body:       body,
 	}
 }

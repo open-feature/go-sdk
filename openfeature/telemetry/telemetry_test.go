@@ -53,8 +53,8 @@ func TestCreateEvaluationEvent_1_3_1_BasicEvent(t *testing.T) {
 		t.Errorf("Expected provider name to be 'test-provider', got '%s'", event.Attributes[ProviderNameKey])
 	}
 
-	if event.Body[ResultValueKey] != true {
-		t.Errorf("Expected event body 'VALUE' to be 'true', got '%v'", event.Body[ResultValueKey])
+	if event.Attributes[ResultValueKey] != true {
+		t.Errorf("Expected event attribute 'VALUE' to be 'true', got '%v'", event.Attributes[ResultValueKey])
 	}
 }
 
