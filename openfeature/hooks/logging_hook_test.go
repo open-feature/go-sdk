@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
-	hook := NewLoggingHook(true)
+	hook := NewLoggingHook(true, slog.Default())
 	if hook == nil {
 		t.Fatal("expected a valid LoggingHook, got nil")
 	}
@@ -21,7 +21,7 @@ func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
 
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	hook := NewCustomLoggingHook(true, logger)
+	hook := NewLoggingHook(true, logger)
 
 	if hook.logger != logger {
 		t.Errorf("Expected logger to be %v, got %v", logger, hook.logger)
@@ -33,7 +33,7 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 }
 
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
-	hook := NewCustomLoggingHook(false, nil)
+	hook := NewLoggingHook(false, nil)
 
 	if hook.logger != nil {
 		t.Errorf("Expected logger to be nil, got %v", hook.logger)
@@ -49,7 +49,7 @@ func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook := NewCustomLoggingHook(false, logger)
+	hook := NewLoggingHook(false, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)
@@ -60,7 +60,7 @@ func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook := NewCustomLoggingHook(true, logger)
+	hook := NewLoggingHook(true, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)

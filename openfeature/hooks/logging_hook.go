@@ -28,14 +28,8 @@ type LoggingHook struct {
 	logger                   *slog.Logger
 }
 
-// NewLoggingHook returns a new [LoggingHook] with the default logger.
-// To provide a custom logger, use [NewCustomLoggingHook].
-func NewLoggingHook(includeEvaluationContext bool) *LoggingHook {
-	return NewCustomLoggingHook(includeEvaluationContext, slog.Default())
-}
-
 // NewCustomLoggingHook returns a new [LoggingHook] with the provided logger.
-func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) *LoggingHook {
+func NewLoggingHook(includeEvaluationContext bool, logger *slog.Logger) *LoggingHook {
 	return &LoggingHook{
 		logger:                   logger,
 		includeEvaluationContext: includeEvaluationContext,
