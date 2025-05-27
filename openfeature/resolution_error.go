@@ -10,7 +10,7 @@ type ErrorCode string
 const (
 	// ProviderNotReadyCode - the value was resolved before the provider was ready.
 	ProviderNotReadyCode ErrorCode = "PROVIDER_NOT_READY"
-	// ProviderFatalCode - a fatal provider error occured
+	// ProviderFatalCode - a fatal provider error occurred
 	ProviderFatalCode ErrorCode = "PROVIDER_FATAL"
 	// FlagNotFoundCode - the flag could not be found.
 	FlagNotFoundCode ErrorCode = "FLAG_NOT_FOUND"

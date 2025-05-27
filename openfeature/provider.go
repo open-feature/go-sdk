@@ -204,7 +204,7 @@ type TrackingEventDetails struct {
 	attributes map[string]any
 }
 
-// NewTrackingEventDetails return TrackingEventDetails associated with numeric value value
+// NewTrackingEventDetails return TrackingEventDetails associated with numeric value
 func NewTrackingEventDetails(value float64) TrackingEventDetails {
 	return TrackingEventDetails{
 		value:      value,

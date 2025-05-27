@@ -13,6 +13,8 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - misspell
+    - dupword
 
 issues:
   max-issues-per-linter: 0
