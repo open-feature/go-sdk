@@ -8,16 +8,18 @@ import (
 )
 
 const (
-	DOMAIN_KEY             = "domain"
-	PROVIDER_NAME_KEY      = "provider_name"
-	FLAG_KEY_KEY           = "flag_key"
-	DEFAULT_VALUE_KEY      = "default_value"
-	EVALUATION_CONTEXT_KEY = "evaluation_context"
-	ERROR_MESSAGE_KEY      = "error_message"
-	REASON_KEY             = "reason"
-	VARIANT_KEY            = "variant"
-	VALUE_KEY              = "value"
-	STAGE_KEY              = "stage"
+	domainKey            = "domain"
+	providerNameKey      = "provider_name"
+	flagKeyKey           = "flag_key"
+	defaultValueKey      = "default_value"
+	evaluationContextKey = "evaluation_context"
+	targetingKeyKey      = "targeting_key"
+	attributesKey        = "attributes"
+	errorMessageKey      = "error_message"
+	reasonKey            = "reason"
+	variantKey           = "variant"
+	valueKey             = "value"
+	stageKey             = "stage"
 )
 
 // LoggingHook is a [of.Hook] that logs the flag evaluation lifecycle.
@@ -42,16 +44,16 @@ func NewCustomLoggingHook(includeEvaluationContext bool, logger *slog.Logger) *L
 
 func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {
 	args := []slog.Attr{
-		slog.String(DOMAIN_KEY, hookContext.ClientMetadata().Domain()),
-		slog.String(PROVIDER_NAME_KEY, hookContext.ProviderMetadata().Name),
-		slog.String(FLAG_KEY_KEY, hookContext.FlagKey()),
-		slog.Any(DEFAULT_VALUE_KEY, hookContext.DefaultValue()),
+		slog.String(domainKey, hookContext.ClientMetadata().Domain()),
+		slog.String(providerNameKey, hookContext.ProviderMetadata().Name),
+		slog.String(flagKeyKey, hookContext.FlagKey()),
+		slog.Any(defaultValueKey, hookContext.DefaultValue()),
 	}
 	if h.includeEvaluationContext {
 		args = append(args,
-			slog.Group(EVALUATION_CONTEXT_KEY,
-				slog.String("targeting_key", hookContext.EvaluationContext().TargetingKey()),
-				slog.Any("attributes", hookContext.EvaluationContext().Attributes()),
+			slog.Group(evaluationContextKey,
+				slog.String(targetingKeyKey, hookContext.EvaluationContext().TargetingKey()),
+				slog.Any(attributesKey, hookContext.EvaluationContext().Attributes()),
 			))
 	}
 
@@ -60,7 +62,7 @@ func (h *LoggingHook) buildArgs(hookContext of.HookContext) []slog.Attr {
 
 func (h *LoggingHook) Before(ctx context.Context, hookContext of.HookContext, hookHints of.HookHints) (*of.EvaluationContext, error) {
 	args := h.buildArgs(hookContext)
-	args = append(args, slog.String(STAGE_KEY, "before"))
+	args = append(args, slog.String(stageKey, "before"))
 	h.logger.LogAttrs(ctx, slog.LevelDebug, "Before stage", args...)
 	return nil, nil
 }
@@ -70,10 +72,10 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 ) error {
 	args := h.buildArgs(hookContext)
 	args = append(args,
-		slog.String(REASON_KEY, string(flagEvaluationDetails.Reason)),
-		slog.String(VARIANT_KEY, flagEvaluationDetails.Variant),
-		slog.Any(VALUE_KEY, flagEvaluationDetails.Value),
-		slog.String(STAGE_KEY, "after"),
+		slog.String(reasonKey, string(flagEvaluationDetails.Reason)),
+		slog.String(variantKey, flagEvaluationDetails.Variant),
+		slog.Any(valueKey, flagEvaluationDetails.Value),
+		slog.String(stageKey, "after"),
 	)
 	h.logger.LogAttrs(ctx, slog.LevelDebug, "After stage", args...)
 	return nil
@@ -82,8 +84,8 @@ func (h *LoggingHook) After(ctx context.Context, hookContext of.HookContext,
 func (h *LoggingHook) Error(ctx context.Context, hookContext of.HookContext, err error, hookHints of.HookHints) {
 	args := h.buildArgs(hookContext)
 	args = append(args,
-		slog.Any(ERROR_MESSAGE_KEY, err),
-		slog.String(STAGE_KEY, "error"),
+		slog.Any(errorMessageKey, err),
+		slog.String(stageKey, "error"),
 	)
 	h.logger.LogAttrs(ctx, slog.LevelError, "Error stage", args...)
 }

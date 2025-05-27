@@ -201,11 +201,11 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 			}
 
 			if hook.includeEvaluationContext {
-				evaluationContext, exists := resultInnerMap[EVALUATION_CONTEXT_KEY]
+				evaluationContext, exists := resultInnerMap[evaluationContextKey]
 				if !exists {
-					t.Errorf("Inner key %s not found in resultMap[%s]", EVALUATION_CONTEXT_KEY, key)
+					t.Errorf("Inner key %s not found in resultMap[%s]", evaluationContextKey, key)
 				}
-				attributes, attributesExists := evaluationContext.(map[string]any)["attributes"]
+				attributes, attributesExists := evaluationContext.(map[string]any)[attributesKey]
 				if !attributesExists {
 					t.Errorf("attributes do not exist")
 				}
@@ -216,7 +216,7 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 				if color != "green" {
 					t.Errorf("expected green color in evaluationContext")
 				}
-				if evaluationContext.(map[string]any)["targeting_key"] != "target1" {
+				if evaluationContext.(map[string]any)[targetingKeyKey] != "target1" {
 					t.Errorf("expected targeting_key in evaluationContext")
 				}
 			}
