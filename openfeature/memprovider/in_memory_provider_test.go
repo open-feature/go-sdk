@@ -27,7 +27,7 @@ func TestInMemoryProvider_boolean(t *testing.T) {
 		evaluation := memoryProvider.BooleanEvaluation(ctx, "boolFlag", false, nil)
 
 		if evaluation.Value != true {
-			t.Errorf("incorect evaluation, expected %t, got %t", true, evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %t, got %t", true, evaluation.Value)
 		}
 	})
 }
@@ -52,7 +52,7 @@ func TestInMemoryProvider_String(t *testing.T) {
 		evaluation := memoryProvider.StringEvaluation(ctx, "stringFlag", "none", nil)
 
 		if evaluation.Value != "hello" {
-			t.Errorf("incorect evaluation, expected %s, got %s", "hello", evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %s, got %s", "hello", evaluation.Value)
 		}
 	})
 }
@@ -77,7 +77,7 @@ func TestInMemoryProvider_Float(t *testing.T) {
 		evaluation := memoryProvider.FloatEvaluation(ctx, "floatFlag", 1.0, nil)
 
 		if evaluation.Value != 1.1 {
-			t.Errorf("incorect evaluation, expected %f, got %f", 1.1, evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %f, got %f", 1.1, evaluation.Value)
 		}
 	})
 }
@@ -102,7 +102,7 @@ func TestInMemoryProvider_Int(t *testing.T) {
 		evaluation := memoryProvider.IntEvaluation(ctx, "intFlag", 1, nil)
 
 		if evaluation.Value != 9223372036854775807 {
-			t.Errorf("incorect evaluation, expected %d, got %d", 1, evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %d, got %d", 1, evaluation.Value)
 		}
 	})
 }
@@ -126,7 +126,7 @@ func TestInMemoryProvider_Object(t *testing.T) {
 		evaluation := memoryProvider.ObjectEvaluation(ctx, "objectFlag", "unknown", nil)
 
 		if evaluation.Value != "SomeResult" {
-			t.Errorf("incorect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
 		}
 	})
 }
@@ -162,7 +162,7 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 		})
 
 		if evaluation.Value != false {
-			t.Errorf("incorect evaluation, expected %v, got %v", false, evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %v, got %v", false, evaluation.Value)
 		}
 	})
 }
@@ -176,15 +176,15 @@ func TestInMemoryProvider_MissingFlag(t *testing.T) {
 		evaluation := memoryProvider.StringEvaluation(ctx, "missing-flag", "GoodBye", nil)
 
 		if evaluation.Value != "GoodBye" {
-			t.Errorf("incorect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
 		}
 
 		if evaluation.Reason != openfeature.ErrorReason {
-			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
 		}
 
 		if evaluation.ResolutionDetail().ErrorCode != openfeature.FlagNotFoundCode {
-			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.ResolutionDetail().ErrorCode)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.ResolutionDetail().ErrorCode)
 		}
 	})
 }
@@ -209,11 +209,11 @@ func TestInMemoryProvider_TypeMismatch(t *testing.T) {
 		evaluation := memoryProvider.StringEvaluation(ctx, "boolFlag", "GoodBye", nil)
 
 		if evaluation.Value != "GoodBye" {
-			t.Errorf("incorect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
 		}
 
 		if evaluation.ResolutionDetail().ErrorCode != openfeature.TypeMismatchCode {
-			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
 		}
 	})
 }
@@ -238,11 +238,11 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 		evaluation := memoryProvider.BooleanEvaluation(ctx, "boolFlag", false, nil)
 
 		if evaluation.Value != false {
-			t.Errorf("incorect evaluation, expected %v, got %v", false, evaluation.Value)
+			t.Errorf("incorrect evaluation, expected %v, got %v", false, evaluation.Value)
 		}
 
 		if evaluation.Reason != openfeature.DisabledReason {
-			t.Errorf("incorect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
 		}
 	})
 }
