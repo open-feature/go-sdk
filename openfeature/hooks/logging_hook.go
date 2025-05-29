@@ -28,7 +28,7 @@ type LoggingHook struct {
 	logger                   *slog.Logger
 }
 
-// NewCustomLoggingHook returns a new [LoggingHook] with the provided logger.
+// NewLoggingHook returns a new [LoggingHook] with the provided logger.
 func NewLoggingHook(includeEvaluationContext bool, logger *slog.Logger) *LoggingHook {
 	return &LoggingHook{
 		logger:                   logger,
