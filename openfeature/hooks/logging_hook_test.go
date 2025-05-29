@@ -122,7 +122,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			t.Error("expected nil error")
 		}
 		if res != true {
-			t.Errorf("incorect evaluation, expected %t, got %t", true, res)
+			t.Errorf("incorrect evaluation, expected %t, got %t", true, res)
 		}
 
 		ms := prepareOutput(buf, t)
@@ -160,7 +160,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			t.Error("expected error")
 		}
 		if res != false {
-			t.Errorf("incorect evaluation, expected %t, got %t", false, res)
+			t.Errorf("incorrect evaluation, expected %t, got %t", false, res)
 		}
 
 		ms := prepareOutput(buf, t)
