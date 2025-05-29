@@ -368,6 +368,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 		// given - a provider with state handling capability, with substantial initializing delay
 		var initialized = false
 
+		s := make(chan struct{}) // to block the initialization
 		provider := struct {
 			FeatureProvider
 			StateHandler
@@ -375,7 +376,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 			NoopProvider{},
 			&stateHandlerForTests{
 				initF: func(e EvaluationContext) error {
-					<-time.After(200 * time.Millisecond)
+					s <- struct{}{} // initialization is blocked until read from the channel
 					initialized = true
 					return nil
 				},
@@ -392,6 +393,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 		if initialized != false {
 			t.Errorf("expected uninitialized as async, but got true")
 		}
+		<-s
 	})
 }
 
