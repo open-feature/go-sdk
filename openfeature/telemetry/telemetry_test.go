@@ -41,25 +41,24 @@ func TestCreateEvaluationEvent_1_3_1_BasicEvent(t *testing.T) {
 		t.Errorf("Expected event name to be 'feature_flag.evaluation', got '%s'", event.Name)
 	}
 
-	if event.Attributes[TelemetryKey] != flagKey {
-		t.Errorf("Expected event attribute 'KEY' to be '%s', got '%s'", flagKey, event.Attributes[TelemetryKey])
+	if event.Attributes[FlagKey] != flagKey {
+		t.Errorf("Expected event attribute 'KEY' to be '%s', got '%s'", flagKey, event.Attributes[FlagKey])
 	}
 
-	if event.Attributes[TelemetryReason] != strings.ToLower(string(openfeature.StaticReason)) {
-		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.StaticReason)), event.Attributes[TelemetryReason])
+	if event.Attributes[ResultReasonKey] != strings.ToLower(string(openfeature.StaticReason)) {
+		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.StaticReason)), event.Attributes[ResultReasonKey])
 	}
 
-	if event.Attributes[TelemetryProvider] != "test-provider" {
-		t.Errorf("Expected provider name to be 'test-provider', got '%s'", event.Attributes[TelemetryProvider])
+	if event.Attributes[ProviderNameKey] != "test-provider" {
+		t.Errorf("Expected provider name to be 'test-provider', got '%s'", event.Attributes[ProviderNameKey])
 	}
 
-	if event.Body[TelemetryBody] != true {
-		t.Errorf("Expected event body 'VALUE' to be 'true', got '%v'", event.Body[TelemetryBody])
+	if event.Attributes[ResultValueKey] != true {
+		t.Errorf("Expected event attribute 'VALUE' to be 'true', got '%v'", event.Attributes[ResultValueKey])
 	}
 }
 
 func TestCreateEvaluationEvent_1_4_6_WithVariant(t *testing.T) {
-
 	flagKey := "test-flag"
 
 	mockProviderMetadata := openfeature.Metadata{
@@ -92,15 +91,15 @@ func TestCreateEvaluationEvent_1_4_6_WithVariant(t *testing.T) {
 		t.Errorf("Expected event name to be 'feature_flag.evaluation', got '%s'", event.Name)
 	}
 
-	if event.Attributes[TelemetryKey] != flagKey {
-		t.Errorf("Expected event attribute 'KEY' to be '%s', got '%s'", flagKey, event.Attributes[TelemetryKey])
+	if event.Attributes[FlagKey] != flagKey {
+		t.Errorf("Expected event attribute 'KEY' to be '%s', got '%s'", flagKey, event.Attributes[FlagKey])
 	}
 
-	if event.Attributes[TelemetryVariant] != "true" {
-		t.Errorf("Expected event attribute 'VARIANT' to be 'true', got '%s'", event.Attributes[TelemetryVariant])
+	if event.Attributes[ResultVariantKey] != "true" {
+		t.Errorf("Expected event attribute 'VARIANT' to be 'true', got '%s'", event.Attributes[ResultVariantKey])
 	}
-
 }
+
 func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 	flagKey := "test-flag"
 
@@ -124,9 +123,9 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 			FlagType: openfeature.Boolean,
 			ResolutionDetail: openfeature.ResolutionDetail{
 				FlagMetadata: openfeature.FlagMetadata{
-					TelemetryFlagMetaFlagSetId: "test-set",
-					TelemetryFlagMetaContextId: "metadata-context",
-					TelemetryFlagMetaVersion:   "v1.0",
+					flagMetaFlagSetIDKey: "test-set",
+					flagMetaContextIDKey: "metadata-context",
+					flagMetaVersionKey:   "v1.0",
 				},
 			},
 		},
@@ -134,18 +133,19 @@ func TestCreateEvaluationEvent_1_4_14_WithFlagMetaData(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[TelemetryFlagSetID] != "test-set" {
-		t.Errorf("Expected 'Flag SetID' in Flag Metadata name to be 'test-set', got '%s'", event.Attributes[TelemetryFlagMetaFlagSetId])
+	if event.Attributes[FlagSetIDKey] != "test-set" {
+		t.Errorf("Expected 'Flag SetID' in Flag Metadata name to be 'test-set', got '%s'", event.Attributes[flagMetaFlagSetIDKey])
 	}
 
-	if event.Attributes[TelemetryContextID] != "metadata-context" {
-		t.Errorf("Expected 'Flag ContextID' in Flag Metadata name to be 'metadata-context', got '%s'", event.Attributes[TelemetryFlagMetaContextId])
+	if event.Attributes[ContextIDKey] != "metadata-context" {
+		t.Errorf("Expected 'Flag ContextID' in Flag Metadata name to be 'metadata-context', got '%s'", event.Attributes[flagMetaContextIDKey])
 	}
 
-	if event.Attributes[TelemetryVersion] != "v1.0" {
-		t.Errorf("Expected 'Flag Version' in Flag Metadata name to be 'v1.0', got '%s'", event.Attributes[TelemetryFlagMetaVersion])
+	if event.Attributes[VersionKey] != "v1.0" {
+		t.Errorf("Expected 'Flag Version' in Flag Metadata name to be 'v1.0', got '%s'", event.Attributes[flagMetaVersionKey])
 	}
 }
+
 func TestCreateEvaluationEvent_1_4_8_WithErrors(t *testing.T) {
 	flagKey := "test-flag"
 
@@ -177,12 +177,12 @@ func TestCreateEvaluationEvent_1_4_8_WithErrors(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[TelemetryErrorCode] != openfeature.FlagNotFoundCode {
-		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[TelemetryErrorCode])
+	if event.Attributes[ErrorTypeKey] != strings.ToLower(string(openfeature.FlagNotFoundCode)) {
+		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[ErrorTypeKey])
 	}
 
-	if event.Attributes[TelemetryErrorMsg] != "a test error" {
-		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[TelemetryErrorMsg])
+	if event.Attributes[ErrorMessageKey] != "a test error" {
+		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[ErrorMessageKey])
 	}
 }
 
@@ -216,14 +216,15 @@ func TestCreateEvaluationEvent_1_4_8_WithGeneralErrors(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[TelemetryErrorCode] != openfeature.GeneralCode {
-		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[TelemetryErrorCode])
+	if event.Attributes[ErrorTypeKey] != strings.ToLower(string(openfeature.GeneralCode)) {
+		t.Errorf("Expected 'ERROR_CODE' to be 'GENERAL', got '%s'", event.Attributes[ErrorTypeKey])
 	}
 
-	if event.Attributes[TelemetryErrorMsg] != "a test error" {
-		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[TelemetryErrorMsg])
+	if event.Attributes[ErrorMessageKey] != "a test error" {
+		t.Errorf("Expected 'ERROR_MESSAGE' to be 'a test error', got '%s'", event.Attributes[ErrorMessageKey])
 	}
 }
+
 func TestCreateEvaluationEvent_1_4_7_WithUnknownReason(t *testing.T) {
 	flagKey := "test-flag"
 
@@ -252,7 +253,7 @@ func TestCreateEvaluationEvent_1_4_7_WithUnknownReason(t *testing.T) {
 
 	event := CreateEvaluationEvent(mockHookContext, mockDetails)
 
-	if event.Attributes[TelemetryReason] != strings.ToLower(string(openfeature.UnknownReason)) {
-		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.UnknownReason)), event.Attributes[TelemetryReason])
+	if event.Attributes[ResultReasonKey] != strings.ToLower(string(openfeature.UnknownReason)) {
+		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.UnknownReason)), event.Attributes[ResultReasonKey])
 	}
 }
