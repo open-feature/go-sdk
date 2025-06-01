@@ -25,7 +25,7 @@ func TestEvaluation(t *testing.T) {
 		ScenarioInitializer: initializeEvaluationScenario,
 		Options: &godog.Options{
 			Format:   "pretty",
-			Paths:    []string{"../test-harness/features/evaluation.feature"},
+			Paths:    []string{"../test-harness/gherkin/evaluation.feature"},
 			TestingT: t, // Testing instance that will run subtests.
 		},
 	}
@@ -217,8 +217,8 @@ func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, fl
 }
 
 func theResolvedObjectValueShouldBeContainFieldsAndWithValuesAndRespectively(
-	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int) error {
-
+	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int,
+) error {
 	got, ok := ctx.Value(ctxStorageKey{}).(map[string]any)
 	if !ok {
 		return errors.New("no flag resolution result")
@@ -447,8 +447,8 @@ func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 }
 
 func theResolvedObjectDetailsValueShouldBeContainFieldsAndWithValuesAndRespectively(
-	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int) error {
-
+	ctx context.Context, field1, field2, field3, value1, value2 string, value3 int,
+) error {
 	gotResDetail, err := getFirstInterfaceEvaluationDetails(ctx)
 	if err != nil {
 		return err
