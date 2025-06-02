@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0](https://github.com/open-feature/go-sdk/compare/v1.14.1...v2.0.0) (2025-06-02)
+## [1.15.0](https://github.com/open-feature/go-sdk/compare/v1.14.1...v1.15.0) (2025-06-02)
 
 
 ### ⚠ BREAKING CHANGES
