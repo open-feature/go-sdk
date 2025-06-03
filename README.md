@@ -72,7 +72,7 @@ func main() {
     client := openfeature.NewClient("app")
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
-        context.Background(), "v2_enabled", true, openfeature.EvaluationContext{},
+        context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
     )
     // Use the returned flag value
     if v2Enabled {
@@ -170,7 +170,7 @@ client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
 value, err := client.BooleanValue(
-    context.Background(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
+    context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
 )
 ```
 
@@ -186,7 +186,7 @@ client := openfeature.NewClient('my-app')
 
 // trigger tracking event action
 client.Track(
-    context.Background(),
+    context.TODO(),
     'visited-promo-page',
     openfeature.EvaluationContext{},
     openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"),
@@ -221,7 +221,7 @@ if err != nil {
 
 openfeature.AddHooks(hook)
 
-client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.EvaluationContext{})
+client.BooleanValueDetails(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
 
 ```
 
@@ -304,7 +304,7 @@ Transaction context can be set where specific data is available (e.g. an auth se
 import "github.com/open-feature/go-sdk/openfeature"
 
 // set the TransactionContext
-ctx := openfeature.WithTransactionContext(context.Background(), openfeature.EvaluationContext{})
+ctx := openfeature.WithTransactionContext(context.TODO(), openfeature.EvaluationContext{})
 
 // get the TransactionContext from a context
 ec := openfeature.TransactionContext(ctx)
