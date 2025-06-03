@@ -207,29 +207,43 @@ This hook can be particularly helpful for troubleshooting and debugging; simply 
 ##### Usage example
 
 ```go
-// configure slog
-var programLevel = new(slog.LevelVar)
-programLevel.Set(slog.LevelDebug)
-h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
-slog.SetDefault(slog.New(h))
+package main
 
-// add a hook globally to run on all evaluations
-hook, err := NewLoggingHook(false)
-if err != nil {
-  // handle error
+import (
+    "context"
+    "log/slog"
+    "os"
+
+    "github.com/open-feature/go-sdk/openfeature"
+    "github.com/open-feature/go-sdk/openfeature/hooks"
+    "github.com/open-feature/go-sdk/openfeature/memprovider"
+)
+
+func main() {
+    // Register an in-memory provider with no flags
+    openfeature.SetNamedProviderAndWait("example", memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{}))
+
+    // Configure slog
+    handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+    logger := slog.New(handler)
+
+    // Register a logging hook globally to run on all evaluations
+    loggingHook := hooks.NewLoggingHook(false, logger)
+    openfeature.AddHooks(loggingHook)
+
+    // Create a new client
+    client := openfeature.NewClient("example")
+
+    // Attempt to evaluate a flag that doesn't exist
+    _ = client.Boolean(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
 }
-
-openfeature.AddHooks(hook)
-
-client.BooleanValueDetails(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
-
 ```
 
 ###### Output
 
 ```sh
-{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}
-{"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
+{"time":"2025-06-03T10:49:23.100783-04:00","level":"DEBUG","msg":"Before stage","domain":"example","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"stage":"before"}
+{"time":"2025-06-03T10:49:23.101037-04:00","level":"ERROR","msg":"Error stage","domain":"example","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found","stage":"error"}
 ```
 
 See [hooks](#hooks) for more information on configuring hooks.
