@@ -21,7 +21,7 @@ func ExampleClient_BooleanValue() {
 	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.BooleanValue(
-		context.Background(), "test-flag", true, openfeature.EvaluationContext{},
+		context.TODO(), "test-flag", true, openfeature.EvaluationContext{},
 	)
 	if err != nil {
 		log.Fatal("error while getting boolean value : ", err)
@@ -37,7 +37,7 @@ func ExampleClient_StringValue() {
 	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.StringValue(
-		context.Background(), "test-flag", "openfeature", openfeature.EvaluationContext{},
+		context.TODO(), "test-flag", "openfeature", openfeature.EvaluationContext{},
 	)
 	if err != nil {
 		log.Fatal("error while getting string value : ", err)
@@ -53,7 +53,7 @@ func ExampleClient_FloatValue() {
 	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.FloatValue(
-		context.Background(), "test-flag", 0.55, openfeature.EvaluationContext{},
+		context.TODO(), "test-flag", 0.55, openfeature.EvaluationContext{},
 	)
 	if err != nil {
 		log.Fatalf("error while getting float value: %v", err)
@@ -69,7 +69,7 @@ func ExampleClient_IntValue() {
 	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.IntValue(
-		context.Background(), "test-flag", 3, openfeature.EvaluationContext{},
+		context.TODO(), "test-flag", 3, openfeature.EvaluationContext{},
 	)
 	if err != nil {
 		log.Fatalf("error while getting int value: %v", err)
@@ -85,7 +85,7 @@ func ExampleClient_ObjectValue() {
 	}
 	client := openfeature.NewClient("example-client")
 	value, err := client.ObjectValue(
-		context.Background(), "test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{},
+		context.TODO(), "test-flag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{},
 	)
 	if err != nil {
 		log.Fatal("error while getting object value : ", err)
@@ -100,7 +100,7 @@ func ExampleClient_Boolean() {
 	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
 		log.Fatalf("error setting up provider %v", err)
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	if client.Boolean(ctx, "myflag", true, openfeature.EvaluationContext{}) {
@@ -116,7 +116,7 @@ func ExampleClient_String() {
 	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
 		log.Fatalf("error setting up provider %v", err)
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	fmt.Println(client.String(ctx, "myflag", "default", openfeature.EvaluationContext{}))
@@ -128,7 +128,7 @@ func ExampleClient_Float() {
 	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
 		log.Fatalf("error setting up provider %v", err)
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	fmt.Println(client.Float(ctx, "myflag", 0.5, openfeature.EvaluationContext{}))
@@ -140,7 +140,7 @@ func ExampleClient_Int() {
 	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
 		log.Fatalf("error setting up provider %v", err)
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	fmt.Println(client.Int(ctx, "myflag", 5, openfeature.EvaluationContext{}))
@@ -152,7 +152,7 @@ func ExampleClient_Object() {
 	if err := openfeature.SetNamedProviderAndWait("example-client", openfeature.NoopProvider{}); err != nil {
 		log.Fatalf("error setting up provider %v", err)
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	fmt.Println(client.Object(ctx, "myflag", map[string]string{"foo": "bar"}, openfeature.EvaluationContext{}))
@@ -161,7 +161,7 @@ func ExampleClient_Object() {
 }
 
 func ExampleClient_Track() {
-	ctx := context.Background()
+	ctx := context.TODO()
 	client := openfeature.NewClient("example-client")
 
 	evaluationContext := openfeature.EvaluationContext{}
