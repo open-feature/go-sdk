@@ -3,7 +3,6 @@ package multiprovider
 import (
 	"context"
 	"errors"
-	"github.com/open-feature/go-sdk/openfeature"
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
 	"github.com/stretchr/testify/assert"
@@ -178,7 +177,7 @@ func TestMultiProvider_Init(t *testing.T) {
 	attributes := map[string]interface{}{
 		"foo": "bar",
 	}
-	evalCtx := openfeature.NewTargetlessEvaluationContext(attributes)
+	evalCtx := of.NewTargetlessEvaluationContext(attributes)
 	eventChan := make(chan of.Event)
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -240,7 +239,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	attributes := map[string]interface{}{
 		"foo": "bar",
 	}
-	evalCtx := openfeature.NewTargetlessEvaluationContext(attributes)
+	evalCtx := of.NewTargetlessEvaluationContext(attributes)
 	eventChan := make(chan of.Event)
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -317,7 +316,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 	providers["provider3"] = testProvider3
 	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
-	evalCtx := openfeature.NewTargetlessEvaluationContext(map[string]interface{}{
+	evalCtx := of.NewTargetlessEvaluationContext(map[string]interface{}{
 		"foo": "bar",
 	})
 	eventChan := make(chan of.Event)

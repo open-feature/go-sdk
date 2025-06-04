@@ -348,7 +348,7 @@ func evaluateComparison[R any](ctx context.Context, providers []*NamedProvider, 
 			result.FlagMetadata[MetadataFallbackUsed] = false
 			result.FlagMetadata[MetadataIsDefaultValue] = true
 			result.FlagMetadata[MetadataEvaluationError] = ctx.Err().Error()
-			result.ProviderResolutionDetail.ResolutionError = comparisonResolutionError(result.FlagMetadata)
+			result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
 			return result
 		case r := <-resultChan:
 			results = append(results, *r)
@@ -363,7 +363,7 @@ func evaluateComparison[R any](ctx context.Context, providers []*NamedProvider, 
 				result := BuildDefaultResult(StrategyComparison, defaultVal, nil)
 				result.FlagMetadata[MetadataFallbackUsed] = false
 				result.FlagMetadata[MetadataIsDefaultValue] = true
-				result.ProviderResolutionDetail.ResolutionError = comparisonResolutionError(result.FlagMetadata)
+				result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
 				return result
 			}
 			if (len(results) + notFoundCount) == len(providers) {
@@ -432,7 +432,7 @@ continueComparison:
 		fallbackResult.FlagMetadata[MetadataIsDefaultValue] = false
 		fallbackResult.FlagMetadata[MetadataSuccessfulProviderName] = "fallback"
 		fallbackResult.FlagMetadata[MetadataStrategyUsed] = StrategyComparison
-		fallbackResult.ProviderResolutionDetail.Reason = ReasonAggregatedFallback
+		fallbackResult.Reason = ReasonAggregatedFallback
 		return fallbackResult
 	}
 

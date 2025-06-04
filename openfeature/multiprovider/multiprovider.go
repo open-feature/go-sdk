@@ -204,7 +204,7 @@ func buildMetadata(m ProviderMap) of.Metadata {
 	var metaName strings.Builder
 	metaName.WriteString("MultiProvider {")
 	names := make([]string, 0, len(m))
-	for n, _ := range m {
+	for n := range m {
 		names = append(names, n)
 	}
 	slices.Sort(names)
@@ -291,7 +291,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		if config.customStrategy != nil {
 			strategy = config.customStrategy
 		} else {
-			return nil, fmt.Errorf("A custom strategy must be set via an option if StrategyCustom is set")
+			return nil, fmt.Errorf("custom strategy must be set via an option if StrategyCustom is set")
 		}
 	default:
 		return nil, fmt.Errorf("%s is an unknown evalutation strategy", strategy)
