@@ -365,7 +365,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	handlers := make(chan namedEventHandler)
 	for name, provider := range mp.providers {
 		// Initialize each provider to not ready state. No locks required there are no workers running
-		mp.providerStatus[name] = of.NotReadyState
+		mp.updateProviderState(name, of.NotReadyState)
 		l := mp.logger.With(slog.String("multiprovider-provider-name", name))
 		p := provider
 		eg.Go(func() error {
@@ -386,26 +386,23 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 				handlers <- namedEventHandler{eventer, name}
 			} else {
 				// Do not yet update providers that need event handling
-				mp.providerStatusLock.Lock()
-				defer mp.providerStatusLock.Unlock()
-				mp.providerStatus[name] = of.ReadyState
+				mp.updateProviderState(name, of.ReadyState)
 			}
 			return nil
 		})
 	}
 
 	if err := eg.Wait(); err != nil {
-		mp.setStatus(of.ErrorState)
 		var pErr *ProviderError
 		if errors.As(err, &pErr) {
-			// Update provider status to error, no event needs to be emitted.
-			// No locks needed as no workers are active at this point
-			mp.providerStatus[pErr.ProviderName] = of.ErrorState
+			// Update provider status to error, no event needs to be emitted yet
+			mp.updateProviderState(pErr.ProviderName, of.ErrorState)
 		} else {
 			pErr = &ProviderError{
 				Err:          err,
 				ProviderName: "unknown",
 			}
+			mp.setStatus(of.ErrorState)
 		}
 		mp.outboundEvents <- of.Event{
 			ProviderName: mp.Metadata().Name,
@@ -428,9 +425,9 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	}
 	mp.shutdownFunc = shutdownFunc
 
+	mp.workerGroup.Add(1)
 	go func() {
 		workerLogger := mp.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
-		mp.workerGroup.Add(1)
 		defer mp.workerGroup.Done()
 		for e := range mp.inboundEvents {
 			l := workerLogger.With(
@@ -438,9 +435,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 				slog.String(MetadataProviderType, e.ProviderName),
 			)
 			l.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("received %s event from provider", e.EventType))
-			state := mp.updateProviderStateAndEvaluateTotalState(e, l)
-			if state != mp.Status() {
-				mp.setStatus(state)
+			if mp.updateProviderStateFromEvent(e) {
 				mp.outboundEvents <- e.Event
 				l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
 			} else {
@@ -465,7 +460,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	return nil
 }
 
-// startListening is intended to be
+// startListening is intended to be called on a per-provider basis as a goroutine
 func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
@@ -484,15 +479,34 @@ func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.E
 	}
 }
 
-func (mp *MultiProvider) updateProviderStateAndEvaluateTotalState(e namedEvent, l *slog.Logger) of.State {
-	if e.EventType == of.ProviderConfigChange {
-		l.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("ProviderConfigChange event: %s", e.Message))
-		return mp.Status()
-	}
+// updateProviderState updates the state of an internal provider and then re-evaluates the overall state of the
+// multiprovider. If this method returns true the overall state changed.
+func (mp *MultiProvider) updateProviderState(name string, state of.State) bool {
 	mp.providerStatusLock.Lock()
 	defer mp.providerStatusLock.Unlock()
-	logProviderState(l, e, mp.providerStatus[e.providerName])
-	mp.providerStatus[e.providerName] = eventTypeToState[e.EventType]
+	mp.providerStatus[name] = state
+	evalState := mp.evaluateState()
+	if evalState != mp.Status() {
+		mp.setStatus(evalState)
+		return true
+	}
+
+	return false
+}
+
+// updateProviderStateFromEvent updates the state of an internal provider from an event emitted from it, and then
+// re-evaluates the overall state of the multiprovider. If this method returns true the overall state changed.
+func (mp *MultiProvider) updateProviderStateFromEvent(e namedEvent) bool {
+	if e.EventType == of.ProviderConfigChange {
+		mp.logger.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("ProviderConfigChange event: %s", e.Message))
+	}
+	logProviderState(mp.logger, e, mp.providerStatus[e.providerName])
+	return mp.updateProviderState(e.ProviderName, eventTypeToState[e.EventType])
+}
+
+// evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
+// OpenFeature spec. This method should only be called if the provider state mutex is locked
+func (mp *MultiProvider) evaluateState() of.State {
 	maxState := stateValues[of.ReadyState] // initialize to the lowest state value
 	for _, s := range mp.providerStatus {
 		if stateValues[s] > maxState {

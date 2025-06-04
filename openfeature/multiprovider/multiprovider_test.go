@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"regexp"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestMultiProvider_ProvidersMethod(t *testing.T) {
@@ -156,12 +158,27 @@ func TestMultiProvider_MetaData(t *testing.T) {
 }
 
 func TestMultiProvider_Init(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
 	ctrl := gomock.NewController(t)
 
 	testProvider1 := of.NewMockFeatureProvider(ctrl)
 	testProvider1.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
 	testProvider1.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	testProvider2 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
+	initProvider := of.NewMockFeatureProvider(ctrl)
+	initProvider.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+	initProvider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	initHandler := of.NewMockStateHandler(ctrl)
+	initHandler.EXPECT().Init(gomock.Any()).Return(nil)
+	initHandler.EXPECT().Shutdown().MaxTimes(1)
+	testProvider2 := struct {
+		of.FeatureProvider
+		of.StateHandler
+	}{
+		initProvider,
+		initHandler,
+	}
 	testProvider3 := of.NewMockFeatureProvider(ctrl)
 	testProvider3.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
 	testProvider3.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
@@ -178,12 +195,16 @@ func TestMultiProvider_Init(t *testing.T) {
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	eventChan := make(chan of.Event)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	var mu sync.Mutex
+	var event *of.Event
 	go func() {
 		select {
 		case e := <-mp.EventChannel():
-			eventChan <- e
+			mu.Lock()
+			defer mu.Unlock()
+			event = &e
+			return
 		case <-ctx.Done():
 			return
 		}
@@ -192,8 +213,9 @@ func TestMultiProvider_Init(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, of.ReadyState, mp.Status())
 	cancel()
-	event := <-eventChan
-	assert.NotZero(t, event)
+	mu.Lock()
+	defer mu.Unlock()
+	require.NotNil(t, event, "ready event never emitted")
 	assert.Equal(t, mp.Metadata().Name, event.ProviderName)
 	assert.Equal(t, of.ProviderReady, event.EventType)
 	assert.Equal(t, of.ProviderEventDetails{
