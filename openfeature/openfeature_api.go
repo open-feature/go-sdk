@@ -3,6 +3,7 @@ package openfeature
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"sync"
 
@@ -232,8 +233,10 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 		return nil
 	}
 
+	namedProviders := slices.Collect(maps.Values(api.namedProviders))
+
 	// check for multiple bindings
-	if oldProvider == api.defaultProvider || slices.Contains(mapValues(api.namedProviders), oldProvider) {
+	if oldProvider == api.defaultProvider || slices.Contains(namedProviders, oldProvider) {
 		return nil
 	}
 
