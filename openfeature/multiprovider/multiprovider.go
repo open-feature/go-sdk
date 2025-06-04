@@ -228,7 +228,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	}
 
 	config := &Configuration{
-		logger:        slog.New(slog.DiscardHandler),
+		logger:        slog.New(DiscardHandler),
 		providerHooks: make(map[string][]of.Hook),
 	}
 
