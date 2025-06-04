@@ -56,7 +56,7 @@ func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultVal
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail {
+func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx FlattenedContext) InterfaceResolutionDetail {
 	return InterfaceResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{

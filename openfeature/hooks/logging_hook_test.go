@@ -4,20 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"testing"
-
-	"log/slog"
 
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
 func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
-	hook, err := NewLoggingHook(true)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	hook := NewLoggingHook(true, slog.Default())
 	if hook == nil {
 		t.Fatal("expected a valid LoggingHook, got nil")
 	}
@@ -25,10 +21,7 @@ func TestCreateLoggingHookWithDefaultLoggerAndContextInclusion(t *testing.T) {
 
 func TestLoggingHookInitializesCorrectly(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	hook, err := NewCustomLoggingHook(true, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewLoggingHook(true, logger)
 
 	if hook.logger != logger {
 		t.Errorf("Expected logger to be %v, got %v", logger, hook.logger)
@@ -40,10 +33,7 @@ func TestLoggingHookInitializesCorrectly(t *testing.T) {
 }
 
 func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
-	hook, err := NewCustomLoggingHook(false, nil)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewLoggingHook(false, nil)
 
 	if hook.logger != nil {
 		t.Errorf("Expected logger to be nil, got %v", hook.logger)
@@ -55,28 +45,22 @@ func TestLoggingHookHandlesNilLoggerGracefully(t *testing.T) {
 }
 
 func TestLoggingHookLogsMessagesAsExpected(t *testing.T) {
-	var buf *bytes.Buffer = new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(false, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewLoggingHook(false, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)
 }
 
 func TestLoggingHookLogsMessagesAsExpectedIncludeEvaluationContext(t *testing.T) {
-	var buf *bytes.Buffer = new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 	handler := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 
-	hook, err := NewCustomLoggingHook(true, logger)
-	if err != nil {
-		t.Error("expected no error")
-	}
+	hook := NewLoggingHook(true, logger)
 
 	// Check if resultMap contains all key-value pairs from expected
 	testLoggingHookLogsMessagesAsExpected(*hook, logger, t, buf)
@@ -92,7 +76,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			Key:            "boolFlag",
 			State:          memprovider.Enabled,
 			DefaultVariant: "true",
-			Variants: map[string]interface{}{
+			Variants: map[string]any{
 				"true":  true,
 				"false": false,
 			},
@@ -114,7 +98,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			false,
 			openfeature.NewEvaluationContext(
 				"target1",
-				map[string]interface{}{
+				map[string]any{
 					"color": "green",
 				},
 			),
@@ -123,20 +107,22 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			t.Error("expected nil error")
 		}
 		if res != true {
-			t.Errorf("incorect evaluation, expected %t, got %t", true, res)
+			t.Errorf("incorrect evaluation, expected %t, got %t", true, res)
 		}
 
 		ms := prepareOutput(buf, t)
 
-		var expected = map[string]map[string]any{
+		expected := map[string]map[string]any{
 			"Before stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
+				"stage":         "before",
 			},
 			"After stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
 				"flag_key":      "boolFlag",
+				"stage":         "after",
 			},
 		}
 
@@ -150,7 +136,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			false,
 			openfeature.NewEvaluationContext(
 				"target1",
-				map[string]interface{}{
+				map[string]any{
 					"color": "green",
 				},
 			),
@@ -159,20 +145,22 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 			t.Error("expected error")
 		}
 		if res != false {
-			t.Errorf("incorect evaluation, expected %t, got %t", false, res)
+			t.Errorf("incorrect evaluation, expected %t, got %t", false, res)
 		}
 
 		ms := prepareOutput(buf, t)
 
-		var expected = map[string]map[string]any{
+		expected := map[string]map[string]any{
 			"Before stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
+				"stage":         "before",
 			},
 			"Error stage": {
 				"provider_name": "InMemoryProvider",
 				"domain":        "test-app",
 				"flag_key":      "non-existing",
+				"stage":         "error",
 			},
 		}
 
@@ -181,7 +169,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 }
 
 func prepareOutput(buf *bytes.Buffer, t *testing.T) map[string]map[string]any {
-	var ms map[string]map[string]any = make(map[string]map[string]any)
+	ms := make(map[string]map[string]any)
 	for _, line := range bytes.Split(buf.Bytes(), []byte{'\n'}) {
 		if len(line) == 0 {
 			continue
@@ -213,11 +201,11 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 			}
 
 			if hook.includeEvaluationContext {
-				evaluationContext, exists := resultInnerMap[EVALUATION_CONTEXT_KEY]
+				evaluationContext, exists := resultInnerMap[evaluationContextKey]
 				if !exists {
-					t.Errorf("Inner key %s not found in resultMap[%s]", EVALUATION_CONTEXT_KEY, key)
+					t.Errorf("Inner key %s not found in resultMap[%s]", evaluationContextKey, key)
 				}
-				attributes, attributesExists := evaluationContext.(map[string]any)["Attributes"]
+				attributes, attributesExists := evaluationContext.(map[string]any)[attributesKey]
 				if !attributesExists {
 					t.Errorf("attributes do not exist")
 				}
@@ -228,8 +216,8 @@ func compare(expected map[string]map[string]any, ms map[string]map[string]any, t
 				if color != "green" {
 					t.Errorf("expected green color in evaluationContext")
 				}
-				if evaluationContext.(map[string]any)["TargetingKey"] != "target1" {
-					t.Errorf("expected TargetingKey in evaluationContext")
+				if evaluationContext.(map[string]any)[targetingKeyKey] != "target1" {
+					t.Errorf("expected targeting_key in evaluationContext")
 				}
 			}
 		}

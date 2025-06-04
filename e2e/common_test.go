@@ -7,7 +7,7 @@ import (
 
 // ctxFunction is a context based evaluation callback
 var ctxFunction = func(this memprovider.InMemoryFlag, evalCtx openfeature.FlattenedContext) (
-	interface{}, openfeature.ProviderResolutionDetail) {
+	any, openfeature.ProviderResolutionDetail) {
 
 	defaultValue := this.Variants[this.DefaultVariant]
 	defaultResolution := openfeature.ProviderResolutionDetail{
@@ -39,7 +39,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "boolean-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "on",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"on":  true,
 			"off": false,
 		},
@@ -49,7 +49,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "string-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "greeting",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"greeting": "hi",
 			"parting":  "bye",
 		},
@@ -59,7 +59,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "integer-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "ten",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"one": 1,
 			"ten": 10,
 		},
@@ -69,7 +69,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "float-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "half",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"tenth": 0.1,
 			"half":  0.5,
 		},
@@ -79,9 +79,9 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "object-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "template",
-		Variants: map[string]interface{}{
-			"empty": map[string]interface{}{},
-			"template": map[string]interface{}{
+		Variants: map[string]any{
+			"empty": map[string]any{},
+			"template": map[string]any{
 				"showImages":    true,
 				"title":         "Check out these pics!",
 				"imagesPerPage": 100,
@@ -93,7 +93,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "wrong-flag",
 		State:          memprovider.Enabled,
 		DefaultVariant: "one",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"one": "uno",
 			"two": "dos",
 		},
@@ -103,7 +103,7 @@ var memoryFlags = map[string]memprovider.InMemoryFlag{
 		Key:            "context-aware",
 		State:          memprovider.Enabled,
 		DefaultVariant: "external",
-		Variants: map[string]interface{}{
+		Variants: map[string]any{
 			"internal": "INTERNAL",
 			"external": "EXTERNAL",
 		},

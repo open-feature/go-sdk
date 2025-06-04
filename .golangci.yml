@@ -1,0 +1,31 @@
+---
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - dupword
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 3m
+  build-tags:
+    - testtools
+  modules-download-mode: readonly
+
+output:
+  sort-order:
+    - file

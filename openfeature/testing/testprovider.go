@@ -58,7 +58,7 @@ func (tp TestProvider) IntEvaluation(ctx context.Context, flag string, defaultVa
 	return tp.getProvider().IntEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
-func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, flCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
 	return tp.getProvider().ObjectEvaluation(ctx, flag, defaultValue, flCtx)
 }
 
@@ -94,12 +94,12 @@ func (tp TestProvider) getProvider() openfeature.FeatureProvider {
 
 var goroutineLocalData sync.Map
 
-func storeGoroutineLocal(value interface{}) {
+func storeGoroutineLocal(value any) {
 	gID := getGoroutineID()
 	goroutineLocalData.Store(fmt.Sprintf("%d_%v", gID, testNameKey), value)
 }
 
-func getGoroutineLocal() interface{} {
+func getGoroutineLocal() any {
 	gID := getGoroutineID()
 	value, _ := goroutineLocalData.Load(fmt.Sprintf("%d_%v", gID, testNameKey))
 	return value

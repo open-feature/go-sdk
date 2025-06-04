@@ -81,7 +81,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		AddHandler(eventType, &callBack)
 
 		fCh := []string{"flagA"}
-		meta := map[string]interface{}{
+		meta := map[string]any{
 			"key": "value",
 		}
 
@@ -149,7 +149,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		client.AddHandler(ProviderError, &callBack)
 
 		fCh := []string{"flagA"}
-		meta := map[string]interface{}{
+		meta := map[string]any{
 			"key": "value",
 		}
 
@@ -1117,7 +1117,7 @@ func TestEventHandler_multiSubs(t *testing.T) {
 	clientB := NewClient("clientB")
 	clientB.AddHandler(ProviderStale, &callbackB)
 
-	emitDone := make(chan interface{})
+	emitDone := make(chan any)
 	eventCount := 5
 
 	// invoke events

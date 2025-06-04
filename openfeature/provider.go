@@ -39,7 +39,7 @@ const (
 
 // FlattenedContext contains metadata for a given flag evaluation in a flattened structure.
 // TargetingKey ("targetingKey") is stored as a string value if provided in the evaluation context.
-type FlattenedContext map[string]interface{}
+type FlattenedContext map[string]any
 
 // Reason indicates the semantic reason for a returned flag value
 type Reason string
@@ -52,7 +52,7 @@ type FeatureProvider interface {
 	StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail
 	FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail
 	IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail
-	ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx FlattenedContext) InterfaceResolutionDetail
+	ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx FlattenedContext) InterfaceResolutionDetail
 	Hooks() []Hook
 }
 
@@ -104,7 +104,7 @@ type EventType string
 type ProviderEventDetails struct {
 	Message       string
 	FlagChanges   []string
-	EventMetadata map[string]interface{}
+	EventMetadata map[string]any
 	ErrorCode     ErrorCode
 }
 
@@ -187,9 +187,9 @@ type IntResolutionDetail struct {
 	ProviderResolutionDetail
 }
 
-// InterfaceResolutionDetail provides a resolution detail with interface{} type
+// InterfaceResolutionDetail provides a resolution detail with any type
 type InterfaceResolutionDetail struct {
-	Value interface{}
+	Value any
 	ProviderResolutionDetail
 }
 
@@ -201,14 +201,14 @@ type Metadata struct {
 // TrackingEventDetails provides a tracking details with float64 value
 type TrackingEventDetails struct {
 	value      float64
-	attributes map[string]interface{}
+	attributes map[string]any
 }
 
-// NewTrackingEventDetails return TrackingEventDetails associated with numeric value value
+// NewTrackingEventDetails return TrackingEventDetails associated with numeric value
 func NewTrackingEventDetails(value float64) TrackingEventDetails {
 	return TrackingEventDetails{
 		value:      value,
-		attributes: make(map[string]interface{}),
+		attributes: make(map[string]any),
 	}
 }
 
@@ -216,15 +216,15 @@ func NewTrackingEventDetails(value float64) TrackingEventDetails {
 // If the key already exists in TrackingEventDetails, it will be replaced.
 //
 // Usage: trackingEventDetails.Add('active-time', 2).Add('unit': 'seconds')
-func (t TrackingEventDetails) Add(key string, value interface{}) TrackingEventDetails {
+func (t TrackingEventDetails) Add(key string, value any) TrackingEventDetails {
 	t.attributes[key] = value
 	return t
 }
 
 // Attributes return a map contains the key-value pairs stored in TrackingEventDetails.
-func (t TrackingEventDetails) Attributes() map[string]interface{} {
+func (t TrackingEventDetails) Attributes() map[string]any {
 	// copy fields to new map to prevent mutation (maps are passed by reference)
-	fields := make(map[string]interface{}, len(t.attributes))
+	fields := make(map[string]any, len(t.attributes))
 	for key, value := range t.attributes {
 		fields[key] = value
 	}
@@ -232,7 +232,7 @@ func (t TrackingEventDetails) Attributes() map[string]interface{} {
 }
 
 // Attribute retrieves the attribute with the given key.
-func (t TrackingEventDetails) Attribute(key string) interface{} {
+func (t TrackingEventDetails) Attribute(key string) any {
 	return t.attributes[key]
 }
 

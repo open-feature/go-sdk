@@ -9,7 +9,7 @@ func newProviderRef(provider FeatureProvider) providerReference {
 	return providerReference{
 		featureProvider:   provider,
 		kind:              reflect.TypeOf(provider).Kind(),
-		shutdownSemaphore: make(chan interface{}),
+		shutdownSemaphore: make(chan any),
 	}
 }
 
@@ -18,7 +18,7 @@ func newProviderRef(provider FeatureProvider) providerReference {
 type providerReference struct {
 	featureProvider   FeatureProvider
 	kind              reflect.Kind
-	shutdownSemaphore chan interface{}
+	shutdownSemaphore chan any
 }
 
 func (pr providerReference) equals(other providerReference) bool {

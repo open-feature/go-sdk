@@ -16,8 +16,8 @@
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.7.0&color=yellow&style=for-the-badge" />
   </a>
   <!-- x-release-please-start-version -->
-  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.14.1">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.14.1&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.15.0">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.15.0&color=blue&style=for-the-badge" />
   </a>
   <!-- x-release-please-end -->
   <br/>
@@ -43,7 +43,7 @@
 
 ### Requirements
 
-Go language version: [1.20](https://go.dev/doc/devel/release#go1.20)
+Go language version: [1.23](https://go.dev/doc/devel/release#go1.23.0)
 
 > [!NOTE]
 > The OpenFeature Go SDK only supports currently maintained Go language versions.
@@ -72,7 +72,7 @@ func main() {
     client := openfeature.NewClient("app")
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
-        context.Background(), "v2_enabled", true, openfeature.EvaluationContext{},
+        context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
     )
     // Use the returned flag value
     if v2Enabled {
@@ -128,7 +128,7 @@ If the flag management system you're using supports targeting, you can provide t
 ```go
 // set a value to the global context
 openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
-    map[string]interface{}{
+    map[string]any{
         "region":  "us-east-1-iah-1a",
     },
 ))
@@ -136,7 +136,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 // set a value to the client context
 client := openfeature.NewClient("my-app")
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
-    map[string]interface{}{
+    map[string]any{
         "version":  "1.4.6",
     },
 ))
@@ -144,7 +144,7 @@ client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 // set a value to the invocation context
 evalCtx := openfeature.NewEvaluationContext(
     "user-123",
-    map[string]interface{}{
+    map[string]any{
         "company": "Initech",
     },
 )
@@ -170,7 +170,7 @@ client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
 value, err := client.BooleanValue(
-    context.Background(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
+    context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
 )
 ```
 
@@ -186,7 +186,7 @@ client := openfeature.NewClient('my-app')
 
 // trigger tracking event action
 client.Track(
-    context.Background(),
+    context.TODO(),
     'visited-promo-page',
     openfeature.EvaluationContext{},
     openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"),
@@ -207,29 +207,43 @@ This hook can be particularly helpful for troubleshooting and debugging; simply 
 ##### Usage example
 
 ```go
-// configure slog
-var programLevel = new(slog.LevelVar)
-programLevel.Set(slog.LevelDebug)
-h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
-slog.SetDefault(slog.New(h))
+package main
 
-// add a hook globally to run on all evaluations
-hook, err := NewLoggingHook(false)
-if err != nil {
-  // handle error
+import (
+    "context"
+    "log/slog"
+    "os"
+
+    "github.com/open-feature/go-sdk/openfeature"
+    "github.com/open-feature/go-sdk/openfeature/hooks"
+    "github.com/open-feature/go-sdk/openfeature/memprovider"
+)
+
+func main() {
+    // Register an in-memory provider with no flags
+    openfeature.SetNamedProviderAndWait("example", memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{}))
+
+    // Configure slog
+    handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+    logger := slog.New(handler)
+
+    // Register a logging hook globally to run on all evaluations
+    loggingHook := hooks.NewLoggingHook(false, logger)
+    openfeature.AddHooks(loggingHook)
+
+    // Create a new client
+    client := openfeature.NewClient("example")
+
+    // Attempt to evaluate a flag that doesn't exist
+    _ = client.Boolean(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
 }
-
-openfeature.AddHooks(hook)
-
-client.BooleanValueDetails(context.Background(), "not-exist", true, openfeature.EvaluationContext{})
-
 ```
 
 ###### Output
 
 ```sh
-{"time":"2024-10-23T13:33:09.8870867+03:00","level":"DEBUG","msg":"Before stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true}
-{"time":"2024-10-23T13:33:09.8968242+03:00","level":"ERROR","msg":"Error stage","domain":"test-client","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found"}
+{"time":"2025-06-03T10:49:23.100783-04:00","level":"DEBUG","msg":"Before stage","domain":"example","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"stage":"before"}
+{"time":"2025-06-03T10:49:23.101037-04:00","level":"ERROR","msg":"Error stage","domain":"example","provider_name":"InMemoryProvider","flag_key":"not-exist","default_value":true,"error_message":"error code: FLAG_NOT_FOUND: flag for key not-exist not found","stage":"error"}
 ```
 
 See [hooks](#hooks) for more information on configuring hooks.
@@ -304,7 +318,7 @@ Transaction context can be set where specific data is available (e.g. an auth se
 import "github.com/open-feature/go-sdk/openfeature"
 
 // set the TransactionContext
-ctx := openfeature.WithTransactionContext(context.Background(), openfeature.EvaluationContext{})
+ctx := openfeature.WithTransactionContext(context.TODO(), openfeature.EvaluationContext{})
 
 // get the TransactionContext from a context
 ec := openfeature.TransactionContext(ctx)
@@ -371,7 +385,7 @@ func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defau
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
   // code to evaluate object
 }
 
