@@ -27,6 +27,6 @@ func (d discardHandler) WithGroup(string) slog.Handler {
 }
 
 var (
-	_              slog.Handler = (*discardHandler)(nil)
-	DiscardHandler slog.Handler = discardHandler{}
+	_                 slog.Handler = (*discardHandler)(nil)
+	discardLogHandler slog.Handler = discardHandler{}
 )
