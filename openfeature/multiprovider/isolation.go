@@ -112,7 +112,7 @@ func (h *HookIsolator) IntEvaluation(ctx context.Context, flag string, defaultVa
 	}
 }
 
-func (h *HookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+func (h *HookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	completeEval := h.evaluate(ctx, flag, of.Object, defaultValue, evalCtx)
 
 	return of.InterfaceResolutionDetail{
@@ -159,7 +159,7 @@ func (h *HookIsolator) Hooks() []of.Hook {
 }
 
 // evaluate Execute evaluation of the flag wrapped by executing hooks
-func (h *HookIsolator) evaluate(ctx context.Context, flag string, flagType of.Type, defaultValue interface{}, flatCtx of.FlattenedContext) of.InterfaceEvaluationDetails {
+func (h *HookIsolator) evaluate(ctx context.Context, flag string, flagType of.Type, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceEvaluationDetails {
 	evalDetails := of.InterfaceEvaluationDetails{
 		Value: defaultValue,
 		EvaluationDetails: of.EvaluationDetails{
@@ -297,7 +297,7 @@ func (h *HookIsolator) updateEvalContext(evalCtx of.EvaluationContext) {
 
 // deepenContext Convert a [of.FlattenedContext] to a [of.EvaluationContext]
 func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
-	noTargetingKey := make(map[string]interface{})
+	noTargetingKey := make(map[string]any)
 	for k, v := range flatCtx {
 		if k != "targetingKey" {
 			noTargetingKey[k] = v

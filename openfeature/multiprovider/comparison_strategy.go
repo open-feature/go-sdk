@@ -99,7 +99,7 @@ func (c ComparisonStrategy) IntEvaluation(ctx context.Context, flag string, defa
 	}
 }
 
-func (c ComparisonStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+func (c ComparisonStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	var compFunc Comparator
 	switch defaultValue.(type) {
 	case int8:
@@ -301,7 +301,7 @@ func evaluateComparison[R any](ctx context.Context, providers []*NamedProvider, 
 	}
 
 	resultChan := make(chan *namedResult, len(providers))
-	notFoundChan := make(chan interface{})
+	notFoundChan := make(chan any)
 	errGrp, ctx := errgroup.WithContext(ctx)
 	for _, provider := range providers {
 		closedProvider := provider

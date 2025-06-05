@@ -54,15 +54,15 @@ func (f *firstSuccessStrategy) IntEvaluation(ctx context.Context, flag string, d
 	}
 }
 
-func (f *firstSuccessStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	return evaluateFirstSuccess[interface{}](ctx, f.providers, flag, of.Object, defaultValue, evalCtx, f.timeout)
+func (f *firstSuccessStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	return evaluateFirstSuccess[any](ctx, f.providers, flag, of.Object, defaultValue, evalCtx, f.timeout)
 }
 
 func evaluateFirstSuccess[R any](ctx context.Context, providers []*NamedProvider, flag string, flagType of.Type, defaultVal R, evalCtx of.FlattenedContext, timeout time.Duration) of.InterfaceResolutionDetail {
 	metadata := make(of.FlagMetadata)
 	metadata[MetadataStrategyUsed] = StrategyFirstSuccess
 	errChan := make(chan ProviderError, len(providers))
-	notFoundChan := make(chan interface{})
+	notFoundChan := make(chan any)
 
 	type namedResolution struct {
 		of.InterfaceResolutionDetail

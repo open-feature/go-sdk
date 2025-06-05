@@ -18,9 +18,9 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 		false,
 		of.ClientMetadata{},
 		of.Metadata{},
-		of.NewEvaluationContext("target", map[string]interface{}{}),
+		of.NewEvaluationContext("target", map[string]any{}),
 	)
-	hookHints := of.NewHookHints(map[string]interface{}{"foo": "bar"})
+	hookHints := of.NewHookHints(map[string]any{"foo": "bar"})
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)

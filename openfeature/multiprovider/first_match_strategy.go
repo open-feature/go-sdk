@@ -53,8 +53,8 @@ func (f *firstMatchStrategy) IntEvaluation(ctx context.Context, flag string, def
 	}
 }
 
-func (f *firstMatchStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	return evaluateFirstMatch[interface{}](ctx, f.providers, flag, of.Object, defaultValue, evalCtx)
+func (f *firstMatchStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	return evaluateFirstMatch[any](ctx, f.providers, flag, of.Object, defaultValue, evalCtx)
 }
 
 // evaluateFirstMatch execute the first match strategy

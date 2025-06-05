@@ -348,7 +348,7 @@ func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, default
 }
 
 // ObjectEvaluation returns an object flag
-func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue interface{}, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	return mp.strategy.ObjectEvaluation(ctx, flag, defaultValue, evalCtx)
 }
 
@@ -410,7 +410,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 			ProviderEventDetails: of.ProviderEventDetails{
 				Message:     fmt.Sprintf("internal provider %s encountered an error during initialization: %+v", pErr.ProviderName, pErr.Err),
 				FlagChanges: nil,
-				EventMetadata: map[string]interface{}{
+				EventMetadata: map[string]any{
 					MetadataProviderName:  pErr.ProviderName,
 					MetadataInternalError: pErr.Error(),
 				},
@@ -451,7 +451,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 		ProviderEventDetails: of.ProviderEventDetails{
 			Message:     "all internal providers initialized successfully",
 			FlagChanges: nil,
-			EventMetadata: map[string]interface{}{
+			EventMetadata: map[string]any{
 				MetadataProviderName: "all",
 			},
 		},

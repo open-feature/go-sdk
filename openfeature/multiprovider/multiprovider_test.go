@@ -191,7 +191,7 @@ func TestMultiProvider_Init(t *testing.T) {
 	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
-	attributes := map[string]interface{}{
+	attributes := map[string]any{
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
@@ -221,7 +221,7 @@ func TestMultiProvider_Init(t *testing.T) {
 	assert.Equal(t, of.ProviderEventDetails{
 		Message:     "all internal providers initialized successfully",
 		FlagChanges: nil,
-		EventMetadata: map[string]interface{}{
+		EventMetadata: map[string]any{
 			MetadataProviderName: "all",
 		},
 	}, event.ProviderEventDetails)
@@ -258,7 +258,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
-	attributes := map[string]interface{}{
+	attributes := map[string]any{
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
@@ -283,7 +283,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	assert.Equal(t, of.ProviderEventDetails{
 		Message:     "internal provider provider3 encountered an error during initialization: test error",
 		FlagChanges: nil,
-		EventMetadata: map[string]interface{}{
+		EventMetadata: map[string]any{
 			MetadataProviderName:  "provider3",
 			MetadataInternalError: "Provider provider3: test error",
 		},
@@ -338,7 +338,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 	providers["provider3"] = testProvider3
 	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
-	evalCtx := of.NewTargetlessEvaluationContext(map[string]interface{}{
+	evalCtx := of.NewTargetlessEvaluationContext(map[string]any{
 		"foo": "bar",
 	})
 	eventChan := make(chan of.Event)
