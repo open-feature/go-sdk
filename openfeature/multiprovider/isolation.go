@@ -11,6 +11,7 @@ type (
 	// HookIsolator used as a wrapper around a provider that prevents context changes from leaking between providers
 	// during evaluation
 	HookIsolator struct {
+		of.UnimplementedHook
 		mu sync.Mutex
 		of.FeatureProvider
 		hooks           []of.Hook
@@ -57,19 +58,6 @@ func (h *HookIsolator) Before(ctx context.Context, hookContext of.HookContext, h
 	// Return copy of original evaluation context so any changes are isolated to each provider's hooks
 	evalCtx := h.capturedContext.EvaluationContext()
 	return &evalCtx, nil
-}
-
-func (h *HookIsolator) After(_ context.Context, _ of.HookContext, _ of.InterfaceEvaluationDetails, _ of.HookHints) error {
-	// Purposely left as a no-op
-	return nil
-}
-
-func (h *HookIsolator) Error(_ context.Context, _ of.HookContext, _ error, _ of.HookHints) {
-	// Purposely left as a no-op
-}
-
-func (h *HookIsolator) Finally(_ context.Context, _ of.HookContext, _ of.InterfaceEvaluationDetails, _ of.HookHints) {
-	// Purposely left as a no-op
 }
 
 func (h *HookIsolator) Metadata() of.Metadata {
