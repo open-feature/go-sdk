@@ -1,2 +1,4 @@
 ignore:
   - "openfeature/*_mock.go"
+  - "multiprovider/*_mock.go"
+  - "multiprovider/discard_handler.go"
