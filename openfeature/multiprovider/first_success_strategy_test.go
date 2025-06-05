@@ -9,6 +9,26 @@ import (
 	"time"
 )
 
+func Test_FirstSuccessStrategy_Name(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mock := of.NewMockFeatureProvider(ctrl)
+	strategy := NewFirstSuccessStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}}, 0*time.Second)
+	assert.Equal(t, StrategyFirstSuccess, strategy.Name())
+}
+
+func Test_FirstSuccessStrategy_Timeout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mock1 := of.NewMockFeatureProvider(ctrl)
+	configureFirstSuccessProvider(mock1, true, true, TestErrorNone, 2*time.Second)
+	mock2 := of.NewMockFeatureProvider(ctrl)
+	configureFirstSuccessProvider(mock2, true, true, TestErrorNone, 2*time.Second)
+	strategy := NewFirstSuccessStrategy([]*NamedProvider{{"test1", mock1}, {"test2", mock2}}, 1*time.Microsecond)
+	result := strategy.BooleanEvaluation(context.Background(), "test", false, of.FlattenedContext{})
+	assert.False(t, result.Value)
+	assert.Errorf(t, result.Error(), "GENERAL: context deadline exceeded")
+
+}
+
 func configureFirstSuccessProvider[R any](provider *of.MockFeatureProvider, resultVal R, state bool, error int, delay time.Duration) {
 	var rErr of.ResolutionError
 	var variant string

@@ -9,6 +9,13 @@ import (
 	"testing"
 )
 
+func Test_FirstMatchStrategy_Name(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mock := of.NewMockFeatureProvider(ctrl)
+	strategy := NewFirstMatchStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}})
+	assert.Equal(t, StrategyFirstMatch, strategy.Name())
+}
+
 func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 	t.Run("Single Provider Match", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

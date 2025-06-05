@@ -9,6 +9,13 @@ import (
 	"testing"
 )
 
+func Test_ComparisonStrategy_Name(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mock := of.NewMockFeatureProvider(ctrl)
+	strategy := NewComparisonStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}}, nil, nil, false)
+	assert.Equal(t, StrategyComparison, strategy.Name())
+}
+
 func configureComparisonProvider[R any](provider *of.MockFeatureProvider, resultVal R, state bool, error int, forceObj bool) {
 	var rErr of.ResolutionError
 	var variant string
