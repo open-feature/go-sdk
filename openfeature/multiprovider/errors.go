@@ -6,13 +6,13 @@ import (
 )
 
 type (
-	// ProviderError is an error wrapper that species the provider name
+	// ProviderError is an error wrapper that species the provider name.
 	ProviderError struct {
 		Err          error
 		ProviderName string
 	}
 
-	// AggregateError map that contains up to one error per provider within the multi-provider
+	// AggregateError is a map that contains up to one error per provider within the multiprovider.
 	AggregateError map[string]ProviderError
 )
 

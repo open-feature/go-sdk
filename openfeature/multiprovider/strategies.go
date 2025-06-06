@@ -45,7 +45,7 @@ type (
 
 // Common Components
 
-// setFlagMetadata sets common metadata for evaluations
+// setFlagMetadata Sets common metadata for evaluations.
 func setFlagMetadata(strategyUsed EvaluationStrategy, successProviderName string, metadata of.FlagMetadata) of.FlagMetadata {
 	if metadata == nil {
 		metadata = make(of.FlagMetadata)
@@ -55,7 +55,7 @@ func setFlagMetadata(strategyUsed EvaluationStrategy, successProviderName string
 	return metadata
 }
 
-// cleanErrorMessage Remove prefixes from error messages
+// cleanErrorMessage Removes prefixes from error messages.
 func cleanErrorMessage(msg string) string {
 	codeRegex := strings.Join([]string{
 		string(of.ProviderNotReadyCode),
@@ -77,7 +77,7 @@ func cleanErrorMessage(msg string) string {
 	}
 }
 
-// mergeFlagMeta Merges flag metadata together into a single FlagMetadata instance by performing a shallow merge
+// mergeFlagMeta Merges flag metadata together into a single [of.FlagMetadata] instance by performing a shallow merge
 func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	size := len(tags)
 	switch size {
@@ -96,8 +96,8 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	}
 }
 
-// BuildDefaultResult when executing a strategy that results in a failure state this can be called to return a
-// default result with an internal error
+// BuildDefaultResult The method should be called when a strategy is in a failure state and needs to return a default
+// value. This method will build a resolution detail with the internal provided error set.
 func BuildDefaultResult[R any](strategy EvaluationStrategy, defaultValue R, err error) of.InterfaceResolutionDetail {
 	var rErr of.ResolutionError
 	var reason of.Reason
@@ -119,7 +119,7 @@ func BuildDefaultResult[R any](strategy EvaluationStrategy, defaultValue R, err 
 	}
 }
 
-// evaluate Generic method to resolve a flag from a single provider without losing type information
+// evaluate Generic method used to resolve a flag from a single provider without losing type information.
 func evaluate[R any](ctx context.Context, provider *NamedProvider, flag string, flagType of.Type, defaultVal R, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	var resolution of.InterfaceResolutionDetail
 	switch flagType {

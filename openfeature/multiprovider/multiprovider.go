@@ -31,6 +31,8 @@ type (
 	// ProviderMap Alias for a map containing unique names for each included [of.FeatureProvider]
 	ProviderMap = map[string]of.FeatureProvider
 
+	// MultiProvider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
+	// strategies.
 	MultiProvider struct {
 		providers          ProviderMap
 		metadata           of.Metadata
@@ -87,7 +89,7 @@ var (
 	eventTypeToState map[of.EventType]of.State
 )
 
-// init Initialize "constants" used for event handling priorities and filtering
+// init Initialize "constants" used for event handling priorities and filtering.
 func init() {
 	// used for mapping provider event types & provider states to comparable values for evaluation
 	stateValues = map[of.State]int{
@@ -451,7 +453,8 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	return nil
 }
 
-// startListening is intended to be called on a per-provider basis as a goroutine
+// startListening is intended to be called on a per-provider basis as a goroutine to listen to events from a provider
+// implementing [of.EventHandler].
 func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
@@ -470,7 +473,7 @@ func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.E
 	}
 }
 
-// updateProviderState updates the state of an internal provider and then re-evaluates the overall state of the
+// updateProviderState Updates the state of an internal provider and then re-evaluates the overall state of the
 // multiprovider. If this method returns true the overall state changed.
 func (mp *MultiProvider) updateProviderState(name string, state of.State) bool {
 	mp.providerStatusLock.Lock()
@@ -523,7 +526,7 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 	}
 }
 
-// Shutdown Shuts down all internal providers
+// Shutdown Shuts down all internal providers and workers
 func (mp *MultiProvider) Shutdown() {
 	if !mp.initialized {
 		// Don't do anything if we were never initialized
