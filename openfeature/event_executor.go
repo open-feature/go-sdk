@@ -3,6 +3,7 @@ package openfeature
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"sync"
 	"time"
@@ -229,7 +230,6 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 // startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke shutdown
 // hook of the old provider if it's not bound by another subscription
 func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) error {
-
 	// check if this provider already actively handled - 1:N binding capability
 	if !isRunning(newProvider, e.activeSubscriptions) {
 		e.activeSubscriptions = append(e.activeSubscriptions, newProvider)
@@ -258,7 +258,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	// shutdown old provider handling
 
 	// check if this provider is still bound - 1:N binding capability
-	if isBound(oldReference, e.defaultProviderReference, mapValues(e.namedProviderReference)) {
+	if isBound(oldReference, e.defaultProviderReference, slices.Collect(maps.Values(e.namedProviderReference))) {
 		return nil
 	}
 
@@ -335,7 +335,6 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 			e.executeHandler(*c, event)
 		}
 	}
-
 }
 
 // executeHandler is a helper which performs the actual invocation of the callback
@@ -356,15 +355,6 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 			},
 		})
 	}()
-}
-
-// mapValues is a helper until we bump to a go version with maps.Values and slices.Collect
-func mapValues[K comparable, V any](m map[K]V) []V {
-	var values []V
-	for _, value := range m {
-		values = append(values, value)
-	}
-	return values
 }
 
 // isRunning is a helper to check if the given provider is in the given list of providers
