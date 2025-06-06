@@ -133,9 +133,6 @@ func (c ComparisonStrategy) IntEvaluation(ctx context.Context, flag string, defa
 
 func (c ComparisonStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	var compFunc Comparator
-	if c.alwaysUseCustom {
-		compFunc = c.customComparator
-	}
 	switch defaultValue.(type) {
 	case int8:
 		compFunc = func(values []any) bool {
