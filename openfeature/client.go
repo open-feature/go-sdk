@@ -572,7 +572,7 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 
 // Boolean performs a flag evaluation that returns a boolean. Any error
 // encountered during the evaluation will result in the default value being
-// returned. To explicitly handle errors, use [BooleanValue] or [BooleanValueDetails]
+// returned. To explicitly handle errors, use [Client.BooleanValue] or [Client.BooleanValueDetails]
 //
 // Parameters:
 //   - ctx is the standard go context struct used to manage requests (e.g. timeouts)
@@ -588,7 +588,7 @@ func (c *Client) Boolean(ctx context.Context, flag string, defaultValue bool, ev
 
 // String performs a flag evaluation that returns a string. Any error
 // encountered during the evaluation will result in the default value being
-// returned. To explicitly handle errors, use [StringValue] or [StringValueDetails]
+// returned. To explicitly handle errors, use [Client.StringValue] or [Client.StringValueDetails]
 //
 // Parameters:
 //   - ctx is the standard go context struct used to manage requests (e.g. timeouts)
@@ -604,7 +604,7 @@ func (c *Client) String(ctx context.Context, flag string, defaultValue string, e
 
 // Float performs a flag evaluation that returns a float64. Any error
 // encountered during the evaluation will result in the default value being
-// returned. To explicitly handle errors, use [FloatValue] or [FloatValueDetails]
+// returned. To explicitly handle errors, use [Client.FloatValue] or [Client.FloatValueDetails]
 //
 // Parameters:
 //   - ctx is the standard go context struct used to manage requests (e.g. timeouts)
@@ -620,7 +620,7 @@ func (c *Client) Float(ctx context.Context, flag string, defaultValue float64, e
 
 // Int performs a flag evaluation that returns an int64. Any error
 // encountered during the evaluation will result in the default value being
-// returned. To explicitly handle errors, use [IntValue] or [IntValueDetails]
+// returned. To explicitly handle errors, use [Client.IntValue] or [Client.IntValueDetails]
 //
 // Parameters:
 //   - ctx is the standard go context struct used to manage requests (e.g. timeouts)
@@ -636,7 +636,7 @@ func (c *Client) Int(ctx context.Context, flag string, defaultValue int64, evalC
 
 // Object performs a flag evaluation that returns an object. Any error
 // encountered during the evaluation will result in the default value being
-// returned. To explicitly handle errors, use [ObjectValue] or [ObjectValueDetails]
+// returned. To explicitly handle errors, use [Client.ObjectValue] or [Client.ObjectValueDetails]
 //
 // Parameters:
 //   - ctx is the standard go context struct used to manage requests (e.g. timeouts)
