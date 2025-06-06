@@ -12,7 +12,9 @@ type firstMatchStrategy struct {
 
 var _ Strategy = (*firstMatchStrategy)(nil)
 
-// NewFirstMatchStrategy Creates a new firstMatchStrategy instance as a Strategy
+// NewFirstMatchStrategy Creates a new firstMatchStrategy instance as a Strategy. This strategy will execute providers
+// sequentially in the order they are provided until one returns a non-error result. If no providers return a successful
+// result then the default value will be used.
 func NewFirstMatchStrategy(providers []*NamedProvider) Strategy {
 	return &firstMatchStrategy{providers: providers}
 }

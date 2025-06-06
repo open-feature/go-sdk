@@ -13,7 +13,9 @@ type firstSuccessStrategy struct {
 
 var _ Strategy = (*firstSuccessStrategy)(nil)
 
-// NewFirstSuccessStrategy Creates a new firstSuccessStrategy instance as a Strategy
+// NewFirstSuccessStrategy Creates a new firstSuccessStrategy instance as a Strategy. This strategy executes all
+// providers in parallel. The first provider that returns a non-error response will be returned to the caller. If no
+// providers return a non-error result then the default value will be used.
 func NewFirstSuccessStrategy(providers []*NamedProvider, timeout time.Duration) Strategy {
 	return &firstSuccessStrategy{providers: providers, timeout: timeout}
 }
