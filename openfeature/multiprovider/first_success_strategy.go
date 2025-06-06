@@ -122,11 +122,9 @@ func evaluateFirstSuccess[R any](ctx context.Context, providers []*NamedProvider
 				return BuildDefaultResult[R](StrategyFirstSuccess, defaultVal, nil)
 			}
 		case <-ctx.Done():
-			var err error
+			err := ctx.Err()
 			if len(errs) > 0 {
 				err = NewAggregateError(errs)
-			} else {
-				err = ctx.Err()
 			}
 			return BuildDefaultResult[R](StrategyFirstSuccess, defaultVal, err)
 		}

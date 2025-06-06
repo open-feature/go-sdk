@@ -27,7 +27,7 @@ func (e *ProviderError) Error() string {
 
 // NewAggregateError Creates a new AggregateError
 func NewAggregateError(providerErrors []ProviderError) AggregateError {
-	err := make(AggregateError)
+	err := make(AggregateError, len(providerErrors))
 	for _, se := range providerErrors {
 		err[se.ProviderName] = se
 	}
@@ -43,13 +43,11 @@ func (ae AggregateError) Error() string {
 		for _, err := range ae {
 			return err.Error()
 		}
-	default:
-		errs := make([]error, 0, size)
-		for _, err := range ae {
-			errs = append(errs, &err)
-		}
-		return errors.Join(errs...).Error()
 	}
 
-	return "" // This will never occur, switch is exhaustive
+	errs := make([]error, 0, size)
+	for _, err := range ae {
+		errs = append(errs, &err)
+	}
+	return errors.Join(errs...).Error()
 }
