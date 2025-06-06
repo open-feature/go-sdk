@@ -12,13 +12,16 @@ const (
 
 	// StrategyFirstMatch First provider whose response that is not FlagNotFound will be returned. This is executed
 	// sequentially, and not in parallel.
-	StrategyFirstMatch = "strategy-first-match"
+	StrategyFirstMatch EvaluationStrategy = "strategy-first-match"
 	// StrategyFirstSuccess First provider response that is not an error will be returned. This is executed in parallel
-	StrategyFirstSuccess = "strategy-first-success"
+	StrategyFirstSuccess EvaluationStrategy = "strategy-first-success"
 	// StrategyComparison All providers are called in parallel. If all responses agree the value will be returned.
 	// Otherwise, the value from the designated fallback provider's response will be returned. The fallback provider
 	// will be assigned to the first provider registered.
-	StrategyComparison = "strategy-comparison"
+	StrategyComparison EvaluationStrategy = "strategy-comparison"
+	// StrategyCustom allows for using a custom Strategy implementation. If this is set you MUST use the WithCustomStrategy
+	// option to set it
+	StrategyCustom EvaluationStrategy = "strategy-custom"
 
 	ReasonAggregated         of.Reason = "AGGREGATED"
 	ReasonAggregatedFallback of.Reason = "AGGREGATED_FALLBACK"

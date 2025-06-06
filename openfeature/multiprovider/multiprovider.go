@@ -14,15 +14,6 @@ import (
 )
 
 const (
-
-	//StrategyFirstMatch EvaluationStrategy = StrategyFirstMatch
-
-	//StrategyFirstSuccess EvaluationStrategy = StrategyFirstSuccess
-
-	// StrategyCustom allows for using a custom Strategy implementation. If this is set you MUST use the WithCustomStrategy
-	// option to set it
-	StrategyCustom EvaluationStrategy = "strategy-custom"
-
 	// Metadata Keys
 
 	MetadataProviderName                   = "multiprovider-provider-name"
