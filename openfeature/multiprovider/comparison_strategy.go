@@ -24,7 +24,17 @@ type (
 
 var _ Strategy = (*ComparisonStrategy)(nil)
 
+// NewComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when
+// there is a comparison failure -- prior to returning a default result. The Comparator parameter is optional and nil
+// can be passed as long as ObjectEvaluation is never called. Unless the `alwaysUseCustom` parameter is true the default
+// comparisons built into Go will be used. The custom Comparator will only be used for ObjectEvaluation. However, if the
+// parameter is set to true the custom Comparator will always be used regardless of evaluation type. If ObjectEvaluation
+// is called without setting a Comparator and the returned object is not `comparable` then the a panic will occur. A
+// panic will always occur if the Comparator is nil, but `alwaysUseCustom` is true.
 func NewComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator, alwaysUseCustom bool) *ComparisonStrategy {
+	if comparator == nil && alwaysUseCustom {
+		panic(errors.New("invalid comparison strategy state"))
+	}
 	return &ComparisonStrategy{
 		providers:        providers,
 		fallbackProvider: fallbackProvider,
@@ -38,21 +48,27 @@ func (c ComparisonStrategy) Name() EvaluationStrategy {
 }
 
 func (c ComparisonStrategy) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
-	compFunc := func(values []any) bool {
-		current := values[0].(bool)
-		match := true
-		for i, v := range values {
-			if i == 0 {
-				continue
+	var compFunc Comparator
+	if c.alwaysUseCustom {
+		compFunc = c.customComparator
+	} else {
+		compFunc = func(values []any) bool {
+			current := values[0].(bool)
+			match := true
+			for i, v := range values {
+				if i == 0 {
+					continue
+				}
+				if current != v.(bool) {
+					match = false
+					break
+				}
 			}
-			if current != v.(bool) {
-				match = false
-				break
-			}
-		}
 
-		return match
+			return match
+		}
 	}
+
 	result := evaluateComparison[bool](ctx, c.providers, flag, of.Boolean, defaultValue, evalCtx, compFunc, c.fallbackProvider)
 	return of.BoolResolutionDetail{
 		Value:                    result.Value.(bool),
@@ -73,7 +89,13 @@ func buildComparator[R cmp.Ordered]() Comparator {
 }
 
 func (c ComparisonStrategy) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx of.FlattenedContext) of.StringResolutionDetail {
-	compFunc := buildComparator[string]()
+	var compFunc Comparator
+	if c.alwaysUseCustom {
+		compFunc = c.customComparator
+	} else {
+		compFunc = buildComparator[string]()
+	}
+
 	result := evaluateComparison[string](ctx, c.providers, flag, of.String, defaultValue, evalCtx, compFunc, c.fallbackProvider)
 	return of.StringResolutionDetail{
 		Value:                    result.Value.(string),
@@ -82,7 +104,12 @@ func (c ComparisonStrategy) StringEvaluation(ctx context.Context, flag string, d
 }
 
 func (c ComparisonStrategy) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx of.FlattenedContext) of.FloatResolutionDetail {
-	compFunc := buildComparator[float64]()
+	var compFunc Comparator
+	if c.alwaysUseCustom {
+		compFunc = c.customComparator
+	} else {
+		compFunc = buildComparator[float64]()
+	}
 	result := evaluateComparison[float64](ctx, c.providers, flag, of.Float, defaultValue, evalCtx, compFunc, c.fallbackProvider)
 	return of.FloatResolutionDetail{
 		Value:                    result.Value.(float64),
@@ -91,7 +118,12 @@ func (c ComparisonStrategy) FloatEvaluation(ctx context.Context, flag string, de
 }
 
 func (c ComparisonStrategy) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx of.FlattenedContext) of.IntResolutionDetail {
-	compFunc := buildComparator[int64]()
+	var compFunc Comparator
+	if c.alwaysUseCustom {
+		compFunc = c.customComparator
+	} else {
+		compFunc = buildComparator[int64]()
+	}
 	result := evaluateComparison[int64](ctx, c.providers, flag, of.Int, defaultValue, evalCtx, compFunc, c.fallbackProvider)
 	return of.IntResolutionDetail{
 		Value:                    result.Value.(int64),
@@ -101,6 +133,9 @@ func (c ComparisonStrategy) IntEvaluation(ctx context.Context, flag string, defa
 
 func (c ComparisonStrategy) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	var compFunc Comparator
+	if c.alwaysUseCustom {
+		compFunc = c.customComparator
+	}
 	switch defaultValue.(type) {
 	case int8:
 		compFunc = func(values []any) bool {
@@ -253,8 +288,6 @@ func (c ComparisonStrategy) ObjectEvaluation(ctx context.Context, flag string, d
 
 				return len(set) == 1
 			}
-		} else if c.customComparator == nil && c.alwaysUseCustom {
-			panic(nil) // runtime panic -- this state should be impossible
 		} else if c.customComparator != nil {
 			compFunc = c.customComparator
 		} else {

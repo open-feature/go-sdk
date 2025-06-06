@@ -9,6 +9,14 @@ import (
 	"testing"
 )
 
+func Test_ComparisonStrategy_NewComparisonStrategy_InvalidStatePanics(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mock := of.NewMockFeatureProvider(ctrl)
+	assert.Panics(t, func() {
+		NewComparisonStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}}, nil, nil, true)
+	})
+}
+
 func Test_ComparisonStrategy_Name(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mock := of.NewMockFeatureProvider(ctrl)
@@ -1392,23 +1400,6 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 	successVal := struct{ Name string }{Name: "test"}
 	defaultVal := struct{}{}
 
-	t.Run("panics if custom comparator is missing and always use custom is true", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		defaultVal := map[string]string{"test": "1"}
-		configureComparisonProvider(provider, defaultVal, false, TestErrorNone, true)
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider,
-			},
-		}, of.NewMockFeatureProvider(ctrl), nil, true)
-
-		assert.Panics(t, func() {
-			strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		})
-	})
-
 	t.Run("default result returned when type is not comparable and no custom comparator provided", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		provider := of.NewMockFeatureProvider(ctrl)
@@ -1432,7 +1423,26 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 	})
 
 	t.Run("single success", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		fallback := of.NewMockFeatureProvider(ctrl)
+		provider1 := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
 
+		strategy := NewComparisonStrategy([]*NamedProvider{
+			{
+				Name:            "test-provider1",
+				FeatureProvider: provider1,
+			},
+		}, fallback, nil, false)
+
+		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		assert.Equal(t, successVal, result.Value)
+		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+		assert.Equal(t, "test-provider1", result.FlagMetadata[MetadataSuccessfulProviderName])
+		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
+		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
 	})
 
 	type orderableTestCase struct {
