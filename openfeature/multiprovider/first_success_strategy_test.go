@@ -2,19 +2,13 @@ package multiprovider
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	of "github.com/open-feature/go-sdk/openfeature"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"testing"
-	"time"
 )
-
-func Test_FirstSuccessStrategy_Name(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mock := of.NewMockFeatureProvider(ctrl)
-	strategy := NewFirstSuccessStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}}, 0*time.Second)
-	assert.Equal(t, StrategyFirstSuccess, strategy.Name())
-}
 
 func Test_FirstSuccessStrategy_Timeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -23,10 +17,9 @@ func Test_FirstSuccessStrategy_Timeout(t *testing.T) {
 	mock2 := of.NewMockFeatureProvider(ctrl)
 	configureFirstSuccessProvider(mock2, true, true, TestErrorNone, 2*time.Second)
 	strategy := NewFirstSuccessStrategy([]*NamedProvider{{"test1", mock1}, {"test2", mock2}}, 1*time.Microsecond)
-	result := strategy.BooleanEvaluation(context.Background(), "test", false, of.FlattenedContext{})
-	assert.False(t, result.Value)
+	result := strategy(context.Background(), "test", false, of.FlattenedContext{})
+	assert.False(t, result.Value.(bool))
 	assert.Errorf(t, result.Error(), "GENERAL: context deadline exceeded")
-
 }
 
 func configureFirstSuccessProvider[R any](provider *of.MockFeatureProvider, resultVal R, state bool, error int, delay time.Duration) {
@@ -111,8 +104,8 @@ func Test_FirstSuccessStrategy_BooleanEvaluation(t *testing.T) {
 				FeatureProvider: provider,
 			},
 		}, 2*time.Second)
-		result := strategy.BooleanEvaluation(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value)
+		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
+		assert.True(t, result.Value.(bool))
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -137,8 +130,8 @@ func Test_FirstSuccessStrategy_BooleanEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.BooleanEvaluation(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value)
+		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
+		assert.True(t, result.Value.(bool))
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, "success-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -162,8 +155,8 @@ func Test_FirstSuccessStrategy_BooleanEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.BooleanEvaluation(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value)
+		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
+		assert.True(t, result.Value.(bool))
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, "success-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -193,8 +186,8 @@ func Test_FirstSuccessStrategy_BooleanEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.BooleanEvaluation(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.False(t, result.Value)
+		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
+		assert.False(t, result.Value.(bool))
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -225,8 +218,8 @@ func Test_FirstSuccessStrategy_BooleanEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.BooleanEvaluation(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.False(t, result.Value)
+		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
+		assert.False(t, result.Value.(bool))
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -248,7 +241,7 @@ func Test_FirstSuccessStrategy_StringEvaluation(t *testing.T) {
 				FeatureProvider: provider,
 			},
 		}, 2*time.Second)
-		result := strategy.StringEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
@@ -274,7 +267,7 @@ func Test_FirstSuccessStrategy_StringEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.StringEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -299,7 +292,7 @@ func Test_FirstSuccessStrategy_StringEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.StringEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -330,7 +323,7 @@ func Test_FirstSuccessStrategy_StringEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.StringEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -362,7 +355,7 @@ func Test_FirstSuccessStrategy_StringEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.StringEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -385,7 +378,7 @@ func Test_FirstSuccessStrategy_IntEvaluation(t *testing.T) {
 				FeatureProvider: provider,
 			},
 		}, 2*time.Second)
-		result := strategy.IntEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
@@ -411,7 +404,7 @@ func Test_FirstSuccessStrategy_IntEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.IntEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -436,7 +429,7 @@ func Test_FirstSuccessStrategy_IntEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.IntEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -467,7 +460,7 @@ func Test_FirstSuccessStrategy_IntEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.IntEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -499,7 +492,7 @@ func Test_FirstSuccessStrategy_IntEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.IntEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -522,7 +515,7 @@ func Test_FirstSuccessStrategy_FloatEvaluation(t *testing.T) {
 				FeatureProvider: provider,
 			},
 		}, 2*time.Second)
-		result := strategy.FloatEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
@@ -548,7 +541,7 @@ func Test_FirstSuccessStrategy_FloatEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.FloatEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -573,7 +566,7 @@ func Test_FirstSuccessStrategy_FloatEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.FloatEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -604,7 +597,7 @@ func Test_FirstSuccessStrategy_FloatEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.FloatEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -636,7 +629,7 @@ func Test_FirstSuccessStrategy_FloatEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.FloatEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -659,7 +652,7 @@ func Test_FirstSuccessStrategy_ObjectEvaluation(t *testing.T) {
 				FeatureProvider: provider,
 			},
 		}, 2*time.Second)
-		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
@@ -685,7 +678,7 @@ func Test_FirstSuccessStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -710,7 +703,7 @@ func Test_FirstSuccessStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -741,7 +734,7 @@ func Test_FirstSuccessStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -773,7 +766,7 @@ func Test_FirstSuccessStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, 2*time.Second)
 
-		result := strategy.ObjectEvaluation(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)

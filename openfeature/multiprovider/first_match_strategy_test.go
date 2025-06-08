@@ -2,19 +2,13 @@ package multiprovider
 
 import (
 	"context"
+	"strconv"
+	"testing"
+
 	of "github.com/open-feature/go-sdk/openfeature"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"strconv"
-	"testing"
 )
-
-func Test_FirstMatchStrategy_Name(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mock := of.NewMockFeatureProvider(ctrl)
-	strategy := NewFirstMatchStrategy([]*NamedProvider{{Name: "test", FeatureProvider: mock}})
-	assert.Equal(t, StrategyFirstMatch, strategy.Name())
-}
 
 func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 	t.Run("Single Provider Match", func(t *testing.T) {
@@ -32,8 +26,8 @@ func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.BooleanEvaluation(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.True(t, result.Value)
+		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
+		assert.True(t, result.Value.(bool))
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
 	})
@@ -59,8 +53,8 @@ func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.BooleanEvaluation(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.False(t, result.Value)
+		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
+		assert.False(t, result.Value.(bool))
 		assert.Equal(t, of.DefaultReason, result.Reason)
 		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
 		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -92,8 +86,8 @@ func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{})
-		assert.True(t, result.Value)
+		result := strategy(context.Background(), "test-flag", false, of.FlattenedContext{})
+		assert.True(t, result.Value.(bool))
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
 	})
@@ -121,8 +115,8 @@ func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.BooleanEvaluation(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.False(t, result.Value)
+		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
+		assert.False(t, result.Value.(bool))
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
 		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -147,7 +141,7 @@ func Test_FirstMatchStrategy_StringEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.StringEvaluation(context.Background(), "test-string", "", of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
 		assert.Equal(t, "test", result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -173,7 +167,7 @@ func Test_FirstMatchStrategy_StringEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.StringEvaluation(context.Background(), "test-string", "", of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
 		assert.Equal(t, "", result.Value)
 		assert.Equal(t, of.DefaultReason, result.Reason)
 		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -206,7 +200,7 @@ func Test_FirstMatchStrategy_StringEvaluation(t *testing.T) {
 		}
 
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.StringEvaluation(context.Background(), "test-flag", "", of.FlattenedContext{})
+		result := strategy(context.Background(), "test-flag", "", of.FlattenedContext{})
 		assert.Equal(t, "test", result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -234,7 +228,7 @@ func Test_FirstMatchStrategy_StringEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.StringEvaluation(context.Background(), "test-string", "", of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
 		assert.Equal(t, "", result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
@@ -260,7 +254,7 @@ func Test_FirstMatchStrategy_IntEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.IntEvaluation(context.Background(), "test-string", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", int64(0), of.FlattenedContext{})
 		assert.Equal(t, int64(123), result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -286,7 +280,7 @@ func Test_FirstMatchStrategy_IntEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.IntEvaluation(context.Background(), "test-string", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", int64(0), of.FlattenedContext{})
 		assert.Equal(t, int64(0), result.Value)
 		assert.Equal(t, of.DefaultReason, result.Reason)
 		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -319,7 +313,7 @@ func Test_FirstMatchStrategy_IntEvaluation(t *testing.T) {
 		}
 
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.IntEvaluation(context.Background(), "test-flag", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-flag", int64(0), of.FlattenedContext{})
 		assert.Equal(t, int64(123), result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -347,7 +341,7 @@ func Test_FirstMatchStrategy_IntEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.IntEvaluation(context.Background(), "test-string", 123, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", int64(123), of.FlattenedContext{})
 		assert.Equal(t, int64(123), result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
@@ -373,7 +367,7 @@ func Test_FirstMatchStrategy_FloatEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.FloatEvaluation(context.Background(), "test-string", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", float64(0), of.FlattenedContext{})
 		assert.Equal(t, float64(123), result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -399,7 +393,7 @@ func Test_FirstMatchStrategy_FloatEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.FloatEvaluation(context.Background(), "test-string", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", float64(0), of.FlattenedContext{})
 		assert.Equal(t, float64(0), result.Value)
 		assert.Equal(t, of.DefaultReason, result.Reason)
 		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -432,7 +426,7 @@ func Test_FirstMatchStrategy_FloatEvaluation(t *testing.T) {
 		}
 
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.FloatEvaluation(context.Background(), "test-flag", 0, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-flag", float64(0), of.FlattenedContext{})
 		assert.Equal(t, float64(123), result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -460,7 +454,7 @@ func Test_FirstMatchStrategy_FloatEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.FloatEvaluation(context.Background(), "test-string", 123, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", float64(123), of.FlattenedContext{})
 		assert.Equal(t, 123.0, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
@@ -486,7 +480,7 @@ func Test_FirstMatchStrategy_ObjectEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.ObjectEvaluation(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
 		assert.Equal(t, struct{ Field int }{Field: 123}, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -513,7 +507,7 @@ func Test_FirstMatchStrategy_ObjectEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.ObjectEvaluation(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
 		assert.Equal(t, struct{}{}, result.Value)
 		assert.Equal(t, of.DefaultReason, result.Reason)
 		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -546,7 +540,7 @@ func Test_FirstMatchStrategy_ObjectEvaluation(t *testing.T) {
 		}
 
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.ObjectEvaluation(context.Background(), "test-flag", struct{}{}, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-flag", struct{}{}, of.FlattenedContext{})
 		assert.Equal(t, struct{ Field int }{Field: 123}, result.Value)
 		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -574,7 +568,7 @@ func Test_FirstMatchStrategy_ObjectEvaluation(t *testing.T) {
 			})
 		}
 		strategy := NewFirstMatchStrategy(providers)
-		result := strategy.ObjectEvaluation(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
+		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
 		assert.Equal(t, struct{}{}, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())

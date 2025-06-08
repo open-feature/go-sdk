@@ -2,9 +2,10 @@ package multiprovider
 
 import (
 	"context"
-	of "github.com/open-feature/go-sdk/openfeature"
 	"regexp"
 	"strings"
+
+	of "github.com/open-feature/go-sdk/openfeature"
 )
 
 const (
@@ -32,15 +33,11 @@ const (
 type (
 	// EvaluationStrategy Defines a strategy to use for resolving the result from multiple providers
 	EvaluationStrategy = string
-	// Strategy Interface for evaluating providers within the multi-provider.
-	Strategy interface {
-		Name() EvaluationStrategy
-		BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail
-		StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx of.FlattenedContext) of.StringResolutionDetail
-		FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx of.FlattenedContext) of.FloatResolutionDetail
-		IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx of.FlattenedContext) of.IntResolutionDetail
-		ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail
+
+	FlagTypes interface {
+		int64 | float64 | string | bool | any
 	}
+	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T]
 )
 
 // Common Components
@@ -98,7 +95,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 
 // BuildDefaultResult The method should be called when a strategy is in a failure state and needs to return a default
 // value. This method will build a resolution detail with the internal provided error set.
-func BuildDefaultResult[R any](strategy EvaluationStrategy, defaultValue R, err error) of.InterfaceResolutionDetail {
+func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GeneralResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
 	if err != nil {
@@ -109,7 +106,7 @@ func BuildDefaultResult[R any](strategy EvaluationStrategy, defaultValue R, err 
 		reason = of.DefaultReason
 	}
 
-	return of.InterfaceResolutionDetail{
+	return of.GeneralResolutionDetail[R]{
 		Value: defaultValue,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
 			ResolutionError: rErr,
@@ -120,27 +117,30 @@ func BuildDefaultResult[R any](strategy EvaluationStrategy, defaultValue R, err 
 }
 
 // evaluate Generic method used to resolve a flag from a single provider without losing type information.
-func evaluate[R any](ctx context.Context, provider *NamedProvider, flag string, flagType of.Type, defaultVal R, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	var resolution of.InterfaceResolutionDetail
-	switch flagType {
-	case of.Object:
-		resolution = provider.ObjectEvaluation(ctx, flag, defaultVal, evalCtx)
-	case of.Boolean:
-		res := provider.BooleanEvaluation(ctx, flag, any(defaultVal).(bool), evalCtx)
+func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T] {
+	var resolution of.GeneralResolutionDetail[T]
+	val := any(defaultVal)
+	switch v := val.(type) {
+	case bool:
+		res := provider.BooleanEvaluation(ctx, flag, v, evalCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = res.Value
-	case of.String:
-		res := provider.StringEvaluation(ctx, flag, any(defaultVal).(string), evalCtx)
+		resolution.Value = any(res.Value).(T)
+	case string:
+		res := provider.StringEvaluation(ctx, flag, v, evalCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = res.Value
-	case of.Float:
-		res := provider.FloatEvaluation(ctx, flag, any(defaultVal).(float64), evalCtx)
+		resolution.Value = any(res.Value).(T)
+	case float64:
+		res := provider.FloatEvaluation(ctx, flag, v, evalCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = res.Value
-	case of.Int:
-		res := provider.IntEvaluation(ctx, flag, any(defaultVal).(int64), evalCtx)
+		resolution.Value = any(res.Value).(T)
+	case int64:
+		res := provider.IntEvaluation(ctx, flag, v, evalCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = res.Value
+		resolution.Value = any(res.Value).(T)
+	default:
+		res := provider.ObjectEvaluation(ctx, flag, defaultVal, evalCtx)
+		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
+		resolution.Value = any(res.Value).(T)
 	}
 
 	resolution.FlagMetadata[MetadataProviderName] = provider.Name

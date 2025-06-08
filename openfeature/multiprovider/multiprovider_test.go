@@ -3,15 +3,16 @@ package multiprovider
 import (
 	"context"
 	"errors"
+	"regexp"
+	"sync"
+	"testing"
+	"time"
+
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"regexp"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestMultiProvider_ProvidersMethod(t *testing.T) {
@@ -78,8 +79,12 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	t.Run("success with custom provider", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		ctrl := gomock.NewController(t)
-		strategy := NewMockStrategy(ctrl)
+		strategy := func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[FlagTypes] {
+			return of.GeneralResolutionDetail[FlagTypes]{
+				Value:                    defaultValue,
+				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
+			}
+		}
 		mp, err := NewMultiProvider(providers, StrategyCustom, WithCustomStrategy(strategy))
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
@@ -154,7 +159,6 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		require.NotZero(t, metadata)
 		assert.Equal(t, "MultiProvider {provider1: InMemoryProvider, provider2: MockProvider, provider3: MockProvider}", metadata.Name)
 	})
-
 }
 
 func TestMultiProvider_Init(t *testing.T) {
