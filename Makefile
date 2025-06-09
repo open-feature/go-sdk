@@ -1,9 +1,9 @@
 GOLANGCI_LINT_VERSION:=v2.1.6
-MOCKGEN_VESRION:=v0.5.2
+MOCKGEN_VERSION:=v0.5.2
 
 .PHONY: mockgen
 mockgen:
-	go install go.uber.org/mock/mockgen@${MOCKGEN_VESRION}
+	go install go.uber.org/mock/mockgen@${MOCKGEN_VERSION}
 	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature -build_constraint=testtools
 	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock.go -package=openfeature -build_constraint=testtools
 	mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock.go -package=openfeature -build_constraint=testtools
