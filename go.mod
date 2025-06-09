@@ -6,7 +6,7 @@ require (
 	github.com/cucumber/godog v0.15.0
 	github.com/go-logr/logr v1.4.3
 	go.uber.org/mock v0.5.2
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.26.0
 )
 
 require (
