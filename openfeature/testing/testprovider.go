@@ -42,24 +42,24 @@ func (tp TestProvider) Cleanup() {
 	deleteGoroutineLocal()
 }
 
-func (tp TestProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
-	return tp.getProvider().BooleanEvaluation(ctx, flag, defaultValue, flCtx)
+func (tp TestProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+	return tp.getProvider().BooleanEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
-func (tp TestProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
-	return tp.getProvider().StringEvaluation(ctx, flag, defaultValue, flCtx)
+func (tp TestProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+	return tp.getProvider().StringEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
-func (tp TestProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
-	return tp.getProvider().FloatEvaluation(ctx, flag, defaultValue, flCtx)
+func (tp TestProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+	return tp.getProvider().FloatEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
-func (tp TestProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
-	return tp.getProvider().IntEvaluation(ctx, flag, defaultValue, flCtx)
+func (tp TestProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+	return tp.getProvider().IntEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
-func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
-	return tp.getProvider().ObjectEvaluation(ctx, flag, defaultValue, flCtx)
+func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+	return tp.getProvider().ObjectEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) Hooks() []openfeature.Hook {

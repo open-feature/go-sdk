@@ -132,11 +132,11 @@ func TestInMemoryProvider_Object(t *testing.T) {
 }
 
 func TestInMemoryProvider_WithContext(t *testing.T) {
-	var variantKey = "VariantSelector"
+	variantKey := "VariantSelector"
 
 	// simple context handling - variant is selected from key and returned
-	var evaluator = func(callerFlag InMemoryFlag, evalCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail) {
-		s := evalCtx[variantKey]
+	evaluator := func(callerFlag InMemoryFlag, flatCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail) {
+		s := flatCtx[variantKey]
 		return callerFlag.Variants[s.(string)], openfeature.ProviderResolutionDetail{}
 	}
 
@@ -156,7 +156,6 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("test with context", func(t *testing.T) {
-
 		evaluation := memoryProvider.BooleanEvaluation(ctx, "contextFlag", true, map[string]any{
 			variantKey: "false",
 		})

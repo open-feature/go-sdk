@@ -30,7 +30,7 @@ func (i InMemoryProvider) Metadata() openfeature.Metadata {
 	}
 }
 
-func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.BoolResolutionDetail{
@@ -39,7 +39,7 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 	result := genericResolve[bool](resolveFlag, defaultValue, &detail)
 
 	return openfeature.BoolResolutionDetail{
@@ -48,7 +48,7 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 	}
 }
 
-func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.StringResolutionDetail{
@@ -57,7 +57,7 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 	result := genericResolve[string](resolveFlag, defaultValue, &detail)
 
 	return openfeature.StringResolutionDetail{
@@ -66,7 +66,7 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 	}
 }
 
-func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.FloatResolutionDetail{
@@ -75,7 +75,7 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 	result := genericResolve[float64](resolveFlag, defaultValue, &detail)
 
 	return openfeature.FloatResolutionDetail{
@@ -84,7 +84,7 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 	}
 }
 
-func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.IntResolutionDetail{
@@ -93,7 +93,7 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 	result := genericResolve[int](resolveFlag, int(defaultValue), &detail)
 
 	return openfeature.IntResolutionDetail{
@@ -102,7 +102,7 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	}
 }
 
-func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.InterfaceResolutionDetail{
@@ -111,7 +111,7 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 		}
 	}
 
-	resolveFlag, detail := memoryFlag.Resolve(defaultValue, evalCtx)
+	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 
 	var result any
 	if resolveFlag != nil {
@@ -175,7 +175,7 @@ type State string
 
 // ContextEvaluator is a callback to perform openfeature.EvaluationContext backed evaluations.
 // This is a callback implemented by the flag definer.
-type ContextEvaluator *func(this InMemoryFlag, evalCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail)
+type ContextEvaluator *func(this InMemoryFlag, flatCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail)
 
 // InMemoryFlag is the feature flag representation accepted by InMemoryProvider
 type InMemoryFlag struct {
@@ -186,9 +186,9 @@ type InMemoryFlag struct {
 	ContextEvaluator ContextEvaluator
 }
 
-func (flag *InMemoryFlag) Resolve(defaultValue any, evalCtx openfeature.FlattenedContext) (
-	any, openfeature.ProviderResolutionDetail) {
-
+func (flag *InMemoryFlag) Resolve(defaultValue any, flatCtx openfeature.FlattenedContext) (
+	any, openfeature.ProviderResolutionDetail,
+) {
 	// check the state
 	if flag.State == Disabled {
 		return defaultValue, openfeature.ProviderResolutionDetail{
@@ -199,7 +199,7 @@ func (flag *InMemoryFlag) Resolve(defaultValue any, evalCtx openfeature.Flattene
 
 	// first resolve from context callback
 	if flag.ContextEvaluator != nil {
-		return (*flag.ContextEvaluator)(*flag, evalCtx)
+		return (*flag.ContextEvaluator)(*flag, flatCtx)
 	}
 
 	// fallback to evaluation
