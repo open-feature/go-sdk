@@ -298,8 +298,8 @@ func (mp *MultiProvider) Hooks() []of.Hook {
 }
 
 // BooleanEvaluation returns a boolean flag
-func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
 		Value:                    res.Value.(bool),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -307,8 +307,8 @@ func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, def
 }
 
 // StringEvaluation returns a string flag
-func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx of.FlattenedContext) of.StringResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
 		Value:                    res.Value.(string),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -316,8 +316,8 @@ func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defa
 }
 
 // FloatEvaluation returns a float flag
-func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx of.FlattenedContext) of.FloatResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
 		Value:                    res.Value.(float64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -325,8 +325,8 @@ func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defau
 }
 
 // IntEvaluation returns an int flag
-func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx of.FlattenedContext) of.IntResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
 		Value:                    res.Value.(int64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -334,8 +334,8 @@ func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, default
 }
 
 // ObjectEvaluation returns an object flag
-func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
 		Value:                    res.Value,
 		ProviderResolutionDetail: res.ProviderResolutionDetail,

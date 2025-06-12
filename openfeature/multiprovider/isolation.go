@@ -3,8 +3,9 @@ package multiprovider
 import (
 	"context"
 	"fmt"
-	of "github.com/open-feature/go-sdk/openfeature"
 	"sync"
+
+	of "github.com/open-feature/go-sdk/openfeature"
 )
 
 type (
@@ -64,8 +65,8 @@ func (h *HookIsolator) Metadata() of.Metadata {
 	return h.FeatureProvider.Metadata()
 }
 
-func (h *HookIsolator) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Boolean, defaultValue, evalCtx)
+func (h *HookIsolator) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
+	completeEval := h.evaluate(ctx, flag, of.Boolean, defaultValue, flatCtx)
 
 	return of.BoolResolutionDetail{
 		Value:                    completeEval.Value.(bool),
@@ -73,8 +74,8 @@ func (h *HookIsolator) BooleanEvaluation(ctx context.Context, flag string, defau
 	}
 }
 
-func (h *HookIsolator) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx of.FlattenedContext) of.StringResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.String, defaultValue, evalCtx)
+func (h *HookIsolator) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
+	completeEval := h.evaluate(ctx, flag, of.String, defaultValue, flatCtx)
 
 	return of.StringResolutionDetail{
 		Value:                    completeEval.Value.(string),
@@ -82,8 +83,8 @@ func (h *HookIsolator) StringEvaluation(ctx context.Context, flag string, defaul
 	}
 }
 
-func (h *HookIsolator) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx of.FlattenedContext) of.FloatResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Float, defaultValue, evalCtx)
+func (h *HookIsolator) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
+	completeEval := h.evaluate(ctx, flag, of.Float, defaultValue, flatCtx)
 
 	return of.FloatResolutionDetail{
 		Value:                    completeEval.Value.(float64),
@@ -91,8 +92,8 @@ func (h *HookIsolator) FloatEvaluation(ctx context.Context, flag string, default
 	}
 }
 
-func (h *HookIsolator) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx of.FlattenedContext) of.IntResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Int, defaultValue, evalCtx)
+func (h *HookIsolator) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
+	completeEval := h.evaluate(ctx, flag, of.Int, defaultValue, flatCtx)
 
 	return of.IntResolutionDetail{
 		Value:                    completeEval.Value.(int64),
@@ -100,8 +101,8 @@ func (h *HookIsolator) IntEvaluation(ctx context.Context, flag string, defaultVa
 	}
 }
 
-func (h *HookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Object, defaultValue, evalCtx)
+func (h *HookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	completeEval := h.evaluate(ctx, flag, of.Object, defaultValue, flatCtx)
 
 	return of.InterfaceResolutionDetail{
 		Value:                    completeEval.Value,

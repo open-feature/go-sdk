@@ -12,14 +12,14 @@ func NewFirstSuccessStrategy(providers []*NamedProvider, timeout time.Duration) 
 }
 
 func firstSuccessStrategyFn[T FlagTypes](providers []*NamedProvider, timeout time.Duration) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T] {
+	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T] {
 		metadata := make(of.FlagMetadata)
 		metadata[MetadataStrategyUsed] = StrategyFirstSuccess
 		errChan := make(chan ProviderError, len(providers))
 		notFoundChan := make(chan any)
 
 		type namedResolution struct {
-			res  of.GeneralResolutionDetail[T]
+			res  GeneralResolutionDetail[T]
 			name string
 		}
 		finishChan := make(chan *namedResolution, len(providers))
@@ -29,7 +29,7 @@ func firstSuccessStrategyFn[T FlagTypes](providers []*NamedProvider, timeout tim
 			go func(c context.Context, p *NamedProvider) {
 				resultChan := make(chan *namedResolution)
 				go func() {
-					r := evaluate(ctx, p, flag, defaultValue, evalCtx)
+					r := evaluate(ctx, p, flag, defaultValue, flatCtx)
 					resultChan <- &namedResolution{r, p.Name}
 				}()
 

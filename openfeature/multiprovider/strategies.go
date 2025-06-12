@@ -31,13 +31,22 @@ const (
 )
 
 type (
-	// EvaluationStrategy Defines a strategy to use for resolving the result from multiple providers
+	// EvaluationStrategy Defines a strategy to use for resolving the result from multiple providers.
 	EvaluationStrategy = string
 
+	// FlagTypes defines the types that can be used for flag values.
 	FlagTypes interface {
 		int64 | float64 | string | bool | any
 	}
-	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T]
+
+	// GenericResolutionDetail provides a resolution detail with any type.
+	GeneralResolutionDetail[T FlagTypes] struct {
+		Value T
+		of.ProviderResolutionDetail
+	}
+
+	// StrategyFn[T FlagTypes] is a function type that defines the signature for a strategy function.
+	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T]
 )
 
 // Common Components
@@ -74,7 +83,7 @@ func cleanErrorMessage(msg string) string {
 	}
 }
 
-// mergeFlagMeta Merges flag metadata together into a single [of.FlagMetadata] instance by performing a shallow merge
+// mergeFlagMeta Merges flag metadata together into a single [of.FlagMetadata] instance by performing a shallow merge.
 func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	size := len(tags)
 	switch size {
@@ -95,7 +104,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 
 // BuildDefaultResult The method should be called when a strategy is in a failure state and needs to return a default
 // value. This method will build a resolution detail with the internal provided error set.
-func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GeneralResolutionDetail[R] {
+func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) GeneralResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
 	if err != nil {
@@ -106,7 +115,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 		reason = of.DefaultReason
 	}
 
-	return of.GeneralResolutionDetail[R]{
+	return GeneralResolutionDetail[R]{
 		Value: defaultValue,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
 			ResolutionError: rErr,
@@ -117,28 +126,28 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 }
 
 // evaluate Generic method used to resolve a flag from a single provider without losing type information.
-func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T] {
-	var resolution of.GeneralResolutionDetail[T]
+func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T] {
+	var resolution GeneralResolutionDetail[T]
 	val := any(defaultVal)
 	switch v := val.(type) {
 	case bool:
-		res := provider.BooleanEvaluation(ctx, flag, v, evalCtx)
+		res := provider.BooleanEvaluation(ctx, flag, v, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
 	case string:
-		res := provider.StringEvaluation(ctx, flag, v, evalCtx)
+		res := provider.StringEvaluation(ctx, flag, v, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
 	case float64:
-		res := provider.FloatEvaluation(ctx, flag, v, evalCtx)
+		res := provider.FloatEvaluation(ctx, flag, v, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
 	case int64:
-		res := provider.IntEvaluation(ctx, flag, v, evalCtx)
+		res := provider.IntEvaluation(ctx, flag, v, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
 	default:
-		res := provider.ObjectEvaluation(ctx, flag, defaultVal, evalCtx)
+		res := provider.ObjectEvaluation(ctx, flag, defaultVal, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
 	}

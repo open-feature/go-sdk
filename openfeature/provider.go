@@ -74,7 +74,8 @@ type Tracker interface {
 
 // NoopStateHandler is a noop StateHandler implementation
 // Status always set to ReadyState to comply with specification
-type NoopStateHandler struct{}
+type NoopStateHandler struct {
+}
 
 func (s *NoopStateHandler) Init(e EvaluationContext) error {
 	// NOOP
@@ -122,7 +123,8 @@ type EventDetails struct {
 type EventCallback *func(details EventDetails)
 
 // NoopEventHandler is the out-of-the-box EventHandler which is noop
-type NoopEventHandler struct{}
+type NoopEventHandler struct {
+}
 
 func (s NoopEventHandler) EventChannel() <-chan Event {
 	return make(chan Event, 1)
@@ -188,12 +190,6 @@ type IntResolutionDetail struct {
 // InterfaceResolutionDetail provides a resolution detail with any type
 type InterfaceResolutionDetail struct {
 	Value any
-	ProviderResolutionDetail
-}
-
-// InterfaceResolutionDetail provides a resolution detail with any type
-type GeneralResolutionDetail[T any] struct {
-	Value T
 	ProviderResolutionDetail
 }
 

@@ -21,9 +21,6 @@ type Comparator func(values []any) bool
 // is called without setting a Comparator and the returned object is not `comparable` then the a panic will occur. A
 // panic will always occur if the Comparator is nil, but `alwaysUseCustom` is true.
 func NewComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
-	if comparator == nil {
-		comparator = defaultComparator
-	}
 	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
 }
 
@@ -75,14 +72,22 @@ func comparisonResolutionError(metadata of.FlagMetadata) of.ResolutionError {
 }
 
 func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GeneralResolutionDetail[T] {
-		t := reflect.TypeOf(defaultValue)
-		if !t.Comparable() {
-			// Impossible to evaluate strategy with expected result type
-			defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errors.New(ErrAggregationNotAllowedText))
-			defaultResult.FlagMetadata[MetadataFallbackUsed] = false
-			defaultResult.FlagMetadata[MetadataIsDefaultValue] = true
-			return defaultResult
+	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) GeneralResolutionDetail[T] {
+		if comparator == nil {
+			comparator = defaultComparator
+			switch any(defaultValue).(type) {
+			case int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint, uintptr, float32, float64, string, bool:
+				break
+			default:
+				t := reflect.TypeOf(defaultValue)
+				if !t.Comparable() {
+					// Impossible to evaluate strategy with expected result type
+					defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errors.New(ErrAggregationNotAllowedText))
+					defaultResult.FlagMetadata[MetadataFallbackUsed] = false
+					defaultResult.FlagMetadata[MetadataIsDefaultValue] = true
+					return defaultResult
+				}
+			}
 		}
 
 		// Short circuit if there's only one provider as no comparison nor workers are needed
@@ -96,7 +101,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 
 		type namedResult struct {
 			name string
-			res  *of.GeneralResolutionDetail[T]
+			res  *GeneralResolutionDetail[T]
 		}
 
 		resultChan := make(chan *namedResult, len(providers))
@@ -207,7 +212,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 			} else {
 				variantResults = strings.Join(variants, ", ")
 			}
-			return of.GeneralResolutionDetail[T]{
+			return GeneralResolutionDetail[T]{
 				Value: resultValues[0], // All values should be equal
 				ProviderResolutionDetail: of.ProviderResolutionDetail{
 					Reason:       ReasonAggregated,
