@@ -255,15 +255,14 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	case StrategyFirstMatch:
 		strategy = NewFirstMatchStrategy(multiProvider.Providers())
 	case StrategyFirstSuccess:
-		strategy = NewFirstSuccessStrategy(multiProvider.Providers(), config.timeout)
+		strategy = NewFirstSuccessStrategy(multiProvider.Providers())
 	case StrategyComparison:
 		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, nil)
 	default:
-		if config.customStrategy != nil {
-			strategy = config.customStrategy
-		} else {
+		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evalutation strategy", evaluationStrategy)
 		}
+		strategy = config.customStrategy
 	}
 	multiProvider.strategy = strategy
 	multiProvider.strategyName = evaluationStrategy
