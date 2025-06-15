@@ -15,7 +15,7 @@ type evaluationAPI struct {
 	defaultProvider FeatureProvider
 	namedProviders  map[string]FeatureProvider
 	hks             []Hook
-	apiCtx          EvaluationContext
+	evalCtx         EvaluationContext
 	eventExecutor   *eventExecutor
 	mu              sync.RWMutex
 }
@@ -26,7 +26,7 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *evaluationAPI {
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
-		apiCtx:          EvaluationContext{},
+		evalCtx:         EvaluationContext{},
 		mu:              sync.RWMutex{},
 		eventExecutor:   eventExecutor,
 	}
@@ -106,11 +106,11 @@ func (api *evaluationAPI) GetNamedClient(clientName string) IClient {
 	return newClient(clientName, api, api.eventExecutor)
 }
 
-func (api *evaluationAPI) SetEvaluationContext(apiCtx EvaluationContext) {
+func (api *evaluationAPI) SetEvaluationContext(evalCtx EvaluationContext) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
-	api.apiCtx = apiCtx
+	api.evalCtx = evalCtx
 }
 
 // Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
@@ -171,7 +171,7 @@ func (api *evaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []H
 		provider = api.defaultProvider
 	}
 
-	return provider, api.hks, api.apiCtx
+	return provider, api.hks, api.evalCtx
 }
 
 // GetProvider returns the default FeatureProvider
@@ -216,9 +216,9 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 			event, _ := initializer(newProvider, ctx)
 			executor.states.Store(clientName, stateFromEventOrError(event, nil))
 			executor.triggerEvent(event, newProvider)
-		}(api.eventExecutor, api.apiCtx)
+		}(api.eventExecutor, api.evalCtx)
 	} else {
-		event, err := initializer(newProvider, api.apiCtx)
+		event, err := initializer(newProvider, api.evalCtx)
 		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
 		api.eventExecutor.triggerEvent(event, newProvider)
 		if err != nil {
@@ -249,7 +249,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 
 // initializer is a helper to execute provider initialization and generate appropriate event for the initialization
 // It also returns an error if the initialization resulted in an error
-func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, error) {
+func initializer(provider FeatureProvider, evalCtx EvaluationContext) (Event, error) {
 	event := Event{
 		ProviderName: provider.Metadata().Name,
 		EventType:    ProviderReady,
@@ -264,7 +264,7 @@ func initializer(provider FeatureProvider, apiCtx EvaluationContext) (Event, err
 		return event, nil
 	}
 
-	err := handler.Init(apiCtx)
+	err := handler.Init(evalCtx)
 	if err != nil {
 		event.EventType = ProviderError
 		event.Message = fmt.Sprintf("Provider initialization error, %v", err)

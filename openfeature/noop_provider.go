@@ -12,7 +12,7 @@ func (e NoopProvider) Metadata() Metadata {
 }
 
 // BooleanEvaluation returns a boolean flag.
-func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx FlattenedContext) BoolResolutionDetail {
+func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx FlattenedContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{
@@ -23,7 +23,7 @@ func (e NoopProvider) BooleanEvaluation(ctx context.Context, flag string, defaul
 }
 
 // StringEvaluation returns a string flag.
-func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx FlattenedContext) StringResolutionDetail {
+func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx FlattenedContext) StringResolutionDetail {
 	return StringResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{
@@ -34,7 +34,7 @@ func (e NoopProvider) StringEvaluation(ctx context.Context, flag string, default
 }
 
 // FloatEvaluation returns a float flag.
-func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx FlattenedContext) FloatResolutionDetail {
+func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx FlattenedContext) FloatResolutionDetail {
 	return FloatResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{
@@ -45,7 +45,7 @@ func (e NoopProvider) FloatEvaluation(ctx context.Context, flag string, defaultV
 }
 
 // IntEvaluation returns an int flag.
-func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx FlattenedContext) IntResolutionDetail {
+func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx FlattenedContext) IntResolutionDetail {
 	return IntResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{
@@ -56,7 +56,7 @@ func (e NoopProvider) IntEvaluation(ctx context.Context, flag string, defaultVal
 }
 
 // ObjectEvaluation returns an object flag
-func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx FlattenedContext) InterfaceResolutionDetail {
+func (e NoopProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx FlattenedContext) InterfaceResolutionDetail {
 	return InterfaceResolutionDetail{
 		Value: defaultValue,
 		ProviderResolutionDetail: ProviderResolutionDetail{

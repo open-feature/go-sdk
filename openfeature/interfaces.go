@@ -15,7 +15,7 @@ type IEvaluation interface {
 	GetNamedProviderMetadata(name string) Metadata
 	GetClient() IClient
 	GetNamedClient(clientName string) IClient
-	SetEvaluationContext(apiCtx EvaluationContext)
+	SetEvaluationContext(evalCtx EvaluationContext)
 	AddHooks(hooks ...Hook)
 	Shutdown()
 	IEventing

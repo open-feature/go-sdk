@@ -6,9 +6,9 @@ import (
 )
 
 // ctxFunction is a context based evaluation callback
-var ctxFunction = func(this memprovider.InMemoryFlag, evalCtx openfeature.FlattenedContext) (
-	any, openfeature.ProviderResolutionDetail) {
-
+var ctxFunction = func(this memprovider.InMemoryFlag, flatCtx openfeature.FlattenedContext) (
+	any, openfeature.ProviderResolutionDetail,
+) {
 	defaultValue := this.Variants[this.DefaultVariant]
 	defaultResolution := openfeature.ProviderResolutionDetail{
 		Reason:  openfeature.DefaultReason,
@@ -23,7 +23,7 @@ var ctxFunction = func(this memprovider.InMemoryFlag, evalCtx openfeature.Flatte
 	}
 
 	for k, v := range expects {
-		if v != evalCtx[k] {
+		if v != flatCtx[k] {
 			return defaultValue, defaultResolution
 		}
 	}

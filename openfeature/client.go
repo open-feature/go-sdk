@@ -670,8 +670,8 @@ func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx Ev
 //   - client
 //   - invocation (highest precedence)
 func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tracker, EvaluationContext) {
-	provider, _, apiCtx := c.api.ForEvaluation(c.metadata.domain)
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), apiCtx)
+	provider, _, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)
 	trackingProvider, ok := provider.(Tracker)
 	if !ok {
 		trackingProvider = NoopProvider{}
@@ -695,9 +695,9 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalCtx := c.api.ForEvaluation(c.metadata.domain)
+	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
 
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalCtx)                                  // API (global) -> transaction -> client -> invocation
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)                              // API (global) -> transaction -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
 	providerInvocationClientApiHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
 
