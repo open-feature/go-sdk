@@ -365,27 +365,27 @@ func (i MyFeatureProvider) Hooks() []openfeature.Hook {
   return []openfeature.Hook{}
 }
 // BooleanEvaluation returns a boolean flag
-func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
   // code to evaluate boolean
 }
 
 // StringEvaluation returns a string flag
-func (i MyFeatureProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+func (i MyFeatureProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
   // code to evaluate string
 }
 
 // FloatEvaluation returns a float flag
-func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
   // code to evaluate float
 }
 
 // IntEvaluation returns an int flag
-func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
   // code to evaluate int
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
   // code to evaluate object
 }
 
