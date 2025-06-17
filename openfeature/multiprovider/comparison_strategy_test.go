@@ -82,1353 +82,330 @@ func configureComparisonProvider[R any](provider *of.MockFeatureProvider, result
 	}
 }
 
-func Test_ComparisonStrategy_BooleanEvaluation(t *testing.T) {
-	t.Run("single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		configureComparisonProvider(provider, true, true, TestErrorNone, false)
+func Test_ComparisonStrategy_Evaluation(t *testing.T) {
+	tests := []struct {
+		kind       of.Type
+		successVal FlagTypes
+		defaultVal FlagTypes
+	}{
+		{of.Boolean, true, false},
+		{of.String, "success", "default"},
+		{of.Int, int64(1234), int64(0)},
+		{of.Float, float64(12.34), float64(0)},
+		{of.Object, struct{ Field string }{Field: "test"}, struct{}{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.kind.String(), func(t *testing.T) {
+			successVal := tt.successVal
+			defaultVal := tt.defaultVal
+			t.Run("single success", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				provider := of.NewMockFeatureProvider(ctrl)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider",
-				FeatureProvider: provider,
-			},
-		}, fallback, nil)
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider",
+						FeatureProvider: provider,
+					},
+				}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "test-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, "test-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 
-	t.Run("two success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, true, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, true, true, TestErrorNone, false)
+			t.Run("two success", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+				}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Equal(t, "test-provider1, test-provider2", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 
-	t.Run("multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, true, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, true, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, true, true, TestErrorNone, false)
+			t.Run("multiple success", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
+				provider3 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+					{
+						Name:            "test-provider3",
+						FeatureProvider: provider3,
+					},
+				}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2, test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Equal(t, "test-provider1, test-provider2, test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 
-	t.Run("multiple not found with single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, false, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, true, true, TestErrorNone, false)
+			t.Run("multiple not found with single success", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
+				provider3 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+					{
+						Name:            "test-provider3",
+						FeatureProvider: provider3,
+					},
+				}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Equal(t, "test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
+				assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 
-	t.Run("multiple not found with multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, false, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, true, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, true, true, TestErrorNone, false)
+			t.Run("multiple not found with multiple success", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
+				provider3 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
+				provider4 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+					{
+						Name:            "test-provider3",
+						FeatureProvider: provider3,
+					},
+					{
+						Name:            "test-provider4",
+						FeatureProvider: provider4,
+					},
+				}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3, test-provider4", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Equal(t, "test-provider3, test-provider4", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
+				assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 
-	t.Run("comparison failure uses fallback", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
-			Value: true,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
+			t.Run("comparison failure uses fallback", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(fallback, successVal, true, TestErrorNone, false)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, defaultVal, true, TestErrorNone, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
+				provider3 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
+
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+					{
+						Name:            "test-provider3",
+						FeatureProvider: provider3,
+					},
+				}, fallback, nil)
+
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
+
+			t.Run("not found all providers", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
+
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+				}, fallback, nil)
+
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, defaultVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
+
+			t.Run("comparison failure with not found", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(fallback, successVal, true, TestErrorNone, false)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
+				provider3 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
+				provider4 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
+
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+					{
+						Name:            "test-provider3",
+						FeatureProvider: provider3,
+					},
+					{
+						Name:            "test-provider4",
+						FeatureProvider: provider4,
+					},
+				}, fallback, nil)
+
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
+				assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
+
+			t.Run("non FLAG_NOT_FOUND error causes default", func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				fallback := of.NewMockFeatureProvider(ctrl)
+				provider1 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider1, successVal, true, TestErrorError, false)
+				provider2 := of.NewMockFeatureProvider(ctrl)
+				configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
+
+				strategy := NewComparisonStrategy([]*NamedProvider{
+					{
+						Name:            "test-provider1",
+						FeatureProvider: provider1,
+					},
+					{
+						Name:            "test-provider2",
+						FeatureProvider: provider2,
+					},
+				}, fallback, nil)
+
+				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				assert.Equal(t, defaultVal, result.Value)
+				assert.Equal(t, of.ErrorReason, result.Reason)
+				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
+				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
+				assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+			})
 		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, false, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, true, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure with not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
-			Value: true,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, false, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, true, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, false, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("not found all providers", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, false, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorNotFound, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.False(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("non FLAG_NOT_FOUND error causes default", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, true, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, false, true, TestErrorError, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, false, of.FlattenedContext{})
-		assert.False(t, result.Value.(bool))
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-}
-
-func Test_ComparisonStrategy_StringEvaluation(t *testing.T) {
-	successVal := "success"
-	defaultVal := "default"
-	t.Run("single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider",
-				FeatureProvider: provider,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "test-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("two success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2, test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3, test-provider4", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure uses fallback", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.StringResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure with not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.StringResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("not found all providers", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("non FLAG_NOT_FOUND error causes default", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-}
-
-func Test_ComparisonStrategy_IntEvaluation(t *testing.T) {
-	successVal := int64(1234)
-	defaultVal := int64(0)
-	t.Run("single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider",
-				FeatureProvider: provider,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "test-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("two success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2, test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3, test-provider4", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure uses fallback", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.IntResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("not found all providers", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure with not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.IntResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("non FLAG_NOT_FOUND error causes default", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorError, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-}
-
-func Test_ComparisonStrategy_FloatEvaluation(t *testing.T) {
-	successVal := float64(1234)
-	defaultVal := float64(0)
-	t.Run("single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider",
-				FeatureProvider: provider,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "test-provider", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("two success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider1, test-provider2, test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("multiple not found with multiple success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Equal(t, "test-provider3, test-provider4", result.FlagMetadata[MetadataSuccessfulProviderName+"s"])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure uses fallback", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.FloatResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("comparison failure with not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.FloatResolutionDetail{
-			Value: successVal,
-			ProviderResolutionDetail: of.ProviderResolutionDetail{
-				ResolutionError: of.ResolutionError{},
-				Variant:         "on",
-				Reason:          "",
-				FlagMetadata:    make(of.FlagMetadata),
-			},
-		})
-		fallback.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-		provider3 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-		provider4 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-			{
-				Name:            "test-provider3",
-				FeatureProvider: provider3,
-			},
-			{
-				Name:            "test-provider4",
-				FeatureProvider: provider4,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("not found all providers", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		fallback.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("non FLAG_NOT_FOUND error causes default", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-			{
-				Name:            "test-provider2",
-				FeatureProvider: provider2,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
+	}
 }
 
 func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 	successVal := struct{ Name string }{Name: "test"}
 	defaultVal := struct{}{}
-
-	t.Run("default result returned when type is not comparable and no custom comparator provided", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		provider := of.NewMockFeatureProvider(ctrl)
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider,
-			},
-		}, of.NewMockFeatureProvider(ctrl), nil)
-		defaultVal := make(map[string]string)
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, defaultVal, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowedText), result.ResolutionError)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
-
-	t.Run("single success", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		fallback := of.NewMockFeatureProvider(ctrl)
-		provider1 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
-
-		strategy := NewComparisonStrategy([]*NamedProvider{
-			{
-				Name:            "test-provider1",
-				FeatureProvider: provider1,
-			},
-		}, fallback, nil)
-
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
-		assert.Equal(t, successVal, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
-		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, "test-provider1", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Contains(t, result.FlagMetadata, MetadataFallbackUsed)
-		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
-	})
 
 	type orderableTestCase struct {
 		typeName     string
