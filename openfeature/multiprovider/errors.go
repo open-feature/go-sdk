@@ -13,7 +13,7 @@ type (
 	}
 
 	// AggregateError is a map that contains up to one error per provider within the multiprovider.
-	AggregateError map[string]ProviderError
+	AggregateError []ProviderError
 )
 
 var (
@@ -27,11 +27,7 @@ func (e *ProviderError) Error() string {
 
 // NewAggregateError Creates a new AggregateError
 func NewAggregateError(providerErrors []ProviderError) AggregateError {
-	err := make(AggregateError, len(providerErrors))
-	for _, se := range providerErrors {
-		err[se.ProviderName] = se
-	}
-	return err
+	return providerErrors
 }
 
 func (ae AggregateError) Error() string {

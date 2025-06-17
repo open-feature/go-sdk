@@ -3,15 +3,15 @@ package multiprovider
 import (
 	"context"
 	"errors"
+	"regexp"
+	"testing"
+	"time"
+
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"regexp"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestMultiProvider_ProvidersMethod(t *testing.T) {
@@ -78,8 +78,12 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	t.Run("success with custom provider", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		ctrl := gomock.NewController(t)
-		strategy := NewMockStrategy(ctrl)
+		strategy := func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) GeneralResolutionDetail[FlagTypes] {
+			return GeneralResolutionDetail[FlagTypes]{
+				Value:                    defaultValue,
+				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
+			}
+		}
 		mp, err := NewMultiProvider(providers, StrategyCustom, WithCustomStrategy(strategy))
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
@@ -154,7 +158,6 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		require.NotZero(t, metadata)
 		assert.Equal(t, "MultiProvider {provider1: InMemoryProvider, provider2: MockProvider, provider3: MockProvider}", metadata.Name)
 	})
-
 }
 
 func TestMultiProvider_Init(t *testing.T) {
@@ -191,31 +194,30 @@ func TestMultiProvider_Init(t *testing.T) {
 	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		mp.Shutdown()
+	})
+
 	attributes := map[string]any{
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	var mu sync.Mutex
-	var event *of.Event
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	eventChan := make(chan of.Event)
 	go func() {
 		select {
 		case e := <-mp.EventChannel():
-			mu.Lock()
-			defer mu.Unlock()
-			event = &e
-			return
+			eventChan <- e
+			cancel()
 		case <-ctx.Done():
-			return
+			close(eventChan)
 		}
 	}()
 	err = mp.Init(evalCtx)
 	require.NoError(t, err)
 	assert.Equal(t, of.ReadyState, mp.Status())
-	cancel()
-	mu.Lock()
-	defer mu.Unlock()
-	require.NotNil(t, event, "ready event never emitted")
+	event := <-eventChan
+	require.NotNil(t, eventChan, "ready event never emitted")
 	assert.Equal(t, mp.Metadata().Name, event.ProviderName)
 	assert.Equal(t, of.ProviderReady, event.EventType)
 	assert.Equal(t, of.ProviderEventDetails{
@@ -225,9 +227,6 @@ func TestMultiProvider_Init(t *testing.T) {
 			MetadataProviderName: "all",
 		},
 	}, event.ProviderEventDetails)
-	t.Cleanup(func() {
-		mp.Shutdown()
-	})
 }
 
 func TestMultiProvider_InitErrorWithProvider(t *testing.T) {

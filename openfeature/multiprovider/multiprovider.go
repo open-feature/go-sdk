@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	of "github.com/open-feature/go-sdk/openfeature"
-	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	of "github.com/open-feature/go-sdk/openfeature"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -41,7 +42,8 @@ type (
 		totalStatusLock    sync.RWMutex
 		providerStatus     map[string]of.State
 		providerStatusLock sync.Mutex
-		strategy           Strategy
+		strategyName       EvaluationStrategy    // the name of the strategy used for evaluation
+		strategy           StrategyFn[FlagTypes] // used for custom strategies
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
 		inboundEvents      chan namedEvent
@@ -59,15 +61,13 @@ type (
 
 	// Configuration MultiProvider's internal configuration
 	Configuration struct {
-		useFallback               bool
-		fallbackProvider          of.FeatureProvider
-		customStrategy            Strategy
-		logger                    *slog.Logger
-		timeout                   time.Duration
-		hooks                     []of.Hook
-		providerHooks             map[string][]of.Hook
-		customComparator          Comparator
-		alwaysUseCustomComparator bool
+		useFallback      bool
+		fallbackProvider of.FeatureProvider
+		customStrategy   StrategyFn[FlagTypes]
+		logger           *slog.Logger
+		timeout          time.Duration
+		hooks            []of.Hook
+		providerHooks    map[string][]of.Hook
 	}
 
 	// Option Function used for setting Configuration via the options pattern
@@ -137,7 +137,7 @@ func WithFallbackProvider(p of.FeatureProvider) Option {
 }
 
 // WithCustomStrategy sets a custom strategy. This must be used in conjunction with StrategyCustom
-func WithCustomStrategy(s Strategy) Option {
+func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 	return func(conf *Configuration) {
 		conf.customStrategy = s
 	}
@@ -159,24 +159,6 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
 	return func(conf *Configuration) {
 		conf.providerHooks[providerName] = hooks
-	}
-}
-
-// WithCustomComparatorFunc Set a custom comparison function along with an option to use it unconditionally with the
-// EvaluateObject function of the provider. Primitive types are automatically handled, as well as objects that are
-// comparable. If the EvaluateObject method is called and the result is not a comparable type, nor is this function set
-// then the default value will be used and an error will be set in the resolution details. The [alwaysUse] parameter
-// will only force using this function with the EvaluateObject. Setting this option without setting the strategy to
-// StrategyComparison will have no effect on evaluation.
-//
-// If the nil pointer is set as the cmp function and the [alwaysUse] parameter is set a panic will occur.
-func WithCustomComparatorFunc(cmpFunc Comparator, alwaysUse bool) Option {
-	return func(conf *Configuration) {
-		if alwaysUse && cmpFunc == nil {
-			panic("invalid multiprovider state: comparison function cannot be nil with the alwaysUse flag set")
-		}
-		conf.customComparator = cmpFunc
-		conf.alwaysUseCustomComparator = alwaysUse
 	}
 }
 
@@ -223,6 +205,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	config := &Configuration{
 		logger:        slog.New(discardLogHandler),
 		providerHooks: make(map[string][]of.Hook),
+		timeout:       5 * time.Second, // Default timeout
 	}
 
 	for _, opt := range options {
@@ -267,29 +250,22 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		globalHooks:    append(config.hooks, collectedHooks...),
 	}
 
-	var zeroDuration time.Duration
-	if config.timeout == zeroDuration {
-		config.timeout = 5 * time.Second
-	}
-
-	var strategy Strategy
+	var strategy StrategyFn[FlagTypes]
 	switch evaluationStrategy {
 	case StrategyFirstMatch:
 		strategy = NewFirstMatchStrategy(multiProvider.Providers())
 	case StrategyFirstSuccess:
-		strategy = NewFirstSuccessStrategy(multiProvider.Providers(), config.timeout)
+		strategy = NewFirstSuccessStrategy(multiProvider.Providers())
 	case StrategyComparison:
-		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, nil, false)
-	case StrategyCustom:
-		if config.customStrategy != nil {
-			strategy = config.customStrategy
-		} else {
-			return nil, fmt.Errorf("custom strategy must be set via an option if StrategyCustom is set")
-		}
+		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, nil)
 	default:
-		return nil, fmt.Errorf("%s is an unknown evalutation strategy", strategy)
+		if config.customStrategy == nil {
+			return nil, fmt.Errorf("%s is an unknown evalutation strategy", evaluationStrategy)
+		}
+		strategy = config.customStrategy
 	}
 	multiProvider.strategy = strategy
+	multiProvider.strategyName = evaluationStrategy
 
 	return multiProvider, nil
 }
@@ -306,7 +282,7 @@ func (mp *MultiProvider) ProvidersByName() ProviderMap {
 
 // EvaluationStrategy The current set strategy
 func (mp *MultiProvider) EvaluationStrategy() string {
-	return mp.strategy.Name()
+	return mp.strategyName
 }
 
 // Metadata provides the name `multiprovider` and the names of each provider passed.
@@ -321,28 +297,48 @@ func (mp *MultiProvider) Hooks() []of.Hook {
 }
 
 // BooleanEvaluation returns a boolean flag
-func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
-	return mp.strategy.BooleanEvaluation(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+	return of.BoolResolutionDetail{
+		Value:                    res.Value.(bool),
+		ProviderResolutionDetail: res.ProviderResolutionDetail,
+	}
 }
 
 // StringEvaluation returns a string flag
-func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx of.FlattenedContext) of.StringResolutionDetail {
-	return mp.strategy.StringEvaluation(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+	return of.StringResolutionDetail{
+		Value:                    res.Value.(string),
+		ProviderResolutionDetail: res.ProviderResolutionDetail,
+	}
 }
 
 // FloatEvaluation returns a float flag
-func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx of.FlattenedContext) of.FloatResolutionDetail {
-	return mp.strategy.FloatEvaluation(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+	return of.FloatResolutionDetail{
+		Value:                    res.Value.(float64),
+		ProviderResolutionDetail: res.ProviderResolutionDetail,
+	}
 }
 
 // IntEvaluation returns an int flag
-func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx of.FlattenedContext) of.IntResolutionDetail {
-	return mp.strategy.IntEvaluation(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+	return of.IntResolutionDetail{
+		Value:                    res.Value.(int64),
+		ProviderResolutionDetail: res.ProviderResolutionDetail,
+	}
 }
 
 // ObjectEvaluation returns an object flag
-func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	return mp.strategy.ObjectEvaluation(ctx, flag, defaultValue, evalCtx)
+func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+	return of.InterfaceResolutionDetail{
+		Value:                    res.Value,
+		ProviderResolutionDetail: res.ProviderResolutionDetail,
+	}
 }
 
 // Init will run the initialize method for all of provides and aggregate the errors.
