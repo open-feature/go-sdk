@@ -5,7 +5,6 @@ import (
 )
 
 func TestProviderReferenceEquals(t *testing.T) {
-
 	type myProvider struct {
 		NoopProvider
 		field string
@@ -20,7 +19,6 @@ func TestProviderReferenceEquals(t *testing.T) {
 		pr2      providerReference
 		expected bool
 	}{
-
 		{
 			name:     "both pointers, different instances",
 			pr1:      newProviderRef(&p1),

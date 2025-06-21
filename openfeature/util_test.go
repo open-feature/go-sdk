@@ -8,10 +8,12 @@ import (
 // Test Utils
 
 // event handlers
-var h1 func(details EventDetails)
-var h2 func(details EventDetails)
-var h3 func(details EventDetails)
-var h4 func(details EventDetails)
+var (
+	h1 func(details EventDetails)
+	h2 func(details EventDetails)
+	h3 func(details EventDetails)
+	h4 func(details EventDetails)
+)
 
 func init() {
 	h1 = func(details EventDetails) {
