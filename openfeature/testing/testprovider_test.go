@@ -146,7 +146,6 @@ func TestTestAwareProvider(t *testing.T) {
 }
 
 func Test_TestAwareProviderPanics(t *testing.T) {
-
 	t.Run("provider panics if no test name was provided by calling SetProvider()", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {

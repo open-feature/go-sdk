@@ -85,7 +85,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		provider, initSem, _ := setupProviderWithSemaphores()
 
-		var client = "client"
+		client := "client"
 
 		err := SetNamedProvider(client, provider)
 		if err != nil {
@@ -141,7 +141,6 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 		case <-shutdownSem:
 			break
 		}
-
 	})
 
 	t.Run("named provider", func(t *testing.T) {
@@ -149,7 +148,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 		provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
-		var client = "client"
+		client := "client"
 
 		err := SetNamedProvider(client, provider)
 		if err != nil {
@@ -261,7 +260,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 
 	t.Run("default provider", func(t *testing.T) {
 		// given - a provider with state handling capability, with substantial initializing delay
-		var initialized = false
+		initialized := false
 
 		provider := struct {
 			FeatureProvider
@@ -291,7 +290,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 
 	t.Run("named provider", func(t *testing.T) {
 		// given - a provider with state handling capability, with substantial initializing delay
-		var initialized = false
+		initialized := false
 
 		provider := struct {
 			FeatureProvider
@@ -361,12 +360,11 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 		if errEvent.Message == "" {
 			t.Fatal("expected non empty event message, but got empty")
 		}
-
 	})
 
 	t.Run("async registration to validate by contradiction", func(t *testing.T) {
 		// given - a provider with state handling capability, with substantial initializing delay
-		var initialized = false
+		initialized := false
 
 		s := make(chan struct{}) // to block the initialization
 		provider := struct {
@@ -588,7 +586,6 @@ func TestRequirement_1_6_1(t *testing.T) {
 }
 
 func TestRequirement_EventCompliance(t *testing.T) {
-
 	// The client MUST provide a function for associating handler functions with a particular provider event type.
 	// The API and client MUST provide a function allowing the removal of event handlers.
 	t.Run("requirement_5_2_1 & requirement_5_2_1", func(t *testing.T) {
@@ -789,7 +786,8 @@ func setupProviderWithSemaphores() (struct {
 	FeatureProvider
 	StateHandler
 	EventHandler
-}, chan any, chan any) {
+}, chan any, chan any,
+) {
 	intiSem := make(chan any, 1)
 	shutdownSem := make(chan any, 1)
 

@@ -3,7 +3,8 @@ version: "2"
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt
+    - gci
 
 linters:
   default: none
