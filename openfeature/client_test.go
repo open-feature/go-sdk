@@ -1191,7 +1191,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 
 	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
-		t.Fatal("client des not define a status accessor which indicates the readiness of the associated provider")
+		t.Fatal("client does not define a status accessor which indicates the readiness of the associated provider")
 	}
 
 	TestRequirement_5_3_5(t)
