@@ -119,9 +119,10 @@ func (e *ProviderInitError) Error() string {
 	return fmt.Sprintf("ProviderInitError: %s (code: %s)", e.Message, e.ErrorCode)
 }
 
+//nolint:staticcheck // Renaming these would be a breaking change
 var (
 	// ProviderNotReadyError signifies that an operation failed because the provider is in a NOT_READY state.
-	ProviderNotReadyError = errors.New("provider not yet initialized") //nolint:staticcheck // Renaming this would be a breaking change
+	ProviderNotReadyError = errors.New("provider not yet initialized")
 	// ProviderFatalError signifies that an operation failed because the provider is in a FATAL state.
-	ProviderFatalError = errors.New("provider is in an irrecoverable error state") //nolint:staticcheck // Renaming this would be a breaking change
+	ProviderFatalError = errors.New("provider is in an irrecoverable error state")
 )
