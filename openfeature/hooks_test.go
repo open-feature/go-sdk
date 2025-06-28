@@ -149,7 +149,7 @@ func TestRequirement_4_2_2_3(t *testing.T) {
 // The `before` stage MUST run before flag resolution occurs. It accepts a `hook context` (required) and
 // `hook hints` (optional) as parameters and returns either an `evaluation context` or nothing.
 func TestRequirement_4_3_2(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	t.Run("before stage MUST run before flag resolution occurs", func(t *testing.T) {
@@ -197,7 +197,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 
 // Any `evaluation context` returned from a `before` hook MUST be passed to subsequent `before` hooks (via `HookContext`).
 func TestRequirement_4_3_3(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -257,7 +257,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 // `evaluation context` in the following order:
 // before-hook (highest precedence), invocation, client, api (lowest precedence).
 func TestRequirement_4_3_4(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -334,7 +334,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	t.Run("after hook MUST run after flag resolution occurs", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -390,7 +390,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("error hook MUST run when errors are encountered in the before stage", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -415,7 +415,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 	})
 
 	t.Run("error hook MUST run when errors are encountered during flag evaluation", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -448,7 +448,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 	})
 
 	t.Run("error hook MUST run when errors are encountered during flag evaluation", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -499,7 +499,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("finally hook MUST run after the before & after stages", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -525,7 +525,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 	})
 
 	t.Run("finally hook MUST run after the error stage", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
@@ -565,7 +565,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 
 // The API, Client, Provider and invocation MUST have a method for registering hooks
 func TestRequirement_4_4_1(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	t.Run("API MUST have a method for registering hooks", func(t *testing.T) {
@@ -637,7 +637,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("before, after & finally hooks MUST be evaluated in the following order", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockAPIHook := NewMockHook(ctrl)
 		AddHooks(mockAPIHook)
@@ -686,7 +686,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 	})
 
 	t.Run("error hooks MUST be evaluated in the following order", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		mockAPIHook := NewMockHook(ctrl)
 		AddHooks(mockAPIHook)
@@ -758,7 +758,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 	t.Run(
 		"if an error occurs during the evaluation of before hooks, any remaining before hooks MUST NOT be invoked",
 		func(t *testing.T) {
-			defer t.Cleanup(initSingleton)
+			t.Cleanup(initSingleton)
 
 			mockHook1 := NewMockHook(ctrl)
 			mockHook2 := NewMockHook(ctrl)
@@ -792,7 +792,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 	t.Run(
 		"if an error occurs during the evaluation of after hooks, any remaining after hooks MUST NOT be invoked",
 		func(t *testing.T) {
-			defer t.Cleanup(initSingleton)
+			t.Cleanup(initSingleton)
 
 			mockHook1 := NewMockHook(ctrl)
 			mockHook2 := NewMockHook(ctrl)
@@ -829,7 +829,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 
 // If an error occurs in the `before` hooks, the default value MUST be returned.
 func TestRequirement_4_4_7(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	flagKey := "foo"
@@ -881,7 +881,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("hook hints must be passed to before, after & finally hooks", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 		mockHook := NewMockHook(ctrl)
 		mockProvider := NewMockFeatureProvider(ctrl)
 		mockProvider.EXPECT().Metadata().AnyTimes()
@@ -910,7 +910,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 	})
 
 	t.Run("hook hints must be passed to error hooks", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 		mockHook := NewMockHook(ctrl)
 
 		mockProvider := NewMockFeatureProvider(ctrl)
