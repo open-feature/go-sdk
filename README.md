@@ -397,12 +397,6 @@ func (i MyFeatureProvider) Init(evaluationContext openfeature.EvaluationContext)
   // code to initialize your provider
 }
 
-// Status expose the status of the provider
-func (i MyFeatureProvider) Status() openfeature.State {
-  // The state is typically set during initialization.
-  return openfeature.ReadyState
-}
-
 // Shutdown define the shutdown operation of the provider
 func (i MyFeatureProvider) Shutdown() {
   // code to shutdown your provider
