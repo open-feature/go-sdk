@@ -73,7 +73,6 @@ type Tracker interface {
 }
 
 // NoopStateHandler is a noop StateHandler implementation
-// Status always set to ReadyState to comply with specification
 type NoopStateHandler struct{}
 
 func (s *NoopStateHandler) Init(e EvaluationContext) error {
@@ -83,10 +82,6 @@ func (s *NoopStateHandler) Init(e EvaluationContext) error {
 
 func (s *NoopStateHandler) Shutdown() {
 	// NOOP
-}
-
-func (s *NoopStateHandler) Status() State {
-	return ReadyState
 }
 
 // Eventing
