@@ -558,29 +558,47 @@ func TestRequirement_1_1_7(t *testing.T) {
 func TestRequirement_1_6_1(t *testing.T) {
 	defer t.Cleanup(initSingleton)
 
-	provider, initSem, shutdownSem := setupProviderWithSemaphores()
+	provider1, _, shutdownSem1 := setupProviderWithSemaphores()
 
 	// Setup provider and wait for initialization done
-	err := SetProvider(provider)
+	err := SetProviderAndWait(provider1)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
+	Shutdown()
+
+	// Shutdown should be synchronous. Try a non-blocking receive and fail
+	// immediately if there is not a value in the channel.
 	select {
-	// short enough wait time, but not too long
-	case <-time.After(100 * time.Millisecond):
-		t.Errorf("intialization timeout")
-	case <-initSem:
+	case <-shutdownSem1:
 		break
+	default:
+		t.Fatalf("shutdown not invoked")
+	}
+
+	// Try shutting down again, and make sure that provider1 is not shut down
+	// again, since it is now inactive.
+	provider2, _, shutdownSem2 := setupProviderWithSemaphores()
+
+	err = SetProviderAndWait(provider2)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
 	}
 
 	Shutdown()
 
 	select {
-	// short enough wait time, but not too long
+	case <-shutdownSem2:
+		break
+	default:
+		t.Fatalf("shutdown not invoked")
+	}
+
+	select {
+	case <-shutdownSem1:
+		t.Fatalf("provider1 should not have been shut down again, since it is inactive")
 	case <-time.After(100 * time.Millisecond):
-		t.Errorf("shutdown not invoked")
-	case <-shutdownSem:
 		break
 	}
 }
