@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.15.2](https://github.com/open-feature/go-sdk/compare/v1.15.1...v1.15.2) (2025-06-30)
+
+
+### 🐛 Bug Fixes
+
+* remove Status method from provider ([#395](https://github.com/open-feature/go-sdk/issues/395)) ([b9cc78b](https://github.com/open-feature/go-sdk/commit/b9cc78b46dc5ace5d1cc8dbaf4ebcf5f2bdc6f27))
+
+
+### 🧹 Chore
+
+* **deps:** update test-harness digest to cc576c1 ([#391](https://github.com/open-feature/go-sdk/issues/391)) ([9908b97](https://github.com/open-feature/go-sdk/commit/9908b97485749b3051ed3075c3d30c92fa8fb795))
+* enable gofumpt and gci ([#392](https://github.com/open-feature/go-sdk/issues/392)) ([d9cd757](https://github.com/open-feature/go-sdk/commit/d9cd757785be761e97c710cc3a58250e5c098652))
+
+
+### 📚 Documentation
+
+* move nolint directive to beginning of block ([#396](https://github.com/open-feature/go-sdk/issues/396)) ([bf2d408](https://github.com/open-feature/go-sdk/commit/bf2d408e2945f2de67a0d3e608adb630df5c0881))
+
 ## [1.15.1](https://github.com/open-feature/go-sdk/compare/v1.15.0...v1.15.1) (2025-06-16)
 
 
