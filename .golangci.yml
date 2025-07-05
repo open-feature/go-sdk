@@ -16,6 +16,10 @@ linters:
     - unused
     - misspell
     - dupword
+  settings:
+    staticcheck:
+      checks:
+        - "all"
 
 issues:
   max-issues-per-linter: 0

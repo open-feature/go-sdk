@@ -699,7 +699,7 @@ func (c *Client) evaluate(
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)                              // API (global) -> transaction -> client -> invocation
 	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
-	providerInvocationClientApiHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
+	providerInvocationClientAPIHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
 
 	var err error
 	hookCtx := HookContext{
@@ -712,20 +712,20 @@ func (c *Client) evaluate(
 	}
 
 	defer func() {
-		c.finallyHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options)
+		c.finallyHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options)
 	}()
 
 	// bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
-			c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderNotReadyError, options)
+			c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ProviderNotReadyError, options)
 			return evalDetails, ProviderNotReadyError
 		}
 
 		// short circuit if provider is in FATAL state
 		if c.State() == FatalState {
-			c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, ProviderFatalError, options)
+			c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ProviderFatalError, options)
 			return evalDetails, ProviderFatalError
 		}
 	}
@@ -734,7 +734,7 @@ func (c *Client) evaluate(
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("before hook: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
 		return evalDetails, err
 	}
 
@@ -768,7 +768,7 @@ func (c *Client) evaluate(
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("error code: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = ErrorReason
 		return evalDetails, err
@@ -776,9 +776,9 @@ func (c *Client) evaluate(
 	evalDetails.Value = resolution.Value
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
-	if err := c.afterHooks(ctx, hookCtx, providerInvocationClientApiHooks, evalDetails, options); err != nil {
+	if err := c.afterHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientApiHooks, err, options)
+		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
 		return evalDetails, err
 	}
 
