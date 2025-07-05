@@ -22,6 +22,8 @@ func initSingleton() {
 
 // GetApiInstance returns the current singleton IEvaluation instance.
 // This is the preferred interface to interact with OpenFeature functionalities
+//
+//nolint:staticcheck // Renaming this now would be a breaking change.
 func GetApiInstance() IEvaluation {
 	return api
 }

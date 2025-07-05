@@ -1,3 +1,4 @@
+// Package internal contains internal identifiers for the OpenFeature SDK.
 package internal
 
 // ContextKey is just an empty struct. It exists so TransactionContext can be

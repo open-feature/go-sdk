@@ -1,3 +1,4 @@
+// Package testing provides a test-aware feature flag provider for OpenFeature.
 package testing
 
 import (
@@ -27,9 +28,9 @@ type TestProvider struct {
 	providers *sync.Map
 }
 
-// UsingFlags sets flags for the scope of a test
 type TestFramework = interface{ Name() string }
 
+// UsingFlags sets flags for the scope of a test.
 func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovider.InMemoryFlag) {
 	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
