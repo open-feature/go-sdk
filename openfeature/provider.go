@@ -126,8 +126,6 @@ func (s NoopEventHandler) EventChannel() <-chan Event {
 // ProviderResolutionDetail is a structure which contains a subset of the fields defined in the EvaluationDetail,
 // representing the result of the provider's flag resolution process
 // see https://github.com/open-feature/spec/blob/main/specification/types.md#resolution-details
-// N.B we could use generics but to support older versions of go for now we will have type specific resolution
-// detail
 type ProviderResolutionDetail struct {
 	ResolutionError ResolutionError
 	Reason          Reason
@@ -156,35 +154,24 @@ func (p ProviderResolutionDetail) Error() error {
 	return errors.New(p.ResolutionError.Error())
 }
 
-// BoolResolutionDetail provides a resolution detail with boolean type
-type BoolResolutionDetail struct {
-	Value bool
+// GenericResolutionDetail represents the result of the provider's flag resolution process.
+type GenericResolutionDetail[T any] struct {
+	Value T
 	ProviderResolutionDetail
 }
 
-// StringResolutionDetail provides a resolution detail with string type
-type StringResolutionDetail struct {
-	Value string
-	ProviderResolutionDetail
-}
-
-// FloatResolutionDetail provides a resolution detail with float64 type
-type FloatResolutionDetail struct {
-	Value float64
-	ProviderResolutionDetail
-}
-
-// IntResolutionDetail provides a resolution detail with int64 type
-type IntResolutionDetail struct {
-	Value int64
-	ProviderResolutionDetail
-}
-
-// InterfaceResolutionDetail provides a resolution detail with any type
-type InterfaceResolutionDetail struct {
-	Value any
-	ProviderResolutionDetail
-}
+type (
+	// BoolResolutionDetail represents the result of the provider's flag resolution process for boolean flags.
+	BoolResolutionDetail = GenericResolutionDetail[bool]
+	// StringResolutionDetail represents the result of the provider's flag resolution process for string flags.
+	StringResolutionDetail = GenericResolutionDetail[string]
+	// FloatResolutionDetail represents the result of the provider's flag resolution process for float64 flags.
+	FloatResolutionDetail = GenericResolutionDetail[float64]
+	// IntResolutionDetail represents the result of the provider's flag resolution process for int64 flags.
+	IntResolutionDetail = GenericResolutionDetail[int64]
+	// InterfaceResolutionDetail represents the result of the provider's flag resolution process for Object flags.
+	InterfaceResolutionDetail = GenericResolutionDetail[any]
+)
 
 // Metadata provides provider name
 type Metadata struct {
