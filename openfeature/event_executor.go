@@ -91,13 +91,9 @@ func (e *eventExecutor) RemoveHandler(t EventType, c EventCallback) {
 		return
 	}
 
-	for i, f := range entrySlice {
-		if f == c {
-			entrySlice = append(entrySlice[:i], entrySlice[i+1:]...)
-		}
-	}
-
-	e.apiRegistry[t] = entrySlice
+	e.apiRegistry[t] = slices.DeleteFunc(entrySlice, func(f EventCallback) bool {
+		return f == c
+	})
 }
 
 // AddClientHandler registers a client level handler
@@ -139,18 +135,10 @@ func (e *eventExecutor) RemoveClientHandler(domain string, t EventType, c EventC
 	}
 
 	entrySlice := e.scopedRegistry[domain].callbacks[t]
-	if entrySlice == nil {
-		// nothing to remove
-		return
-	}
 
-	for i, f := range entrySlice {
-		if f == c {
-			entrySlice = append(entrySlice[:i], entrySlice[i+1:]...)
-		}
-	}
-
-	e.scopedRegistry[domain].callbacks[t] = entrySlice
+	e.scopedRegistry[domain].callbacks[t] = slices.DeleteFunc(entrySlice, func(f EventCallback) bool {
+		return f == c
+	})
 }
 
 func (e *eventExecutor) GetAPIRegistry() map[EventType][]EventCallback {
@@ -263,11 +251,9 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	}
 
 	// drop from active references
-	for i, r := range e.activeSubscriptions {
-		if oldReference.equals(r) {
-			e.activeSubscriptions = append(e.activeSubscriptions[:i], e.activeSubscriptions[i+1:]...)
-		}
-	}
+	e.activeSubscriptions = slices.DeleteFunc(e.activeSubscriptions, func(r providerReference) bool {
+		return oldReference.equals(r)
+	})
 
 	_, ok := oldReference.featureProvider.(EventHandler)
 	if !ok {
