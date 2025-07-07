@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"unicode/utf8"
 
@@ -697,9 +698,9 @@ func (c *Client) evaluate(
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
 
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)                              // API (global) -> transaction -> client -> invocation
-	apiClientInvocationProviderHooks := append(append(append(globalHooks, c.hooks...), options.hooks...), provider.Hooks()...) // API, Client, Invocation, Provider
-	providerInvocationClientApiHooks := append(append(append(provider.Hooks(), options.hooks...), c.hooks...), globalHooks...) // Provider, Invocation, Client, API
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)            // API (global) -> transaction -> client -> invocation
+	apiClientInvocationProviderHooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks()) // API, Client, Invocation, Provider
+	providerInvocationClientApiHooks := slices.Concat(provider.Hooks(), options.hooks, c.hooks, globalHooks) // Provider, Invocation, Client, API
 
 	var err error
 	hookCtx := HookContext{
