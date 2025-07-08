@@ -12,7 +12,7 @@ func NewFirstSuccessStrategy(providers []*NamedProvider) StrategyFn[FlagTypes] {
 }
 
 func firstSuccessStrategyFn[T FlagTypes](providers []*NamedProvider) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T] {
+	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 		resolutionErrors := make([]error, 0, len(providers))
 		for _, provider := range providers {
 			resolution := evaluate(ctx, provider, flag, defaultValue, flatCtx)

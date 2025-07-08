@@ -72,7 +72,7 @@ func comparisonResolutionError(metadata of.FlagMetadata) of.ResolutionError {
 }
 
 func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) GeneralResolutionDetail[T] {
+	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 		if comparator == nil {
 			comparator = defaultComparator
 			switch any(defaultValue).(type) {
@@ -101,7 +101,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 
 		type namedResult struct {
 			name string
-			res  *GeneralResolutionDetail[T]
+			res  *of.GenericResolutionDetail[T]
 		}
 
 		resultChan := make(chan *namedResult, len(providers))
@@ -212,7 +212,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 			} else {
 				variantResults = strings.Join(variants, ", ")
 			}
-			return GeneralResolutionDetail[T]{
+			return of.GenericResolutionDetail[T]{
 				Value: resultValues[0], // All values should be equal
 				ProviderResolutionDetail: of.ProviderResolutionDetail{
 					Reason:       ReasonAggregated,

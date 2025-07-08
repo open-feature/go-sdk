@@ -11,7 +11,7 @@ func NewFirstMatchStrategy(providers []*NamedProvider) StrategyFn[FlagTypes] {
 }
 
 func firstMatchStrategyFn[T FlagTypes](providers []*NamedProvider) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T] {
+	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 		for _, provider := range providers {
 			resolution := evaluate(ctx, provider, flag, defaultValue, flatCtx)
 			if resolution.Error() != nil && resolution.ResolutionDetail().ErrorCode == of.FlagNotFoundCode {
