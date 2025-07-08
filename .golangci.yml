@@ -18,6 +18,10 @@ linters:
     - misspell
     - staticcheck
     - unused
+  settings:
+    staticcheck:
+      checks:
+        - "all"
 
 issues:
   max-issues-per-linter: 0
