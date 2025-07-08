@@ -140,15 +140,15 @@ func (mr *MockIEvaluationMockRecorder) RemoveHandler(eventType, callback any) *g
 }
 
 // SetEvaluationContext mocks base method.
-func (m *MockIEvaluation) SetEvaluationContext(apiCtx EvaluationContext) {
+func (m *MockIEvaluation) SetEvaluationContext(evalCtx EvaluationContext) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetEvaluationContext", apiCtx)
+	m.ctrl.Call(m, "SetEvaluationContext", evalCtx)
 }
 
 // SetEvaluationContext indicates an expected call of SetEvaluationContext.
-func (mr *MockIEvaluationMockRecorder) SetEvaluationContext(apiCtx any) *gomock.Call {
+func (mr *MockIEvaluationMockRecorder) SetEvaluationContext(evalCtx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvaluationContext", reflect.TypeOf((*MockIEvaluation)(nil).SetEvaluationContext), apiCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvaluationContext", reflect.TypeOf((*MockIEvaluation)(nil).SetEvaluationContext), evalCtx)
 }
 
 // SetNamedProvider mocks base method.
@@ -857,15 +857,15 @@ func (mr *MockevaluationImplMockRecorder) RemoveHandler(eventType, callback any)
 }
 
 // SetEvaluationContext mocks base method.
-func (m *MockevaluationImpl) SetEvaluationContext(apiCtx EvaluationContext) {
+func (m *MockevaluationImpl) SetEvaluationContext(evalCtx EvaluationContext) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetEvaluationContext", apiCtx)
+	m.ctrl.Call(m, "SetEvaluationContext", evalCtx)
 }
 
 // SetEvaluationContext indicates an expected call of SetEvaluationContext.
-func (mr *MockevaluationImplMockRecorder) SetEvaluationContext(apiCtx any) *gomock.Call {
+func (mr *MockevaluationImplMockRecorder) SetEvaluationContext(evalCtx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvaluationContext", reflect.TypeOf((*MockevaluationImpl)(nil).SetEvaluationContext), apiCtx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvaluationContext", reflect.TypeOf((*MockevaluationImpl)(nil).SetEvaluationContext), evalCtx)
 }
 
 // SetLogger mocks base method.

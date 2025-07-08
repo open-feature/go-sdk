@@ -3,11 +3,11 @@ package openfeature
 import (
 	"context"
 	"errors"
-	"go.uber.org/mock/gomock"
 	"reflect"
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

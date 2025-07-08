@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package openfeature
 
 import "github.com/open-feature/go-sdk/openfeature"
