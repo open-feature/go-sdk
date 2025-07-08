@@ -48,8 +48,6 @@ func TestParallelSingletonUsage(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		tt := tt
-		name := name
 		t.Run(name, func(t *testing.T) {
 			defer testProvider.Cleanup()
 			t.Parallel()

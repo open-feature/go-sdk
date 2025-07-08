@@ -9,13 +9,15 @@ formatters:
 linters:
   default: none
   enable:
+    - copyloopvar
+    - dupword
     - errcheck
     - govet
     - ineffassign
+    - intrange
+    - misspell
     - staticcheck
     - unused
-    - misspell
-    - dupword
   settings:
     staticcheck:
       checks:
