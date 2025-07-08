@@ -149,30 +149,24 @@ type EvaluationDetails struct {
 	ResolutionDetail
 }
 
-type BooleanEvaluationDetails struct {
-	Value bool
+// GenericEvaluationDetails represents the result of the flag evaluation process.
+type GenericEvaluationDetails[T any] struct {
+	Value T
 	EvaluationDetails
 }
 
-type StringEvaluationDetails struct {
-	Value string
-	EvaluationDetails
-}
-
-type FloatEvaluationDetails struct {
-	Value float64
-	EvaluationDetails
-}
-
-type IntEvaluationDetails struct {
-	Value int64
-	EvaluationDetails
-}
-
-type InterfaceEvaluationDetails struct {
-	Value any
-	EvaluationDetails
-}
+type (
+	// BooleanEvaluationDetails represents the result of the flag evaluation process for boolean flags.
+	BooleanEvaluationDetails = GenericEvaluationDetails[bool]
+	// StringEvaluationDetails represents the result of the flag evaluation process for string flags.
+	StringEvaluationDetails = GenericEvaluationDetails[string]
+	// FloatEvaluationDetails represents the result of the flag evaluation process for float64 flags.
+	FloatEvaluationDetails = GenericEvaluationDetails[float64]
+	// IntEvaluationDetails represents the result of the flag evaluation process for int64 flags.
+	IntEvaluationDetails = GenericEvaluationDetails[int64]
+	// InterfaceEvaluationDetails represents the result of the flag evaluation process for Object flags.
+	InterfaceEvaluationDetails = GenericEvaluationDetails[any]
+)
 
 type ResolutionDetail struct {
 	Variant      string
