@@ -19,21 +19,21 @@ type clientMocks struct {
 
 func hydratedMocksForClientTests(t *testing.T, expectedEvaluations int) clientMocks {
 	ctrl := gomock.NewController(t)
-	mockClientApi := NewMockclientEvent(ctrl)
-	mockEvaluationApi := NewMockevaluationImpl(ctrl)
+	mockClientAPI := NewMockclientEvent(ctrl)
+	mockEvaluationAPI := NewMockevaluationImpl(ctrl)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
-	mockClientApi.EXPECT().State(gomock.Any()).AnyTimes().Return(ReadyState)
+	mockClientAPI.EXPECT().State(gomock.Any()).AnyTimes().Return(ReadyState)
 
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	mockEvaluationApi.EXPECT().ForEvaluation(gomock.Any()).Times(expectedEvaluations).DoAndReturn(func(_ string) (*MockFeatureProvider, []Hook, EvaluationContext) {
+	mockEvaluationAPI.EXPECT().ForEvaluation(gomock.Any()).Times(expectedEvaluations).DoAndReturn(func(_ string) (*MockFeatureProvider, []Hook, EvaluationContext) {
 		return mockProvider, nil, EvaluationContext{}
 	})
 
 	return clientMocks{
-		clientHandlerAPI: mockClientApi,
-		evaluationAPI:    mockEvaluationApi,
+		clientHandlerAPI: mockClientAPI,
+		evaluationAPI:    mockEvaluationAPI,
 		providerAPI:      mockProvider,
 	}
 }

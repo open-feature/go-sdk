@@ -1,3 +1,4 @@
+// Package memprovider provides an in-memory feature flag provider for OpenFeature.
 package memprovider
 
 import (
