@@ -1,4 +1,4 @@
-GOLANGCI_LINT_VERSION:=v2.1.6
+GOLANGCI_LINT_VERSION:=v2.2.1
 MOCKGEN_VERSION:=v0.5.2
 
 .PHONY: mockgen
@@ -10,11 +10,11 @@ mockgen:
 
 .PHONY: test
 test:
-	go test --short -tags testtools -cover ./...
+	go test --short -tags testtools -cover -timeout 1m ./...
 
 .PHONY: e2e-test
 e2e-test:
-	git submodule update --init --recursive && go test -tags testtools -race -cover ./e2e/...
+	git submodule update --init --recursive && go test -tags testtools -race -cover -timeout 1m ./e2e/...
 
 .PHONY: lint
 lint:

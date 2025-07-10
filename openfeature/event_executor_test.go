@@ -1118,7 +1118,7 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 	// invoke events
 	go func() {
-		for i := 0; i < eventCount; i++ {
+		for range eventCount {
 			eventingImpl.Invoke(Event{
 				ProviderName:         "provider",
 				EventType:            ProviderStale,
