@@ -15,7 +15,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -41,7 +41,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
       - name: Setup Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -54,9 +54,9 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
       - name: Run unit tests
-        run: go test -tags testtools -race -short -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./...
+        run: go test -tags testtools -timeout 1m -race -short -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./...
       - name: Run e2e tests
-        run: go test -tags testtools -race -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/...
+        run: go test -tags testtools -timeout 1m -race -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/...
       - name: Upload coverage to Codecov (unit)
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
