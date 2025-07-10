@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.16.0](https://github.com/open-feature/go-sdk/compare/v1.15.1...v1.16.0) (2025-07-10)
+
+
+### 🐛 Bug Fixes
+
+* remove Status method from provider ([#395](https://github.com/open-feature/go-sdk/issues/395)) ([b9cc78b](https://github.com/open-feature/go-sdk/commit/b9cc78b46dc5ace5d1cc8dbaf4ebcf5f2bdc6f27))
+
+
+### ✨ New Features
+
+* expose generic resolution/evaluation details structs ([#403](https://github.com/open-feature/go-sdk/issues/403)) ([343f691](https://github.com/open-feature/go-sdk/commit/343f6914c61685ae2b05e8469c56161356e820e1))
+
+
+### 🧹 Chore
+
+* add 1m timeout to tests ([#399](https://github.com/open-feature/go-sdk/issues/399)) ([66e1173](https://github.com/open-feature/go-sdk/commit/66e1173d9e6e06ca90ad4f428a0acc9a73a17097))
+* **deps:** update test-harness digest to cc576c1 ([#391](https://github.com/open-feature/go-sdk/issues/391)) ([9908b97](https://github.com/open-feature/go-sdk/commit/9908b97485749b3051ed3075c3d30c92fa8fb795))
+* enable all staticcheck linter checks ([#405](https://github.com/open-feature/go-sdk/issues/405)) ([ce1a0f7](https://github.com/open-feature/go-sdk/commit/ce1a0f7a4e106b3fa89bcc3b864438eb86204279))
+* enable gofumpt and gci ([#392](https://github.com/open-feature/go-sdk/issues/392)) ([d9cd757](https://github.com/open-feature/go-sdk/commit/d9cd757785be761e97c710cc3a58250e5c098652))
+* enable intrange and copyloopvar linters ([#404](https://github.com/open-feature/go-sdk/issues/404)) ([569e99a](https://github.com/open-feature/go-sdk/commit/569e99a4a74d0cab7920de06547e25eba060bbbd))
+* upgrade golangci-lint to the latest version ([#406](https://github.com/open-feature/go-sdk/issues/406)) ([137156b](https://github.com/open-feature/go-sdk/commit/137156b78d94ec03d3c466ab1b29803d9a824e2f))
+* upgrade golangci-lint version to latest ([137156b](https://github.com/open-feature/go-sdk/commit/137156b78d94ec03d3c466ab1b29803d9a824e2f))
+
+
+### 📚 Documentation
+
+* move nolint directive to beginning of block ([#396](https://github.com/open-feature/go-sdk/issues/396)) ([bf2d408](https://github.com/open-feature/go-sdk/commit/bf2d408e2945f2de67a0d3e608adb630df5c0881))
+
+
+### 🔄 Refactoring
+
+* use slices package instead of append ([#402](https://github.com/open-feature/go-sdk/issues/402)) ([63bf987](https://github.com/open-feature/go-sdk/commit/63bf987c5f6cd5723f42690fc75aca94f262ea03))
+
 ## [1.15.1](https://github.com/open-feature/go-sdk/compare/v1.15.0...v1.15.1) (2025-06-16)
 
 
