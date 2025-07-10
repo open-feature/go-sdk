@@ -91,4 +91,5 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 // Shutdown active providers
 func Shutdown() {
 	api.Shutdown()
+	initSingleton()
 }
