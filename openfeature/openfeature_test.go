@@ -13,7 +13,7 @@ import (
 // The `API`, and any state it maintains SHOULD exist as a global singleton,
 // even in cases wherein multiple versions of the `API` are present at runtime.
 func TestRequirement_1_1_1(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	ctrl := gomock.NewController(t)
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -36,7 +36,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 // The `API` MUST provide a function to set the default `provider`,
 // which accepts an API-conformant `provider` implementation.
 func TestRequirement_1_1_2_1(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
@@ -57,7 +57,7 @@ func TestRequirement_1_1_2_1(t *testing.T) {
 // to resolve flag values.
 func TestRequirement_1_1_2_2(t *testing.T) {
 	t.Run("default provider", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		provider, initSem, _ := setupProviderWithSemaphores()
 
@@ -80,7 +80,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 	})
 
 	t.Run("named provider", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		provider, initSem, _ := setupProviderWithSemaphores()
 
@@ -109,7 +109,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 // longer being used to resolve flag values.
 func TestRequirement_1_1_2_3(t *testing.T) {
 	t.Run("default provider", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
@@ -143,7 +143,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 	})
 
 	t.Run("named provider", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
@@ -179,7 +179,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 	})
 
 	t.Run("ignore shutdown for multiple references - default bound", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		// setup
 		provider, _, shutdownSem := setupProviderWithSemaphores()
@@ -215,7 +215,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 	})
 
 	t.Run("ignore shutdown for multiple references - domain client bound", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		// setup
 		providerA, _, shutdownSemA := setupProviderWithSemaphores()
@@ -255,7 +255,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 // The API SHOULD provide functions to set a provider and wait for the initialize function to return or throw.
 func TestRequirement_1_1_2_4(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	t.Run("default provider", func(t *testing.T) {
 		// given - a provider with state handling capability, with substantial initializing delay
@@ -397,7 +397,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 // The `API` MUST provide a function to bind a given `provider` to one or more client `domain`s.
 // If the client-domain already has a bound provider, it is overwritten with the new mapping.
 func TestRequirement_1_1_3(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	// Setup
 
@@ -473,7 +473,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 // and appends them to the collection of any previously added hooks. When new hooks are added,
 // previously added hooks are not removed.
 func TestRequirement_1_1_4(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	ctrl := gomock.NewController(t)
 
 	mockHook := NewMockHook(ctrl)
@@ -488,7 +488,7 @@ func TestRequirement_1_1_4(t *testing.T) {
 
 // The API MUST provide a function for retrieving the metadata field of the configured `provider`.
 func TestRequirement_1_1_5(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	t.Run("default provider", func(t *testing.T) {
 		defaultProvider := NoopProvider{}
@@ -518,7 +518,7 @@ func TestRequirement_1_1_5(t *testing.T) {
 // The `API` MUST provide a function for creating a `client` which accepts the following options:
 // - domain (optional): A logical string identifier for the client.
 func TestRequirement_1_1_6(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	t.Run("client from direct invocation", func(t *testing.T) {
 		client := NewClient("test-client")
@@ -544,7 +544,7 @@ func TestRequirement_1_1_6(t *testing.T) {
 
 // The client creation function MUST NOT throw, or otherwise abnormally terminate.
 func TestRequirement_1_1_7(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	type clientCreationFunc func(name string) *Client
 
 	// asserting that our NewClient method matches this signature is enough to deduce that no error is returned
@@ -555,7 +555,7 @@ func TestRequirement_1_1_7(t *testing.T) {
 
 // The API MUST define a mechanism to propagate a shutdown request to active providers.
 func TestRequirement_1_6_1(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
@@ -588,7 +588,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 	// The client MUST provide a function for associating handler functions with a particular provider event type.
 	// The API and client MUST provide a function allowing the removal of event handlers.
 	t.Run("requirement_5_2_1 & requirement_5_2_1", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		clientName := "OFClient"
 
@@ -643,7 +643,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 	// The API MUST provide a function for associating handler functions with a particular provider event type.
 	t.Run("requirement_5_2_2 & requirement_5_2_1", func(t *testing.T) {
-		defer t.Cleanup(initSingleton)
+		t.Cleanup(initSingleton)
 
 		// adding handlers
 		AddHandler(ProviderReady, &h1)
@@ -699,7 +699,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 // If there is no client domain bound provider, then return the default provider
 func TestDefaultClientUsage(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	ctrl := gomock.NewController(t)
 	defaultProvider := NewMockFeatureProvider(ctrl)
@@ -719,7 +719,7 @@ func TestDefaultClientUsage(t *testing.T) {
 }
 
 func TestLateBindingOfDefaultProvider(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 	// we are expecting
 	expectedResultUnboundProvider := "default-value-from-unbound-provider"
 	expectedResultFromLateDefaultProvider := "value-from-late-default-provider"
@@ -761,7 +761,7 @@ func TestLateBindingOfDefaultProvider(t *testing.T) {
 
 // Nil providers are not accepted for default and named providers
 func TestForNilProviders(t *testing.T) {
-	defer t.Cleanup(initSingleton)
+	t.Cleanup(initSingleton)
 
 	err := SetProvider(nil)
 	if err == nil {
