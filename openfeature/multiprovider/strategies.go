@@ -2,6 +2,7 @@ package multiprovider
 
 import (
 	"context"
+	"maps"
 	"regexp"
 	"strings"
 
@@ -38,15 +39,8 @@ type (
 	FlagTypes interface {
 		int64 | float64 | string | bool | any
 	}
-
-	// GenericResolutionDetail provides a resolution detail with any type.
-	GeneralResolutionDetail[T FlagTypes] struct {
-		Value T
-		of.ProviderResolutionDetail
-	}
-
-	// StrategyFn[T FlagTypes] is a function type that defines the signature for a strategy function.
-	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T]
+	// StrategyFn is a function type that defines the signature for a strategy function.
+	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T]
 )
 
 // Common Components
@@ -94,9 +88,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	default:
 		merged := make(of.FlagMetadata)
 		for _, t := range tags {
-			for key, value := range t {
-				merged[key] = value
-			}
+			maps.Copy(merged, t)
 		}
 		return merged
 	}
@@ -104,7 +96,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 
 // BuildDefaultResult The method should be called when a strategy is in a failure state and needs to return a default
 // value. This method will build a resolution detail with the internal provided error set.
-func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) GeneralResolutionDetail[R] {
+func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GenericResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
 	if err != nil {
@@ -115,7 +107,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 		reason = of.DefaultReason
 	}
 
-	return GeneralResolutionDetail[R]{
+	return of.GenericResolutionDetail[R]{
 		Value: defaultValue,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
 			ResolutionError: rErr,
@@ -126,8 +118,8 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 }
 
 // evaluate Generic method used to resolve a flag from a single provider without losing type information.
-func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) GeneralResolutionDetail[T] {
-	var resolution GeneralResolutionDetail[T]
+func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+	var resolution of.GenericResolutionDetail[T]
 	val := any(defaultVal)
 	switch v := val.(type) {
 	case bool:

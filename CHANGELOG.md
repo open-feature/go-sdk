@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.15.1](https://github.com/open-feature/go-sdk/compare/v1.15.0...v1.15.1) (2025-06-16)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update module golang.org/x/text to v0.26.0 ([#385](https://github.com/open-feature/go-sdk/issues/385)) ([677bb63](https://github.com/open-feature/go-sdk/commit/677bb6306b59ba9e6fa7b6f9a5470497a5f1959e))
+
+
+### 🧹 Chore
+
+* **deps:** update test-harness digest to aa74d0e ([#336](https://github.com/open-feature/go-sdk/issues/336)) ([b169115](https://github.com/open-feature/go-sdk/commit/b169115ab8e59f431f5b8b518bb56c47ea827570))
+* use `context.TODO()` in testable examples ([#379](https://github.com/open-feature/go-sdk/issues/379)) ([cd8efe5](https://github.com/open-feature/go-sdk/commit/cd8efe5119613d8d4206e96e21bca7fbb0625577))
+* use mockgen build_constraint instead of sed logic in Makefile ([#386](https://github.com/open-feature/go-sdk/issues/386)) ([a40081f](https://github.com/open-feature/go-sdk/commit/a40081fe64ba9bb597488cfdaf74cd06b2e22ecb))
+
+
+### 📚 Documentation
+
+* fix doc links ([#382](https://github.com/open-feature/go-sdk/issues/382)) ([1d5ed74](https://github.com/open-feature/go-sdk/commit/1d5ed74ee95f6a9d785fbbcf3e88caf39cd8bdb8))
+* fix the logging hook example in README ([#380](https://github.com/open-feature/go-sdk/issues/380)) ([ca8a527](https://github.com/open-feature/go-sdk/commit/ca8a52748519022a09ed836148ed7e72f7d9dc3b))
+* use `context.TODO()` in README examples ([#378](https://github.com/open-feature/go-sdk/issues/378)) ([2f39d23](https://github.com/open-feature/go-sdk/commit/2f39d23117b1777127355b56088cd0554ffcf0ec))
+
+
+### 🔄 Refactoring
+
+* use `flatCtx` for vars/types of `FlattenedContext` ([#388](https://github.com/open-feature/go-sdk/issues/388)) ([5272447](https://github.com/open-feature/go-sdk/commit/52724472c11888cecee1cf865da5159f053baec1))
+* use stdlib packages to get map values ([#381](https://github.com/open-feature/go-sdk/issues/381)) ([703c3ef](https://github.com/open-feature/go-sdk/commit/703c3ef2b342dd27536c6f3b2bf114adcf8817b4))
+
 ## [1.15.0](https://github.com/open-feature/go-sdk/compare/v1.14.1...v1.15.0) (2025-06-02)
 
 

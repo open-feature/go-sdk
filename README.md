@@ -16,8 +16,8 @@
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.7.0&color=yellow&style=for-the-badge" />
   </a>
   <!-- x-release-please-start-version -->
-  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.15.0">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.15.0&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.15.1">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.15.1&color=blue&style=for-the-badge" />
   </a>
   <!-- x-release-please-end -->
   <br/>
@@ -365,27 +365,27 @@ func (i MyFeatureProvider) Hooks() []openfeature.Hook {
   return []openfeature.Hook{}
 }
 // BooleanEvaluation returns a boolean flag
-func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, evalCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+func (i MyFeatureProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
   // code to evaluate boolean
 }
 
 // StringEvaluation returns a string flag
-func (i MyFeatureProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, evalCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+func (i MyFeatureProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
   // code to evaluate string
 }
 
 // FloatEvaluation returns a float flag
-func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, evalCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+func (i MyFeatureProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
   // code to evaluate float
 }
 
 // IntEvaluation returns an int flag
-func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, evalCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
   // code to evaluate int
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, evalCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
   // code to evaluate object
 }
 
@@ -395,12 +395,6 @@ func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, de
 // Init holds initialization logic of the provider
 func (i MyFeatureProvider) Init(evaluationContext openfeature.EvaluationContext) error {
   // code to initialize your provider
-}
-
-// Status expose the status of the provider
-func (i MyFeatureProvider) Status() openfeature.State {
-  // The state is typically set during initialization.
-  return openfeature.ReadyState
 }
 
 // Shutdown define the shutdown operation of the provider

@@ -9,14 +9,12 @@ import (
 )
 
 func init() {
-
 }
 
 // Requirement 5.1.1 The provider MAY define a mechanism for signaling the occurrence of one of a set of events,
 // including PROVIDER_READY, PROVIDER_ERROR, PROVIDER_CONFIGURATION_CHANGED and PROVIDER_STALE,
 // with a provider event details payload.
 func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
-
 	t.Run("Accepts addition of eventing providers", func(t *testing.T) {
 		eventingImpl := &ProviderEventing{}
 
@@ -474,7 +472,6 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			break
 		}
 	})
-
 }
 
 // Requirement 5.3.2 If the provider's initialize function terminates abnormally, PROVIDER_ERROR handlers MUST run.
@@ -628,7 +625,6 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			break
 		}
 	})
-
 }
 
 // Requirement 5.3.3 PROVIDER_READY handlers attached after the provider is already in a ready state MUST run immediately.
@@ -1122,7 +1118,7 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 	// invoke events
 	go func() {
-		for i := 0; i < eventCount; i++ {
+		for range eventCount {
 			eventingImpl.Invoke(Event{
 				ProviderName:         "provider",
 				EventType:            ProviderStale,
@@ -1185,7 +1181,6 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 func TestEventHandler_1ToNMapping(t *testing.T) {
 	t.Run("provider eventing must be subscribed only once", func(t *testing.T) {
-
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
@@ -1226,7 +1221,6 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("avoid unsubscribe from active providers - default and named", func(t *testing.T) {
-
 		eventingProvider := struct {
 			FeatureProvider
 			EventHandler
@@ -1270,7 +1264,6 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("avoid unsubscribe from active providers - named only", func(t *testing.T) {
-
 		eventingProvider := struct {
 			FeatureProvider
 			EventHandler
@@ -1314,7 +1307,6 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 	})
 
 	t.Run("unbound providers must be removed from active subscriptions", func(t *testing.T) {
-
 		eventingProvider := struct {
 			FeatureProvider
 			EventHandler

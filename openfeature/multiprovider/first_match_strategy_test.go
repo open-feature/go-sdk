@@ -10,569 +10,144 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func Test_FirstMatchStrategy_BooleanEvaluation(t *testing.T) {
-	t.Run("Single Provider Match", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.BoolResolutionDetail{Value: true, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
+func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
+	tests := []struct {
+		kind       of.Type
+		successVal FlagTypes
+		defaultVal FlagTypes
+	}{
+		{kind: of.Boolean, successVal: true, defaultVal: false},
+		{kind: of.Int, successVal: int64(123), defaultVal: int64(0)},
+		{kind: of.String, successVal: "stringValue", defaultVal: ""},
+		{kind: of.Float, successVal: float64(123.45), defaultVal: float64(0.0)},
+		{kind: of.Object, successVal: struct{ Field int }{Field: 123}, defaultVal: struct{}{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.kind.String(), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
 
-	t.Run("Default Resolution", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.BoolResolutionDetail{
-				Value: false,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("not found in any provider"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
+			t.Run("Single Provider Match", func(t *testing.T) {
+				mocks := createMockProviders(ctrl, 1)
+				configureFirstMatchProviderMock(mocks[0], tt.successVal, TestErrorNone, "mock provider")
+				providers := make([]*NamedProvider, 0, 5)
+				for i, m := range mocks {
+					providers = append(providers, &NamedProvider{
+						Name:            strconv.Itoa(i),
+						FeatureProvider: m,
+					})
+				}
+				strategy := NewFirstMatchStrategy(providers)
+				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
+				assert.Equal(t, tt.successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
 			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.False(t, result.Value.(bool))
-		assert.Equal(t, of.DefaultReason, result.Reason)
-		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
 
-	t.Run("Evaluation stops after match", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mocks := createMockProviders(ctrl, 5)
-		mocks[0].EXPECT().
-			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.BoolResolutionDetail{
-				Value: false,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("Flag not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
+			t.Run("Default Resolution", func(t *testing.T) {
+				mocks := createMockProviders(ctrl, 1)
+				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider")
+				providers := make([]*NamedProvider, 0, 5)
+				for i, m := range mocks {
+					providers = append(providers, &NamedProvider{
+						Name:            strconv.Itoa(i),
+						FeatureProvider: m,
+					})
+				}
+				strategy := NewFirstMatchStrategy(providers)
+				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
+				assert.Equal(t, tt.defaultVal, result.Value)
+				assert.Equal(t, of.DefaultReason, result.Reason)
+				assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
+				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
 			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		mocks[1].EXPECT().
-			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.BoolResolutionDetail{Value: true, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[1].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-flag", false, of.FlattenedContext{})
-		assert.True(t, result.Value.(bool))
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
 
-	t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mocks := createMockProviders(ctrl, 5)
-		expectedErr := of.NewGeneralResolutionError("something went wrong")
-		mocks[0].EXPECT().
-			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.BoolResolutionDetail{
-				Value: false,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: expectedErr,
-					Reason:          of.ErrorReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
+			t.Run("Evaluation stops after match", func(t *testing.T) {
+				mocks := createMockProviders(ctrl, 5)
+				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider 1")
+				configureFirstMatchProviderMock(mocks[1], tt.successVal, TestErrorNone, "mock provider 2")
+				providers := make([]*NamedProvider, 0, 5)
+				for i, m := range mocks {
+					providers = append(providers, &NamedProvider{
+						Name:            strconv.Itoa(i),
+						FeatureProvider: m,
+					})
+				}
+
+				strategy := NewFirstMatchStrategy(providers)
+				result := strategy(context.Background(), "test-flag", tt.defaultVal, of.FlattenedContext{})
+				assert.Equal(t, tt.successVal, result.Value)
+				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
+				assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
 			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
+
+			t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
+				mocks := createMockProviders(ctrl, 5)
+				expectedErr := of.NewGeneralResolutionError("test error")
+				providers := make([]*NamedProvider, 0, 5)
+				for i, m := range mocks {
+					providers = append(providers, &NamedProvider{
+						Name:            strconv.Itoa(i),
+						FeatureProvider: m,
+					})
+					switch {
+					case i < 3:
+						configureFirstMatchProviderMock(mocks[i], tt.successVal, TestErrorNotFound, "mock provider fail")
+					case i == 3:
+						configureFirstMatchProviderMock(mocks[i], tt.successVal, TestErrorError, "mock provider")
+					}
+
+				}
+				strategy := NewFirstMatchStrategy(providers)
+				result := strategy(context.Background(), "test-string", tt.successVal, of.FlattenedContext{})
+				assert.Equal(t, tt.successVal, result.Value)
+				assert.Equal(t, of.ErrorReason, result.Reason)
+				assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
+				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
 			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", false, of.FlattenedContext{})
-		assert.False(t, result.Value.(bool))
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
+		})
+	}
 }
 
-func Test_FirstMatchStrategy_StringEvaluation(t *testing.T) {
-	ctrl := gomock.NewController(t)
+func configureFirstMatchProviderMock[R FlagTypes](mock *of.MockFeatureProvider, value R, error int, providerName string) {
+	var rErr of.ResolutionError
+	var reason of.Reason
+	switch error {
+	case TestErrorError:
+		rErr = of.NewGeneralResolutionError("test error")
+		reason = of.ErrorReason
+	case TestErrorNotFound:
+		rErr = of.NewFlagNotFoundResolutionError("test not found")
+		reason = of.DefaultReason
+	}
 
-	t.Run("Single Provider Match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
+	details := of.ProviderResolutionDetail{
+		ResolutionError: rErr,
+		Reason:          reason,
+		FlagMetadata:    make(of.FlagMetadata),
+	}
+	switch v := any(value).(type) {
+	case bool:
+		mock.EXPECT().
+			BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(of.BoolResolutionDetail{Value: v, ProviderResolutionDetail: details})
+	case string:
+		mock.EXPECT().
 			StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.StringResolutionDetail{Value: "test", ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
-		assert.Equal(t, "test", result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Default Resolution", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.StringResolutionDetail{
-				Value: "",
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
-		assert.Equal(t, "", result.Value)
-		assert.Equal(t, of.DefaultReason, result.Reason)
-		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-
-	t.Run("Evaluation stops after match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		mocks[0].EXPECT().
-			StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.StringResolutionDetail{
-				Value: "",
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("Flag not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		mocks[1].EXPECT().
-			StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.StringResolutionDetail{Value: "test", ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[1].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-flag", "", of.FlattenedContext{})
-		assert.Equal(t, "test", result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		expectedErr := of.NewGeneralResolutionError("something went wrong")
-		mocks[0].EXPECT().
-			StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.StringResolutionDetail{
-				Value: "",
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: expectedErr,
-					Reason:          of.ErrorReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", "", of.FlattenedContext{})
-		assert.Equal(t, "", result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-}
-
-func Test_FirstMatchStrategy_IntEvaluation(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	t.Run("Single Provider Match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
+			Return(of.StringResolutionDetail{Value: v, ProviderResolutionDetail: details})
+	case int64:
+		mock.EXPECT().
 			IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.IntResolutionDetail{Value: 123, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", int64(0), of.FlattenedContext{})
-		assert.Equal(t, int64(123), result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Default Resolution", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.IntResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", int64(0), of.FlattenedContext{})
-		assert.Equal(t, int64(0), result.Value)
-		assert.Equal(t, of.DefaultReason, result.Reason)
-		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-
-	t.Run("Evaluation stops after match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		mocks[0].EXPECT().
-			IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.IntResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("Flag not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		mocks[1].EXPECT().
-			IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.IntResolutionDetail{Value: 123, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[1].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-flag", int64(0), of.FlattenedContext{})
-		assert.Equal(t, int64(123), result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		expectedErr := of.NewGeneralResolutionError("something went wrong")
-		mocks[0].EXPECT().
-			IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.IntResolutionDetail{
-				Value: 123,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: expectedErr,
-					Reason:          of.ErrorReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", int64(123), of.FlattenedContext{})
-		assert.Equal(t, int64(123), result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-}
-
-func Test_FirstMatchStrategy_FloatEvaluation(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	t.Run("Single Provider Match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
+			Return(of.IntResolutionDetail{Value: v, ProviderResolutionDetail: details})
+	case float64:
+		mock.EXPECT().
 			FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.FloatResolutionDetail{Value: 123, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", float64(0), of.FlattenedContext{})
-		assert.Equal(t, float64(123), result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Default Resolution", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.FloatResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", float64(0), of.FlattenedContext{})
-		assert.Equal(t, float64(0), result.Value)
-		assert.Equal(t, of.DefaultReason, result.Reason)
-		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-
-	t.Run("Evaluation stops after match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		mocks[0].EXPECT().
-			FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.FloatResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("Flag not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		mocks[1].EXPECT().
-			FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.FloatResolutionDetail{Value: 123, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[1].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-flag", float64(0), of.FlattenedContext{})
-		assert.Equal(t, float64(123), result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		expectedErr := of.NewGeneralResolutionError("something went wrong")
-		mocks[0].EXPECT().
-			FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.FloatResolutionDetail{
-				Value: 123.0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: expectedErr,
-					Reason:          of.ErrorReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", float64(123), of.FlattenedContext{})
-		assert.Equal(t, 123.0, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-}
-
-func Test_FirstMatchStrategy_ObjectEvaluation(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	t.Run("Single Provider Match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
+			Return(of.FloatResolutionDetail{Value: v, ProviderResolutionDetail: details})
+	default:
+		mock.EXPECT().
 			ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.InterfaceResolutionDetail{Value: struct{ Field int }{Field: 123}, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
-		assert.Equal(t, struct{ Field int }{Field: 123}, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Default Resolution", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 1)
-		mocks[0].EXPECT().
-			ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.InterfaceResolutionDetail{
-				Value: struct{}{},
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("not found"),
-					Reason:          of.DefaultReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
-		assert.Equal(t, struct{}{}, result.Value)
-		assert.Equal(t, of.DefaultReason, result.Reason)
-		assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
-
-	t.Run("Evaluation stops after match", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		mocks[0].EXPECT().
-			ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.InterfaceResolutionDetail{
-				Value: 0,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: of.NewFlagNotFoundResolutionError("Flag not found"),
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		mocks[1].EXPECT().
-			ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.InterfaceResolutionDetail{Value: struct{ Field int }{Field: 123}, ProviderResolutionDetail: of.ProviderResolutionDetail{FlagMetadata: make(of.FlagMetadata)}})
-		mocks[1].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-flag", struct{}{}, of.FlattenedContext{})
-		assert.Equal(t, struct{ Field int }{Field: 123}, result.Value)
-		assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-		assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
-	})
-
-	t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
-		mocks := createMockProviders(ctrl, 5)
-		expectedErr := of.NewGeneralResolutionError("something went wrong")
-		mocks[0].EXPECT().
-			ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(of.InterfaceResolutionDetail{
-				Value: struct{}{},
-				ProviderResolutionDetail: of.ProviderResolutionDetail{
-					ResolutionError: expectedErr,
-					Reason:          of.ErrorReason,
-					FlagMetadata:    make(of.FlagMetadata),
-				},
-			})
-		mocks[0].EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"})
-		providers := make([]*NamedProvider, 0, 5)
-		for i, m := range mocks {
-			providers = append(providers, &NamedProvider{
-				Name:            strconv.Itoa(i),
-				FeatureProvider: m,
-			})
-		}
-		strategy := NewFirstMatchStrategy(providers)
-		result := strategy(context.Background(), "test-string", struct{}{}, of.FlattenedContext{})
-		assert.Equal(t, struct{}{}, result.Value)
-		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
-		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
-		assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])
-	})
+			Return(of.InterfaceResolutionDetail{Value: v, ProviderResolutionDetail: details})
+	}
+	mock.EXPECT().Metadata().Return(of.Metadata{Name: providerName})
 }

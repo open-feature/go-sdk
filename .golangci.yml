@@ -3,18 +3,25 @@ version: "2"
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt
+    - gci
 
 linters:
   default: none
   enable:
+    - copyloopvar
+    - dupword
     - errcheck
     - govet
     - ineffassign
+    - intrange
+    - misspell
     - staticcheck
     - unused
-    - misspell
-    - dupword
+  settings:
+    staticcheck:
+      checks:
+        - "all"
 
 issues:
   max-issues-per-linter: 0

@@ -7,7 +7,7 @@ import (
 
 func createMockProviders(ctrl *gomock.Controller, count int) []*of.MockFeatureProvider {
 	providerMocks := make([]*of.MockFeatureProvider, 0, count)
-	for i := 0; i < count; i++ {
+	for range count {
 		provider := of.NewMockFeatureProvider(ctrl)
 		providerMocks = append(providerMocks, provider)
 	}

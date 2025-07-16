@@ -60,7 +60,7 @@ func NewTargetlessEvaluationContext(attributes map[string]any) EvaluationContext
 	return NewEvaluationContext("", attributes)
 }
 
-// NewTransactionContext constructs a TransactionContext
+// WithTransactionContext constructs a TransactionContext.
 //
 // ctx - the context to embed the EvaluationContext in
 // ec - the EvaluationContext to embed into the context

@@ -3,11 +3,12 @@ package openfeature
 import (
 	"context"
 	"errors"
-	"go.uber.org/mock/gomock"
 	"math"
 	"reflect"
 	"testing"
 	"time"
+
+	"go.uber.org/mock/gomock"
 )
 
 type clientMocks struct {
@@ -18,21 +19,21 @@ type clientMocks struct {
 
 func hydratedMocksForClientTests(t *testing.T, expectedEvaluations int) clientMocks {
 	ctrl := gomock.NewController(t)
-	mockClientApi := NewMockclientEvent(ctrl)
-	mockEvaluationApi := NewMockevaluationImpl(ctrl)
+	mockClientAPI := NewMockclientEvent(ctrl)
+	mockEvaluationAPI := NewMockevaluationImpl(ctrl)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
-	mockClientApi.EXPECT().State(gomock.Any()).AnyTimes().Return(ReadyState)
+	mockClientAPI.EXPECT().State(gomock.Any()).AnyTimes().Return(ReadyState)
 
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	mockEvaluationApi.EXPECT().ForEvaluation(gomock.Any()).Times(expectedEvaluations).DoAndReturn(func(_ string) (*MockFeatureProvider, []Hook, EvaluationContext) {
+	mockEvaluationAPI.EXPECT().ForEvaluation(gomock.Any()).Times(expectedEvaluations).DoAndReturn(func(_ string) (*MockFeatureProvider, []Hook, EvaluationContext) {
 		return mockProvider, nil, EvaluationContext{}
 	})
 
 	return clientMocks{
-		clientHandlerAPI: mockClientApi,
-		evaluationAPI:    mockEvaluationApi,
+		clientHandlerAPI: mockClientAPI,
+		evaluationAPI:    mockEvaluationAPI,
 		providerAPI:      mockProvider,
 	}
 }
@@ -858,7 +859,6 @@ func TestTrack(t *testing.T) {
 				},
 			},
 			provider: func(tc *testcase, mockProvider *MockFeatureProvider) FeatureProvider {
-
 				provider := &mockTrackingProvider{
 					MockTracker:         NewMockTracker(mockProvider.ctrl),
 					MockFeatureProvider: mockProvider,
@@ -874,7 +874,6 @@ func TestTrack(t *testing.T) {
 			eventName: "example-event",
 			outCtx:    EvaluationContext{},
 			provider: func(tc *testcase, provider *MockFeatureProvider) FeatureProvider {
-
 				return provider
 			},
 		},
@@ -1069,7 +1068,6 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 }
 
 func TestFlagMetadataAccessors(t *testing.T) {
-
 	t.Run("bool", func(t *testing.T) {
 		expectedValue := true
 		key := "bool"
@@ -1185,7 +1183,6 @@ func TestFlagMetadataAccessors(t *testing.T) {
 // The client MUST define a provider status accessor which indicates the readiness of the associated provider.
 // with possible values NOT_READY, READY, STALE, ERROR, or FATAL.
 func TestRequirement_1_7_1(t *testing.T) {
-
 	client := NewClient("test-client")
 
 	type requirements interface {
@@ -1194,7 +1191,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 
 	var clientI any = client
 	if _, ok := clientI.(requirements); !ok {
-		t.Fatal("client des not define a status accessor which indicates the readiness of the associated provider")
+		t.Fatal("client does not define a status accessor which indicates the readiness of the associated provider")
 	}
 
 	TestRequirement_5_3_5(t)
@@ -1250,7 +1247,6 @@ func TestRequirement_1_7_3(t *testing.T) {
 	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
-
 }
 
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
@@ -1276,7 +1272,6 @@ func TestRequirement_1_7_4(t *testing.T) {
 	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
-
 }
 
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
@@ -1302,7 +1297,6 @@ func TestRequirement_1_7_5(t *testing.T) {
 	if GetApiInstance().GetNamedClient(t.Name()).State() != FatalState {
 		t.Fatalf("expected client to report ERROR state")
 	}
-
 }
 
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
@@ -1398,7 +1392,6 @@ func TestRequirement_1_7_7(t *testing.T) {
 
 // Implementations SHOULD propagate the error code returned from any provider lifecycle methods.
 func TestRequirement_1_7_8(t *testing.T) {
-
 	t.Skip("Test not yet implemented")
 }
 
@@ -1454,5 +1447,4 @@ func TestRequirement_5_3_5(t *testing.T) {
 	eventually(t, func() bool {
 		return GetApiInstance().GetNamedClient(t.Name()).State() == FatalState
 	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
-
 }

@@ -3,12 +3,12 @@ package multiprovider
 import (
 	"context"
 	"errors"
-	"go.uber.org/mock/gomock"
+	"testing"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
