@@ -585,6 +585,59 @@ func TestRequirement_1_6_1(t *testing.T) {
 	}
 }
 
+// The API's `shutdown` function MUST reset all state of the API, removing all
+// hooks, event handlers, and providers.
+func TestRequirement_1_6_2(t *testing.T) {
+	t.Cleanup(initSingleton)
+
+	// TODO: test that hooks and event handlers are removed as well. This only
+	// tests that providers are removed.
+
+	provider1, _, shutdownSem1 := setupProviderWithSemaphores()
+
+	// Setup provider and wait for initialization done
+	err := SetProviderAndWait(provider1)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
+	Shutdown()
+
+	// Shutdown should be synchronous. Try a non-blocking receive and fail
+	// immediately if there is not a value in the channel.
+	select {
+	case <-shutdownSem1:
+		break
+	default:
+		t.Fatalf("shutdown not invoked")
+	}
+
+	// Try shutting down again, and make sure that provider1 is not shut down
+	// again, since it is now inactive.
+	provider2, _, shutdownSem2 := setupProviderWithSemaphores()
+
+	err = SetProviderAndWait(provider2)
+	if err != nil {
+		t.Errorf("error setting up provider %v", err)
+	}
+
+	Shutdown()
+
+	select {
+	case <-shutdownSem2:
+		break
+	default:
+		t.Fatalf("shutdown not invoked")
+	}
+
+	select {
+	case <-shutdownSem1:
+		t.Fatalf("provider1 should not have been shut down again, since it is unregistered")
+	case <-time.After(100 * time.Millisecond):
+		break
+	}
+}
+
 func TestRequirement_EventCompliance(t *testing.T) {
 	// The client MUST provide a function for associating handler functions with a particular provider event type.
 	// The API and client MUST provide a function allowing the removal of event handlers.
