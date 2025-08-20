@@ -352,7 +352,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	}
 	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
 	mp.inboundEvents = make(chan namedEvent, len(mp.providers))
-	handlers := make(chan namedEventHandler)
+	handlers := make(chan namedEventHandler, len(mp.providers))
 	for name, provider := range mp.providers {
 		// Initialize each provider to not ready state. No locks required there are no workers running
 		mp.updateProviderState(name, of.NotReadyState)
