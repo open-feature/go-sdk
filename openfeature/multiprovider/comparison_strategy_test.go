@@ -17,7 +17,7 @@ func configureComparisonProvider[R any](provider *of.MockFeatureProvider, result
 	switch error {
 	case TestErrorError:
 		rErr = of.NewGeneralResolutionError("test error")
-		reason = of.DisabledReason
+		reason = of.ErrorReason
 	case TestErrorNotFound:
 		rErr = of.NewFlagNotFoundResolutionError("not found")
 		reason = of.DefaultReason
@@ -395,6 +395,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
 				assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderName+"s")
+				assert.Contains(t, result.FlagMetadata, MetadataEvaluationError)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
 				assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))

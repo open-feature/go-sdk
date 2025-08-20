@@ -106,38 +106,27 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 
 		resultChan := make(chan *namedResult, len(providers))
 		notFoundChan := make(chan any)
-		errGrp, ctx := errgroup.WithContext(ctx)
+		errGrp, grpCtx := errgroup.WithContext(ctx)
 		for _, provider := range providers {
 			closedProvider := provider
 			errGrp.Go(func() error {
-				localChan := make(chan *namedResult)
-
-				go func(c context.Context, p *NamedProvider) {
-					result := evaluate(ctx, p, flag, defaultValue, evalCtx)
-					localChan <- &namedResult{
-						name: p.Name,
+				result := evaluate(grpCtx, closedProvider, flag, defaultValue, evalCtx)
+				notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
+				if !notFound && result.Error() != nil {
+					return &ProviderError{
+						ProviderName: closedProvider.Name,
+						Err:          result.Error(),
+					}
+				}
+				if !notFound {
+					resultChan <- &namedResult{
+						name: closedProvider.Name,
 						res:  &result,
 					}
-				}(ctx, closedProvider)
-
-				select {
-				case r := <-localChan:
-					notFound := r.res.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
-					if !notFound && r.res.Error() != nil {
-						return &ProviderError{
-							ProviderName: r.name,
-							Err:          r.res.Error(),
-						}
-					}
-					if !notFound {
-						resultChan <- r
-					} else {
-						notFoundChan <- struct{}{}
-					}
-					return nil
-				case <-ctx.Done():
-					return nil
+				} else {
+					notFoundChan <- struct{}{}
 				}
+				return nil
 			})
 		}
 
@@ -146,12 +135,12 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		notFoundCount := 0
 		for {
 			select {
-			case <-ctx.Done():
+			case <-grpCtx.Done():
 				// Error occurred
-				result := BuildDefaultResult(StrategyComparison, defaultValue, ctx.Err())
+				result := BuildDefaultResult(StrategyComparison, defaultValue, grpCtx.Err())
 				result.FlagMetadata[MetadataFallbackUsed] = false
 				result.FlagMetadata[MetadataIsDefaultValue] = true
-				result.FlagMetadata[MetadataEvaluationError] = ctx.Err().Error()
+				result.FlagMetadata[MetadataEvaluationError] = grpCtx.Err().Error()
 				result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
 				return result
 			case r := <-resultChan:
