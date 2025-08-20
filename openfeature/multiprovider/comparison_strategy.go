@@ -3,7 +3,7 @@ package multiprovider
 import (
 	"context"
 	"errors"
-	reflect "reflect"
+	"reflect"
 	"slices"
 	"strings"
 
