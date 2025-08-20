@@ -394,18 +394,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 			}
 			mp.setStatus(of.ErrorState)
 		}
-		mp.outboundEvents <- of.Event{
-			ProviderName: mp.Metadata().Name,
-			EventType:    of.ProviderError,
-			ProviderEventDetails: of.ProviderEventDetails{
-				Message:     fmt.Sprintf("internal provider %s encountered an error during initialization: %+v", pErr.ProviderName, pErr.Err),
-				FlagChanges: nil,
-				EventMetadata: map[string]any{
-					MetadataProviderName:  pErr.ProviderName,
-					MetadataInternalError: pErr.Error(),
-				},
-			},
-		}
+
 		return err
 	}
 	close(handlers)
@@ -435,17 +424,6 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	}()
 
 	mp.setStatus(of.ReadyState)
-	mp.outboundEvents <- of.Event{
-		ProviderName: mp.Metadata().Name,
-		EventType:    of.ProviderReady,
-		ProviderEventDetails: of.ProviderEventDetails{
-			Message:     "all internal providers initialized successfully",
-			FlagChanges: nil,
-			EventMetadata: map[string]any{
-				MetadataProviderName: "all",
-			},
-		},
-	}
 	mp.initialized = true
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"regexp"
 	"testing"
-	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
@@ -202,31 +201,9 @@ func TestMultiProvider_Init(t *testing.T) {
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	eventChan := make(chan of.Event)
-	go func() {
-		select {
-		case e := <-mp.EventChannel():
-			eventChan <- e
-			cancel()
-		case <-ctx.Done():
-			close(eventChan)
-		}
-	}()
 	err = mp.Init(evalCtx)
 	require.NoError(t, err)
 	assert.Equal(t, of.ReadyState, mp.Status())
-	event := <-eventChan
-	require.NotNil(t, eventChan, "ready event never emitted")
-	assert.Equal(t, mp.Metadata().Name, event.ProviderName)
-	assert.Equal(t, of.ProviderReady, event.EventType)
-	assert.Equal(t, of.ProviderEventDetails{
-		Message:     "all internal providers initialized successfully",
-		FlagChanges: nil,
-		EventMetadata: map[string]any{
-			MetadataProviderName: "all",
-		},
-	}, event.ProviderEventDetails)
 }
 
 func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
@@ -261,32 +238,9 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	eventChan := make(chan of.Event)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		select {
-		case e := <-mp.EventChannel():
-			eventChan <- e
-		case <-ctx.Done():
-			return
-		}
-	}()
 	err = mp.Init(evalCtx)
 	require.Errorf(t, err, "Provider provider3: test error")
 	assert.Equal(t, of.ErrorState, mp.totalStatus)
-	cancel()
-	event := <-eventChan
-	assert.NotZero(t, event)
-	assert.Equal(t, mp.Metadata().Name, event.ProviderName)
-	assert.Equal(t, of.ProviderError, event.EventType)
-	assert.Equal(t, of.ProviderEventDetails{
-		Message:     "internal provider provider3 encountered an error during initialization: test error",
-		FlagChanges: nil,
-		EventMetadata: map[string]any{
-			MetadataProviderName:  "provider3",
-			MetadataInternalError: "Provider provider3: test error",
-		},
-	}, event.ProviderEventDetails)
 }
 
 func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
