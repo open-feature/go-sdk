@@ -95,9 +95,9 @@ func init() {
 	// used for mapping provider event types & provider states to comparable values for evaluation
 	stateValues = map[of.State]int{
 		"":            -1, // Not a real state, but used for handling provider config changes
-		of.ErrorState: 0,
+		of.ReadyState: 0,
 		of.StaleState: 1,
-		of.ReadyState: 2,
+		of.ErrorState: 2,
 	}
 	// used for mapping
 	stateTable = [3]of.State{

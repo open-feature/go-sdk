@@ -311,3 +311,35 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 	mp.Shutdown()
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
+
+func TestMultiProvider_statusEvaluation(t *testing.T) {
+	multiProvider := &MultiProvider{
+		totalStatus:    of.NotReadyState,
+		providerStatus: make(map[string]of.State),
+	}
+
+	t.Run("empty state is ready", func(t *testing.T) {
+		assert.Equal(t, of.ReadyState, multiProvider.evaluateState())
+	})
+
+	t.Run("all states ready is ready", func(t *testing.T) {
+		multiProvider.providerStatus["provider1"] = of.ReadyState
+		multiProvider.providerStatus["provider2"] = of.ReadyState
+		multiProvider.providerStatus["provider3"] = of.ReadyState
+		assert.Equal(t, of.ReadyState, multiProvider.evaluateState())
+	})
+
+	t.Run("one state stale is stale", func(t *testing.T) {
+		multiProvider.providerStatus["provider1"] = of.ReadyState
+		multiProvider.providerStatus["provider2"] = of.ReadyState
+		multiProvider.providerStatus["provider3"] = of.StaleState
+		assert.Equal(t, of.StaleState, multiProvider.evaluateState())
+	})
+
+	t.Run("one state error is error", func(t *testing.T) {
+		multiProvider.providerStatus["provider1"] = of.ReadyState
+		multiProvider.providerStatus["provider2"] = of.StaleState
+		multiProvider.providerStatus["provider3"] = of.ErrorState
+		assert.Equal(t, of.ErrorState, multiProvider.evaluateState())
+	})
+}
