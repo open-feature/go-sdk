@@ -288,12 +288,12 @@ func (h *HookIsolator) updateEvalContext(evalCtx of.EvaluationContext) {
 func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
 	noTargetingKey := make(map[string]any)
 	for k, v := range flatCtx {
-		if k != "targetingKey" {
+		if k != of.TargetingKey {
 			noTargetingKey[k] = v
 		}
 	}
 	var targetingKey string
-	if tk, ok := flatCtx["targetingKey"]; ok {
+	if tk, ok := flatCtx[of.TargetingKey]; ok {
 		targetingKey, _ = tk.(string)
 	}
 	return of.NewEvaluationContext(targetingKey, noTargetingKey)
@@ -302,7 +302,7 @@ func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
 // flattenContext Convert a [of.EvaluationContext] to a [of.FlattenedContext]
 func flattenContext(evalCtx of.EvaluationContext) of.FlattenedContext {
 	flatCtx := evalCtx.Attributes()
-	flatCtx["targetingKey"] = evalCtx.TargetingKey()
+	flatCtx[of.TargetingKey] = evalCtx.TargetingKey()
 	return flatCtx
 }
 
