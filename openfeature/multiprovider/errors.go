@@ -31,17 +31,11 @@ func NewAggregateError(providerErrors []ProviderError) AggregateError {
 }
 
 func (ae AggregateError) Error() string {
-	size := len(ae)
-	switch size {
-	case 0:
+	if len(ae) == 0 {
 		return ""
-	case 1:
-		for _, err := range ae {
-			return err.Error()
-		}
 	}
 
-	errs := make([]error, 0, size)
+	errs := make([]error, 0, len(ae))
 	for i := range ae {
 		errs = append(errs, &ae[i])
 	}
