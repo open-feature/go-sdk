@@ -204,7 +204,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	}
 
 	config := &Configuration{
-		logger:        slog.New(discardLogHandler),
+		logger:        slog.New(slog.DiscardHandler),
 		providerHooks: make(map[string][]of.Hook),
 		timeout:       5 * time.Second, // Default timeout
 	}
