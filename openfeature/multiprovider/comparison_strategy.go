@@ -133,6 +133,8 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		results := make([]namedResult, 0, len(providers))
 		resultValues := make([]T, 0, len(providers))
 		notFoundCount := 0
+
+	ListenerLoop:
 		for {
 			select {
 			case <-grpCtx.Done():
@@ -148,7 +150,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 				resultValues = append(resultValues, r.res.Value)
 				if (len(results) + notFoundCount) == len(providers) {
 					// All results accounted for
-					goto continueComparison
+					break ListenerLoop
 				}
 			case <-notFoundChan:
 				notFoundCount += 1
@@ -161,11 +163,10 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 				}
 				if (len(results) + notFoundCount) == len(providers) {
 					// All results accounted for
-					goto continueComparison
+					break ListenerLoop
 				}
 			}
 		}
-	continueComparison:
 		// Evaluate Results Are Equal
 		metadata := make(of.FlagMetadata)
 		metadata[MetadataStrategyUsed] = StrategyComparison
