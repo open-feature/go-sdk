@@ -292,7 +292,11 @@ func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
 			noTargetingKey[k] = v
 		}
 	}
-	return of.NewEvaluationContext(flatCtx["targetingKey"].(string), noTargetingKey)
+	var targetingKey string
+	if tk, ok := flatCtx["targetingKey"]; ok {
+		targetingKey, _ = tk.(string)
+	}
+	return of.NewEvaluationContext(targetingKey, noTargetingKey)
 }
 
 // flattenContext Convert a [of.EvaluationContext] to a [of.FlattenedContext]
