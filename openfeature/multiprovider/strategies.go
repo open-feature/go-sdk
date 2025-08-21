@@ -120,8 +120,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 // evaluate Generic method used to resolve a flag from a single provider without losing type information.
 func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 	var resolution of.GenericResolutionDetail[T]
-	val := any(defaultVal)
-	switch v := val.(type) {
+	switch v := any(defaultVal).(type) {
 	case bool:
 		res := provider.BooleanEvaluation(ctx, flag, v, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
@@ -142,6 +141,10 @@ func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag st
 		res := provider.ObjectEvaluation(ctx, flag, defaultVal, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
 		resolution.Value = any(res.Value).(T)
+	}
+
+	if resolution.FlagMetadata == nil {
+		resolution.FlagMetadata = make(of.FlagMetadata, 2)
 	}
 
 	resolution.FlagMetadata[MetadataProviderName] = provider.Name
