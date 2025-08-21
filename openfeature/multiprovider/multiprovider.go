@@ -22,6 +22,7 @@ const (
 	MetadataProviderType                   = "multiprovider-provider-type"
 	MetadataInternalError                  = "multiprovider-internal-error"
 	MetadataSuccessfulProviderName         = "multiprovider-successful-provider-name"
+	MetadataSuccessfulProviderNames        = MetadataSuccessfulProviderName + "s"
 	MetadataStrategyUsed                   = "multiprovider-strategy-used"
 	MetadataFallbackUsed                   = "multiprovider-fallback-used"
 	MetadataIsDefaultValue                 = "multiprovider-is-result-default-value"

@@ -192,7 +192,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 			}
 			// maintain stable order of metadata results
 			slices.Sort(success)
-			metadata[MetadataSuccessfulProviderName+"s"] = strings.Join(success, ", ")
+			metadata[MetadataSuccessfulProviderNames] = strings.Join(success, ", ")
 			// Unique values only
 			slices.Sort(variants)
 			variants = slices.Compact(variants)
