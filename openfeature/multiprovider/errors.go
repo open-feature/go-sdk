@@ -42,8 +42,8 @@ func (ae AggregateError) Error() string {
 	}
 
 	errs := make([]error, 0, size)
-	for _, err := range ae {
-		errs = append(errs, &err)
+	for i := range ae {
+		errs = append(errs, &ae[i])
 	}
 	return errors.Join(errs...).Error()
 }
