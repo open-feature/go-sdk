@@ -15,7 +15,7 @@ const (
 	// StrategyFirstMatch First provider whose response that is not FlagNotFound will be returned. This is executed
 	// sequentially, and not in parallel.
 	StrategyFirstMatch EvaluationStrategy = "strategy-first-match"
-	// StrategyFirstSuccess First provider response that is not an error will be returned. This is executed in parallel
+	// StrategyFirstSuccess First provider response that is not an error will be returned. This is executed sequentially
 	StrategyFirstSuccess EvaluationStrategy = "strategy-first-success"
 	// StrategyComparison All providers are called in parallel. If all responses agree the value will be returned.
 	// Otherwise, the value from the designated fallback provider's response will be returned. The fallback provider

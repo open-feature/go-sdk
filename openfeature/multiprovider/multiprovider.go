@@ -261,7 +261,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, nil)
 	default:
 		if config.customStrategy == nil {
-			return nil, fmt.Errorf("%s is an unknown evalutation strategy", evaluationStrategy)
+			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)
 		}
 		strategy = config.customStrategy
 	}
