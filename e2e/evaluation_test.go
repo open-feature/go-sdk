@@ -109,7 +109,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").BooleanValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").BooleanValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -138,7 +138,7 @@ func theResolvedBooleanValueShouldBe(ctx context.Context, expectedValueStr strin
 func aStringFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -162,7 +162,7 @@ func theResolvedStringValueShouldBe(ctx context.Context, expectedValue string) e
 func anIntegerFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").IntValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").IntValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -186,7 +186,7 @@ func theResolvedIntegerValueShouldBe(ctx context.Context, expectedValue int64) e
 func aFloatFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").FloatValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").FloatValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -208,7 +208,7 @@ func theResolvedFloatValueShouldBe(ctx context.Context, expectedValue float64) e
 }
 
 func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, flagKey string) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").ObjectValue(ctx, flagKey, nil, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").ObjectValue(ctx, flagKey, nil, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -270,7 +270,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").BooleanValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").BooleanValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -314,7 +314,7 @@ func theResolvedBooleanDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -353,7 +353,7 @@ func theResolvedStringDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe
 func anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -392,7 +392,7 @@ func theResolvedIntegerDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aFloatFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").FloatValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").FloatValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -431,7 +431,7 @@ func theResolvedFloatDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 	ctx context.Context, flagKey string,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").ObjectValueDetails(ctx, flagKey, nil, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").ObjectValueDetails(ctx, flagKey, nil, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -538,7 +538,7 @@ func aFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("no contextAwareEvaluationData found")
 	}
 
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
+	got, err := openfeature.GetNamedClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -568,7 +568,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 		return errors.New("no contextAwareEvaluationData found")
 	}
 
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").StringValue(
+	got, err := openfeature.GetNamedClient("evaluation-test").StringValue(
 		ctx, ctxAwareEvalData.flagKey, ctxAwareEvalData.defaultValue, openfeature.EvaluationContext{},
 	)
 	if err != nil {
@@ -585,7 +585,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, stringFlagNotFoundData{
 		evalDetails:  got,
@@ -642,7 +642,7 @@ func theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateAMissingFlagWith
 func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.GetApiInstance().GetNamedClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.GetNamedClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, typeErrorData{
 		evalDetails:  got,

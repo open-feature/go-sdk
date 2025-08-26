@@ -989,7 +989,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 
 		// assert client transitioned to ERROR
 		eventually(t, func() bool {
-			return GetApiInstance().GetClient().State() == ErrorState
+			return GetClient().State() == ErrorState
 		}, time.Second, time.Millisecond*100, "")
 
 		select {
@@ -1032,7 +1032,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 
 		// assert client transitioned to STALE
 		eventually(t, func() bool {
-			return GetApiInstance().GetClient().State() == StaleState
+			return GetClient().State() == StaleState
 		}, time.Second, time.Millisecond*100, "")
 
 		select {

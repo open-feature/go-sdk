@@ -89,7 +89,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 		t.Error("error setting provider", err)
 	}
 	openfeature.AddHooks(&hook)
-	client := openfeature.GetApiInstance().GetNamedClient("test-app")
+	client := openfeature.GetNamedClient("test-app")
 
 	t.Run("test boolean success", func(t *testing.T) {
 		res, err := client.BooleanValue(

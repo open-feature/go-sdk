@@ -118,7 +118,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	client := GetApiInstance().GetNamedClient(t.Name())
+	client := GetNamedClient(t.Name())
 	clientEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]any{

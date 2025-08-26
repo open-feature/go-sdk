@@ -12,7 +12,7 @@ func TestParallelSingletonUsage(t *testing.T) {
 	t.Parallel()
 
 	testProvider := NewTestProvider()
-	err := openfeature.GetApiInstance().SetProviderAndWait(testProvider)
+	err := openfeature.SetProviderAndWait(testProvider)
 	if err != nil {
 		t.Errorf("unable to set provider")
 	}
@@ -157,8 +157,7 @@ func Test_TestAwareProviderPanics(t *testing.T) {
 }
 
 func functionUnderTest() bool {
-	got := openfeature.GetApiInstance().
-		GetClient().
+	got := openfeature.GetClient().
 		Boolean(context.TODO(), "my_flag", false, openfeature.EvaluationContext{})
 	return got
 }
