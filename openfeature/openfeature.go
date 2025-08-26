@@ -23,9 +23,22 @@ func initSingleton() {
 // GetApiInstance returns the current singleton IEvaluation instance.
 // This is the preferred interface to interact with OpenFeature functionalities
 //
+// Deprecated: Use GetClient or GetNamedClient directly instead
+//
 //nolint:staticcheck // Renaming this now would be a breaking change.
 func GetApiInstance() IEvaluation {
 	return api
+}
+
+// GetClient returns a client for the default domain. The default domain client is the IClient instance that wraps
+// around an unnamed FeatureProvider
+func GetClient() IClient {
+	return api.GetClient()
+}
+
+// GetNamedClient returns an IClient instance for the FeatureProvider mapped by the specified domain
+func GetNamedClient(domain string) IClient {
+	return api.GetNamedClient(domain)
 }
 
 // SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from
