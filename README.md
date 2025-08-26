@@ -69,7 +69,7 @@ func main() {
     // Register your feature flag provider
     openfeature.SetProviderAndWait(openfeature.NoopProvider{})
     // Create a new client
-    client := openfeature.NewClient("app")
+    client := openfeature.GetNamedClient("app")
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
         context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
@@ -134,7 +134,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 ))
 
 // set a value to the client context
-client := openfeature.NewClient("my-app")
+client := openfeature.GetClient()
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]any{
         "version":  "1.4.6",
@@ -165,7 +165,7 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 openfeature.AddHooks(ExampleGlobalHook{})
 
 // add a hook on this client, to run on all evaluations made by this client
-client := openfeature.NewClient("my-app")
+client := openfeature.GetClient()
 client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
@@ -181,8 +181,8 @@ This is essential for robust experimentation powered by feature flags.
 For example, a flag enhancing the appearance of a UI component might drive user engagement to a new feature; to test this hypothesis, telemetry collected by a [hook](#hooks) or [provider](#providers) can be associated with telemetry reported in the client's `track` function.
 
 ```go
-// initilize a client
-client := openfeature.NewClient('my-app')
+// initialize a client
+client := openfeature.GetClient()
 
 // trigger tracking event action
 client.Track(
@@ -232,7 +232,7 @@ func main() {
     openfeature.AddHooks(loggingHook)
 
     // Create a new client
-    client := openfeature.NewClient("example")
+    client := openfeature.GetNamedClient("example")
 
     // Attempt to evaluate a flag that doesn't exist
     _ = client.Boolean(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
@@ -261,9 +261,9 @@ openfeature.SetProviderAndWait(NewLocalProvider())
 openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
 
 // A Client backed by default provider
-clientWithDefault := openfeature.NewClient("")
+clientWithDefault := openfeature.GetClient()
 // A Client backed by NewCachedProvider
-clientForCache := openfeature.NewClient("clientForCache")
+clientForCache := openfeature.GetNamedClient("clientForCache")
 ```
 
 ### Eventing
@@ -291,7 +291,7 @@ var providerErrorCallback = func(details openfeature.EventDetails) {
     // callback implementation
 }
 
-client := openfeature.NewClient("clientName")
+client := openfeature.GetClient()
 
 // Client event handler
 client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
@@ -453,7 +453,7 @@ import (
 )
 
 testProvider := NewTestProvider()
-err := openfeature.GetApiInstance().SetProviderAndWait(testProvider)
+err := openfeature.SetProviderAndWait(testProvider)
 if err != nil {
   t.Errorf("unable to set provider")
 }
