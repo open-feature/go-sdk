@@ -22,7 +22,7 @@ func initSingleton() {
 
 // GetApiInstance returns the current singleton IEvaluation instance.
 //
-// Deprecated: Use GetClient or GetNamedClient directly instead
+// Deprecated: Use GetClient or NewClient directly instead
 //
 //nolint:staticcheck // Renaming this now would be a breaking change.
 func GetApiInstance() IEvaluation {
@@ -33,11 +33,6 @@ func GetApiInstance() IEvaluation {
 // around an unnamed FeatureProvider
 func GetClient() IClient {
 	return api.GetClient()
-}
-
-// GetNamedClient returns an IClient instance for the FeatureProvider mapped by the specified domain
-func GetNamedClient(domain string) IClient {
-	return api.GetNamedClient(domain)
 }
 
 // SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from

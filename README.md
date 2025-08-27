@@ -69,7 +69,7 @@ func main() {
     // Register your feature flag provider
     openfeature.SetProviderAndWait(openfeature.NoopProvider{})
     // Create a new client
-    client := openfeature.GetNamedClient("app")
+    client := openfeature.NewClient("app")
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
         context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
@@ -232,7 +232,7 @@ func main() {
     openfeature.AddHooks(loggingHook)
 
     // Create a new client
-    client := openfeature.GetNamedClient("example")
+    client := openfeature.NewClient("example")
 
     // Attempt to evaluate a flag that doesn't exist
     _ = client.Boolean(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
@@ -263,7 +263,7 @@ openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
 // A Client backed by default provider
 clientWithDefault := openfeature.GetClient()
 // A Client backed by NewCachedProvider
-clientForCache := openfeature.GetNamedClient("clientForCache")
+clientForCache := openfeature.NewClient("clientForCache")
 ```
 
 ### Eventing

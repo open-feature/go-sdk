@@ -118,7 +118,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	client := GetNamedClient(t.Name())
+	client := NewClient(t.Name())
 	clientEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]any{
