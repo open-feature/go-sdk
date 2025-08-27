@@ -22,17 +22,17 @@ func initSingleton() {
 
 // GetApiInstance returns the current singleton IEvaluation instance.
 //
-// Deprecated: Use GetClient or NewClient directly instead
+// Deprecated: Use NewDefaultClient or NewClient directly instead
 //
 //nolint:staticcheck // Renaming this now would be a breaking change.
 func GetApiInstance() IEvaluation {
 	return api
 }
 
-// GetClient returns a client for the default domain. The default domain client is the IClient instance that wraps
-// around an unnamed FeatureProvider
-func GetClient() IClient {
-	return api.GetClient()
+// NewDefaultClient returns a client for the default domain. The default domain client is the IClient instance that
+// wraps around an unnamed FeatureProvider
+func NewDefaultClient() IClient {
+	return newClient("", api, eventing)
 }
 
 // SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from

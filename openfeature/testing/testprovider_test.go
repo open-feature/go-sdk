@@ -157,7 +157,7 @@ func Test_TestAwareProviderPanics(t *testing.T) {
 }
 
 func functionUnderTest() bool {
-	got := openfeature.GetClient().
+	got := openfeature.NewDefaultClient().
 		Boolean(context.TODO(), "my_flag", false, openfeature.EvaluationContext{})
 	return got
 }

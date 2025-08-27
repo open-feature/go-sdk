@@ -1405,7 +1405,7 @@ func TestRequirement_5_3_5(t *testing.T) {
 	t.Cleanup(initSingleton)
 
 	eventually(t, func() bool {
-		return GetClient().State() == NotReadyState
+		return NewDefaultClient().State() == NotReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
 
 	eventing := &ProviderEventing{
