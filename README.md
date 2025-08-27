@@ -134,7 +134,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 ))
 
 // set a value to the client context
-client := openfeature.GetClient()
+client := openfeature.NewClient("my-app")
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]any{
         "version":  "1.4.6",
@@ -165,7 +165,7 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 openfeature.AddHooks(ExampleGlobalHook{})
 
 // add a hook on this client, to run on all evaluations made by this client
-client := openfeature.GetClient()
+client := openfeature.NewClient("my-app")
 client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
@@ -182,7 +182,7 @@ For example, a flag enhancing the appearance of a UI component might drive user 
 
 ```go
 // initialize a client
-client := openfeature.GetClient()
+client := openfeature.NewClient('my-app')
 
 // trigger tracking event action
 client.Track(
@@ -261,7 +261,7 @@ openfeature.SetProviderAndWait(NewLocalProvider())
 openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
 
 // A Client backed by default provider
-clientWithDefault := openfeature.GetClient()
+clientWithDefault := openfeature.NewDefaultClient()
 // A Client backed by NewCachedProvider
 clientForCache := openfeature.NewClient("clientForCache")
 ```
@@ -291,7 +291,7 @@ var providerErrorCallback = func(details openfeature.EventDetails) {
     // callback implementation
 }
 
-client := openfeature.GetClient()
+client := openfeature.NewDefaultClient()
 
 // Client event handler
 client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
