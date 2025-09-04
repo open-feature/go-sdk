@@ -3,12 +3,12 @@ module github.com/open-feature/go-sdk
 go 1.24.0
 
 require (
-	github.com/cucumber/godog v0.15.0
+	github.com/cucumber/godog v0.15.1
 	github.com/go-logr/logr v1.4.3
 	github.com/stretchr/testify v1.9.0
-	go.uber.org/mock v0.5.2
 	golang.org/x/sync v0.15.0
-	golang.org/x/text v0.26.0
+	go.uber.org/mock v0.6.0
+	golang.org/x/text v0.28.0
 )
 
 require (
@@ -20,6 +20,6 @@ require (
 	github.com/hashicorp/go-memdb v1.3.4 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 )
