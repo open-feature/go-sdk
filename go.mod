@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/cucumber/godog v0.15.0
 	github.com/go-logr/logr v1.4.3
-	go.uber.org/mock v0.5.2
+	go.uber.org/mock v0.6.0
 	golang.org/x/text v0.26.0
 )
 
