@@ -58,7 +58,7 @@ jobs:
       - name: Run e2e tests
         run: go test -tags testtools -timeout 1m -race -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/...
       - name: Upload coverage to Codecov (unit)
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         with:
           name: Code Coverage for GO SDK (unit)
           files: ./coverage-unit.out
@@ -67,7 +67,7 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
       - name: Upload coverage to Codecov (e2e)
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         with:
           name: Code Coverage for GO SDK (e2e)
           files: ./coverage-e2e.out
