@@ -88,7 +88,10 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 	api.RemoveHandler(eventType, callback)
 }
 
-// Shutdown active providers
+// Shutdown unconditionally calls shutdown on all registered providers,
+// regardless of their state. It resets the state of the API, removing all
+// hooks, event handlers, and providers.
 func Shutdown() {
 	api.Shutdown()
+	initSingleton()
 }
