@@ -3,7 +3,7 @@ module github.com/open-feature/go-sdk
 go 1.24.0
 
 require (
-	github.com/cucumber/godog v0.15.0
+	github.com/cucumber/godog v0.15.1
 	github.com/go-logr/logr v1.4.3
 	go.uber.org/mock v0.5.2
 	golang.org/x/text v0.26.0
@@ -16,5 +16,5 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-memdb v1.3.4 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 )
