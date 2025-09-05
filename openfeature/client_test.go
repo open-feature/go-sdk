@@ -1202,7 +1202,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 func TestRequirement_1_7_2(t *testing.T) {
 	t.Cleanup(initSingleton)
 
-	if GetApiInstance().GetNamedClient(t.Name()).State() != NotReadyState {
+	if NewClient(t.Name()).State() != NotReadyState {
 		t.Fatalf("expected client to report NOT READY state")
 	}
 
@@ -1220,7 +1220,7 @@ func TestRequirement_1_7_2(t *testing.T) {
 		t.Fatalf("failed to set up provider: %v", err)
 	}
 
-	if GetApiInstance().GetNamedClient(t.Name()).State() != ReadyState {
+	if NewClient(t.Name()).State() != ReadyState {
 		t.Fatalf("expected client to report READY state")
 	}
 }
@@ -1244,7 +1244,7 @@ func TestRequirement_1_7_3(t *testing.T) {
 	}
 
 	_ = SetNamedProviderAndWait(t.Name(), provider)
-	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+	if NewClient(t.Name()).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1269,7 +1269,7 @@ func TestRequirement_1_7_4(t *testing.T) {
 
 	_ = SetNamedProviderAndWait(t.Name(), provider)
 
-	if GetApiInstance().GetNamedClient(t.Name()).State() != ErrorState {
+	if NewClient(t.Name()).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1294,7 +1294,7 @@ func TestRequirement_1_7_5(t *testing.T) {
 
 	_ = SetNamedProviderAndWait(t.Name(), provider)
 
-	if GetApiInstance().GetNamedClient(t.Name()).State() != FatalState {
+	if NewClient(t.Name()).State() != FatalState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1324,9 +1324,9 @@ func TestRequirement_1_7_6(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = GetApiInstance().SetProvider(notReadyEventingProvider)
+	_ = SetProvider(notReadyEventingProvider)
 
-	client := GetApiInstance().GetNamedClient("somOtherClient")
+	client := NewClient("somOtherClient")
 	client.AddHooks(mockHook)
 
 	if client.State() != NotReadyState {
@@ -1372,7 +1372,7 @@ func TestRequirement_1_7_7(t *testing.T) {
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderFatalError, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-	client := GetApiInstance().GetNamedClient(t.Name())
+	client := NewClient(t.Name())
 	client.AddHooks(mockHook)
 
 	if client.State() != FatalState {
@@ -1405,7 +1405,7 @@ func TestRequirement_5_3_5(t *testing.T) {
 	t.Cleanup(initSingleton)
 
 	eventually(t, func() bool {
-		return GetApiInstance().GetClient().State() == NotReadyState
+		return NewDefaultClient().State() == NotReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
 
 	eventing := &ProviderEventing{
@@ -1425,26 +1425,26 @@ func TestRequirement_5_3_5(t *testing.T) {
 	}
 
 	eventually(t, func() bool {
-		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
+		return NewClient(t.Name()).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderStale})
 	eventually(t, func() bool {
-		return GetApiInstance().GetNamedClient(t.Name()).State() == StaleState
+		return NewClient(t.Name()).State() == StaleState
 	}, time.Second, 100*time.Millisecond, "expected client to report STALE state")
 
 	eventing.Invoke(Event{EventType: ProviderError})
 	eventually(t, func() bool {
-		return GetApiInstance().GetNamedClient(t.Name()).State() == ErrorState
+		return NewClient(t.Name()).State() == ErrorState
 	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
 
 	eventing.Invoke(Event{EventType: ProviderReady})
 	eventually(t, func() bool {
-		return GetApiInstance().GetNamedClient(t.Name()).State() == ReadyState
+		return NewClient(t.Name()).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderError, ProviderEventDetails: ProviderEventDetails{ErrorCode: ProviderFatalCode}})
 	eventually(t, func() bool {
-		return GetApiInstance().GetNamedClient(t.Name()).State() == FatalState
+		return NewClient(t.Name()).State() == FatalState
 	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
 }
