@@ -30,7 +30,7 @@ const (
 )
 
 type (
-	// ProviderMap Alias for a map containing unique names for each included [of.FeatureProvider]
+	// ProviderMap is an alias for a map containing unique names for each included [of.FeatureProvider]
 	ProviderMap = map[string]of.FeatureProvider
 
 	// MultiProvider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
@@ -60,8 +60,8 @@ type (
 		of.FeatureProvider
 	}
 
-	// Configuration MultiProvider's internal configuration
-	Configuration struct {
+	// configuration is the internal configuration of a [MultiProvider]
+	configuration struct {
 		useFallback      bool
 		fallbackProvider of.FeatureProvider
 		customStrategy   StrategyFn[FlagTypes]
@@ -72,8 +72,8 @@ type (
 		customComparator Comparator
 	}
 
-	// Option Function used for setting Configuration via the options pattern
-	Option func(*Configuration)
+	// Option function used for setting configuration via the options pattern
+	Option func(*configuration)
 
 	// Private Types
 	namedEvent struct {
@@ -118,21 +118,21 @@ func init() {
 
 // WithLogger sets a logger to be used with slog for internal logging. By default, all logs are discarded
 func WithLogger(l *slog.Logger) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.logger = l
 	}
 }
 
 // WithTimeout set a timeout for the total runtime for evaluation of parallel strategies
 func WithTimeout(d time.Duration) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.timeout = d
 	}
 }
 
 // WithFallbackProvider sets a fallback provider when using the StrategyComparison
 func WithFallbackProvider(p of.FeatureProvider) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.fallbackProvider = p
 		conf.useFallback = true
 	}
@@ -141,14 +141,14 @@ func WithFallbackProvider(p of.FeatureProvider) Option {
 // WithCustomComparator sets a custom [Comparator] to use when using [StrategyComparison] when [of.FeatureProvider.ObjectEvaluation]
 // is performed. This is required if the returned objects are not comparable.
 func WithCustomComparator(comparator Comparator) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.customComparator = comparator
 	}
 }
 
 // WithCustomStrategy sets a custom strategy. This must be used in conjunction with StrategyCustom
 func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.customStrategy = s
 	}
 }
@@ -157,7 +157,7 @@ func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 // instances. For hooks that target specific providers make sure to attach them to that provider directly, or use the
 // [WithProviderHooks] Option if that provider does not provide its own hook functionality
 func WithGlobalHooks(hooks ...of.Hook) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.hooks = hooks
 	}
 }
@@ -167,7 +167,7 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 // that execute around a specific provider, but that provider does not currently accept a way to set hooks. This option
 // can be used multiple times using unique provider names. Using a provider name that is not known will cause an error.
 func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
-	return func(conf *Configuration) {
+	return func(conf *configuration) {
 		conf.providerHooks[providerName] = hooks
 	}
 }
@@ -212,7 +212,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		return nil, errors.New("providerMap cannot be nil or empty")
 	}
 
-	config := &Configuration{
+	config := &configuration{
 		logger:        slog.New(slog.DiscardHandler),
 		providerHooks: make(map[string][]of.Hook),
 		timeout:       5 * time.Second, // Default timeout
