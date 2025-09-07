@@ -18,7 +18,7 @@ func setupFuzzClient(f *testing.F) *openfeature.Client {
 		f.Errorf("error setting up provider %v", err)
 	}
 
-	return openfeature.GetApiInstance().GetNamedClient(f.Name()).(*openfeature.Client)
+	return openfeature.NewClient(f.Name())
 }
 
 func FuzzBooleanEvaluation(f *testing.F) {
