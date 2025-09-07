@@ -70,6 +70,7 @@ type (
 		timeout          time.Duration
 		hooks            []of.Hook
 		providerHooks    map[string][]of.Hook
+		customComparator Comparator
 	}
 
 	// Option Function used for setting Configuration via the options pattern
@@ -135,6 +136,14 @@ func WithFallbackProvider(p of.FeatureProvider) Option {
 	return func(conf *Configuration) {
 		conf.fallbackProvider = p
 		conf.useFallback = true
+	}
+}
+
+// WithCustomComparator sets a custom [Comparator] to use when using [StrategyComparison] when [of.FeatureProvider.ObjectEvaluation]
+// is performed. This is required if the returned objects are not comparable.
+func WithCustomComparator(comparator Comparator) Option {
+	return func(conf *Configuration) {
+		conf.customComparator = comparator
 	}
 }
 
@@ -259,7 +268,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	case StrategyFirstSuccess:
 		strategy = NewFirstSuccessStrategy(multiProvider.Providers())
 	case StrategyComparison:
-		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, nil)
+		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator)
 	default:
 		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)
