@@ -7,6 +7,8 @@ import (
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
+// NewFirstSuccessStrategy returns a [StrategyFn] that returns the result of the First [of.FeatureProvider] whose response
+// is not an error. This executed sequentially.
 func NewFirstSuccessStrategy(providers []*NamedProvider) StrategyFn[FlagTypes] {
 	return firstSuccessStrategyFn[FlagTypes](providers)
 }

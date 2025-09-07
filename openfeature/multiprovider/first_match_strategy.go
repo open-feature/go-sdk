@@ -6,6 +6,8 @@ import (
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
+// NewFirstMatchStrategy returns a [StrategyFn] that returns the result of the first [of.FeatureProvider] whose response is
+// not [of.FlagNotFoundCode]. This is executed sequentially, and not in parallel.
 func NewFirstMatchStrategy(providers []*NamedProvider) StrategyFn[FlagTypes] {
 	return firstMatchStrategyFn[FlagTypes](providers)
 }
