@@ -47,7 +47,7 @@ type (
 	FlagTypes interface {
 		int64 | float64 | string | bool | any
 	}
-	// StrategyFn is a function type that defines the signature for a strategy function.
+	// StrategyFn defines the signature for a strategy function.
 	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T]
 )
 
