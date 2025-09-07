@@ -14,12 +14,10 @@ import (
 type Comparator func(values []any) bool
 
 // NewComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when
-// there is a comparison failure -- prior to returning a default result. The Comparator parameter is optional and nil
-// can be passed as long as ObjectEvaluation is never called. Unless the `alwaysUseCustom` parameter is true the default
-// comparisons built into Go will be used. The custom Comparator will only be used for ObjectEvaluation. However, if the
-// parameter is set to true the custom Comparator will always be used regardless of evaluation type. If ObjectEvaluation
-// is called without setting a Comparator and the returned object is not `comparable` then the a panic will occur. A
-// panic will always occur if the Comparator is nil, but `alwaysUseCustom` is true.
+// there is a comparison failure -- prior to returning a default result. The [Comparator] parameter is optional and nil
+// can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
+// will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
+// called without setting a [Comparator], and the returned object(s) are not comparable, then a panic will occur.
 func NewComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
 	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
 }
