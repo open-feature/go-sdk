@@ -29,11 +29,9 @@ func GetApiInstance() IEvaluation {
 	return api
 }
 
-// NewDefaultClient returns a client for the default domain. The default domain client is the IClient instance that
-// wraps around an unnamed FeatureProvider
-func NewDefaultClient() IClient {
 // NewDefaultClient returns a [Client] for the default domain. The default domain [Client] is the [IClient] instance that
 // wraps around an unnamed [FeatureProvider]
+func NewDefaultClient() *Client {
 	return newClient("", api, eventing)
 }
 
