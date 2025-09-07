@@ -22,7 +22,7 @@ func initSingleton() {
 
 // GetApiInstance returns the current singleton IEvaluation instance.
 //
-// Deprecated: Use NewDefaultClient or NewClient directly instead
+// Deprecated: use [NewDefaultClient] or [NewClient] directly instead
 //
 //nolint:staticcheck // Renaming this now would be a breaking change.
 func GetApiInstance() IEvaluation {
