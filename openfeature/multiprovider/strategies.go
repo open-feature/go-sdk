@@ -9,27 +9,35 @@ import (
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
+// EvaluationStrategy options
 const (
-	// Strategies
-
-	// StrategyFirstMatch First provider whose response that is not FlagNotFound will be returned. This is executed
-	// sequentially, and not in parallel.
+	// StrategyFirstMatch returns the result of the first [of.FeatureProvider] whose response is not [of.FlagNotFoundCode].
+	// This is executed sequentially, and not in parallel. Any returned errors from a provider other than flag not found
+	// will result in a default response with a set error.
 	StrategyFirstMatch EvaluationStrategy = "strategy-first-match"
-	// StrategyFirstSuccess First provider response that is not an error will be returned. This is executed sequentially
+	// StrategyFirstSuccess returns the result of the First [of.FeatureProvider] whose response that is not an error.
+	// This is very similar to [StrategyFirstMatch], but does not raise errors. This executed sequentially.
 	StrategyFirstSuccess EvaluationStrategy = "strategy-first-success"
-	// StrategyComparison All providers are called in parallel. If all responses agree the value will be returned.
-	// Otherwise, the value from the designated fallback provider's response will be returned. The fallback provider
-	// will be assigned to the first provider registered.
+	// StrategyComparison returns a response of all [of.FeatureProvider] instances in agreement. All providers are
+	// called in parallel and then the results of each non-error result are compared to each other. If all responses
+	// agree, then that value will be returned. Otherwise, the value from the designated fallback [of.FeatureProvider]
+	// instance's response will be returned. The fallback provider will be assigned to the first provider registered if
+	// the [WithFallbackProvider] Option is not explicitly set.
 	StrategyComparison EvaluationStrategy = "strategy-comparison"
-	// StrategyCustom allows for using a custom Strategy implementation. If this is set you MUST use the WithCustomStrategy
-	// option to set it
+	// StrategyCustom allows for using a custom [StrategyFn] implementation. If this is set you MUST use the WithCustomStrategy
+	// Option to set it
 	StrategyCustom EvaluationStrategy = "strategy-custom"
+)
 
+// Additional [of.Reason] options
+const (
 	ReasonAggregated         of.Reason = "AGGREGATED"
 	ReasonAggregatedFallback of.Reason = "AGGREGATED_FALLBACK"
-
-	ErrAggregationNotAllowedText = "object evaluation not allowed for non-comparable types without custom comparable func"
 )
+
+// ErrAggregationNotAllowedText sentinel returned if [of.FeatureProvider.ObjectEvaluation] is called without a set custom
+// strategy when response objects are not comparable.
+const ErrAggregationNotAllowedText = "object evaluation not allowed for non-comparable types without custom comparable func"
 
 type (
 	// EvaluationStrategy Defines a strategy to use for resolving the result from multiple providers.
