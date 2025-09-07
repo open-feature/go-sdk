@@ -116,21 +116,21 @@ func init() {
 
 // Configuration Options
 
-// WithLogger Sets a logger to be used with slog for internal logging. By default, all logs are discarded
+// WithLogger sets a logger to be used with slog for internal logging. By default, all logs are discarded
 func WithLogger(l *slog.Logger) Option {
 	return func(conf *Configuration) {
 		conf.logger = l
 	}
 }
 
-// WithTimeout Set a timeout for the total runtime for evaluation of parallel strategies
+// WithTimeout set a timeout for the total runtime for evaluation of parallel strategies
 func WithTimeout(d time.Duration) Option {
 	return func(conf *Configuration) {
 		conf.timeout = d
 	}
 }
 
-// WithFallbackProvider Sets a fallback provider when using the StrategyComparison
+// WithFallbackProvider sets a fallback provider when using the StrategyComparison
 func WithFallbackProvider(p of.FeatureProvider) Option {
 	return func(conf *Configuration) {
 		conf.fallbackProvider = p
@@ -145,19 +145,19 @@ func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 	}
 }
 
-// WithGlobalHooks sets the global hooks for the provider. These are hooks that affect ALL providers. For hooks that
-// target specific providers make sure to attach them to that provider directly, or use the WithProviderHook Option if
-// that provider does not provide its own hook functionality
+// WithGlobalHooks sets the global hooks for the provider. These are [of.Hook] instances that affect ALL [of.FeatureProvider]
+// instances. For hooks that target specific providers make sure to attach them to that provider directly, or use the
+// [WithProviderHooks] Option if that provider does not provide its own hook functionality
 func WithGlobalHooks(hooks ...of.Hook) Option {
 	return func(conf *Configuration) {
 		conf.hooks = hooks
 	}
 }
 
-// WithProviderHooks sets hooks that execute only for a specific provider. The providerName must match the unique provider
-// name set during MultiProvider creation. This should only be used if you need hooks that execute around a specific
-// provider, but that provider does not currently accept a way to set hooks. This option can be used multiple times using
-// unique provider names. Using a provider name that is not known will cause an error.
+// WithProviderHooks sets [of.Hook] instances that execute only for a specific [of.FeatureProvider]. The providerName
+// must match the unique provider name set during [MultiProvider] creation. This should only be used if you need hooks
+// that execute around a specific provider, but that provider does not currently accept a way to set hooks. This option
+// can be used multiple times using unique provider names. Using a provider name that is not known will cause an error.
 func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
 	return func(conf *Configuration) {
 		conf.providerHooks[providerName] = hooks
@@ -166,7 +166,7 @@ func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
 
 // Multiprovider Implementation
 
-// AsNamedProviderSlice Converts the map into a slice of NamedProvider instances
+// toNamedProviderSlice converts the provided [ProviderMap] into a slice of [NamedProvider] instances
 func toNamedProviderSlice(m ProviderMap) []*NamedProvider {
 	s := make([]*NamedProvider, 0, len(m))
 	for name, provider := range m {
@@ -272,27 +272,27 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 	return multiProvider, nil
 }
 
-// Providers Returns slice of providers wrapped in NamedProvider structs
+// Providers Returns slice of providers wrapped in [NamedProvider] structs
 func (mp *MultiProvider) Providers() []*NamedProvider {
 	return toNamedProviderSlice(mp.providers)
 }
 
-// ProvidersByName Returns the internal ProviderMap of the MultiProvider
+// ProvidersByName Returns the internal [ProviderMap] of the [MultiProvider]
 func (mp *MultiProvider) ProvidersByName() ProviderMap {
 	return mp.providers
 }
 
-// EvaluationStrategy The current set strategy
+// EvaluationStrategy The current set strategy's name
 func (mp *MultiProvider) EvaluationStrategy() string {
 	return mp.strategyName
 }
 
-// Metadata provides the name `multiprovider` and the names of each provider passed.
+// Metadata provides the name "multiprovider" and the names of each provider passed.
 func (mp *MultiProvider) Metadata() of.Metadata {
 	return mp.metadata
 }
 
-// Hooks returns a collection of.Hook defined by this provider
+// Hooks returns a collection [of.Hook] instances defined by this provider
 func (mp *MultiProvider) Hooks() []of.Hook {
 	// Hooks that should be included with the provider
 	return []of.Hook{}
@@ -343,7 +343,7 @@ func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defa
 	}
 }
 
-// Init will run the initialize method for all of provides and aggregate the errors.
+// Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
 func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
@@ -502,7 +502,7 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 	}
 }
 
-// Shutdown Shuts down all internal providers and workers
+// Shutdown Shuts down all internal [of.FeatureProvider] instances and internal event listeners
 func (mp *MultiProvider) Shutdown() {
 	if !mp.initialized {
 		// Don't do anything if we were never initialized
@@ -539,7 +539,7 @@ func (mp *MultiProvider) Shutdown() {
 	mp.initialized = false
 }
 
-// Status the current state of the MultiProvider
+// Status the current state of the [MultiProvider]
 func (mp *MultiProvider) Status() of.State {
 	mp.totalStatusLock.RLock()
 	defer mp.totalStatusLock.RUnlock()
