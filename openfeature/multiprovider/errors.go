@@ -25,7 +25,7 @@ func (e *ProviderError) Error() string {
 	return fmt.Sprintf("Provider %s: %s", e.ProviderName, e.Err.Error())
 }
 
-// NewAggregateError Creates a new AggregateError
+// NewAggregateError creates a new AggregateError from a slice of [ProviderError] instances
 func NewAggregateError(providerErrors []ProviderError) AggregateError {
 	return providerErrors
 }

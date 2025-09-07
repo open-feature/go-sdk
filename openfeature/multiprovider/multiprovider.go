@@ -15,9 +15,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Metadata Keys
 const (
-	// Metadata Keys
-
 	MetadataProviderName                   = "multiprovider-provider-name"
 	MetadataProviderType                   = "multiprovider-provider-type"
 	MetadataInternalError                  = "multiprovider-internal-error"

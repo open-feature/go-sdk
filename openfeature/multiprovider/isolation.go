@@ -32,7 +32,7 @@ var (
 	_ of.EventHandler    = (*EventHandlingHookIsolator)(nil)
 )
 
-// IsolateProvider Wraps a [of.FeatureProvider] to execute its hooks along with any additional ones.
+// IsolateProvider wraps a [of.FeatureProvider] to execute its hooks along with any additional ones.
 func IsolateProvider(provider of.FeatureProvider, extraHooks []of.Hook) *HookIsolator {
 	return &HookIsolator{
 		FeatureProvider: provider,
@@ -40,8 +40,8 @@ func IsolateProvider(provider of.FeatureProvider, extraHooks []of.Hook) *HookIso
 	}
 }
 
-// IsolateProviderWithEvents Wraps a [of.FeatureProvider] to execute its hooks along with any additional ones. This is
-// identical to IsolateProvider, but also this will also implement [of.EventHandler].
+// IsolateProviderWithEvents wraps a [of.FeatureProvider] to execute its hooks along with any additional ones. This is
+// identical to [IsolateProvider], but also this will also implement [of.EventHandler].
 func IsolateProviderWithEvents(provider of.FeatureProvider, extraHooks []of.Hook) *EventHandlingHookIsolator {
 	return &EventHandlingHookIsolator{*IsolateProvider(provider, extraHooks)}
 }
@@ -243,7 +243,7 @@ func (h *HookIsolator) beforeHooks(ctx context.Context) (of.EvaluationContext, e
 	return mergeContexts(contexts...), nil
 }
 
-// afterHooks Executes all after hooks together.
+// afterHooks executes all after [of.Hook] instances together.
 func (h *HookIsolator) afterHooks(ctx context.Context, evalDetails of.InterfaceEvaluationDetails) error {
 	for _, hook := range h.hooks {
 		if err := hook.After(ctx, h.capturedContext, evalDetails, h.capturedHints); err != nil {
@@ -254,21 +254,21 @@ func (h *HookIsolator) afterHooks(ctx context.Context, evalDetails of.InterfaceE
 	return nil
 }
 
-// errorHooks Executes all error hooks together.
+// errorHooks executes all error [of.Hook] instances together.
 func (h *HookIsolator) errorHooks(ctx context.Context, err error) {
 	for _, hook := range h.hooks {
 		hook.Error(ctx, h.capturedContext, err, h.capturedHints)
 	}
 }
 
-// finallyHooks Execute all finally hooks together.
+// finallyHooks execute all finally [of.Hook] instances together.
 func (h *HookIsolator) finallyHooks(ctx context.Context, details of.InterfaceEvaluationDetails) {
 	for _, hook := range h.hooks {
 		hook.Finally(ctx, h.capturedContext, details, h.capturedHints)
 	}
 }
 
-// updateEvalContext Returns a new [of.HookContext] with an updated [of.EvaluationContext] value. [of.HookContext] is
+// updateEvalContext returns a new [of.HookContext] with an updated [of.EvaluationContext] value. [of.HookContext] is
 // immutable, and this returns a new [of.HookContext] with all other values copied
 func (h *HookIsolator) updateEvalContext(evalCtx of.EvaluationContext) {
 	hookCtx := of.NewHookContext(
@@ -284,7 +284,7 @@ func (h *HookIsolator) updateEvalContext(evalCtx of.EvaluationContext) {
 	h.capturedContext = hookCtx
 }
 
-// deepenContext Converts a [of.FlattenedContext] to a [of.EvaluationContext].
+// deepenContext converts a [of.FlattenedContext] to a [of.EvaluationContext].
 func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
 	noTargetingKey := make(map[string]any)
 	for k, v := range flatCtx {
@@ -299,15 +299,15 @@ func deepenContext(flatCtx of.FlattenedContext) of.EvaluationContext {
 	return of.NewEvaluationContext(targetingKey, noTargetingKey)
 }
 
-// flattenContext Convert a [of.EvaluationContext] to a [of.FlattenedContext]
+// flattenContext converts a [of.EvaluationContext] to a [of.FlattenedContext]
 func flattenContext(evalCtx of.EvaluationContext) of.FlattenedContext {
 	flatCtx := evalCtx.Attributes()
 	flatCtx[of.TargetingKey] = evalCtx.TargetingKey()
 	return flatCtx
 }
 
-// mergeContexts Merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in
-// case of any conflicts with the (n+1)th [of.EvaluationContext].
+// mergeContexts merges attributes from the given EvaluationContexts with the nth [of.EvaluationContext] taking precedence
+// in case of any conflicts with the (n+1)th [of.EvaluationContext].
 func mergeContexts(evaluationContexts ...of.EvaluationContext) of.EvaluationContext {
 	if len(evaluationContexts) == 0 {
 		return of.EvaluationContext{}

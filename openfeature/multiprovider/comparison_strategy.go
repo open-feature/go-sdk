@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Comparator function used for comparing results of [of.FeatureProvider.ObjectEvaluation]. This is required if returned
+// results are not comparable.
 type Comparator func(values []any) bool
 
 // NewComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when

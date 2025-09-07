@@ -53,7 +53,7 @@ type (
 
 // Common Components
 
-// setFlagMetadata Sets common metadata for evaluations.
+// setFlagMetadata sets common metadata for evaluations.
 func setFlagMetadata(strategyUsed EvaluationStrategy, successProviderName string, metadata of.FlagMetadata) of.FlagMetadata {
 	if metadata == nil {
 		metadata = make(of.FlagMetadata)
@@ -63,7 +63,7 @@ func setFlagMetadata(strategyUsed EvaluationStrategy, successProviderName string
 	return metadata
 }
 
-// cleanErrorMessage Removes prefixes from error messages.
+// cleanErrorMessage removes prefixes from error messages.
 func cleanErrorMessage(msg string) string {
 	codeRegex := strings.Join([]string{
 		string(of.ProviderNotReadyCode),
@@ -85,7 +85,7 @@ func cleanErrorMessage(msg string) string {
 	}
 }
 
-// mergeFlagMeta Merges flag metadata together into a single [of.FlagMetadata] instance by performing a shallow merge.
+// mergeFlagMeta merges flag metadata together into a single [of.FlagMetadata] instance by performing a shallow merge.
 func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	size := len(tags)
 	switch size {
@@ -102,8 +102,8 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	}
 }
 
-// BuildDefaultResult The method should be called when a strategy is in a failure state and needs to return a default
-// value. This method will build a resolution detail with the internal provided error set.
+// BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
+// This method will build a resolution detail with the internal provided error set.
 func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GenericResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
@@ -125,7 +125,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 	}
 }
 
-// evaluate Generic method used to resolve a flag from a single provider without losing type information.
+// evaluate is a generic method used to resolve a flag from a single [NamedProvider] without losing type information.
 func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 	var resolution of.GenericResolutionDetail[T]
 	switch v := any(defaultVal).(type) {
