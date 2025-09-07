@@ -32,33 +32,35 @@ func GetApiInstance() IEvaluation {
 // NewDefaultClient returns a client for the default domain. The default domain client is the IClient instance that
 // wraps around an unnamed FeatureProvider
 func NewDefaultClient() IClient {
+// NewDefaultClient returns a [Client] for the default domain. The default domain [Client] is the [IClient] instance that
+// wraps around an unnamed [FeatureProvider]
 	return newClient("", api, eventing)
 }
 
-// SetProvider sets the default provider. Provider initialization is asynchronous and status can be checked from
+// SetProvider sets the default [FeatureProvider]. Provider initialization is asynchronous and status can be checked from
 // provider status
 func SetProvider(provider FeatureProvider) error {
 	return api.SetProvider(provider)
 }
 
-// SetProviderAndWait sets the default provider and waits for its initialization.
-// Returns an error if initialization cause error
+// SetProviderAndWait sets the default [FeatureProvider] and waits for its initialization.
+// Returns an error if initialization causes an error
 func SetProviderAndWait(provider FeatureProvider) error {
 	return api.SetProviderAndWait(provider)
 }
 
-// ProviderMetadata returns the default provider's metadata
+// ProviderMetadata returns the default [FeatureProvider] metadata
 func ProviderMetadata() Metadata {
 	return api.GetProviderMetadata()
 }
 
-// SetNamedProvider sets a provider mapped to the given Client domain. Provider initialization is asynchronous and
-// status can be checked from provider status
+// SetNamedProvider sets a [FeatureProvider] mapped to the given [Client] domain. Provider initialization is asynchronous
+// and status can be checked from provider status
 func SetNamedProvider(domain string, provider FeatureProvider) error {
 	return api.SetNamedProvider(domain, provider, true)
 }
 
-// SetNamedProviderAndWait sets a provider mapped to the given Client domain and waits for its initialization.
+// SetNamedProviderAndWait sets a provider mapped to the given [Client] domain and waits for its initialization.
 // Returns an error if initialization cause error
 func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 	return api.SetNamedProvider(domain, provider, false)
@@ -69,7 +71,7 @@ func NamedProviderMetadata(name string) Metadata {
 	return api.GetNamedProviderMetadata(name)
 }
 
-// SetEvaluationContext sets the global evaluation context.
+// SetEvaluationContext sets the global [EvaluationContext].
 func SetEvaluationContext(evalCtx EvaluationContext) {
 	api.SetEvaluationContext(evalCtx)
 }
@@ -85,12 +87,12 @@ func AddHooks(hooks ...Hook) {
 	api.AddHooks(hooks...)
 }
 
-// AddHandler allows to add API level event handler
+// AddHandler allows to add API level event handlers
 func AddHandler(eventType EventType, callback EventCallback) {
 	api.AddHandler(eventType, callback)
 }
 
-// RemoveHandler allows to remove API level event handler
+// RemoveHandler allows for removal of API level event handlers
 func RemoveHandler(eventType EventType, callback EventCallback) {
 	api.RemoveHandler(eventType, callback)
 }
