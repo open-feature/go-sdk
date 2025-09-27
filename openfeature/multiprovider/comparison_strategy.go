@@ -42,10 +42,16 @@ func defaultComparator(values []any) bool {
 		}
 		return true
 	default:
+		if current == nil {
+			return false // nilable values are not comparable
+		}
 		t := reflect.TypeOf(current)
 		if t.Comparable() {
 			set := map[any]struct{}{}
 			for _, v := range values {
+				if v == nil {
+					return false // nil is not comparable
+				}
 				set[v] = struct{}{}
 			}
 
