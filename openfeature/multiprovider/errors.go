@@ -16,6 +16,7 @@ type (
 	AggregateError []ProviderError
 )
 
+// Compile-time interface compliance checks
 var (
 	_ error = (*ProviderError)(nil)
 	_ error = (AggregateError)(nil)

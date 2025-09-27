@@ -83,12 +83,14 @@ type (
 )
 
 var (
-	_                of.FeatureProvider = (*MultiProvider)(nil)
-	_                of.EventHandler    = (*MultiProvider)(nil)
-	_                of.StateHandler    = (*MultiProvider)(nil)
 	stateValues      map[of.State]int
 	stateTable       [3]of.State
 	eventTypeToState map[of.EventType]of.State
+
+	// Compile-time interface compliance checks
+	_ of.FeatureProvider = (*MultiProvider)(nil)
+	_ of.EventHandler    = (*MultiProvider)(nil)
+	_ of.StateHandler    = (*MultiProvider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.

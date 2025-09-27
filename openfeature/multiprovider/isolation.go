@@ -26,6 +26,7 @@ type (
 	}
 )
 
+// Compile-time interface compliance checks
 var (
 	_ of.FeatureProvider = (*HookIsolator)(nil)
 	_ of.Hook            = (*HookIsolator)(nil)
