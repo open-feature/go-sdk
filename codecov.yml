@@ -1,3 +1,2 @@
 ignore:
   - "**/*_mock.go"
-  - "multiprovider/discard_handler.go"
