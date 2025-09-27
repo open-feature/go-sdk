@@ -16,8 +16,8 @@
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.7.0&color=yellow&style=for-the-badge" />
   </a>
   <!-- x-release-please-start-version -->
-  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.15.1">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.15.1&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.16.0">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.16.0&color=blue&style=for-the-badge" />
   </a>
   <!-- x-release-please-end -->
   <br/>
@@ -181,7 +181,7 @@ This is essential for robust experimentation powered by feature flags.
 For example, a flag enhancing the appearance of a UI component might drive user engagement to a new feature; to test this hypothesis, telemetry collected by a [hook](#hooks) or [provider](#providers) can be associated with telemetry reported in the client's `track` function.
 
 ```go
-// initilize a client
+// initialize a client
 client := openfeature.NewClient('my-app')
 
 // trigger tracking event action
@@ -261,7 +261,7 @@ openfeature.SetProviderAndWait(NewLocalProvider())
 openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
 
 // A Client backed by default provider
-clientWithDefault := openfeature.NewClient("")
+clientWithDefault := openfeature.NewDefaultClient()
 // A Client backed by NewCachedProvider
 clientForCache := openfeature.NewClient("clientForCache")
 ```
@@ -291,7 +291,7 @@ var providerErrorCallback = func(details openfeature.EventDetails) {
     // callback implementation
 }
 
-client := openfeature.NewClient("clientName")
+client := openfeature.NewDefaultClient()
 
 // Client event handler
 client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
@@ -453,7 +453,7 @@ import (
 )
 
 testProvider := NewTestProvider()
-err := openfeature.GetApiInstance().SetProviderAndWait(testProvider)
+err := openfeature.SetProviderAndWait(testProvider)
 if err != nil {
   t.Errorf("unable to set provider")
 }

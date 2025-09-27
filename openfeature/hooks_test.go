@@ -175,7 +175,7 @@ func TestRequirement_4_3_2(t *testing.T) {
 		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -210,7 +210,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 
 	mockHook1 := NewMockHook(ctrl)
 	mockHook2 := NewMockHook(ctrl)
-	client := GetApiInstance().GetNamedClient(t.Name())
+	client := NewClient(t.Name())
 
 	flagKey := "foo"
 	defaultValue := "bar"
@@ -269,7 +269,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 	}
 
 	mockHook := NewMockHook(ctrl)
-	client := GetApiInstance().GetNamedClient(t.Name())
+	client := NewClient(t.Name())
 
 	apiEvalCtx := EvaluationContext{
 		attributes: map[string]any{
@@ -358,7 +358,7 @@ func TestRequirement_4_3_5(t *testing.T) {
 			After(mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, flatCtx))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -408,7 +408,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -441,7 +441,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			)
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -468,7 +468,7 @@ func TestRequirement_4_3_6(t *testing.T) {
 			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced")))
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -518,7 +518,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 			After(mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()))
 		mockProvider.EXPECT().StringEvaluation(context.Background(), flagKey, defaultValue, flatCtx)
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}
@@ -543,7 +543,7 @@ func TestRequirement_4_3_7(t *testing.T) {
 		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			After(mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()))
 
-		_, err = GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		_, err = NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -656,7 +656,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
 
-		client := GetApiInstance().GetNamedClient(t.Name())
+		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
 
 		// before: API, Client, Invocation, Provider
@@ -703,7 +703,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		client := GetApiInstance().GetNamedClient(t.Name())
+		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
 
 		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
@@ -771,7 +771,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 				t.Errorf("error setting up provider %v", err)
 			}
 
-			client := GetApiInstance().GetNamedClient(t.Name())
+			client := NewClient(t.Name())
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -804,7 +804,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 				t.Errorf("error setting up provider %v", err)
 			}
 
-			client := GetApiInstance().GetNamedClient(t.Name())
+			client := NewClient(t.Name())
 
 			mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -851,7 +851,7 @@ func TestRequirement_4_4_7(t *testing.T) {
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-	res, err := GetApiInstance().GetNamedClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+	res, err := NewClient(t.Name()).StringValueDetails(context.Background(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -891,7 +891,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		client := GetApiInstance().GetNamedClient(t.Name())
+		client := NewClient(t.Name())
 
 		mockProvider.EXPECT().Hooks().AnyTimes()
 
@@ -921,7 +921,7 @@ func TestRequirement_4_5_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		client := GetApiInstance().GetNamedClient(t.Name())
+		client := NewClient(t.Name())
 
 		// wait for initialization
 		time.Sleep(200 * time.Millisecond)

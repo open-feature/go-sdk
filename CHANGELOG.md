@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.16.0](https://github.com/open-feature/go-sdk/compare/v1.15.1...v1.16.0) (2025-09-24)
+
+
+### 🐛 Bug Fixes
+
+* implement requirement 1.6.2 ([#400](https://github.com/open-feature/go-sdk/issues/400)) ([a9c3adc](https://github.com/open-feature/go-sdk/commit/a9c3adcf18db265ba452253ae88c9ea86a0d1f23))
+* remove Status method from provider ([#395](https://github.com/open-feature/go-sdk/issues/395)) ([b9cc78b](https://github.com/open-feature/go-sdk/commit/b9cc78b46dc5ace5d1cc8dbaf4ebcf5f2bdc6f27))
+
+
+### ✨ New Features
+
+* expose generic resolution/evaluation details structs ([#403](https://github.com/open-feature/go-sdk/issues/403)) ([343f691](https://github.com/open-feature/go-sdk/commit/343f6914c61685ae2b05e8469c56161356e820e1))
+
+
+### 🧹 Chore
+
+* add 1m timeout to tests ([#399](https://github.com/open-feature/go-sdk/issues/399)) ([66e1173](https://github.com/open-feature/go-sdk/commit/66e1173d9e6e06ca90ad4f428a0acc9a73a17097))
+* **config:** migrate config renovate.json ([9bd5e64](https://github.com/open-feature/go-sdk/commit/9bd5e64a8d16e440441fdb1878a8ea7d05cb18b2))
+* **config:** migrate renovate config ([#426](https://github.com/open-feature/go-sdk/issues/426)) ([9bd5e64](https://github.com/open-feature/go-sdk/commit/9bd5e64a8d16e440441fdb1878a8ea7d05cb18b2))
+* **deps:** update actions/cache digest to 0400d5f ([#427](https://github.com/open-feature/go-sdk/issues/427)) ([c466ed2](https://github.com/open-feature/go-sdk/commit/c466ed22fc1020642df2d51c80a67bbf59bc905e))
+* **deps:** update actions/checkout digest to 08eba0b ([#428](https://github.com/open-feature/go-sdk/issues/428)) ([5c8d047](https://github.com/open-feature/go-sdk/commit/5c8d04777e6aa5071518ebfa97f3d0123a819e6d))
+* **deps:** update amannn/action-semantic-pull-request digest to e32d7e6 ([#429](https://github.com/open-feature/go-sdk/issues/429)) ([b79da65](https://github.com/open-feature/go-sdk/commit/b79da65df73a90dcb54f324b4274fd03bb1579c8))
+* **deps:** update codecov/codecov-action action to v5.5.0 ([#423](https://github.com/open-feature/go-sdk/issues/423)) ([9c2c904](https://github.com/open-feature/go-sdk/commit/9c2c904cb726d2bc962512cfe39d5865e43ab2bd))
+* **deps:** update goreleaser/goreleaser-action digest to e435ccd ([#430](https://github.com/open-feature/go-sdk/issues/430)) ([c92e733](https://github.com/open-feature/go-sdk/commit/c92e733d660464ba435ecb8dfaef16b9715eb95f))
+* **deps:** update marocchino/sticky-pull-request-comment digest to 7737449 ([#431](https://github.com/open-feature/go-sdk/issues/431)) ([53a89f3](https://github.com/open-feature/go-sdk/commit/53a89f3141430ebd8829cff5bed5560993dbb63b))
+* **deps:** update module github.com/cucumber/godog to v0.15.1 ([#422](https://github.com/open-feature/go-sdk/issues/422)) ([2b96419](https://github.com/open-feature/go-sdk/commit/2b96419426f4d1f2b92884bd3e47ce5f577543d9))
+* **deps:** update module go.uber.org/mock to v0.6.0 ([#424](https://github.com/open-feature/go-sdk/issues/424)) ([50ff997](https://github.com/open-feature/go-sdk/commit/50ff997d0e27b6cbb556454e54f41a89d2138666))
+* **deps:** update module golang.org/x/text to v0.28.0 ([#425](https://github.com/open-feature/go-sdk/issues/425)) ([720be5f](https://github.com/open-feature/go-sdk/commit/720be5f46dd924ba35a9b69d54b316e53a459c00))
+* **deps:** update module golang.org/x/text to v0.29.0 ([#434](https://github.com/open-feature/go-sdk/issues/434)) ([3d2b707](https://github.com/open-feature/go-sdk/commit/3d2b70740d26ff8904821337fd9c0292318da0dc))
+* **deps:** update test-harness digest to 89c9af6 ([#432](https://github.com/open-feature/go-sdk/issues/432)) ([6879af3](https://github.com/open-feature/go-sdk/commit/6879af34832e5451ca0ec839e12d2c28b7d12f42))
+* **deps:** update test-harness digest to cc576c1 ([#391](https://github.com/open-feature/go-sdk/issues/391)) ([9908b97](https://github.com/open-feature/go-sdk/commit/9908b97485749b3051ed3075c3d30c92fa8fb795))
+* enable all staticcheck linter checks ([#405](https://github.com/open-feature/go-sdk/issues/405)) ([ce1a0f7](https://github.com/open-feature/go-sdk/commit/ce1a0f7a4e106b3fa89bcc3b864438eb86204279))
+* enable gofumpt and gci ([#392](https://github.com/open-feature/go-sdk/issues/392)) ([d9cd757](https://github.com/open-feature/go-sdk/commit/d9cd757785be761e97c710cc3a58250e5c098652))
+* enable intrange and copyloopvar linters ([#404](https://github.com/open-feature/go-sdk/issues/404)) ([569e99a](https://github.com/open-feature/go-sdk/commit/569e99a4a74d0cab7920de06547e25eba060bbbd))
+* upgrade go from 1.23 to 1.24 ([#420](https://github.com/open-feature/go-sdk/issues/420)) ([c617b2d](https://github.com/open-feature/go-sdk/commit/c617b2d456b0a1ae17f415b0c64887689ba5e375))
+* upgrade golangci-lint to the latest version ([#406](https://github.com/open-feature/go-sdk/issues/406)) ([137156b](https://github.com/open-feature/go-sdk/commit/137156b78d94ec03d3c466ab1b29803d9a824e2f))
+* upgrade golangci-lint version to latest ([137156b](https://github.com/open-feature/go-sdk/commit/137156b78d94ec03d3c466ab1b29803d9a824e2f))
+
+
+### 📚 Documentation
+
+* move nolint directive to beginning of block ([#396](https://github.com/open-feature/go-sdk/issues/396)) ([bf2d408](https://github.com/open-feature/go-sdk/commit/bf2d408e2945f2de67a0d3e608adb630df5c0881))
+
+
+### 🔄 Refactoring
+
+* Deprecate GetApiInstance & Add Direct NewDefaultClient implementations ([#421](https://github.com/open-feature/go-sdk/issues/421)) ([9c5d833](https://github.com/open-feature/go-sdk/commit/9c5d8335db1fa44e470be172d2cebb077120a840))
+* use slices package instead of append ([#402](https://github.com/open-feature/go-sdk/issues/402)) ([63bf987](https://github.com/open-feature/go-sdk/commit/63bf987c5f6cd5723f42690fc75aca94f262ea03))
+
 ## [1.15.1](https://github.com/open-feature/go-sdk/compare/v1.15.0...v1.15.1) (2025-06-16)
 
 

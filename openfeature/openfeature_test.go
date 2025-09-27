@@ -19,7 +19,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
-	ofAPI := GetApiInstance()
+	ofAPI := api
 
 	// set through instance level
 	err := ofAPI.SetProvider(mockProvider)
