@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.6.0
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.17.0
 	golang.org/x/text v0.29.0
 )
 
