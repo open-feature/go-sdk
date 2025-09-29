@@ -236,9 +236,9 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 
 		var wrappedProvider of.FeatureProvider
 		if _, ok := provider.(of.EventHandler); ok {
-			wrappedProvider = IsolateProviderWithEvents(provider, config.providerHooks[name])
+			wrappedProvider = isolateProviderWithEvents(provider, config.providerHooks[name])
 		} else {
-			wrappedProvider = IsolateProvider(provider, config.providerHooks[name])
+			wrappedProvider = isolateProvider(provider, config.providerHooks[name])
 		}
 
 		providers[name] = wrappedProvider

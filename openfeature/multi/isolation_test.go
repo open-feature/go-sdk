@@ -24,7 +24,7 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := IsolateProvider(provider, []of.Hook{})
+	isolator := isolateProvider(provider, []of.Hook{})
 	assert.Zero(t, isolator.capturedContext)
 	assert.Zero(t, isolator.capturedHints)
 	evalCtx, err := isolator.Before(context.Background(), hookCtx, hookHints)
@@ -38,7 +38,7 @@ func Test_HookIsolator_Hooks_ReturnsSelf(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := IsolateProvider(provider, []of.Hook{})
+	isolator := isolateProvider(provider, []of.Hook{})
 	hooks := isolator.Hooks()
 	assert.NotEmpty(t, hooks)
 	assert.Same(t, isolator, hooks[0])
@@ -59,7 +59,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_NoError(t *testing.T) {
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := IsolateProvider(provider, nil)
+	isolator := isolateProvider(provider, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.True(t, result.Value)
 }
@@ -75,7 +75,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{testHook})
 
-	isolator := IsolateProvider(provider, nil)
+	isolator := isolateProvider(provider, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }
@@ -95,7 +95,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := IsolateProvider(provider, nil)
+	isolator := isolateProvider(provider, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }
