@@ -258,7 +258,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		logger:         config.logger,
 		metadata:       buildMetadata(providerMap),
 		totalStatus:    of.NotReadyState,
-		providerStatus: make(map[string]of.State),
+		providerStatus: make(map[string]of.State, len(providers)),
 		globalHooks:    append(config.hooks, collectedHooks...),
 	}
 
