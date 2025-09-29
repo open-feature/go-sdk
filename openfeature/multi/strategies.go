@@ -31,7 +31,11 @@ const (
 
 // Additional [of.Reason] options
 const (
-	ReasonAggregated         of.Reason = "AGGREGATED"
+	// ReasonAggregated - the resolved value was the agreement of all providers in the multi.Provider using the
+	// [StrategyComparison] strategy
+	ReasonAggregated of.Reason = "AGGREGATED"
+	// ReasonAggregatedFallback ReasonAggregated - the resolved value was result of the fallback provider because the
+	// providers in multi.Provider were not in agreement using the [StrategyComparison] strategy.
 	ReasonAggregatedFallback of.Reason = "AGGREGATED_FALLBACK"
 )
 
