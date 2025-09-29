@@ -104,7 +104,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				fallback := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider",
 						FeatureProvider: provider,
@@ -128,7 +128,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -159,7 +159,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -193,7 +193,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -231,7 +231,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider4 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -271,7 +271,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -305,7 +305,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -340,7 +340,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider4 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -378,7 +378,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
 
-				strategy := NewComparisonStrategy([]*NamedProvider{
+				strategy := newComparisonStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider1",
 						FeatureProvider: provider1,
@@ -497,7 +497,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			provider2 := of.NewMockFeatureProvider(ctrl)
 			configureComparisonProvider(provider2, testCase.successValue, true, TestErrorNone, true)
 
-			strategy := NewComparisonStrategy([]*NamedProvider{
+			strategy := newComparisonStrategy([]*NamedProvider{
 				{
 					Name:            "test-provider1",
 					FeatureProvider: provider1,
@@ -528,7 +528,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			provider2 := of.NewMockFeatureProvider(ctrl)
 			configureComparisonProvider(provider2, tc.defaultValue, true, TestErrorNone, true)
 
-			strategy := NewComparisonStrategy([]*NamedProvider{
+			strategy := newComparisonStrategy([]*NamedProvider{
 				{
 					Name:            "test-provider1",
 					FeatureProvider: provider1,
@@ -558,7 +558,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, true)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,
@@ -589,7 +589,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, true)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,
@@ -619,7 +619,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, true)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,
@@ -651,7 +651,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,
@@ -686,7 +686,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
 
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,
@@ -718,7 +718,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorError, false)
-		strategy := NewComparisonStrategy([]*NamedProvider{
+		strategy := newComparisonStrategy([]*NamedProvider{
 			{
 				Name:            "test-provider1",
 				FeatureProvider: provider1,

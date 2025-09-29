@@ -93,7 +93,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider, tt.successVal, true, TestErrorNone)
 
-				strategy := NewFirstSuccessStrategy([]*NamedProvider{
+				strategy := newFirstSuccessStrategy([]*NamedProvider{
 					{
 						Name:            "test-provider",
 						FeatureProvider: provider,
@@ -114,7 +114,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
 
-				strategy := NewFirstSuccessStrategy([]*NamedProvider{
+				strategy := newFirstSuccessStrategy([]*NamedProvider{
 					{
 						Name:            "success-provider",
 						FeatureProvider: provider1,
@@ -139,7 +139,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
 
-				strategy := NewFirstSuccessStrategy([]*NamedProvider{
+				strategy := newFirstSuccessStrategy([]*NamedProvider{
 					{
 						Name:            "success-provider",
 						FeatureProvider: provider1,
@@ -166,7 +166,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider3, tt.defaultVal, false, TestErrorError)
 
-				strategy := NewFirstSuccessStrategy([]*NamedProvider{
+				strategy := newFirstSuccessStrategy([]*NamedProvider{
 					{
 						Name:            "provider1",
 						FeatureProvider: provider1,

@@ -258,11 +258,11 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 	var strategy StrategyFn[FlagTypes]
 	switch evaluationStrategy {
 	case StrategyFirstMatch:
-		strategy = NewFirstMatchStrategy(multiProvider.Providers())
+		strategy = newFirstMatchStrategy(multiProvider.Providers())
 	case StrategyFirstSuccess:
-		strategy = NewFirstSuccessStrategy(multiProvider.Providers())
+		strategy = newFirstSuccessStrategy(multiProvider.Providers())
 	case StrategyComparison:
-		strategy = NewComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator)
+		strategy = newComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator)
 	default:
 		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)

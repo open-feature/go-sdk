@@ -36,7 +36,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 						FeatureProvider: m,
 					})
 				}
-				strategy := NewFirstMatchStrategy(providers)
+				strategy := newFirstMatchStrategy(providers)
 				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -53,7 +53,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 						FeatureProvider: m,
 					})
 				}
-				strategy := NewFirstMatchStrategy(providers)
+				strategy := newFirstMatchStrategy(providers)
 				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.defaultVal, result.Value)
 				assert.Equal(t, of.DefaultReason, result.Reason)
@@ -74,7 +74,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 					})
 				}
 
-				strategy := NewFirstMatchStrategy(providers)
+				strategy := newFirstMatchStrategy(providers)
 				result := strategy(context.Background(), "test-flag", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -98,7 +98,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 					}
 
 				}
-				strategy := NewFirstMatchStrategy(providers)
+				strategy := newFirstMatchStrategy(providers)
 				result := strategy(context.Background(), "test-string", tt.successVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Equal(t, of.ErrorReason, result.Reason)

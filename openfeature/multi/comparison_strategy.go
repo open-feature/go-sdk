@@ -15,12 +15,12 @@ import (
 // results are not comparable.
 type Comparator func(values []any) bool
 
-// NewComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when
+// newComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when
 // there is a comparison failure -- prior to returning a default result. The [Comparator] parameter is optional and nil
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
 // called without setting a [Comparator], and the returned object(s) are not comparable, then a panic will occur.
-func NewComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
+func newComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
 	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
 }
 
