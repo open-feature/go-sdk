@@ -1,4 +1,4 @@
-package multiprovider
+package multi
 
 import (
 	"context"

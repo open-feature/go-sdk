@@ -1,4 +1,4 @@
-package multiprovider
+package multi
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func TestMultiProvider_ProvidersMethod(t *testing.T) {
 	providers["provider1"] = testProvider1
 	providers["provider2"] = testProvider2
 
-	mp, err := NewMultiProvider(providers, StrategyFirstSuccess)
+	mp, err := NewProvider(providers, StrategyFirstSuccess)
 	require.NoError(t, err)
 
 	p := mp.Providers()
@@ -34,42 +34,42 @@ func TestMultiProvider_ProvidersMethod(t *testing.T) {
 
 func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	t.Run("nil providerMap returns an error", func(t *testing.T) {
-		_, err := NewMultiProvider(nil, StrategyFirstMatch)
+		_, err := NewProvider(nil, StrategyFirstMatch)
 		require.Errorf(t, err, "providerMap cannot be nil or empty")
 	})
 
 	t.Run("naming a provider the empty string returns an error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers[""] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewMultiProvider(providers, StrategyFirstMatch)
+		_, err := NewProvider(providers, StrategyFirstMatch)
 		require.Errorf(t, err, "provider name cannot be the empty string")
 	})
 
 	t.Run("nil provider within map returns an error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = nil
-		_, err := NewMultiProvider(providers, StrategyFirstMatch)
+		_, err := NewProvider(providers, StrategyFirstMatch)
 		require.Errorf(t, err, "provider provider1 cannot be nil")
 	})
 
 	t.Run("unknown evaluation strategy returns an error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewMultiProvider(providers, "unknown")
+		_, err := NewProvider(providers, "unknown")
 		require.Errorf(t, err, "unknown is an unknown evaluation strategy")
 	})
 
 	t.Run("setting custom strategy without custom strategy option returns error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewMultiProvider(providers, StrategyCustom)
+		_, err := NewProvider(providers, StrategyCustom)
 		require.Errorf(t, err, "A custom strategy must be set via an option if StrategyCustom is set")
 	})
 
 	t.Run("success", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		mp, err := NewMultiProvider(providers, StrategyComparison)
+		mp, err := NewProvider(providers, StrategyComparison)
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})
@@ -83,7 +83,7 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
 			}
 		}
-		mp, err := NewMultiProvider(providers, StrategyCustom, WithCustomStrategy(strategy))
+		mp, err := NewProvider(providers, StrategyCustom, WithCustomStrategy(strategy))
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})
@@ -97,7 +97,7 @@ func TestMultiProvider_ProvidersByNamesMethod(t *testing.T) {
 	providers["provider1"] = testProvider1
 	providers["provider2"] = testProvider2
 
-	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
 	p := mp.ProvidersByName()
@@ -123,7 +123,7 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		providers["provider1"] = testProvider1
 		providers["provider2"] = testProvider2
 
-		mp, err := NewMultiProvider(providers, StrategyFirstSuccess)
+		mp, err := NewProvider(providers, StrategyFirstSuccess)
 		require.NoError(t, err)
 
 		metadata := mp.Metadata()
@@ -150,7 +150,7 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		providers["provider2"] = testProvider2
 		providers["provider3"] = testProvider3
 
-		mp, err := NewMultiProvider(providers, StrategyFirstSuccess)
+		mp, err := NewProvider(providers, StrategyFirstSuccess)
 		require.NoError(t, err)
 
 		metadata := mp.Metadata()
@@ -190,7 +190,7 @@ func TestMultiProvider_Init(t *testing.T) {
 	providers["provider2"] = testProvider2
 	providers["provider3"] = testProvider3
 
-	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -231,7 +231,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	providers["provider2"] = testProvider2
 	providers["provider3"] = testProvider3
 
-	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
 	attributes := map[string]any{
@@ -258,7 +258,7 @@ func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
 	providers["provider1"] = testProvider1
 	providers["provider2"] = testProvider2
 	providers["provider3"] = testProvider3
-	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 
 	mp.Shutdown()
@@ -289,7 +289,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 	providers["provider1"] = testProvider1
 	providers["provider2"] = testProvider2
 	providers["provider3"] = testProvider3
-	mp, err := NewMultiProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(providers, StrategyFirstMatch)
 	require.NoError(t, err)
 	evalCtx := of.NewTargetlessEvaluationContext(map[string]any{
 		"foo": "bar",
@@ -313,7 +313,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 }
 
 func TestMultiProvider_statusEvaluation(t *testing.T) {
-	multiProvider := &MultiProvider{
+	multiProvider := &Provider{
 		totalStatus:    of.NotReadyState,
 		providerStatus: make(map[string]of.State),
 	}

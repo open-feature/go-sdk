@@ -1,5 +1,5 @@
 // Package multiprovider implements an OpenFeature provider that supports multiple feature flag providers.
-package multiprovider
+package multi
 
 import (
 	"context"
@@ -32,9 +32,9 @@ type (
 	// ProviderMap is an alias for a map containing unique names for each included [of.FeatureProvider]
 	ProviderMap = map[string]of.FeatureProvider
 
-	// MultiProvider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
+	// Provider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
 	// strategies.
-	MultiProvider struct {
+	Provider struct {
 		providers          ProviderMap
 		metadata           of.Metadata
 		initialized        bool
@@ -87,9 +87,9 @@ var (
 	eventTypeToState map[of.EventType]of.State
 
 	// Compile-time interface compliance checks
-	_ of.FeatureProvider = (*MultiProvider)(nil)
-	_ of.EventHandler    = (*MultiProvider)(nil)
-	_ of.StateHandler    = (*MultiProvider)(nil)
+	_ of.FeatureProvider = (*Provider)(nil)
+	_ of.EventHandler    = (*Provider)(nil)
+	_ of.StateHandler    = (*Provider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.
@@ -200,8 +200,8 @@ func buildMetadata(m ProviderMap) of.Metadata {
 	}
 }
 
-// NewMultiProvider returns the unified interface of multiple providers for interaction.
-func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy, options ...Option) (*MultiProvider, error) {
+// NewProvider returns the unified interface of multiple providers for interaction.
+func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
 	if len(providerMap) == 0 {
 		return nil, errors.New("providerMap cannot be nil or empty")
 	}
@@ -244,7 +244,7 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 		collectedHooks = append(collectedHooks, wrappedProvider.Hooks()...)
 	}
 
-	multiProvider := &MultiProvider{
+	multiProvider := &Provider{
 		providers:      providers,
 		outboundEvents: make(chan of.Event),
 		logger:         config.logger,
@@ -275,33 +275,33 @@ func NewMultiProvider(providerMap ProviderMap, evaluationStrategy EvaluationStra
 }
 
 // Providers Returns slice of providers wrapped in [NamedProvider] structs
-func (mp *MultiProvider) Providers() []*NamedProvider {
+func (mp *Provider) Providers() []*NamedProvider {
 	return toNamedProviderSlice(mp.providers)
 }
 
 // ProvidersByName Returns the internal [ProviderMap] of the [MultiProvider]
-func (mp *MultiProvider) ProvidersByName() ProviderMap {
+func (mp *Provider) ProvidersByName() ProviderMap {
 	return mp.providers
 }
 
 // EvaluationStrategy The current set strategy's name
-func (mp *MultiProvider) EvaluationStrategy() string {
+func (mp *Provider) EvaluationStrategy() string {
 	return mp.strategyName
 }
 
 // Metadata provides the name "multiprovider" and the names of each provider passed.
-func (mp *MultiProvider) Metadata() of.Metadata {
+func (mp *Provider) Metadata() of.Metadata {
 	return mp.metadata
 }
 
 // Hooks returns a collection [of.Hook] instances defined by this provider
-func (mp *MultiProvider) Hooks() []of.Hook {
+func (mp *Provider) Hooks() []of.Hook {
 	// Hooks that should be included with the provider
 	return []of.Hook{}
 }
 
 // BooleanEvaluation returns a boolean flag
-func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
+func (mp *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
 		Value:                    res.Value.(bool),
@@ -310,7 +310,7 @@ func (mp *MultiProvider) BooleanEvaluation(ctx context.Context, flag string, def
 }
 
 // StringEvaluation returns a string flag
-func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
+func (mp *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
 		Value:                    res.Value.(string),
@@ -319,7 +319,7 @@ func (mp *MultiProvider) StringEvaluation(ctx context.Context, flag string, defa
 }
 
 // FloatEvaluation returns a float flag
-func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
+func (mp *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
 		Value:                    res.Value.(float64),
@@ -328,7 +328,7 @@ func (mp *MultiProvider) FloatEvaluation(ctx context.Context, flag string, defau
 }
 
 // IntEvaluation returns an int flag
-func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
+func (mp *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
 		Value:                    res.Value.(int64),
@@ -337,7 +337,7 @@ func (mp *MultiProvider) IntEvaluation(ctx context.Context, flag string, default
 }
 
 // ObjectEvaluation returns an object flag
-func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+func (mp *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
 		Value:                    res.Value,
@@ -346,7 +346,7 @@ func (mp *MultiProvider) ObjectEvaluation(ctx context.Context, flag string, defa
 }
 
 // Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
-func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
+func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
 	type namedEventHandler struct {
@@ -433,7 +433,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 
 // startListening is intended to be called on a per-provider basis as a goroutine to listen to events from a provider
 // implementing [of.EventHandler].
-func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
+func (mp *Provider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 	for {
@@ -453,7 +453,7 @@ func (mp *MultiProvider) startListening(ctx context.Context, name string, h of.E
 
 // updateProviderState Updates the state of an internal provider and then re-evaluates the overall state of the
 // multiprovider. If this method returns true the overall state changed.
-func (mp *MultiProvider) updateProviderState(name string, state of.State) bool {
+func (mp *Provider) updateProviderState(name string, state of.State) bool {
 	mp.providerStatusLock.Lock()
 	defer mp.providerStatusLock.Unlock()
 	mp.providerStatus[name] = state
@@ -468,7 +468,7 @@ func (mp *MultiProvider) updateProviderState(name string, state of.State) bool {
 
 // updateProviderStateFromEvent updates the state of an internal provider from an event emitted from it, and then
 // re-evaluates the overall state of the multiprovider. If this method returns true the overall state changed.
-func (mp *MultiProvider) updateProviderStateFromEvent(e namedEvent) bool {
+func (mp *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 	if e.EventType == of.ProviderConfigChange {
 		mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
@@ -478,7 +478,7 @@ func (mp *MultiProvider) updateProviderStateFromEvent(e namedEvent) bool {
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
 // OpenFeature spec. This method should only be called if the provider state mutex is locked
-func (mp *MultiProvider) evaluateState() of.State {
+func (mp *Provider) evaluateState() of.State {
 	maxState := stateValues[of.ReadyState] // initialize to the lowest state value
 	for _, s := range mp.providerStatus {
 		if stateValues[s] > maxState {
@@ -508,7 +508,7 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 }
 
 // Shutdown Shuts down all internal [of.FeatureProvider] instances and internal event listeners
-func (mp *MultiProvider) Shutdown() {
+func (mp *Provider) Shutdown() {
 	if !mp.initialized {
 		// Don't do anything if we were never initialized
 		return
@@ -545,13 +545,13 @@ func (mp *MultiProvider) Shutdown() {
 }
 
 // Status the current state of the [MultiProvider]
-func (mp *MultiProvider) Status() of.State {
+func (mp *Provider) Status() of.State {
 	mp.totalStatusLock.RLock()
 	defer mp.totalStatusLock.RUnlock()
 	return mp.totalStatus
 }
 
-func (mp *MultiProvider) setStatus(state of.State) {
+func (mp *Provider) setStatus(state of.State) {
 	mp.totalStatusLock.Lock()
 	defer mp.totalStatusLock.Unlock()
 	mp.totalStatus = state
@@ -559,6 +559,6 @@ func (mp *MultiProvider) setStatus(state of.State) {
 }
 
 // EventChannel the channel events are emitted on
-func (mp *MultiProvider) EventChannel() <-chan of.Event {
+func (mp *Provider) EventChannel() <-chan of.Event {
 	return mp.outboundEvents
 }

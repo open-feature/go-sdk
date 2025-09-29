@@ -1,4 +1,4 @@
-package multiprovider
+package multi
 
 import (
 	of "github.com/open-feature/go-sdk/openfeature"
