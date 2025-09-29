@@ -124,13 +124,6 @@ func WithLogger(l *slog.Logger) Option {
 	}
 }
 
-// WithTimeout set a timeout for the total runtime for evaluation of parallel strategies
-func WithTimeout(d time.Duration) Option {
-	return func(conf *configuration) {
-		conf.timeout = d
-	}
-}
-
 // WithFallbackProvider sets a fallback provider when using the StrategyComparison
 func WithFallbackProvider(p of.FeatureProvider) Option {
 	return func(conf *configuration) {
