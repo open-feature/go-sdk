@@ -103,7 +103,8 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 }
 
 // BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
-// This method will build a resolution detail with the internal provided error set.
+// This method will build a resolution detail with the internal provided error set. This method is exported for those
+// writing their own custom strategy. It should only be used when writing a custom [StrategyFn]
 func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GenericResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
@@ -148,7 +149,7 @@ func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag st
 	default:
 		res := provider.ObjectEvaluation(ctx, flag, defaultVal, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = any(res.Value).(T)
+		resolution.Value = res.Value.(T)
 	}
 
 	if resolution.FlagMetadata == nil {
