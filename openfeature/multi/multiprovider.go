@@ -1,4 +1,5 @@
-// Package multiprovider implements an OpenFeature provider that supports multiple feature flag providers.
+// Package multi implements an OpenFeature provider that supports evaluating multiple feature flag providers
+// together.
 package multi
 
 import (
