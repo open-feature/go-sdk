@@ -19,7 +19,6 @@ import (
 const (
 	MetadataProviderName                   = "multiprovider-provider-name"
 	MetadataProviderType                   = "multiprovider-provider-type"
-	MetadataInternalError                  = "multiprovider-internal-error"
 	MetadataSuccessfulProviderName         = "multiprovider-successful-provider-name"
 	MetadataSuccessfulProviderNames        = MetadataSuccessfulProviderName + "s"
 	MetadataStrategyUsed                   = "multiprovider-strategy-used"
