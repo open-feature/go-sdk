@@ -366,7 +366,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 	for name, provider := range mp.providers {
 		// Initialize each provider to not ready state. No locks required there are no workers running
 		mp.updateProviderState(name, of.NotReadyState)
-		l := mp.logger.With(slog.String("multiprovider-provider-name", name))
+		l := mp.logger.With(slog.String(MetadataProviderName, name))
 		p := provider
 		eg.Go(func() error {
 			l.LogAttrs(context.Background(), slog.LevelDebug, "starting initialization")
@@ -423,7 +423,7 @@ func (mp *MultiProvider) Init(evalCtx of.EvaluationContext) error {
 				slog.String(MetadataProviderName, e.providerName),
 				slog.String(MetadataProviderType, e.ProviderName),
 			)
-			l.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("received %s event from provider", e.EventType))
+			l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
 			if mp.updateProviderStateFromEvent(e) {
 				mp.outboundEvents <- e.Event
 				l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
@@ -477,7 +477,7 @@ func (mp *MultiProvider) updateProviderState(name string, state of.State) bool {
 // re-evaluates the overall state of the multiprovider. If this method returns true the overall state changed.
 func (mp *MultiProvider) updateProviderStateFromEvent(e namedEvent) bool {
 	if e.EventType == of.ProviderConfigChange {
-		mp.logger.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("ProviderConfigChange event: %s", e.Message))
+		mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
 	logProviderState(mp.logger, e, mp.providerStatus[e.providerName])
 	return mp.updateProviderState(e.ProviderName, eventTypeToState[e.EventType])
@@ -500,14 +500,17 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 	switch eventTypeToState[e.EventType] {
 	case of.ReadyState:
 		if previousState != of.NotReadyState {
-			l.LogAttrs(context.Background(), slog.LevelInfo, fmt.Sprintf("provider %s has returned to ready state from %s", e.providerName, previousState))
+			l.LogAttrs(context.Background(), slog.LevelInfo, "provider has returned to ready state",
+				slog.String(MetadataProviderName, e.providerName), slog.String("previous-state", string(previousState)))
 			return
 		}
-		l.LogAttrs(context.Background(), slog.LevelDebug, fmt.Sprintf("provider %s is ready", e.providerName))
+		l.LogAttrs(context.Background(), slog.LevelDebug, "provider is ready", slog.String(MetadataProviderName, e.providerName))
 	case of.StaleState:
-		l.LogAttrs(context.Background(), slog.LevelWarn, fmt.Sprintf("provider %s is stale: %s", e.providerName, e.Message))
+		l.LogAttrs(context.Background(), slog.LevelWarn, "provider is stale",
+			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	case of.ErrorState:
-		l.LogAttrs(context.Background(), slog.LevelError, fmt.Sprintf("provider %s is in an error state: %s", e.providerName, e.Message))
+		l.LogAttrs(context.Background(), slog.LevelError, "provider %s is in an error state: %s",
+			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	}
 }
 
