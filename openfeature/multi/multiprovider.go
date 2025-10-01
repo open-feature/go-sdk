@@ -297,8 +297,7 @@ func (mp *Provider) Metadata() of.Metadata {
 
 // Hooks returns a collection [of.Hook] instances defined by this provider
 func (mp *Provider) Hooks() []of.Hook {
-	// Hooks that should be included with the provider
-	return []of.Hook{}
+	return mp.globalHooks
 }
 
 // BooleanEvaluation returns a boolean flag
