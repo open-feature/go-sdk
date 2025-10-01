@@ -39,9 +39,9 @@ const (
 	ReasonAggregatedFallback of.Reason = "AGGREGATED_FALLBACK"
 )
 
-// ErrAggregationNotAllowedText sentinel returned if [of.FeatureProvider.ObjectEvaluation] is called without a set custom
+// errAggregationNotAllowedText sentinel returned if [of.FeatureProvider.ObjectEvaluation] is called without a set custom
 // strategy when response objects are not comparable.
-const ErrAggregationNotAllowedText = "object evaluation not allowed for non-comparable types without custom comparable func"
+const errAggregationNotAllowedText = "object evaluation not allowed for non-comparable types without custom comparable func"
 
 type (
 	// EvaluationStrategy Defines a strategy to use for resolving the result from multiple providers.

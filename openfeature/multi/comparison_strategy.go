@@ -11,6 +11,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
+// strategy without a custom Comparator function configured when response objects are not comparable.
+var ErrAggregationNotAllowed error = errors.New(errAggregationNotAllowedText)
+
 // Comparator function used for comparing results of [of.FeatureProvider.ObjectEvaluation]. This is required if returned
 // results are not comparable.
 type Comparator func(values []any) bool
@@ -88,7 +92,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 				t := reflect.TypeOf(defaultValue)
 				if !t.Comparable() {
 					// Impossible to evaluate strategy with expected result type
-					defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errors.New(ErrAggregationNotAllowedText))
+					defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, ErrAggregationNotAllowed)
 					defaultResult.FlagMetadata[MetadataFallbackUsed] = false
 					defaultResult.FlagMetadata[MetadataIsDefaultValue] = true
 					return defaultResult

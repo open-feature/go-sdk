@@ -731,7 +731,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
-		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowedText), result.ResolutionError)
+		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)
 		assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 		assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
 		assert.NotContains(t, result.FlagMetadata, MetadataSuccessfulProviderNames)
