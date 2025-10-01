@@ -102,7 +102,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 
 		// Short circuit if there's only one provider as no comparison nor workers are needed
 		if len(providers) == 1 {
-			result := evaluate(ctx, providers[0], flag, defaultValue, evalCtx)
+			result := Evaluate(ctx, providers[0], flag, defaultValue, evalCtx)
 			metadata := setFlagMetadata(StrategyComparison, providers[0].Name, make(of.FlagMetadata))
 			metadata[MetadataFallbackUsed] = false
 			result.FlagMetadata = mergeFlagMeta(result.FlagMetadata, metadata)
@@ -120,7 +120,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		for _, provider := range providers {
 			closedProvider := provider
 			errGrp.Go(func() error {
-				result := evaluate(grpCtx, closedProvider, flag, defaultValue, evalCtx)
+				result := Evaluate(grpCtx, closedProvider, flag, defaultValue, evalCtx)
 				notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
 				if !notFound && result.Error() != nil {
 					return &ProviderError{
@@ -223,7 +223,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		}
 
 		if fallbackProvider != nil {
-			fallbackResult := evaluate(
+			fallbackResult := Evaluate(
 				ctx,
 				&NamedProvider{Name: "fallback", FeatureProvider: fallbackProvider},
 				flag,

@@ -108,7 +108,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 
 // BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
 // This method will build a resolution detail with the internal provided error set. This method is exported for those
-// writing their own custom strategy. It should only be used when writing a custom [StrategyFn]
+// writing their own custom [StrategyFn].
 func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GenericResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
@@ -130,8 +130,10 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 	}
 }
 
-// evaluate is a generic method used to resolve a flag from a single [NamedProvider] without losing type information.
-func evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+// Evaluate is a generic method used to resolve a flag from a single [NamedProvider] without losing type information.
+// This method is exported for those writing their own custom [StrategyFn]. Since any is an allowed [FlagTypes] this can
+// be set to any type, but this should be done with care outside the specified primitive [FlagTypes]
+func Evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 	var resolution of.GenericResolutionDetail[T]
 	switch v := any(defaultVal).(type) {
 	case bool:
