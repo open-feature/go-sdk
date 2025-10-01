@@ -503,7 +503,7 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 		l.LogAttrs(context.Background(), slog.LevelWarn, "provider is stale",
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	case of.ErrorState:
-		l.LogAttrs(context.Background(), slog.LevelError, "provider %s is in an error state: %s",
+		l.LogAttrs(context.Background(), slog.LevelError, "provider is in an error state",
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	}
 }
