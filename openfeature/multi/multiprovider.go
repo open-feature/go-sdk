@@ -54,22 +54,10 @@ type (
 	}
 
 	// NamedProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
-	// The name will be used when reporting errors & results to specify the provider associated.
+	// The name will be used when reporting errors & results to specify the provider associated with them.
 	NamedProvider struct {
 		Name string
 		of.FeatureProvider
-	}
-
-	// configuration is the internal configuration of a [MultiProvider]
-	configuration struct {
-		useFallback      bool
-		fallbackProvider of.FeatureProvider
-		customStrategy   StrategyFn[FlagTypes]
-		logger           *slog.Logger
-		timeout          time.Duration
-		hooks            []of.Hook
-		providerHooks    map[string][]of.Hook
-		customComparator Comparator
 	}
 
 	// Option function used for setting configuration via the options pattern
@@ -79,6 +67,18 @@ type (
 	namedEvent struct {
 		of.Event
 		providerName string
+	}
+
+	// configuration is the internal configuration of a [multi.Provider]
+	configuration struct {
+		useFallback      bool
+		fallbackProvider of.FeatureProvider
+		customStrategy   StrategyFn[FlagTypes]
+		logger           *slog.Logger
+		timeout          time.Duration
+		hooks            []of.Hook
+		providerHooks    map[string][]of.Hook
+		customComparator Comparator
 	}
 )
 
@@ -118,14 +118,16 @@ func init() {
 
 // Configuration Options
 
-// WithLogger sets a logger to be used with slog for internal logging. By default, all logs are discarded
+// WithLogger sets a logger to be used with slog for internal logging. By default, all logs are discarded unless this is set.
 func WithLogger(l *slog.Logger) Option {
 	return func(conf *configuration) {
 		conf.logger = l
 	}
 }
 
-// WithFallbackProvider sets a fallback provider when using the StrategyComparison
+// WithFallbackProvider sets a fallback provider when using the [StrategyComparison] setting. The fallback provider is
+// called when providers are not in agreement. If a fallback provider is not set and providers are not agreement, then
+// the default result will be returned along with an error value.
 func WithFallbackProvider(p of.FeatureProvider) Option {
 	return func(conf *configuration) {
 		conf.fallbackProvider = p
@@ -134,14 +136,14 @@ func WithFallbackProvider(p of.FeatureProvider) Option {
 }
 
 // WithCustomComparator sets a custom [Comparator] to use when using [StrategyComparison] when [of.FeatureProvider.ObjectEvaluation]
-// is performed. This is required if the returned objects are not comparable.
+// is performed. This is required if the returned objects are not comparable, otherwise an error occur..
 func WithCustomComparator(comparator Comparator) Option {
 	return func(conf *configuration) {
 		conf.customComparator = comparator
 	}
 }
 
-// WithCustomStrategy sets a custom strategy. This must be used in conjunction with StrategyCustom
+// WithCustomStrategy sets a custom strategy. This must be used in conjunction with [StrategyCustom]
 func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 	return func(conf *configuration) {
 		conf.customStrategy = s
@@ -150,7 +152,7 @@ func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 
 // WithGlobalHooks sets the global hooks for the provider. These are [of.Hook] instances that affect ALL [of.FeatureProvider]
 // instances. For hooks that target specific providers make sure to attach them to that provider directly, or use the
-// [WithProviderHooks] Option if that provider does not provide its own hook functionality
+// [WithProviderHooks] [Option] if that provider does not provide its own hook functionality.
 func WithGlobalHooks(hooks ...of.Hook) Option {
 	return func(conf *configuration) {
 		conf.hooks = hooks
@@ -158,8 +160,8 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 }
 
 // WithProviderHooks sets [of.Hook] instances that execute only for a specific [of.FeatureProvider]. The providerName
-// must match the unique provider name set during [MultiProvider] creation. This should only be used if you need hooks
-// that execute around a specific provider, but that provider does not currently accept a way to set hooks. This option
+// must match the unique provider name set during [multi.Provider] creation. This should only be used if you need hooks
+// that execute around a specific provider, but that provider does not currently accept a way to set hooks. This [Option]
 // can be used multiple times using unique provider names. Using a provider name that is not known will cause an error.
 func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
 	return func(conf *configuration) {
@@ -201,7 +203,7 @@ func buildMetadata(m ProviderMap) of.Metadata {
 	}
 }
 
-// NewProvider returns the unified interface of multiple providers for interaction.
+// NewProvider returns a new [multi.Provider] that acts as a unified interface of multiple providers for interaction.
 func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
 	if len(providerMap) == 0 {
 		return nil, errors.New("providerMap cannot be nil or empty")
@@ -275,32 +277,32 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 	return multiProvider, nil
 }
 
-// Providers Returns slice of providers wrapped in [NamedProvider] structs
+// Providers returns slice of providers wrapped in [NamedProvider] structs.
 func (mp *Provider) Providers() []*NamedProvider {
 	return toNamedProviderSlice(mp.providers)
 }
 
-// ProvidersByName Returns the internal [ProviderMap] of the [MultiProvider]
+// ProvidersByName Returns the internal [ProviderMap].
 func (mp *Provider) ProvidersByName() ProviderMap {
 	return mp.providers
 }
 
-// EvaluationStrategy The current set strategy's name
+// EvaluationStrategy The name of the currently set [EvaluationStrategy].
 func (mp *Provider) EvaluationStrategy() string {
 	return mp.strategyName
 }
 
-// Metadata provides the name "multiprovider" and the names of each provider passed.
+// Metadata provides the name "multiprovider" along with the names and types of each internal [of.FeatureProvider].
 func (mp *Provider) Metadata() of.Metadata {
 	return mp.metadata
 }
 
-// Hooks returns a collection [of.Hook] instances defined by this provider
+// Hooks returns a collection [of.Hook] instances configured to the provider using [WithGlobalHooks].
 func (mp *Provider) Hooks() []of.Hook {
 	return mp.globalHooks
 }
 
-// BooleanEvaluation returns a boolean flag
+// BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
 func (mp *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
@@ -309,7 +311,7 @@ func (mp *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultV
 	}
 }
 
-// StringEvaluation returns a string flag
+// StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
 func (mp *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
@@ -318,7 +320,7 @@ func (mp *Provider) StringEvaluation(ctx context.Context, flag string, defaultVa
 	}
 }
 
-// FloatEvaluation returns a float flag
+// FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
 func (mp *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
@@ -327,7 +329,7 @@ func (mp *Provider) FloatEvaluation(ctx context.Context, flag string, defaultVal
 	}
 }
 
-// IntEvaluation returns an int flag
+// IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
 func (mp *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
@@ -336,7 +338,10 @@ func (mp *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue
 	}
 }
 
-// ObjectEvaluation returns an object flag
+// ObjectEvaluation evaluates the flag and returns an [of.InterfaceResolutionDetail]. For the purposes of evaluation
+// within strategies, the type of the default value is used as the assumed type of the returned responses from each provider.
+// This is especially important when using the [StrategyComparison] configuration as an internal error will occur if this
+// is not a comparable type unless the [WithCustomComparator] [Option] is configured.
 func (mp *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
@@ -345,7 +350,7 @@ func (mp *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultVa
 	}
 }
 
-// Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
+// Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors. This
 func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
@@ -544,7 +549,7 @@ func (mp *Provider) Shutdown() {
 	mp.initialized = false
 }
 
-// Status the current state of the [MultiProvider]
+// Status provides the current state of the [multi.Provider].
 func (mp *Provider) Status() of.State {
 	mp.totalStatusLock.RLock()
 	defer mp.totalStatusLock.RUnlock()
@@ -558,7 +563,7 @@ func (mp *Provider) setStatus(state of.State) {
 	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "state updated", slog.String("state", string(state)))
 }
 
-// EventChannel the channel events are emitted on
+// EventChannel is the channel that all events are emitted on.
 func (mp *Provider) EventChannel() <-chan of.Event {
 	return mp.outboundEvents
 }

@@ -6,9 +6,11 @@ import (
 )
 
 type (
-	// ProviderError is an error wrapper that species the provider name.
+	// ProviderError is an error wrapper that includes the provider name.
 	ProviderError struct {
-		Err          error
+		// Err is the original error that was returned from a provider
+		Err error
+		// ProviderName is the name of the provider that returned the included error
 		ProviderName string
 	}
 
