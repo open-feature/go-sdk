@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/open-feature/go-sdk/openfeature"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 // EvaluationEvent represents an event that is emitted when a flag is evaluated.
@@ -22,22 +23,23 @@ type EvaluationEvent struct {
 	Attributes map[string]any
 }
 
-// The OpenTelemetry compliant event attributes for flag evaluation.
+
+// Use OTel semconv constants for feature flag attributes.
 const (
-	FlagKey          string = "feature_flag.key"
-	ErrorTypeKey     string = "error.type"
-	ResultValueKey   string = "feature_flag.result.value"
-	ResultVariantKey string = "feature_flag.result.variant"
-	ErrorMessageKey  string = "error.message"
-	ContextIDKey     string = "feature_flag.context.id"
-	ProviderNameKey  string = "feature_flag.provider.name"
-	ResultReasonKey  string = "feature_flag.result.reason"
-	FlagSetIDKey     string = "feature_flag.set.id"
-	VersionKey       string = "feature_flag.version"
+    FlagKey          = semconv.FeatureFlagKeyKey
+    ErrorTypeKey     = semconv.ErrorTypeKey
+    ResultValueKey   = semconv.FeatureFlagResultValueKey
+    ResultVariantKey = semconv.FeatureFlagResultVariantKey
+    ErrorMessageKey  = semconv.ErrorMessageKey
+    ContextIDKey     = semconv.FeatureFlagContextIDKey
+    ProviderNameKey  = semconv.FeatureFlagProviderNameKey
+    ResultReasonKey  = semconv.FeatureFlagResultReasonKey
+    FlagSetIDKey     = semconv.FeatureFlagSetIDKey
+    VersionKey       = semconv.FeatureFlagVersionKey
 )
 
 // FlagEvaluationKey is the name of the feature flag evaluation event.
-const FlagEvaluationKey string = "feature_flag.evaluation"
+const FlagEvaluationKey = semconv.FeatureFlagEvaluationEvent
 
 const (
 	flagMetaContextIDKey string = "contextId"
