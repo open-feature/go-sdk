@@ -3,9 +3,8 @@ package telemetry
 
 import (
 	"strings"
-
 	"github.com/open-feature/go-sdk/openfeature"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 // EvaluationEvent represents an event that is emitted when a flag is evaluated.
@@ -26,16 +25,16 @@ type EvaluationEvent struct {
 
 // Use OTel semconv constants for feature flag attributes.
 const (
-    FlagKey          = semconv.FeatureFlagKeyKey
-    ErrorTypeKey     = semconv.ErrorTypeKey
-    ResultValueKey   = semconv.FeatureFlagResultValueKey
-    ResultVariantKey = semconv.FeatureFlagResultVariantKey
-    ErrorMessageKey  = semconv.ErrorMessageKey
-    ContextIDKey     = semconv.FeatureFlagContextIDKey
-    ProviderNameKey  = semconv.FeatureFlagProviderNameKey
-    ResultReasonKey  = semconv.FeatureFlagResultReasonKey
-    FlagSetIDKey     = semconv.FeatureFlagSetIDKey
-    VersionKey       = semconv.FeatureFlagVersionKey
+	FlagKey          = semconv.FeatureFlagKeyKey
+	ErrorTypeKey     = semconv.ErrorTypeKey
+	ResultValueKey   = semconv.FeatureFlagResultValueKey
+	ResultVariantKey = semconv.FeatureFlagResultVariantKey
+	ErrorMessageKey  = semconv.ErrorMessageKey
+	ContextIDKey     = semconv.FeatureFlagContextIDKey
+	ProviderNameKey  = semconv.FeatureFlagProviderNameKey
+	ResultReasonKey  = semconv.FeatureFlagResultReasonKey
+	FlagSetIDKey     = semconv.FeatureFlagSetIDKey
+	VersionKey       = semconv.FeatureFlagVersionKey
 )
 
 // FlagEvaluationKey is the name of the feature flag evaluation event.
