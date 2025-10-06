@@ -275,33 +275,33 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 }
 
 // Providers returns slice of providers wrapped in [NamedProvider] structs.
-func (mp *Provider) Providers() []*NamedProvider {
-	return toNamedProviderSlice(mp.providers)
+func (p *Provider) Providers() []*NamedProvider {
+	return toNamedProviderSlice(p.providers)
 }
 
 // ProvidersByName Returns the internal [ProviderMap].
-func (mp *Provider) ProvidersByName() ProviderMap {
-	return mp.providers
+func (p *Provider) ProvidersByName() ProviderMap {
+	return p.providers
 }
 
 // EvaluationStrategy The name of the currently set [EvaluationStrategy].
-func (mp *Provider) EvaluationStrategy() string {
-	return mp.strategyName
+func (p *Provider) EvaluationStrategy() string {
+	return p.strategyName
 }
 
 // Metadata provides the name "multiprovider" along with the names and types of each internal [of.FeatureProvider].
-func (mp *Provider) Metadata() of.Metadata {
-	return mp.metadata
+func (p *Provider) Metadata() of.Metadata {
+	return p.metadata
 }
 
 // Hooks returns a collection [of.Hook] instances configured to the provider using [WithGlobalHooks].
-func (mp *Provider) Hooks() []of.Hook {
-	return mp.globalHooks
+func (p *Provider) Hooks() []of.Hook {
+	return p.globalHooks
 }
 
 // BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
-func (mp *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
+	res := p.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
 		Value:                    res.Value.(bool),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -309,8 +309,8 @@ func (mp *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultV
 }
 
 // StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
-func (mp *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
+	res := p.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
 		Value:                    res.Value.(string),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -318,8 +318,8 @@ func (mp *Provider) StringEvaluation(ctx context.Context, flag string, defaultVa
 }
 
 // FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
-func (mp *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
+	res := p.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
 		Value:                    res.Value.(float64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -327,8 +327,8 @@ func (mp *Provider) FloatEvaluation(ctx context.Context, flag string, defaultVal
 }
 
 // IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
-func (mp *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
+	res := p.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
 		Value:                    res.Value.(int64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -339,8 +339,8 @@ func (mp *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue
 // within strategies, the type of the default value is used as the assumed type of the returned responses from each provider.
 // This is especially important when using the [StrategyComparison] configuration as an internal error will occur if this
 // is not a comparable type unless the [WithCustomComparator] [Option] is configured.
-func (mp *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	res := mp.strategy(ctx, flag, defaultValue, flatCtx)
+func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
+	res := p.strategy(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
 		Value:                    res.Value,
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -348,24 +348,24 @@ func (mp *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultVa
 }
 
 // Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors. This
-func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
+func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
 	type namedEventHandler struct {
 		of.EventHandler
 		name string
 	}
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
-	mp.inboundEvents = make(chan namedEvent, len(mp.providers))
-	handlers := make(chan namedEventHandler, len(mp.providers))
-	for name, provider := range mp.providers {
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
+	p.inboundEvents = make(chan namedEvent, len(p.providers))
+	handlers := make(chan namedEventHandler, len(p.providers))
+	for name, provider := range p.providers {
 		// Initialize each provider to not ready state. No locks required there are no workers running
-		mp.updateProviderState(name, of.NotReadyState)
-		l := mp.logger.With(slog.String(MetadataProviderName, name))
-		p := provider
+		p.updateProviderState(name, of.NotReadyState)
+		l := p.logger.With(slog.String(MetadataProviderName, name))
+		prov := provider
 		eg.Go(func() error {
 			l.LogAttrs(context.Background(), slog.LevelDebug, "starting initialization")
-			stateHandle, ok := p.(of.StateHandler)
+			stateHandle, ok := prov.(of.StateHandler)
 			if !ok {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "StateHandle not implemented, skipping initialization")
 			} else if err := stateHandle.Init(evalCtx); err != nil {
@@ -381,7 +381,7 @@ func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 				handlers <- namedEventHandler{eventer, name}
 			} else {
 				// Do not yet update providers that need event handling
-				mp.updateProviderState(name, of.ReadyState)
+				p.updateProviderState(name, of.ReadyState)
 			}
 			return nil
 		})
@@ -391,13 +391,13 @@ func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 		var pErr *ProviderError
 		if errors.As(err, &pErr) {
 			// Update provider status to error, no event needs to be emitted yet
-			mp.updateProviderState(pErr.ProviderName, of.ErrorState)
+			p.updateProviderState(pErr.ProviderName, of.ErrorState)
 		} else {
 			pErr = &ProviderError{
 				Err:          err,
 				ProviderName: "unknown",
 			}
-			mp.setStatus(of.ErrorState)
+			p.setStatus(of.ErrorState)
 		}
 
 		return err
@@ -405,22 +405,22 @@ func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 	close(handlers)
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
 	for h := range handlers {
-		go mp.startListening(workerCtx, h.name, h.EventHandler, &mp.workerGroup)
+		go p.startListening(workerCtx, h.name, h.EventHandler, &p.workerGroup)
 	}
-	mp.shutdownFunc = shutdownFunc
+	p.shutdownFunc = shutdownFunc
 
-	mp.workerGroup.Add(1)
+	p.workerGroup.Add(1)
 	go func() {
-		workerLogger := mp.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
-		defer mp.workerGroup.Done()
-		for e := range mp.inboundEvents {
+		workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
+		defer p.workerGroup.Done()
+		for e := range p.inboundEvents {
 			l := workerLogger.With(
 				slog.String(MetadataProviderName, e.providerName),
 				slog.String(MetadataProviderType, e.ProviderName),
 			)
 			l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
-			if mp.updateProviderStateFromEvent(e) {
-				mp.outboundEvents <- e.Event
+			if p.updateProviderStateFromEvent(e) {
+				p.outboundEvents <- e.Event
 				l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
 			} else {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
@@ -428,14 +428,14 @@ func (mp *Provider) Init(evalCtx of.EvaluationContext) error {
 		}
 	}()
 
-	mp.setStatus(of.ReadyState)
-	mp.initialized = true
+	p.setStatus(of.ReadyState)
+	p.initialized = true
 	return nil
 }
 
 // startListening is intended to be called on a per-provider basis as a goroutine to listen to events from a provider
 // implementing [of.EventHandler].
-func (mp *Provider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
+func (p *Provider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 	for {
@@ -443,7 +443,7 @@ func (mp *Provider) startListening(ctx context.Context, name string, h of.EventH
 		case e := <-h.EventChannel():
 			e.EventMetadata[MetadataProviderName] = name
 			e.EventMetadata[MetadataProviderType] = h.(of.FeatureProvider).Metadata().Name
-			mp.inboundEvents <- namedEvent{
+			p.inboundEvents <- namedEvent{
 				Event:        e,
 				providerName: name,
 			}
@@ -455,13 +455,13 @@ func (mp *Provider) startListening(ctx context.Context, name string, h of.EventH
 
 // updateProviderState Updates the state of an internal provider and then re-evaluates the overall state of the
 // multiprovider. If this method returns true the overall state changed.
-func (mp *Provider) updateProviderState(name string, state of.State) bool {
-	mp.providerStatusLock.Lock()
-	defer mp.providerStatusLock.Unlock()
-	mp.providerStatus[name] = state
-	evalState := mp.evaluateState()
-	if evalState != mp.Status() {
-		mp.setStatus(evalState)
+func (p *Provider) updateProviderState(name string, state of.State) bool {
+	p.providerStatusLock.Lock()
+	defer p.providerStatusLock.Unlock()
+	p.providerStatus[name] = state
+	evalState := p.evaluateState()
+	if evalState != p.Status() {
+		p.setStatus(evalState)
 		return true
 	}
 
@@ -470,19 +470,19 @@ func (mp *Provider) updateProviderState(name string, state of.State) bool {
 
 // updateProviderStateFromEvent updates the state of an internal provider from an event emitted from it, and then
 // re-evaluates the overall state of the multiprovider. If this method returns true the overall state changed.
-func (mp *Provider) updateProviderStateFromEvent(e namedEvent) bool {
+func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 	if e.EventType == of.ProviderConfigChange {
-		mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
+		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
-	logProviderState(mp.logger, e, mp.providerStatus[e.providerName])
-	return mp.updateProviderState(e.ProviderName, eventTypeToState[e.EventType])
+	logProviderState(p.logger, e, p.providerStatus[e.providerName])
+	return p.updateProviderState(e.ProviderName, eventTypeToState[e.EventType])
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
 // OpenFeature spec. This method should only be called if the provider state mutex is locked
-func (mp *Provider) evaluateState() of.State {
+func (p *Provider) evaluateState() of.State {
 	maxState := stateValues[of.ReadyState] // initialize to the lowest state value
-	for _, s := range mp.providerStatus {
+	for _, s := range p.providerStatus {
 		if stateValues[s] > maxState {
 			// change in state due to higher priority
 			maxState = stateValues[s]
@@ -510,22 +510,22 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 }
 
 // Shutdown Shuts down all internal [of.FeatureProvider] instances and internal event listeners
-func (mp *Provider) Shutdown() {
-	if !mp.initialized {
+func (p *Provider) Shutdown() {
+	if !p.initialized {
 		// Don't do anything if we were never initialized
 		return
 	}
 	// Stop all event listener workers, shutdown events should not affect overall state
-	mp.shutdownFunc()
+	p.shutdownFunc()
 	// Stop forwarding worker
-	close(mp.inboundEvents)
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
+	close(p.inboundEvents)
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
 	// Wait for workers to stop
-	mp.workerGroup.Wait()
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
+	p.workerGroup.Wait()
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
 	var wg sync.WaitGroup
-	for _, provider := range mp.providers {
+	for _, provider := range p.providers {
 		wg.Add(1)
 
 		go func(p of.FeatureProvider) {
@@ -536,31 +536,31 @@ func (mp *Provider) Shutdown() {
 		}(provider)
 	}
 
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "waiting for provider shutdown completion")
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "waiting for provider shutdown completion")
 	wg.Wait()
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
-	mp.setStatus(of.NotReadyState)
-	close(mp.outboundEvents)
-	mp.outboundEvents = nil
-	mp.inboundEvents = nil
-	mp.initialized = false
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
+	p.setStatus(of.NotReadyState)
+	close(p.outboundEvents)
+	p.outboundEvents = nil
+	p.inboundEvents = nil
+	p.initialized = false
 }
 
 // Status provides the current state of the [multi.Provider].
-func (mp *Provider) Status() of.State {
-	mp.totalStatusLock.RLock()
-	defer mp.totalStatusLock.RUnlock()
-	return mp.totalStatus
+func (p *Provider) Status() of.State {
+	p.totalStatusLock.RLock()
+	defer p.totalStatusLock.RUnlock()
+	return p.totalStatus
 }
 
-func (mp *Provider) setStatus(state of.State) {
-	mp.totalStatusLock.Lock()
-	defer mp.totalStatusLock.Unlock()
-	mp.totalStatus = state
-	mp.logger.LogAttrs(context.Background(), slog.LevelDebug, "state updated", slog.String("state", string(state)))
+func (p *Provider) setStatus(state of.State) {
+	p.totalStatusLock.Lock()
+	defer p.totalStatusLock.Unlock()
+	p.totalStatus = state
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "state updated", slog.String("state", string(state)))
 }
 
 // EventChannel is the channel that all events are emitted on.
-func (mp *Provider) EventChannel() <-chan of.Event {
-	return mp.outboundEvents
+func (p *Provider) EventChannel() <-chan of.Event {
+	return p.outboundEvents
 }
