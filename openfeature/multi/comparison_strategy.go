@@ -15,8 +15,8 @@ import (
 // strategy without a custom Comparator function configured when response objects are not comparable.
 var ErrAggregationNotAllowed = errors.New(errAggregationNotAllowedText)
 
-// Comparator function used for comparing results of [of.FeatureProvider.ObjectEvaluation]. This is required if returned
-// results are not comparable.
+// Comparator is used to compare the results of [of.FeatureProvider.ObjectEvaluation].
+// This is required if returned results are not comparable.
 type Comparator func(values []any) bool
 
 // newComparisonStrategy returns a [StrategyComparison] strategy function. The fallback provider specified is called when
