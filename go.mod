@@ -18,4 +18,5 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	go.opentelemetry.io/otel v1.38.0 // indirect
 )
