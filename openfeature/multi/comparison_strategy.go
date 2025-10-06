@@ -13,13 +13,13 @@ import (
 
 // ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
 // strategy without a custom Comparator function configured when response objects are not comparable.
-var ErrAggregationNotAllowed error = errors.New(errAggregationNotAllowedText)
+var ErrAggregationNotAllowed = errors.New(errAggregationNotAllowedText)
 
 // Comparator function used for comparing results of [of.FeatureProvider.ObjectEvaluation]. This is required if returned
 // results are not comparable.
 type Comparator func(values []any) bool
 
-// newComparisonStrategy creates a new instance of ComparisonStrategy. The fallback provider specified is called when
+// newComparisonStrategy returns a [StrategyComparison] strategy function. The fallback provider specified is called when
 // there is a comparison failure -- prior to returning a default result. The [Comparator] parameter is optional and nil
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
