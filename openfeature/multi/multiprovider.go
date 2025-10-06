@@ -38,12 +38,12 @@ type (
 		providers          ProviderMap
 		metadata           of.Metadata
 		initialized        bool
-		totalStatus        of.State
-		totalStatusLock    sync.RWMutex
+		overallStatus      of.State
+		overallStatusLock  sync.RWMutex
 		providerStatus     map[string]of.State
 		providerStatusLock sync.Mutex
 		strategyName       EvaluationStrategy    // the name of the strategy used for evaluation
-		strategy           StrategyFn[FlagTypes] // used for custom strategies
+		strategyFunc       StrategyFn[FlagTypes] // used for custom strategies
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
 		inboundEvents      chan namedEvent
@@ -141,7 +141,7 @@ func WithCustomComparator(comparator Comparator) Option {
 	}
 }
 
-// WithCustomStrategy sets a custom strategy. This must be used in conjunction with [StrategyCustom]
+// WithCustomStrategy sets a custom strategy function. This must be used in conjunction with [StrategyCustom]
 func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
 	return func(conf *configuration) {
 		conf.customStrategy = s
@@ -249,7 +249,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		outboundEvents: make(chan of.Event),
 		logger:         config.logger,
 		metadata:       buildMetadata(providerMap),
-		totalStatus:    of.NotReadyState,
+		overallStatus:  of.NotReadyState,
 		providerStatus: make(map[string]of.State, len(providers)),
 		globalHooks:    append(config.hooks, collectedHooks...),
 	}
@@ -268,7 +268,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		}
 		strategy = config.customStrategy
 	}
-	multiProvider.strategy = strategy
+	multiProvider.strategyFunc = strategy
 	multiProvider.strategyName = evaluationStrategy
 
 	return multiProvider, nil
@@ -301,7 +301,7 @@ func (p *Provider) Hooks() []of.Hook {
 
 // BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
 func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
-	res := p.strategy(ctx, flag, defaultValue, flatCtx)
+	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
 		Value:                    res.Value.(bool),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -310,7 +310,7 @@ func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultVa
 
 // StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
 func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
-	res := p.strategy(ctx, flag, defaultValue, flatCtx)
+	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
 		Value:                    res.Value.(string),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -319,7 +319,7 @@ func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultVal
 
 // FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
 func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
-	res := p.strategy(ctx, flag, defaultValue, flatCtx)
+	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
 		Value:                    res.Value.(float64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -328,7 +328,7 @@ func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValu
 
 // IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
 func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
-	res := p.strategy(ctx, flag, defaultValue, flatCtx)
+	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
 		Value:                    res.Value.(int64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -340,7 +340,7 @@ func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue 
 // This is especially important when using the [StrategyComparison] configuration as an internal error will occur if this
 // is not a comparable type unless the [WithCustomComparator] [Option] is configured.
 func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	res := p.strategy(ctx, flag, defaultValue, flatCtx)
+	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
 		Value:                    res.Value,
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -548,15 +548,15 @@ func (p *Provider) Shutdown() {
 
 // Status provides the current state of the [multi.Provider].
 func (p *Provider) Status() of.State {
-	p.totalStatusLock.RLock()
-	defer p.totalStatusLock.RUnlock()
-	return p.totalStatus
+	p.overallStatusLock.RLock()
+	defer p.overallStatusLock.RUnlock()
+	return p.overallStatus
 }
 
 func (p *Provider) setStatus(state of.State) {
-	p.totalStatusLock.Lock()
-	defer p.totalStatusLock.Unlock()
-	p.totalStatus = state
+	p.overallStatusLock.Lock()
+	defer p.overallStatusLock.Unlock()
+	p.overallStatus = state
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "state updated", slog.String("state", string(state)))
 }
 

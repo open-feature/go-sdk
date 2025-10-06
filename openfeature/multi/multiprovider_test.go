@@ -52,18 +52,18 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 		require.Errorf(t, err, "provider provider1 cannot be nil")
 	})
 
-	t.Run("unknown evaluation strategy returns an error", func(t *testing.T) {
+	t.Run("unknown evaluation strategyFunc returns an error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
 		_, err := NewProvider(providers, "unknown")
-		require.Errorf(t, err, "unknown is an unknown evaluation strategy")
+		require.Errorf(t, err, "unknown is an unknown evaluation strategyFunc")
 	})
 
-	t.Run("setting custom strategy without custom strategy option returns error", func(t *testing.T) {
+	t.Run("setting custom strategyFunc without custom strategyFunc option returns error", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
 		_, err := NewProvider(providers, StrategyCustom)
-		require.Errorf(t, err, "A custom strategy must be set via an option if StrategyCustom is set")
+		require.Errorf(t, err, "A custom strategyFunc must be set via an option if StrategyCustom is set")
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -240,7 +240,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
 	err = mp.Init(evalCtx)
 	require.Errorf(t, err, "Provider provider3: test error")
-	assert.Equal(t, of.ErrorState, mp.totalStatus)
+	assert.Equal(t, of.ErrorState, mp.overallStatus)
 }
 
 func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
@@ -314,7 +314,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 
 func TestMultiProvider_statusEvaluation(t *testing.T) {
 	multiProvider := &Provider{
-		totalStatus:    of.NotReadyState,
+		overallStatus:  of.NotReadyState,
 		providerStatus: make(map[string]of.State),
 	}
 
