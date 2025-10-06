@@ -347,7 +347,7 @@ func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultVal
 	}
 }
 
-// Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors. This
+// Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
 func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
