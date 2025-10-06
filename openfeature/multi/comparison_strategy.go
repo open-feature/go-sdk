@@ -12,7 +12,7 @@ import (
 )
 
 // ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
-// strategy without a custom Comparator function configured when response objects are not comparable.
+// strategy without a custom [Comparator] function configured when response objects are not comparable.
 var ErrAggregationNotAllowed = errors.New(errAggregationNotAllowedText)
 
 // Comparator is used to compare the results of [of.FeatureProvider.ObjectEvaluation].
