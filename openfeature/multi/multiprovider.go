@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	"golang.org/x/sync/errgroup"
@@ -75,7 +74,6 @@ type (
 		fallbackProvider of.FeatureProvider
 		customStrategy   StrategyFn[FlagTypes]
 		logger           *slog.Logger
-		timeout          time.Duration
 		hooks            []of.Hook
 		providerHooks    map[string][]of.Hook
 		customComparator Comparator
@@ -212,7 +210,6 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 	config := &configuration{
 		logger:        slog.New(slog.DiscardHandler),
 		providerHooks: make(map[string][]of.Hook),
-		timeout:       5 * time.Second, // Default timeout
 	}
 
 	for _, opt := range options {
