@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/cucumber/godog v0.15.1
 	github.com/go-logr/logr v1.4.3
+	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/text v0.29.0
 )
@@ -17,6 +18,4 @@ require (
 	github.com/hashicorp/go-memdb v1.3.4 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
-	go.opentelemetry.io/otel v1.38.0 // indirect
 )
