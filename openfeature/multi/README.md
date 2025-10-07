@@ -4,6 +4,7 @@ OpenFeature Multi-Provider
 > [!WARNING]
 > The multi package for the go-sdk is experimental. 
 
+
 The multi-provider allows you to use multiple underlying providers as sources of flag data for the OpenFeature server SDK.
 The multi-provider acts as a wrapper providing a unified interface to interact with all of those providers at once.
 When a flag is being evaluated, the Multi-Provider will consult each underlying provider it is managing in order to
