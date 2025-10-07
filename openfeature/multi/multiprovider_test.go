@@ -77,13 +77,14 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	t.Run("success with custom provider", func(t *testing.T) {
 		providers := make(ProviderMap)
 		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		strategy := func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
-			return of.GenericResolutionDetail[FlagTypes]{
-				Value:                    defaultValue,
-				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
+		mp, err := NewProvider(providers, StrategyCustom, WithCustomStrategy(func(providers []*NamedProvider) StrategyFn[FlagTypes] {
+			return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+				return of.GenericResolutionDetail[FlagTypes]{
+					Value:                    defaultValue,
+					ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
+				}
 			}
-		}
-		mp, err := NewProvider(providers, StrategyCustom, WithCustomStrategy(strategy))
+		}))
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})

@@ -72,7 +72,7 @@ type (
 	configuration struct {
 		useFallback      bool
 		fallbackProvider of.FeatureProvider
-		customStrategy   StrategyFn[FlagTypes]
+		customStrategy   StrategyConstructor
 		logger           *slog.Logger
 		hooks            []of.Hook
 		providerHooks    map[string][]of.Hook
@@ -141,8 +141,9 @@ func WithCustomComparator(comparator Comparator) Option {
 	}
 }
 
-// WithCustomStrategy sets a custom strategy function. This must be used in conjunction with [StrategyCustom]
-func WithCustomStrategy(s StrategyFn[FlagTypes]) Option {
+// WithCustomStrategy sets a custom strategy function by defining a "constructor" that acts as closure over a slice of
+// [NamedProvider] instances with your returned custom strategy function. This must be used in conjunction with [StrategyCustom]
+func WithCustomStrategy(s StrategyConstructor) Option {
 	return func(conf *configuration) {
 		conf.customStrategy = s
 	}
@@ -266,7 +267,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)
 		}
-		strategy = config.customStrategy
+		strategy = config.customStrategy(multiProvider.Providers())
 	}
 	multiProvider.strategyFunc = strategy
 	multiProvider.strategyName = evaluationStrategy

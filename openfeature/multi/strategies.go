@@ -53,6 +53,9 @@ type (
 	}
 	// StrategyFn defines the signature for a strategy function.
 	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T]
+	// StrategyConstructor defines the signature for the function that will be called to retrieve the closure that acts
+	// as the custom strategy implementation. This function should return a [StrategyFn]
+	StrategyConstructor func(providers []*NamedProvider) StrategyFn[FlagTypes]
 )
 
 // Common Components
