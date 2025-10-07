@@ -1,5 +1,5 @@
-// Package multi implements an OpenFeature provider that supports evaluating multiple feature flag providers
-// together.
+// Package multi is an experimental implementation of a [of.FeatureProvider] that supports evaluating multiple feature flag
+// providers together.
 package multi
 
 import (
