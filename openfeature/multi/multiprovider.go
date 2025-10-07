@@ -43,7 +43,7 @@ type (
 		providerStatus     map[string]of.State
 		providerStatusLock sync.Mutex
 		strategyName       EvaluationStrategy    // the name of the strategy used for evaluation
-		strategyFunc       StrategyFn[FlagTypes] // used for custom strategies
+		strategyFunc       StrategyFn[FlagTypes] // used for evaluating strategies
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
 		inboundEvents      chan namedEvent
