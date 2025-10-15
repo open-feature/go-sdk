@@ -30,12 +30,20 @@ const (
 type ResolutionError struct {
 	// fields are unexported, this means providers are forced to create structs of this type using one of the constructors below.
 	// this effectively emulates an enum
-	code    ErrorCode
-	message string
+	code        ErrorCode
+	message     string
+	originalErr error
 }
 
+// Error implements the error interface for ResolutionError.
 func (r ResolutionError) Error() string {
+	// Avoid including original error message to prevent leaking internal details externally.
 	return fmt.Sprintf("%s: %s", r.code, r.message)
+}
+
+// Unwrap allows access to the original error, if any.
+func (r ResolutionError) Unwrap() error {
+	return r.originalErr
 }
 
 // NewProviderNotReadyResolutionError constructs a resolution error with code PROVIDER_NOT_READY
@@ -61,11 +69,8 @@ func NewFlagNotFoundResolutionError(msg string) ResolutionError {
 // NewParseErrorResolutionError constructs a resolution error with code PARSE_ERROR
 //
 // Explanation - An error was encountered parsing data, such as a flag configuration.
-func NewParseErrorResolutionError(msg string) ResolutionError {
-	return ResolutionError{
-		code:    ParseErrorCode,
-		message: msg,
-	}
+func NewParseErrorResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(ParseErrorCode, msg, errs...)
 }
 
 // NewTypeMismatchResolutionError constructs a resolution error with code TYPE_MISMATCH
@@ -101,10 +106,25 @@ func NewInvalidContextResolutionError(msg string) ResolutionError {
 // NewGeneralResolutionError constructs a resolution error with code GENERAL
 //
 // Explanation - The error was for a reason not enumerated above.
-func NewGeneralResolutionError(msg string) ResolutionError {
+func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(GeneralCode, msg, errs...)
+}
+
+// newResolutionError is a helper to create a ResolutionError with an optional original error.
+func newResolutionError(code ErrorCode, msg string, errs ...error) ResolutionError {
+	var originalErr error
+	switch len(errs) {
+	case 0:
+		originalErr = nil // being explicit
+	case 1:
+		originalErr = errs[0]
+	default:
+		originalErr = errors.Join(errs...)
+	}
 	return ResolutionError{
-		code:    GeneralCode,
-		message: msg,
+		code:        code,
+		message:     msg,
+		originalErr: originalErr,
 	}
 }
 
