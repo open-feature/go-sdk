@@ -69,11 +69,8 @@ func NewFlagNotFoundResolutionError(msg string) ResolutionError {
 // NewParseErrorResolutionError constructs a resolution error with code PARSE_ERROR
 //
 // Explanation - An error was encountered parsing data, such as a flag configuration.
-func NewParseErrorResolutionError(msg string) ResolutionError {
-	return ResolutionError{
-		code:    ParseErrorCode,
-		message: msg,
-	}
+func NewParseErrorResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(ParseErrorCode, msg, errs...)
 }
 
 // NewTypeMismatchResolutionError constructs a resolution error with code TYPE_MISMATCH
@@ -110,6 +107,11 @@ func NewInvalidContextResolutionError(msg string) ResolutionError {
 //
 // Explanation - The error was for a reason not enumerated above.
 func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(GeneralCode, msg, errs...)
+}
+
+// newResolutionError is a helper to create a ResolutionError with an optional original error.
+func newResolutionError(code ErrorCode, msg string, errs ...error) ResolutionError {
 	var originalErr error
 	switch len(errs) {
 	case 0:
@@ -120,7 +122,7 @@ func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
 		originalErr = errors.Join(errs...)
 	}
 	return ResolutionError{
-		code:        GeneralCode,
+		code:        code,
 		message:     msg,
 		originalErr: originalErr,
 	}
