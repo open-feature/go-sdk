@@ -37,6 +37,7 @@ type ResolutionError struct {
 
 // Error implements the error interface for ResolutionError.
 func (r ResolutionError) Error() string {
+	// Avoid including original error message to prevent leaking internal details externally.
 	return fmt.Sprintf("%s: %s", r.code, r.message)
 }
 
