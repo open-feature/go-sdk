@@ -117,7 +117,8 @@ openfeature.SetProviderAndWait(MyProvider{})
 ```
 
 In some situations, it may be beneficial to register multiple providers in the same application.
-This is possible using [domains](#domains), which is covered in more details below.
+This is possible using [domains](#domains), which is covered in more details below, or the included [multiprovider](#multi-provider-implementation)
+implementation.
 
 ### Targeting
 
@@ -330,6 +331,11 @@ tCtx := openfeature.MergeTransactionContext(ctx, openfeature.EvaluationContext{}
 // use TransactionContext in a flag evaluation
 client.BooleanValue(tCtx, ....)
 ```
+
+### Multi-Provider Implementation
+
+Included with this SDK is an _experimental_ multi-provider that can be used to query multiple feature flag providers simultaneously.
+More information can be found in the [multi package's README](openfeature/multi/README.md).
 
 ## Extending
 
