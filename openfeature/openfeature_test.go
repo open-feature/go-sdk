@@ -3,7 +3,6 @@ package openfeature
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -811,7 +810,6 @@ func TestLateBindingOfDefaultProvider(t *testing.T) {
 	if strResult != expectedResultFromLateDefaultProvider {
 		t.Errorf("expected %s, but got %s", expectedResultFromLateDefaultProvider, strResult)
 	}
-	fmt.Println(strResult)
 }
 
 // Nil providers are not accepted for default and named providers
