@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"testing"
+	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
@@ -343,4 +344,119 @@ func TestMultiProvider_statusEvaluation(t *testing.T) {
 		multiProvider.providerStatus["provider3"] = of.ErrorState
 		assert.Equal(t, of.ErrorState, multiProvider.evaluateState())
 	})
+}
+
+func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	// Create two mock providers with EventHandler support
+	primaryProvider := newMockProviderWithEvents(ctrl, "MockProvider")
+	secondaryProvider := newMockProviderWithEvents(ctrl, "MockProvider")
+
+	providers := ProviderMap{
+		"primary":   primaryProvider,
+		"secondary": secondaryProvider,
+	}
+
+	multiProvider, err := NewProvider(providers, StrategyFirstMatch)
+	if err != nil {
+		t.Fatalf("failed to create multi-provider: %v", err)
+	}
+	t.Cleanup(multiProvider.Shutdown)
+
+	// Initialize the provider
+	ctx := of.NewEvaluationContext("test", nil)
+	if err := multiProvider.Init(ctx); err != nil {
+		t.Fatalf("failed to initialize multi-provider: %v", err)
+	}
+
+	primaryProvider.EmitEvent(of.ProviderError, "fail to fetch data")
+	secondaryProvider.EmitEvent(of.ProviderReady, "rev 1")
+
+	time.Sleep(200 * time.Millisecond)
+
+	// Check the state after the error event
+	multiProvider.providerStatusLock.Lock()
+	primaryState := multiProvider.providerStatus["primary"]
+	secondaryState := multiProvider.providerStatus["secondary"]
+	numProviders := len(multiProvider.providerStatus)
+	multiProvider.providerStatusLock.Unlock()
+
+	if primaryState != of.ErrorState {
+		t.Errorf("Expected primary-mock state to be ERROR after emitting error event, got %s", primaryState)
+	}
+
+	if secondaryState != of.ReadyState {
+		t.Errorf("Expected secondary-mock state to be READY, got %s", secondaryState)
+	}
+
+	if numProviders != 2 {
+		t.Errorf("Expected 2 providers in status map, got %d", numProviders)
+	}
+}
+
+var _ of.StateHandler = (*mockProviderWithEvents)(nil)
+
+// mockProviderWithEvents wraps a mock provider to add EventHandler capability
+type mockProviderWithEvents struct {
+	*of.MockFeatureProvider
+	*of.MockStateHandler
+	eventChannel chan of.Event
+	metadata     of.Metadata
+}
+
+func newMockProviderWithEvents(ctrl *gomock.Controller, name string) *mockProviderWithEvents {
+	mockProvider := of.NewMockFeatureProvider(ctrl)
+	mockStateHandler := of.NewMockStateHandler(ctrl)
+	eventChan := make(chan of.Event, 10)
+
+	metadata := of.Metadata{Name: name}
+
+	// Set up expectations
+	mockProvider.EXPECT().Metadata().Return(metadata).AnyTimes()
+	mockProvider.EXPECT().Hooks().Return([]of.Hook{}).AnyTimes()
+	mockStateHandler.EXPECT().Init(gomock.Any()).DoAndReturn(func(ctx of.EvaluationContext) error {
+		// Emit READY event on init
+		eventChan <- of.Event{
+			ProviderName: name,
+			EventType:    of.ProviderReady,
+			ProviderEventDetails: of.ProviderEventDetails{
+				EventMetadata: make(map[string]any),
+			},
+		}
+		return nil
+	}).AnyTimes()
+	mockStateHandler.EXPECT().Shutdown()
+
+	return &mockProviderWithEvents{
+		MockFeatureProvider: mockProvider,
+		MockStateHandler:    mockStateHandler,
+		eventChannel:        eventChan,
+		metadata:            metadata,
+	}
+}
+
+func (m *mockProviderWithEvents) Init(evalCtx of.EvaluationContext) error {
+	return m.MockStateHandler.Init(evalCtx)
+}
+
+func (m *mockProviderWithEvents) Shutdown() {
+	m.MockStateHandler.Shutdown()
+	close(m.eventChannel)
+}
+
+func (m *mockProviderWithEvents) EventChannel() <-chan of.Event {
+	return m.eventChannel
+}
+
+func (m *mockProviderWithEvents) EmitEvent(eventType of.EventType, message string) {
+	m.eventChannel <- of.Event{
+		ProviderName: m.metadata.Name,
+		EventType:    eventType,
+		ProviderEventDetails: of.ProviderEventDetails{
+			Message:       message,
+			EventMetadata: make(map[string]any),
+		},
+	}
 }

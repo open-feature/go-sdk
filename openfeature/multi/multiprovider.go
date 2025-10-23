@@ -247,7 +247,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 
 	multiProvider := &Provider{
 		providers:      providers,
-		outboundEvents: make(chan of.Event),
+		outboundEvents: make(chan of.Event, len(providers)),
 		logger:         config.logger,
 		metadata:       buildMetadata(providerMap),
 		overallStatus:  of.NotReadyState,
@@ -476,7 +476,7 @@ func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
 	logProviderState(p.logger, e, p.providerStatus[e.providerName])
-	return p.updateProviderState(e.ProviderName, eventTypeToState[e.EventType])
+	return p.updateProviderState(e.providerName, eventTypeToState[e.EventType])
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
@@ -514,6 +514,7 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 func (p *Provider) Shutdown() {
 	if !p.initialized {
 		// Don't do anything if we were never initialized
+		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider not initialized, skipping shutdown")
 		return
 	}
 	// Stop all event listener workers, shutdown events should not affect overall state
