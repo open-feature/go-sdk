@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.17.0](https://github.com/open-feature/go-sdk/compare/v1.16.0...v1.17.0) (2025-10-23)
+
+
+### 🐛 Bug Fixes
+
+* **multi-provider:** correct provider state tracking and improve robustness ([#441](https://github.com/open-feature/go-sdk/issues/441)) ([7fd7ab6](https://github.com/open-feature/go-sdk/commit/7fd7ab6c25108def02a2459524139f26e30aabfa))
+
+
+### ✨ New Features
+
+* add error wrapping support to ResolutionError ([#438](https://github.com/open-feature/go-sdk/issues/438)) ([1c624c9](https://github.com/open-feature/go-sdk/commit/1c624c9a9e2b2e5be2a667aa8cd40969bfaf6871))
+* Implement multiprovider ([#354](https://github.com/open-feature/go-sdk/issues/354)) ([c7c86d3](https://github.com/open-feature/go-sdk/commit/c7c86d342bb2469ea0eebf3e5b082521fb7969c1))
+
+
+### 🧹 Chore
+
+* **deps:** update module golang.org/x/text to v0.30.0 ([#440](https://github.com/open-feature/go-sdk/issues/440)) ([1be83ec](https://github.com/open-feature/go-sdk/commit/1be83ec5dff402a7fb7bfef478fd91420730d03c))
+
 ## [1.16.0](https://github.com/open-feature/go-sdk/compare/v1.15.1...v1.16.0) (2025-09-24)
 
 
