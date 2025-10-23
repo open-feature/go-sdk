@@ -1,6 +1,9 @@
 package openfeature
 
-import "github.com/go-logr/logr"
+import (
+	"context"
+	"github.com/go-logr/logr"
+)
 
 // api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
 var (
@@ -47,6 +50,21 @@ func SetProviderAndWait(provider FeatureProvider) error {
 	return api.SetProviderAndWait(provider)
 }
 
+// SetProviderWithContext sets the default [FeatureProvider] with context-aware initialization.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Provider initialization is asynchronous and status can be checked from provider status.
+// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+	return api.SetProviderWithContext(ctx, provider)
+}
+
+// SetProviderWithContextAndWait sets the default [FeatureProvider] with context-aware initialization and waits for completion.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Returns an error if initialization causes an error, or if context is cancelled during initialization.
+func SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+	return api.SetProviderWithContextAndWait(ctx, provider)
+}
+
 // ProviderMetadata returns the default [FeatureProvider] metadata
 func ProviderMetadata() Metadata {
 	return api.GetProviderMetadata()
@@ -62,6 +80,21 @@ func SetNamedProvider(domain string, provider FeatureProvider) error {
 // Returns an error if initialization cause error
 func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 	return api.SetNamedProvider(domain, provider, false)
+}
+
+// SetNamedProviderWithContext sets a [FeatureProvider] mapped to the given [Client] domain with context-aware initialization.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Provider initialization is asynchronous and status can be checked from provider status.
+// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+func SetNamedProviderWithContext(ctx context.Context, domain string, provider FeatureProvider) error {
+	return api.SetNamedProviderWithContext(ctx, domain, provider, true)
+}
+
+// SetNamedProviderWithContextAndWait sets a provider mapped to the given [Client] domain with context-aware initialization and waits for completion.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Returns an error if initialization causes an error, or if context is cancelled during initialization.
+func SetNamedProviderWithContextAndWait(ctx context.Context, domain string, provider FeatureProvider) error {
+	return api.SetNamedProviderWithContext(ctx, domain, provider, false)
 }
 
 // NamedProviderMetadata returns the named provider's Metadata
