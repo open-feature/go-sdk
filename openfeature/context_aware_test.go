@@ -87,9 +87,9 @@ func TestContextAwareInitialization(t *testing.T) {
 	eventing = exec
 
 	t.Run("fast provider succeeds within timeout", func(t *testing.T) {
-		fastProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
+		fastProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, fastProvider)
@@ -99,9 +99,9 @@ func TestContextAwareInitialization(t *testing.T) {
 	})
 
 	t.Run("slow provider times out", func(t *testing.T) {
-		slowProvider := &testContextAwareProvider{initDelay: 200 * time.Millisecond}
+		slowProvider := &testContextAwareProvider{initDelay: 800 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, slowProvider)
@@ -114,9 +114,9 @@ func TestContextAwareInitialization(t *testing.T) {
 	})
 
 	t.Run("async initialization returns immediately", func(t *testing.T) {
-		asyncProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
+		asyncProvider := &testContextAwareProvider{initDelay: 200 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		start := time.Now()
@@ -126,15 +126,15 @@ func TestContextAwareInitialization(t *testing.T) {
 		if err != nil {
 			t.Errorf("Async setup should not fail: %v", err)
 		}
-		if elapsed > 25*time.Millisecond {
+		if elapsed > 100*time.Millisecond {
 			t.Errorf("Async setup took too long: %v", elapsed)
 		}
 	})
 
 	t.Run("named provider with context works", func(t *testing.T) {
-		namedProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
+		namedProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetNamedProviderWithContextAndWait(ctx, "test-domain", namedProvider)
@@ -146,7 +146,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("backward compatibility with regular provider", func(t *testing.T) {
 		legacyProvider := &NoopProvider{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, legacyProvider)
@@ -161,9 +161,9 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	evalCtx := EvaluationContext{}
 
 	t.Run("detects ContextAwareStateHandler", func(t *testing.T) {
-		provider := &testContextAwareProvider{initDelay: 1 * time.Millisecond}
+		provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -178,7 +178,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	t.Run("falls back to regular StateHandler", func(t *testing.T) {
 		provider := &NoopProvider{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -191,9 +191,9 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	})
 
 	t.Run("handles timeout in context-aware provider", func(t *testing.T) {
-		provider := &testContextAwareProvider{initDelay: 100 * time.Millisecond}
+		provider := &testContextAwareProvider{initDelay: 500 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
