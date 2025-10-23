@@ -373,7 +373,15 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 		err := contextHandler.InitWithContext(ctx, evalCtx)
 		if err != nil {
 			event.EventType = ProviderError
-			event.Message = fmt.Sprintf("Provider initialization error, %v", err)
+			// Handle context cancellation/timeout separately from provider errors
+			if errors.Is(err, context.Canceled) {
+				event.Message = "Provider initialization cancelled"
+			} else if errors.Is(err, context.DeadlineExceeded) {
+				event.Message = "Provider initialization timed out"
+			} else {
+				event.Message = fmt.Sprintf("Provider initialization failed: %v", err)
+			}
+
 			var initErr *ProviderInitError
 			if errors.As(err, &initErr) {
 				event.EventType = ProviderError
@@ -394,7 +402,7 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 	err := handler.Init(evalCtx)
 	if err != nil {
 		event.EventType = ProviderError
-		event.Message = fmt.Sprintf("Provider initialization error, %v", err)
+		event.Message = fmt.Sprintf("Provider initialization failed: %v", err)
 		var initErr *ProviderInitError
 		if errors.As(err, &initErr) {
 			event.EventType = ProviderError
