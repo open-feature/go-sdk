@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -108,7 +109,7 @@ func TestContextAwareInitialization(t *testing.T) {
 		if err == nil {
 			t.Error("Expected timeout error but got success")
 		}
-		if err != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("Expected context deadline exceeded, got: %v", err)
 		}
 	})
@@ -200,7 +201,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 		if err == nil {
 			t.Error("Expected timeout error")
 		}
-		if err != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("Expected deadline exceeded, got: %v", err)
 		}
 		if event.EventType != ProviderError {
