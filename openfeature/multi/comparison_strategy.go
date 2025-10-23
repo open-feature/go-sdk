@@ -23,7 +23,7 @@ type Comparator func(values []any) bool
 // there is a comparison failure -- prior to returning a default result. The [Comparator] parameter is optional and nil
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
-// called without setting a [Comparator], and the returned object(s) are not comparable, then a panic will occur.
+// called without setting a [Comparator], and the returned object(s) are not comparable, then an error will occur.
 func newComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
 	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
 }
@@ -240,10 +240,9 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		}
 
 		defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errors.New("no fallback provider configured"))
-		mergeFlagMeta(defaultResult.FlagMetadata, metadata)
+		defaultResult.FlagMetadata = mergeFlagMeta(defaultResult.FlagMetadata, metadata)
 		defaultResult.FlagMetadata[MetadataFallbackUsed] = false
 		defaultResult.FlagMetadata[MetadataIsDefaultValue] = true
-
 		return defaultResult
 	}
 }

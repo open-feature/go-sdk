@@ -15,8 +15,8 @@ const (
 	// This is executed sequentially, and not in parallel. Any returned errors from a provider other than flag not found
 	// will result in a default response with a set error.
 	StrategyFirstMatch EvaluationStrategy = "strategy-first-match"
-	// StrategyFirstSuccess returns the result of the First [of.FeatureProvider] whose response that is not an error.
-	// This is very similar to [StrategyFirstMatch], but does not raise errors. This executed sequentially.
+	// StrategyFirstSuccess returns the result of the first [of.FeatureProvider] whose response that is not an error.
+	// This is very similar to [StrategyFirstMatch], but does not raise errors. This is executed sequentially.
 	StrategyFirstSuccess EvaluationStrategy = "strategy-first-success"
 	// StrategyComparison returns a response of all [of.FeatureProvider] instances in agreement. All providers are
 	// called in parallel and then the results of each non-error result are compared to each other. If all responses
