@@ -69,6 +69,38 @@ type StateHandler interface {
 // ContextAwareStateHandler extends StateHandler with context-aware initialization
 // for providers that need to respect request timeouts and cancellation.
 // If a provider implements this interface, InitWithContext will be called instead of Init.
+//
+// Use this interface when your provider needs to:
+// - Respect initialization timeouts (e.g., network calls, database connections)
+// - Support graceful cancellation during setup
+// - Integrate with request-scoped contexts
+//
+// Example implementation:
+//
+//	type MyProvider struct { /* ... */ }
+//
+//	func (p *MyProvider) InitWithContext(ctx context.Context, evalCtx EvaluationContext) error {
+//		// Perform initialization that respects the context
+//		select {
+//		case <-time.After(p.initializationDelay):
+//			// Initialization complete
+//			return nil
+//		case <-ctx.Done():
+//			// Context cancelled or timed out
+//			return ctx.Err()
+//		}
+//	}
+//
+//	// Standard Init method for backward compatibility
+//	func (p *MyProvider) Init(evalCtx EvaluationContext) error {
+//		return p.InitWithContext(context.Background(), evalCtx)
+//	}
+//
+// Best practices:
+// - Always check ctx.Done() in long-running initialization operations
+// - Use reasonable timeout values (typically 5-30 seconds)
+// - Return ctx.Err() when the context is cancelled
+// - Maintain backward compatibility by implementing both interfaces
 type ContextAwareStateHandler interface {
 	StateHandler // Embed existing interface for backward compatibility
 	InitWithContext(ctx context.Context, evaluationContext EvaluationContext) error

@@ -54,6 +54,26 @@ func SetProviderAndWait(provider FeatureProvider) error {
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Provider initialization is asynchronous and status can be checked from provider status.
 // Returns an error immediately if provider is nil, or if context is cancelled during setup.
+//
+// Use this function when you want:
+// - Non-blocking provider setup with timeout control
+// - To continue application startup while provider initializes in background
+// - Fine-grained control over initialization timeouts
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+//	defer cancel()
+//
+//	err := SetProviderWithContext(ctx, myProvider)
+//	if err != nil {
+//		log.Printf("Failed to start provider setup: %v", err)
+//		return err
+//	}
+//	// Provider continues initializing in background
+//
+// For providers that don't implement ContextAwareStateHandler, this behaves
+// identically to SetProvider() but with timeout protection.
 func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
 	return api.SetProviderWithContext(ctx, provider)
 }
@@ -61,6 +81,32 @@ func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
 // SetProviderWithContextAndWait sets the default [FeatureProvider] with context-aware initialization and waits for completion.
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Returns an error if initialization causes an error, or if context is cancelled during initialization.
+//
+// Use this function when you need:
+// - Synchronous provider setup with guaranteed readiness
+// - Application startup to wait for provider before continuing
+// - Error handling for initialization failures
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	err := SetProviderWithContextAndWait(ctx, myProvider)
+//	if err != nil {
+//		if errors.Is(err, context.DeadlineExceeded) {
+//			log.Println("Provider initialization timed out")
+//		} else {
+//			log.Printf("Provider initialization failed: %v", err)
+//		}
+//		return err
+//	}
+//	// Provider is now ready to use
+//
+// Recommended timeout values:
+// - Local/in-memory providers: 1-5 seconds
+// - Network-based providers: 10-30 seconds
+// - Database-dependent providers: 15-60 seconds
 func SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
 	return api.SetProviderWithContextAndWait(ctx, provider)
 }
@@ -86,6 +132,29 @@ func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Provider initialization is asynchronous and status can be checked from provider status.
 // Returns an error immediately if provider is nil, or if context is cancelled during setup.
+//
+// Named providers allow different domains to use different feature flag providers,
+// enabling multi-tenant applications or microservice architectures.
+//
+// Example:
+//
+//	// Set up different providers for different services
+//	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+//	defer cancel()
+//
+//	err := SetNamedProviderWithContext(ctx, "user-service", userProvider)
+//	if err != nil {
+//		return fmt.Errorf("failed to setup user service provider: %w", err)
+//	}
+//
+//	err = SetNamedProviderWithContext(ctx, "billing-service", billingProvider)
+//	if err != nil {
+//		return fmt.Errorf("failed to setup billing service provider: %w", err)
+//	}
+//
+//	// Create clients for different domains
+//	userClient := NewClient("user-service")
+//	billingClient := NewClient("billing-service")
 func SetNamedProviderWithContext(ctx context.Context, domain string, provider FeatureProvider) error {
 	return api.SetNamedProviderWithContext(ctx, domain, provider, true)
 }
@@ -93,6 +162,23 @@ func SetNamedProviderWithContext(ctx context.Context, domain string, provider Fe
 // SetNamedProviderWithContextAndWait sets a provider mapped to the given [Client] domain with context-aware initialization and waits for completion.
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Returns an error if initialization causes an error, or if context is cancelled during initialization.
+//
+// Use this for synchronous named provider setup where you need to ensure
+// the provider is ready before proceeding.
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	// Wait for critical providers to be ready
+//	if err := SetNamedProviderWithContextAndWait(ctx, "critical-service", criticalProvider); err != nil {
+//		return fmt.Errorf("critical provider failed to initialize: %w", err)
+//	}
+//
+//	// Now safe to use the client
+//	client := NewClient("critical-service")
+//	enabled, _ := client.BooleanValue(context.Background(), "feature-x", false, EvaluationContext{})
 func SetNamedProviderWithContextAndWait(ctx context.Context, domain string, provider FeatureProvider) error {
 	return api.SetNamedProviderWithContext(ctx, domain, provider, false)
 }
