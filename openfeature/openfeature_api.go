@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -86,6 +87,108 @@ func (api *evaluationAPI) GetNamedProviderMetadata(name string) Metadata {
 	}
 
 	return provider.Metadata()
+}
+
+// Context-aware provider setup methods
+
+// SetProviderWithContext sets the default FeatureProvider with context-aware initialization.
+func (api *evaluationAPI) SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+	return api.setProviderWithContext(ctx, provider, true)
+}
+
+// SetProviderWithContextAndWait sets the default FeatureProvider with context-aware initialization and waits for completion.
+func (api *evaluationAPI) SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+	return api.setProviderWithContext(ctx, provider, false)
+}
+
+// setProviderWithContext sets the default FeatureProvider of the evaluationAPI with context-aware initialization.
+func (api *evaluationAPI) setProviderWithContext(ctx context.Context, provider FeatureProvider, async bool) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	if provider == nil {
+		return errors.New("default provider cannot be set to nil")
+	}
+
+	oldProvider := api.defaultProvider
+	api.defaultProvider = provider
+
+	err := api.initNewAndShutdownOldWithContext(ctx, "", provider, oldProvider, async)
+	if err != nil {
+		return err
+	}
+
+	err = api.eventExecutor.registerDefaultProvider(provider)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetNamedProviderWithContext sets a provider with client name using context-aware initialization.
+func (api *evaluationAPI) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	if provider == nil {
+		return errors.New("provider cannot be set to nil")
+	}
+
+	// Initialize new named provider and Shutdown the old one
+	oldProvider := api.namedProviders[clientName]
+	api.namedProviders[clientName] = provider
+
+	err := api.initNewAndShutdownOldWithContext(ctx, clientName, provider, oldProvider, async)
+	if err != nil {
+		return err
+	}
+
+	err = api.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// initNewAndShutdownOldWithContext is a context-aware helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
+func (api *evaluationAPI) initNewAndShutdownOldWithContext(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
+	if async {
+		go func(executor *eventExecutor, evalCtx EvaluationContext) {
+			// for async initialization, error is conveyed as an event
+			event, _ := initializerWithContext(ctx, newProvider, evalCtx)
+			executor.states.Store(clientName, stateFromEventOrError(event, nil))
+			executor.triggerEvent(event, newProvider)
+		}(api.eventExecutor, api.evalCtx)
+	} else {
+		event, err := initializerWithContext(ctx, newProvider, api.evalCtx)
+		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
+		api.eventExecutor.triggerEvent(event, newProvider)
+		if err != nil {
+			return err
+		}
+	}
+
+	v, ok := oldProvider.(StateHandler)
+
+	// oldProvider can be nil or without state handling capability
+	if oldProvider == nil || !ok {
+		return nil
+	}
+
+	namedProviders := slices.Collect(maps.Values(api.namedProviders))
+
+	// check for multiple bindings
+	if oldProvider == api.defaultProvider || slices.Contains(namedProviders, oldProvider) {
+		return nil
+	}
+
+	go func(forShutdown StateHandler) {
+		forShutdown.Shutdown()
+	}(v)
+
+	return nil
 }
 
 // GetNamedProviders returns named providers map.
@@ -250,6 +353,13 @@ func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider F
 // initializer is a helper to execute provider initialization and generate appropriate event for the initialization
 // It also returns an error if the initialization resulted in an error
 func initializer(provider FeatureProvider, evalCtx EvaluationContext) (Event, error) {
+	return initializerWithContext(context.Background(), provider, evalCtx)
+}
+
+// initializerWithContext is a context-aware helper to execute provider initialization and generate appropriate event for the initialization
+// If the provider implements ContextAwareStateHandler, InitWithContext is called; otherwise, Init is called for backward compatibility.
+// It also returns an error if the initialization resulted in an error or if the context is cancelled.
+func initializerWithContext(ctx context.Context, provider FeatureProvider, evalCtx EvaluationContext) (Event, error) {
 	event := Event{
 		ProviderName: provider.Metadata().Name,
 		EventType:    ProviderReady,
@@ -258,6 +368,23 @@ func initializer(provider FeatureProvider, evalCtx EvaluationContext) (Event, er
 		},
 	}
 
+	// Check for context-aware handler first
+	if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
+		err := contextHandler.InitWithContext(ctx, evalCtx)
+		if err != nil {
+			event.EventType = ProviderError
+			event.Message = fmt.Sprintf("Provider initialization error, %v", err)
+			var initErr *ProviderInitError
+			if errors.As(err, &initErr) {
+				event.EventType = ProviderError
+				event.ErrorCode = initErr.ErrorCode
+				event.Message = initErr.Message
+			}
+		}
+		return event, err
+	}
+
+	// Fall back to regular StateHandler for backward compatibility
 	handler, ok := provider.(StateHandler)
 	if !ok {
 		// Note - a provider without state handling capability can be assumed to be ready immediately.
@@ -274,7 +401,6 @@ func initializer(provider FeatureProvider, evalCtx EvaluationContext) (Event, er
 			event.ErrorCode = initErr.ErrorCode
 			event.Message = initErr.Message
 		}
-
 	}
 
 	return event, err

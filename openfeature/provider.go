@@ -66,6 +66,14 @@ type StateHandler interface {
 	Shutdown()
 }
 
+// ContextAwareStateHandler extends StateHandler with context-aware initialization
+// for providers that need to respect request timeouts and cancellation.
+// If a provider implements this interface, InitWithContext will be called instead of Init.
+type ContextAwareStateHandler interface {
+	StateHandler // Embed existing interface for backward compatibility
+	InitWithContext(ctx context.Context, evaluationContext EvaluationContext) error
+}
+
 // Tracker is the contract for tracking
 // FeatureProvider can opt in for this behavior by implementing the interface
 type Tracker interface {

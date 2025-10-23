@@ -67,6 +67,11 @@ type evaluationImpl interface {
 	SetLogger(l logr.Logger)
 
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
+
+	// Context-aware provider setup methods
+	SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
+	SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error
+	SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error
 }
 
 // eventingImpl is an internal reference interface extending IEventing
