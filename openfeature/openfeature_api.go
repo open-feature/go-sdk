@@ -368,6 +368,20 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 		},
 	}
 
+	// Validate that the context is not already done before starting initialization
+	select {
+	case <-ctx.Done():
+		event.EventType = ProviderError
+		if errors.Is(ctx.Err(), context.Canceled) {
+			event.Message = "Provider initialization cancelled before start"
+		} else {
+			event.Message = "Provider initialization timed out before start"
+		}
+		return event, ctx.Err()
+	default:
+		// Context is still valid, proceed with initialization
+	}
+
 	// Check for context-aware handler first
 	if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
 		err := contextHandler.InitWithContext(ctx, evalCtx)
