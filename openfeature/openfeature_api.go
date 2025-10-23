@@ -115,12 +115,12 @@ func (api *evaluationAPI) setProviderWithContext(ctx context.Context, provider F
 
 	err := api.initNewAndShutdownOldWithContext(ctx, "", provider, oldProvider, async)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize default provider %q: %w", provider.Metadata().Name, err)
 	}
 
 	err = api.eventExecutor.registerDefaultProvider(provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register default provider %q: %w", provider.Metadata().Name, err)
 	}
 
 	return nil
@@ -141,12 +141,12 @@ func (api *evaluationAPI) SetNamedProviderWithContext(ctx context.Context, clien
 
 	err := api.initNewAndShutdownOldWithContext(ctx, clientName, provider, oldProvider, async)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, clientName, err)
 	}
 
 	err = api.eventExecutor.registerNamedEventingProvider(clientName, provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register named provider %q for domain %q: %w", provider.Metadata().Name, clientName, err)
 	}
 
 	return nil
