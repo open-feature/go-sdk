@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
+	"maps"
 	"strings"
 	"sync"
 
@@ -29,13 +29,10 @@ const (
 )
 
 type (
-	// ProviderMap is an alias for a map containing unique names for each included [of.FeatureProvider]
-	ProviderMap = map[string]of.FeatureProvider
-
 	// Provider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
 	// strategies.
 	Provider struct {
-		providers          ProviderMap
+		providers          []NamedProvider
 		metadata           of.Metadata
 		initialized        bool
 		overallStatus      of.State
@@ -52,11 +49,19 @@ type (
 		globalHooks        []of.Hook
 	}
 
-	// NamedProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
-	// The name will be used when reporting errors & results to specify the provider associated with them.
-	NamedProvider struct {
-		Name string
+	// NamedProvider extends [of.FeatureProvider] by adding a unique provider name. The Name method returns
+	// the assigned provider name, while provider returns the underlying [of.FeatureProvider] instance.
+	NamedProvider interface {
 		of.FeatureProvider
+		Name() string
+		unwrap() of.FeatureProvider
+	}
+
+	// namedProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
+	// The name will be used when reporting errors & results to specify the provider associated with them.
+	namedProvider struct {
+		of.FeatureProvider
+		name string
 	}
 
 	// Option function used for setting configuration via the options pattern
@@ -76,9 +81,18 @@ type (
 		logger           *slog.Logger
 		hooks            []of.Hook
 		providerHooks    map[string][]of.Hook
+		providers        []*namedProvider
 		customComparator Comparator
 	}
 )
+
+func (n *namedProvider) Name() string {
+	return n.name
+}
+
+func (n *namedProvider) unwrap() of.FeatureProvider {
+	return n.FeatureProvider
+}
 
 var (
 	stateValues      map[of.State]int
@@ -89,6 +103,8 @@ var (
 	_ of.FeatureProvider = (*Provider)(nil)
 	_ of.EventHandler    = (*Provider)(nil)
 	_ of.StateHandler    = (*Provider)(nil)
+	_ of.Tracker         = (*Provider)(nil)
+	_ NamedProvider      = (*namedProvider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.
@@ -158,39 +174,28 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 	}
 }
 
-// WithProviderHooks sets [of.Hook] instances that execute only for a specific [of.FeatureProvider]. The providerName
-// must match the unique provider name set during [multi.Provider] creation. This should only be used if you need hooks
-// that execute around a specific provider, but that provider does not currently accept a way to set hooks. This [Option]
-// can be used multiple times using unique provider names. Using a provider name that is not known will cause an error.
-func WithProviderHooks(providerName string, hooks ...of.Hook) Option {
+// WithProvider registers a specific [of.FeatureProvider] instance under the given providerName. The providerName
+// must be unique and correspond to the name used when creating the [multi.Provider]. Optional [of.Hook] instances
+// may also be provided, which will execute only for this specific provider. This [Option] can be used multiple times
+// with unique provider names to register multiple providers. The order in which options
+// are provided determines the order in which the providers are registered and evaluated.
+func WithProvider(providerName string, provider of.FeatureProvider, hooks ...of.Hook) Option {
 	return func(conf *configuration) {
 		conf.providerHooks[providerName] = hooks
+		conf.providers = append(conf.providers, &namedProvider{
+			name:            providerName,
+			FeatureProvider: provider,
+		})
 	}
 }
 
 // Multiprovider Implementation
-
-// toNamedProviderSlice converts the provided [ProviderMap] into a slice of [NamedProvider] instances
-func toNamedProviderSlice(m ProviderMap) []*NamedProvider {
-	s := make([]*NamedProvider, 0, len(m))
-	for name, provider := range m {
-		s = append(s, &NamedProvider{Name: name, FeatureProvider: provider})
-	}
-
-	return s
-}
-
-func buildMetadata(m ProviderMap) of.Metadata {
+func buildMetadata(m []NamedProvider) of.Metadata {
 	var separator string
 	var metaName strings.Builder
 	metaName.WriteString("MultiProvider {")
-	names := make([]string, 0, len(m))
-	for n := range m {
-		names = append(names, n)
-	}
-	slices.Sort(names)
-	for _, name := range names {
-		metaName.WriteString(fmt.Sprintf("%s%s: %s", separator, name, m[name].Metadata().Name))
+	for _, p := range m {
+		metaName.WriteString(fmt.Sprintf("%s%s: %s", separator, p.Name(), p.Metadata().Name))
 		if separator == "" {
 			separator = ", "
 		}
@@ -203,45 +208,46 @@ func buildMetadata(m ProviderMap) of.Metadata {
 }
 
 // NewProvider returns a new [multi.Provider] that acts as a unified interface of multiple providers for interaction.
-func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
-	if len(providerMap) == 0 {
-		return nil, errors.New("providerMap cannot be nil or empty")
-	}
-
+func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
 	config := &configuration{
 		logger:        slog.New(slog.DiscardHandler),
 		providerHooks: make(map[string][]of.Hook),
+		providers:     make([]*namedProvider, 0, 2),
 	}
 
 	for _, opt := range options {
 		opt(config)
 	}
 
-	providers := providerMap
-	collectedHooks := make([]of.Hook, 0, len(providerMap))
-	for name, provider := range providerMap {
-		// Validate Providers
-		if name == "" {
-			return nil, errors.New("provider name cannot be the empty string")
-		}
+	if len(config.providers) == 0 {
+		return nil, errors.New("providers cannot be nil or empty")
+	}
 
-		if provider == nil {
-			return nil, fmt.Errorf("provider %s cannot be nil", name)
+	providers := make([]NamedProvider, 0, len(config.providers))
+	collectedHooks := make([]of.Hook, 0, len(config.providers))
+	for i, provider := range config.providers {
+		// Validate Providers
+		if provider.FeatureProvider == nil {
+			return nil, fmt.Errorf("provider at %d cannot be nil", i)
+		}
+		if provider.Name() == "" {
+			return nil, fmt.Errorf("provider name at %d cannot be the empty string", i)
 		}
 
 		// Wrap any providers that include hooks
-		if (len(provider.Hooks()) + len(config.providerHooks[name])) == 0 {
+		if (len(provider.Hooks()) + len(config.providerHooks[provider.Name()])) == 0 {
+			providers = append(providers, provider)
 			continue
 		}
 
-		var wrappedProvider of.FeatureProvider
-		if _, ok := provider.(of.EventHandler); ok {
-			wrappedProvider = isolateProviderWithEvents(provider, config.providerHooks[name])
+		var wrappedProvider NamedProvider
+		if _, ok := provider.FeatureProvider.(of.EventHandler); ok {
+			wrappedProvider = isolateProviderWithEvents(provider, config.providerHooks[provider.Name()])
 		} else {
-			wrappedProvider = isolateProvider(provider, config.providerHooks[name])
+			wrappedProvider = isolateProvider(provider, config.providerHooks[provider.Name()])
 		}
 
-		providers[name] = wrappedProvider
+		providers = append(providers, wrappedProvider)
 		collectedHooks = append(collectedHooks, wrappedProvider.Hooks()...)
 	}
 
@@ -249,7 +255,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		providers:      providers,
 		outboundEvents: make(chan of.Event, len(providers)),
 		logger:         config.logger,
-		metadata:       buildMetadata(providerMap),
+		metadata:       buildMetadata(providers),
 		overallStatus:  of.NotReadyState,
 		providerStatus: make(map[string]of.State, len(providers)),
 		globalHooks:    append(config.hooks, collectedHooks...),
@@ -276,12 +282,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 }
 
 // Providers returns slice of providers wrapped in [NamedProvider] structs.
-func (p *Provider) Providers() []*NamedProvider {
-	return toNamedProviderSlice(p.providers)
-}
-
-// ProvidersByName Returns the internal [ProviderMap].
-func (p *Provider) ProvidersByName() ProviderMap {
+func (p *Provider) Providers() []NamedProvider {
 	return p.providers
 }
 
@@ -359,46 +360,44 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
 	p.inboundEvents = make(chan namedEvent, len(p.providers))
 	handlers := make(chan namedEventHandler, len(p.providers))
-	for name, provider := range p.providers {
+	for _, provider := range p.providers {
+		name := provider.Name()
 		// Initialize each provider to not ready state. No locks required there are no workers running
 		p.updateProviderState(name, of.NotReadyState)
 		l := p.logger.With(slog.String(MetadataProviderName, name))
 		prov := provider
 		eg.Go(func() error {
 			l.LogAttrs(context.Background(), slog.LevelDebug, "starting initialization")
-			stateHandle, ok := prov.(of.StateHandler)
+			stateHandle, ok := prov.unwrap().(of.StateHandler)
 			if !ok {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "StateHandle not implemented, skipping initialization")
 			} else if err := stateHandle.Init(evalCtx); err != nil {
 				l.LogAttrs(context.Background(), slog.LevelError, "initialization failed", slog.Any("error", err))
+				p.updateProviderState(name, of.ErrorState)
 				return &ProviderError{
 					Err:          err,
 					ProviderName: name,
 				}
 			}
 			l.LogAttrs(context.Background(), slog.LevelDebug, "initialization successful")
-			if eventer, ok := provider.(of.EventHandler); ok {
+			if eventer, ok := prov.unwrap().(of.EventHandler); ok {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "detected EventHandler implementation")
 				handlers <- namedEventHandler{eventer, name}
-			} else {
-				// Do not yet update providers that need event handling
-				p.updateProviderState(name, of.ReadyState)
 			}
+			p.updateProviderState(name, of.ReadyState)
 			return nil
 		})
 	}
 
 	if err := eg.Wait(); err != nil {
 		var pErr *ProviderError
-		if errors.As(err, &pErr) {
-			// Update provider status to error, no event needs to be emitted yet
-			p.updateProviderState(pErr.ProviderName, of.ErrorState)
-		} else {
+		if !errors.As(err, &pErr) {
 			pErr = &ProviderError{
 				Err:          err,
 				ProviderName: "unknown",
 			}
 			p.setStatus(of.ErrorState)
+			return pErr
 		}
 
 		return err
@@ -411,23 +410,30 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	p.shutdownFunc = shutdownFunc
 
 	p.workerGroup.Add(1)
-	go func() {
+	go func(ctx context.Context) {
 		workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 		defer p.workerGroup.Done()
-		for e := range p.inboundEvents {
-			l := workerLogger.With(
-				slog.String(MetadataProviderName, e.providerName),
-				slog.String(MetadataProviderType, e.ProviderName),
-			)
-			l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
-			if p.updateProviderStateFromEvent(e) {
-				p.outboundEvents <- e.Event
-				l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
-			} else {
-				l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(p.outboundEvents)
+				return
+			case e := <-p.inboundEvents:
+				l := workerLogger.With(
+					slog.String(MetadataProviderName, e.providerName),
+					slog.String(MetadataProviderType, e.ProviderName),
+				)
+				l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
+				if p.updateProviderStateFromEvent(e) {
+					p.outboundEvents <- e.Event
+					l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
+				} else {
+					l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
+				}
 			}
 		}
-	}()
+	}(workerCtx)
 
 	p.setStatus(of.ReadyState)
 	p.initialized = true
@@ -519,20 +525,14 @@ func (p *Provider) Shutdown() {
 	}
 	// Stop all event listener workers, shutdown events should not affect overall state
 	p.shutdownFunc()
-	// Stop forwarding worker
-	close(p.inboundEvents)
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
-	// Wait for workers to stop
-	p.workerGroup.Wait()
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
+
 	var wg sync.WaitGroup
 	for _, provider := range p.providers {
 		wg.Add(1)
 
-		go func(p of.FeatureProvider) {
+		go func(p NamedProvider) {
 			defer wg.Done()
-			if stateHandle, ok := p.(of.StateHandler); ok {
+			if stateHandle, ok := p.unwrap().(of.StateHandler); ok {
 				stateHandle.Shutdown()
 			}
 		}(provider)
@@ -540,9 +540,15 @@ func (p *Provider) Shutdown() {
 
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "waiting for provider shutdown completion")
 	wg.Wait()
+	// Stop forwarding worker
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
+	// Wait for workers to stop
+	p.workerGroup.Wait()
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
+	close(p.inboundEvents)
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
 	p.setStatus(of.NotReadyState)
-	close(p.outboundEvents)
 	p.outboundEvents = nil
 	p.inboundEvents = nil
 	p.initialized = false
@@ -565,4 +571,28 @@ func (p *Provider) setStatus(state of.State) {
 // EventChannel is the channel that all events are emitted on.
 func (p *Provider) EventChannel() <-chan of.Event {
 	return p.outboundEvents
+}
+
+// Track implements the [of.Tracker] interface by forwarding tracking calls to all internal providers that
+// are in ready state and implement the [of.Tracker] interface.
+func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluationContext of.EvaluationContext, details of.TrackingEventDetails) {
+	if !p.initialized {
+		// Don't do anything if we were never initialized
+		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping tracking", slog.String("tracking-event", trackingEventName))
+		return
+	}
+	p.providerStatusLock.Lock()
+	statuses := maps.Clone(p.providerStatus)
+	p.providerStatusLock.Unlock()
+	providers := make([]NamedProvider, 0, len(p.providers))
+	for _, p := range p.providers {
+		if statuses[p.Name()] == of.ReadyState {
+			providers = append(providers, p)
+		}
+	}
+	for _, provider := range providers {
+		if tracker, ok := provider.unwrap().(of.Tracker); ok {
+			tracker.Track(ctx, trackingEventName, evaluationContext, details)
+		}
+	}
 }

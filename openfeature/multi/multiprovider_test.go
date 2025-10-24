@@ -5,7 +5,6 @@ import (
 	"errors"
 	"regexp"
 	"testing"
-	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
@@ -18,97 +17,65 @@ func TestMultiProvider_ProvidersMethod(t *testing.T) {
 	testProvider1 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
 	testProvider2 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
 
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-
-	mp, err := NewProvider(providers, StrategyFirstSuccess)
+	mp, err := NewProvider(StrategyFirstSuccess, WithProvider("provider1", testProvider1), WithProvider("provider2", testProvider2))
 	require.NoError(t, err)
 
 	p := mp.Providers()
 	assert.Len(t, p, 2)
-	assert.Regexp(t, regexp.MustCompile("provider[1-2]"), p[0].Name)
-	assert.NotNil(t, p[0].FeatureProvider)
-	assert.Regexp(t, regexp.MustCompile("provider[1-2]"), p[1].Name)
-	assert.NotNil(t, p[1].FeatureProvider)
+	assert.NotNil(t, p[0])
+	assert.Implements(t, (*of.FeatureProvider)(nil), p[0])
+	assert.Regexp(t, regexp.MustCompile("provider1"), p[0].Name())
+	assert.NotNil(t, p[1])
+	assert.Implements(t, (*of.FeatureProvider)(nil), p[1])
+	assert.Regexp(t, regexp.MustCompile("provider2"), p[1].Name())
 }
 
 func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	t.Run("nil providerMap returns an error", func(t *testing.T) {
-		_, err := NewProvider(nil, StrategyFirstMatch)
+		_, err := NewProvider(StrategyFirstMatch)
 		require.Errorf(t, err, "providerMap cannot be nil or empty")
 	})
 
 	t.Run("naming a provider the empty string returns an error", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers[""] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewProvider(providers, StrategyFirstMatch)
+		_, err := NewProvider(StrategyFirstMatch, WithProvider("", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
 		require.Errorf(t, err, "provider name cannot be the empty string")
 	})
 
 	t.Run("nil provider within map returns an error", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers["provider1"] = nil
-		_, err := NewProvider(providers, StrategyFirstMatch)
+		_, err := NewProvider(StrategyFirstMatch, WithProvider("provider1", nil))
 		require.Errorf(t, err, "provider provider1 cannot be nil")
 	})
 
 	t.Run("unknown evaluation strategyFunc returns an error", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewProvider(providers, "unknown")
+		_, err := NewProvider("unknown", WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
 		require.Errorf(t, err, "unknown is an unknown evaluation strategyFunc")
 	})
 
 	t.Run("setting custom strategyFunc without custom strategyFunc option returns error", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		_, err := NewProvider(providers, StrategyCustom)
+		_, err := NewProvider(StrategyCustom, WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
 		require.Errorf(t, err, "A custom strategyFunc must be set via an option if StrategyCustom is set")
 	})
 
 	t.Run("success", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		mp, err := NewProvider(providers, StrategyComparison)
+		mp, err := NewProvider(StrategyComparison, WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})
 
 	t.Run("success with custom provider", func(t *testing.T) {
-		providers := make(ProviderMap)
-		providers["provider1"] = imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-		mp, err := NewProvider(providers, StrategyCustom, WithCustomStrategy(func(providers []*NamedProvider) StrategyFn[FlagTypes] {
+		mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
 			return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
 				return of.GenericResolutionDetail[FlagTypes]{
 					Value:                    defaultValue,
 					ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
 				}
 			}
-		}))
+		}),
+			WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+		)
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})
-}
-
-func TestMultiProvider_ProvidersByNamesMethod(t *testing.T) {
-	testProvider1 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-	testProvider2 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
-
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-
-	mp, err := NewProvider(providers, StrategyFirstMatch)
-	require.NoError(t, err)
-
-	p := mp.ProvidersByName()
-
-	assert.Len(t, p, 2)
-	require.Contains(t, p, "provider1")
-	assert.Equal(t, p["provider1"], testProvider1)
-	require.Contains(t, p, "provider2")
-	assert.Equal(t, p["provider2"], testProvider2)
 }
 
 func TestMultiProvider_MetaData(t *testing.T) {
@@ -121,11 +88,11 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		})
 		testProvider2.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
 
-		providers := make(ProviderMap)
-		providers["provider1"] = testProvider1
-		providers["provider2"] = testProvider2
-
-		mp, err := NewProvider(providers, StrategyFirstSuccess)
+		mp, err := NewProvider(
+			StrategyFirstSuccess,
+			WithProvider("provider1", testProvider1),
+			WithProvider("provider2", testProvider2),
+		)
 		require.NoError(t, err)
 
 		metadata := mp.Metadata()
@@ -147,12 +114,12 @@ func TestMultiProvider_MetaData(t *testing.T) {
 		})
 		testProvider3.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
 
-		providers := make(ProviderMap)
-		providers["provider1"] = testProvider1
-		providers["provider2"] = testProvider2
-		providers["provider3"] = testProvider3
-
-		mp, err := NewProvider(providers, StrategyFirstSuccess)
+		mp, err := NewProvider(
+			StrategyFirstSuccess,
+			WithProvider("provider1", testProvider1),
+			WithProvider("provider2", testProvider2),
+			WithProvider("provider3", testProvider3),
+		)
 		require.NoError(t, err)
 
 		metadata := mp.Metadata()
@@ -187,12 +154,12 @@ func TestMultiProvider_Init(t *testing.T) {
 	testProvider3.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
 	testProvider3.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
 
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-	providers["provider3"] = testProvider3
-
-	mp, err := NewProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider1", testProvider1),
+		WithProvider("provider2", testProvider2),
+		WithProvider("provider3", testProvider3),
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -228,12 +195,12 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	testProvider1.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
 	testProvider2 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
 
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-	providers["provider3"] = testProvider3
-
-	mp, err := NewProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider1", testProvider1),
+		WithProvider("provider2", testProvider2),
+		WithProvider("provider3", testProvider3),
+	)
 	require.NoError(t, err)
 
 	attributes := map[string]any{
@@ -256,11 +223,12 @@ func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
 	testProvider3.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
 	testProvider3.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
 
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-	providers["provider3"] = testProvider3
-	mp, err := NewProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider1", testProvider1),
+		WithProvider("provider2", testProvider2),
+		WithProvider("provider3", testProvider3),
+	)
 	require.NoError(t, err)
 
 	mp.Shutdown()
@@ -287,11 +255,12 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 		handledHandler,
 	}
 
-	providers := make(ProviderMap)
-	providers["provider1"] = testProvider1
-	providers["provider2"] = testProvider2
-	providers["provider3"] = testProvider3
-	mp, err := NewProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider1", testProvider1),
+		WithProvider("provider2", testProvider2),
+		WithProvider("provider3", testProvider3),
+	)
 	require.NoError(t, err)
 	evalCtx := of.NewTargetlessEvaluationContext(map[string]any{
 		"foo": "bar",
@@ -354,34 +323,33 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 	primaryProvider := newMockProviderWithEvents(ctrl, "MockProvider")
 	secondaryProvider := newMockProviderWithEvents(ctrl, "MockProvider")
 
-	providers := ProviderMap{
-		"primary":   primaryProvider,
-		"secondary": secondaryProvider,
-	}
-
-	multiProvider, err := NewProvider(providers, StrategyFirstMatch)
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("primary", primaryProvider),
+		WithProvider("secondary", secondaryProvider),
+	)
 	if err != nil {
 		t.Fatalf("failed to create multi-provider: %v", err)
 	}
-	t.Cleanup(multiProvider.Shutdown)
+	t.Cleanup(mp.Shutdown)
 
 	// Initialize the provider
 	ctx := of.NewEvaluationContext("test", nil)
-	if err := multiProvider.Init(ctx); err != nil {
+	if err := mp.Init(ctx); err != nil {
 		t.Fatalf("failed to initialize multi-provider: %v", err)
 	}
 
 	primaryProvider.EmitEvent(of.ProviderError, "fail to fetch data")
 	secondaryProvider.EmitEvent(of.ProviderReady, "rev 1")
-
-	time.Sleep(200 * time.Millisecond)
+	// wait for processing
+	<-mp.outboundEvents
 
 	// Check the state after the error event
-	multiProvider.providerStatusLock.Lock()
-	primaryState := multiProvider.providerStatus["primary"]
-	secondaryState := multiProvider.providerStatus["secondary"]
-	numProviders := len(multiProvider.providerStatus)
-	multiProvider.providerStatusLock.Unlock()
+	mp.providerStatusLock.Lock()
+	primaryState := mp.providerStatus["primary"]
+	secondaryState := mp.providerStatus["secondary"]
+	numProviders := len(mp.providerStatus)
+	mp.providerStatusLock.Unlock()
 
 	if primaryState != of.ErrorState {
 		t.Errorf("Expected primary-mock state to be ERROR after emitting error event, got %s", primaryState)
@@ -396,12 +364,133 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 	}
 }
 
+func TestMultiProvider_Track(t *testing.T) {
+	t.Run("forwards tracking to all ready providers that implement Tracker", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+
+		provider1 := newMockProviderWithEvents(ctrl, "provider1")
+		provider2 := newMockProviderWithEvents(ctrl, "provider2")
+		provider3 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{}) // Does not implement Tracker
+
+		mp, err := NewProvider(
+			StrategyFirstSuccess,
+			WithProvider("provider1", provider1),
+			WithProvider("provider2", provider2),
+			WithProvider("provider3", provider3),
+		)
+		require.NoError(t, err)
+		t.Cleanup(mp.Shutdown)
+
+		evalCtx := of.NewEvaluationContext("user-123", map[string]any{"plan": "premium"})
+		err = mp.Init(evalCtx)
+		require.NoError(t, err)
+
+		trackingEventName := "button-clicked"
+		details := of.NewTrackingEventDetails(42.0).Add("currency", "USD")
+
+		ctx := t.Context()
+		// Expect Track to be called on providers that implement Tracker
+		provider1.MockTracker.EXPECT().Track(ctx, trackingEventName, evalCtx, details).Times(1)
+		provider2.MockTracker.EXPECT().Track(ctx, trackingEventName, evalCtx, details).Times(1)
+
+		mp.Track(ctx, trackingEventName, evalCtx, details)
+	})
+
+	t.Run("does not track when provider is not initialized", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+
+		provider1 := newMockProviderWithEvents(ctrl, "provider1")
+		// manual shutdown on cleanup because multi-provider won't be initialized
+		t.Cleanup(provider1.Shutdown)
+
+		mp, err := NewProvider(StrategyFirstSuccess, WithProvider("provider1", provider1))
+		require.NoError(t, err)
+		t.Cleanup(mp.Shutdown)
+
+		// Don't initialize the multi-provider
+		ctx := context.Background()
+		trackingEventName := "button-clicked"
+		evalCtx := of.NewEvaluationContext("user-123", map[string]any{})
+		details := of.TrackingEventDetails{}
+
+		// Should not call Track on provider
+		provider1.MockTracker.EXPECT().Track(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		mp.Track(ctx, trackingEventName, evalCtx, details)
+	})
+
+	t.Run("only tracks on providers in ready state", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+
+		readyProvider := newMockProviderWithEvents(ctrl, "ready-provider")
+		errorProvider := newMockProviderWithEvents(ctrl, "error-provider")
+
+		mp, err := NewProvider(
+			StrategyFirstSuccess,
+			WithProvider("ready-provider", readyProvider),
+			WithProvider("error-provider", errorProvider),
+		)
+		require.NoError(t, err)
+		t.Cleanup(mp.Shutdown)
+
+		evalCtx := of.NewEvaluationContext("user-456", map[string]any{})
+		err = mp.Init(evalCtx)
+		require.NoError(t, err)
+
+		// Simulate error state for one provider
+		errorProvider.EmitEvent(of.ProviderError, "error")
+
+		// wait for event processing
+		<-mp.outboundEvents
+
+		trackingEventName := "page-view"
+		details := of.TrackingEventDetails{}
+
+		ctx := t.Context()
+		readyProvider.MockTracker.EXPECT().Track(ctx, trackingEventName, evalCtx, details).Times(1)
+		errorProvider.MockTracker.EXPECT().Track(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		mp.Track(ctx, trackingEventName, evalCtx, details)
+	})
+
+	t.Run("handles providers that don't implement Tracker", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+
+		trackerProvider := newMockProviderWithEvents(ctrl, "tracker-provider")
+		nonTrackerProvider := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})
+
+		mp, err := NewProvider(
+			StrategyFirstSuccess,
+			WithProvider("tracker-provider", trackerProvider),
+			WithProvider("non-tracker", nonTrackerProvider),
+		)
+		require.NoError(t, err)
+		t.Cleanup(mp.Shutdown)
+
+		evalCtx := of.NewEvaluationContext("user-789", map[string]any{})
+		err = mp.Init(evalCtx)
+		require.NoError(t, err)
+
+		trackingEventName := "conversion"
+		details := of.NewTrackingEventDetails(99.99)
+
+		ctx := t.Context()
+		trackerProvider.MockTracker.EXPECT().Track(ctx, trackingEventName, evalCtx, details).Times(1)
+		mp.Track(ctx, trackingEventName, evalCtx, details)
+	})
+}
+
 var _ of.StateHandler = (*mockProviderWithEvents)(nil)
 
-// mockProviderWithEvents wraps a mock provider to add EventHandler capability
+// mockProviderWithEvents wraps a mock provider to add EventHandler and optional Tracker capability
 type mockProviderWithEvents struct {
 	*of.MockFeatureProvider
 	*of.MockStateHandler
+	*of.MockTracker
 	eventChannel chan of.Event
 	metadata     of.Metadata
 }
@@ -409,6 +498,7 @@ type mockProviderWithEvents struct {
 func newMockProviderWithEvents(ctrl *gomock.Controller, name string) *mockProviderWithEvents {
 	mockProvider := of.NewMockFeatureProvider(ctrl)
 	mockStateHandler := of.NewMockStateHandler(ctrl)
+	mockTracker := of.NewMockTracker(ctrl)
 	eventChan := make(chan of.Event, 10)
 
 	metadata := of.Metadata{Name: name}
@@ -434,6 +524,7 @@ func newMockProviderWithEvents(ctrl *gomock.Controller, name string) *mockProvid
 		MockStateHandler:    mockStateHandler,
 		eventChannel:        eventChan,
 		metadata:            metadata,
+		MockTracker:         mockTracker,
 	}
 }
 
@@ -458,5 +549,11 @@ func (m *mockProviderWithEvents) EmitEvent(eventType of.EventType, message strin
 			Message:       message,
 			EventMetadata: make(map[string]any),
 		},
+	}
+}
+
+func (m *mockProviderWithEvents) Track(ctx context.Context, trackingEventName string, evaluationContext of.EvaluationContext, details of.TrackingEventDetails) {
+	if m.MockTracker != nil {
+		m.MockTracker.Track(ctx, trackingEventName, evaluationContext, details)
 	}
 }

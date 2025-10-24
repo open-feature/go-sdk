@@ -24,7 +24,7 @@ type Comparator func(values []any) bool
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
 // called without setting a [Comparator], and the returned object(s) are not comparable, then an error will occur.
-func newComparisonStrategy(providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
+func newComparisonStrategy(providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
 	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
 }
 
@@ -81,7 +81,7 @@ func comparisonResolutionError(metadata of.FlagMetadata) of.ResolutionError {
 	return of.NewGeneralResolutionError("comparison failure")
 }
 
-func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
+func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
 	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 		if comparator == nil {
 			comparator = defaultComparator
@@ -103,7 +103,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		// Short circuit if there's only one provider as no comparison nor workers are needed
 		if len(providers) == 1 {
 			result := Evaluate(ctx, providers[0], flag, defaultValue, evalCtx)
-			metadata := setFlagMetadata(StrategyComparison, providers[0].Name, make(of.FlagMetadata))
+			metadata := setFlagMetadata(StrategyComparison, providers[0].Name(), make(of.FlagMetadata))
 			metadata[MetadataFallbackUsed] = false
 			result.FlagMetadata = mergeFlagMeta(result.FlagMetadata, metadata)
 			return result
@@ -124,13 +124,13 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 				notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
 				if !notFound && result.Error() != nil {
 					return &ProviderError{
-						ProviderName: closedProvider.Name,
+						ProviderName: closedProvider.Name(),
 						Err:          result.Error(),
 					}
 				}
 				if !notFound {
 					resultChan <- &namedResult{
-						name: closedProvider.Name,
+						name: closedProvider.Name(),
 						res:  &result,
 					}
 				} else {
@@ -225,7 +225,7 @@ func evaluateComparison[T FlagTypes](providers []*NamedProvider, fallbackProvide
 		if fallbackProvider != nil {
 			fallbackResult := Evaluate(
 				ctx,
-				&NamedProvider{Name: "fallback", FeatureProvider: fallbackProvider},
+				&namedProvider{name: "fallback", FeatureProvider: fallbackProvider},
 				flag,
 				defaultValue,
 				evalCtx,

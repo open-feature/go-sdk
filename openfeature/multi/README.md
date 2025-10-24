@@ -32,12 +32,13 @@ import (
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
-providers := make(multi.ProviderMap)
-providers["providerA"] = memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
-providers["providerB"] = myCustomProvider
-mprovider, err := multi.NewProvider(providers, multi.StrategyFirstMatch)
+mprovider, err := multi.NewProvider(
+  multi.StrategyFirstMatch,
+  multi.WithProvider("providerA", memprovider.NewInMemoryProvider(/*...*/),
+  multi.WithProvider("providerB", myCustomProvider),
+)
 if err != nil {
-	return err
+  return err
 }
 
 openfeature.SetNamedProviderAndWait("multiprovider", mprovider)
@@ -101,7 +102,7 @@ type StrategyConstructor func(providers []*NamedProvider) StrategyFn[FlagTypes]
 
 Build your strategy to wrap around the slice of providers
 ```go
-option := multi.WithCustomStrategy(func(providers []*NamedProvider) StrategyFn[FlagTypes] {
+option := multi.WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
 	return func[T FlagTypes](ctx context.Context, flag string, defaultValue T, flatCtx openfeature.FlattenedContext) openfeature.GenericResolutionDetail[T] {
 		// implementation
 		// ...
@@ -140,12 +141,12 @@ essentially a factory that allows the `StrategyFn` to wrap around a slice of `Na
 Allows for setting global hooks for the multi-provider. These are `openfeature.Hook` implementations that affect
 **all** internal `FeatureProvider` instances.
 
-### `WithProviderHooks`
+### `WithProvider`
 
-Allows for setting `openfeature.Hook` implementations on a specific named `FeatureProvider` within the multi-provider.
-This should only be used when hooks need to be attached to a `FeatureProvider` instance that does not implement that functionality.
-Using a provider name that is not known will cause an error to be returned during the creation time. This option can be
-used multiple times using unique provider names.
+Allows for registering a specific `FeatureProvider` instance under a unique provider name. Optional `openfeature.Hook`
+implementations may also be provided, which will execute only for this specific provider. This option can be used multiple
+times with unique provider names to register multiple providers.
+The order in which `WithProvider` options are provided determines the order in which the providers are registered and evaluated.
 
 ## `StrategyComparision` specific options
 

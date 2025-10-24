@@ -93,9 +93,9 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider, tt.successVal, true, TestErrorNone)
 
-				strategy := newFirstSuccessStrategy([]*NamedProvider{
-					{
-						Name:            "test-provider",
+				strategy := newFirstSuccessStrategy([]NamedProvider{
+					&namedProvider{
+						name:            "test-provider",
 						FeatureProvider: provider,
 					},
 				})
@@ -114,13 +114,13 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
 
-				strategy := newFirstSuccessStrategy([]*NamedProvider{
-					{
-						Name:            "success-provider",
+				strategy := newFirstSuccessStrategy([]NamedProvider{
+					&namedProvider{
+						name:            "success-provider",
 						FeatureProvider: provider1,
 					},
-					{
-						Name:            "failure-provider",
+					&namedProvider{
+						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
 				})
@@ -139,13 +139,13 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
 
-				strategy := newFirstSuccessStrategy([]*NamedProvider{
-					{
-						Name:            "success-provider",
+				strategy := newFirstSuccessStrategy([]NamedProvider{
+					&namedProvider{
+						name:            "success-provider",
 						FeatureProvider: provider1,
 					},
-					{
-						Name:            "failure-provider",
+					&namedProvider{
+						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
 				})
@@ -166,17 +166,17 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider3, tt.defaultVal, false, TestErrorError)
 
-				strategy := newFirstSuccessStrategy([]*NamedProvider{
-					{
-						Name:            "provider1",
+				strategy := newFirstSuccessStrategy([]NamedProvider{
+					&namedProvider{
+						name:            "provider1",
 						FeatureProvider: provider1,
 					},
-					{
-						Name:            "provider2",
+					&namedProvider{
+						name:            "provider2",
 						FeatureProvider: provider2,
 					},
-					{
-						Name:            "provider3",
+					&namedProvider{
+						name:            "provider3",
 						FeatureProvider: provider3,
 					},
 				})

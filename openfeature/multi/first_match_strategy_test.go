@@ -29,10 +29,10 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 			t.Run("Single Provider Match", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 1)
 				configureFirstMatchProviderMock(mocks[0], tt.successVal, TestErrorNone, "mock provider")
-				providers := make([]*NamedProvider, 0, 5)
+				providers := make([]NamedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &NamedProvider{
-						Name:            strconv.Itoa(i),
+					providers = append(providers, &namedProvider{
+						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
@@ -40,16 +40,16 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-				assert.Equal(t, providers[0].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Equal(t, providers[0].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
 			})
 
 			t.Run("Default Resolution", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 1)
 				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider")
-				providers := make([]*NamedProvider, 0, 5)
+				providers := make([]NamedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &NamedProvider{
-						Name:            strconv.Itoa(i),
+					providers = append(providers, &namedProvider{
+						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
@@ -66,10 +66,10 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				mocks := createMockProviders(ctrl, 5)
 				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider 1")
 				configureFirstMatchProviderMock(mocks[1], tt.successVal, TestErrorNone, "mock provider 2")
-				providers := make([]*NamedProvider, 0, 5)
+				providers := make([]NamedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &NamedProvider{
-						Name:            strconv.Itoa(i),
+					providers = append(providers, &namedProvider{
+						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
@@ -78,16 +78,16 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				result := strategy(context.Background(), "test-flag", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
-				assert.Equal(t, providers[1].Name, result.FlagMetadata[MetadataSuccessfulProviderName])
+				assert.Equal(t, providers[1].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
 			})
 
 			t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 5)
 				expectedErr := of.NewGeneralResolutionError("test error")
-				providers := make([]*NamedProvider, 0, 5)
+				providers := make([]NamedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &NamedProvider{
-						Name:            strconv.Itoa(i),
+					providers = append(providers, &namedProvider{
+						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 					switch {
