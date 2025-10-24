@@ -475,14 +475,8 @@ func TestMultiProvider_Track(t *testing.T) {
 		require.NoError(t, err)
 
 		// Simulate error state for one provider
-		errorProvider.eventChannel <- of.Event{
-			ProviderName: "error-provider",
-			EventType:    of.ProviderError,
-			ProviderEventDetails: of.ProviderEventDetails{
-				Message:       "error",
-				EventMetadata: make(map[string]any),
-			},
-		}
+		errorProvider.EmitEvent(of.ProviderError, "error")
+
 		// wait for event processing
 		<-mp.outboundEvents
 

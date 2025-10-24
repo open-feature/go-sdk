@@ -219,7 +219,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		opt(config)
 	}
 
-	providers := providerMap
+	providers := make(ProviderMap, len(providerMap))
 	collectedHooks := make([]of.Hook, 0, len(providerMap))
 	for name, provider := range providerMap {
 		// Validate Providers
@@ -233,6 +233,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 
 		// Wrap any providers that include hooks
 		if (len(provider.Hooks()) + len(config.providerHooks[name])) == 0 {
+			providers[name] = provider
 			continue
 		}
 
@@ -251,7 +252,7 @@ func NewProvider(providerMap ProviderMap, evaluationStrategy EvaluationStrategy,
 		providers:      providers,
 		outboundEvents: make(chan of.Event, len(providers)),
 		logger:         config.logger,
-		metadata:       buildMetadata(providerMap),
+		metadata:       buildMetadata(providers),
 		overallStatus:  of.NotReadyState,
 		providerStatus: make(map[string]of.State, len(providers)),
 		globalHooks:    append(config.hooks, collectedHooks...),
@@ -411,23 +412,30 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	p.shutdownFunc = shutdownFunc
 
 	p.workerGroup.Add(1)
-	go func() {
+	go func(ctx context.Context) {
 		workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 		defer p.workerGroup.Done()
-		for e := range p.inboundEvents {
-			l := workerLogger.With(
-				slog.String(MetadataProviderName, e.providerName),
-				slog.String(MetadataProviderType, e.ProviderName),
-			)
-			l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
-			if p.updateProviderStateFromEvent(e) {
-				p.outboundEvents <- e.Event
-				l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
-			} else {
-				l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(p.outboundEvents)
+				return
+			case e := <-p.inboundEvents:
+				l := workerLogger.With(
+					slog.String(MetadataProviderName, e.providerName),
+					slog.String(MetadataProviderType, e.ProviderName),
+				)
+				l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
+				if p.updateProviderStateFromEvent(e) {
+					p.outboundEvents <- e.Event
+					l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
+				} else {
+					l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
+				}
 			}
 		}
-	}()
+	}(workerCtx)
 
 	p.setStatus(of.ReadyState)
 	p.initialized = true
@@ -519,13 +527,7 @@ func (p *Provider) Shutdown() {
 	}
 	// Stop all event listener workers, shutdown events should not affect overall state
 	p.shutdownFunc()
-	// Stop forwarding worker
-	close(p.inboundEvents)
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
-	// Wait for workers to stop
-	p.workerGroup.Wait()
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
+
 	var wg sync.WaitGroup
 	for _, provider := range p.providers {
 		wg.Add(1)
@@ -540,9 +542,15 @@ func (p *Provider) Shutdown() {
 
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "waiting for provider shutdown completion")
 	wg.Wait()
+	// Stop forwarding worker
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "triggered worker shutdown")
+	// Wait for workers to stop
+	p.workerGroup.Wait()
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
+	close(p.inboundEvents)
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
 	p.setStatus(of.NotReadyState)
-	close(p.outboundEvents)
 	p.outboundEvents = nil
 	p.inboundEvents = nil
 	p.initialized = false
