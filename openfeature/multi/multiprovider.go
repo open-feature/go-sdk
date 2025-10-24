@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -89,6 +90,7 @@ var (
 	_ of.FeatureProvider = (*Provider)(nil)
 	_ of.EventHandler    = (*Provider)(nil)
 	_ of.StateHandler    = (*Provider)(nil)
+	_ of.Tracker         = (*Provider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.
@@ -380,10 +382,8 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 			if eventer, ok := provider.(of.EventHandler); ok {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "detected EventHandler implementation")
 				handlers <- namedEventHandler{eventer, name}
-			} else {
-				// Do not yet update providers that need event handling
-				p.updateProviderState(name, of.ReadyState)
 			}
+			p.updateProviderState(name, of.ReadyState)
 			return nil
 		})
 	}
@@ -565,4 +565,33 @@ func (p *Provider) setStatus(state of.State) {
 // EventChannel is the channel that all events are emitted on.
 func (p *Provider) EventChannel() <-chan of.Event {
 	return p.outboundEvents
+}
+
+// Track implements the [of.Tracker] interface by forwarding tracking calls to all internal providers that
+// are in ready state and implement the [of.Tracker] interface.
+func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluationContext of.EvaluationContext, details of.TrackingEventDetails) {
+	if !p.initialized {
+		// Don't do anything if we were never initialized
+		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping tracking", slog.String("tracking-event", trackingEventName))
+		return
+	}
+	p.providerStatusLock.Lock()
+	data := maps.Clone(p.providerStatus)
+	p.providerStatusLock.Unlock()
+	for providerID, state := range data {
+		if state != of.ReadyState {
+			continue
+		}
+		provider, ok := p.providers[providerID]
+		if !ok {
+			p.logger.LogAttrs(ctx, slog.LevelWarn, "provider not found during tracking",
+				slog.String(MetadataProviderName, providerID),
+				slog.String("tracking-event", trackingEventName),
+			)
+			continue
+		}
+		if tracker, ok := provider.(of.Tracker); ok {
+			tracker.Track(ctx, trackingEventName, evaluationContext, details)
+		}
+	}
 }
