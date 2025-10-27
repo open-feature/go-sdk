@@ -152,6 +152,11 @@ func (api *evaluationAPI) SetNamedProviderWithContext(ctx context.Context, clien
 	return nil
 }
 
+// SetNamedProviderWithContextAndWait sets a provider with client name using context-aware initialization and waits for completion.
+func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+	return api.SetNamedProviderWithContext(ctx, clientName, provider, false)
+}
+
 // initNewAndShutdownOldWithContext is a context-aware helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 func (api *evaluationAPI) initNewAndShutdownOldWithContext(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {

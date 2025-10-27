@@ -976,6 +976,20 @@ func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContext(ctx, clien
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContext), ctx, clientName, provider, async)
 }
 
+// SetNamedProviderWithContextAndWait mocks base method.
+func (m *MockevaluationImpl) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContextAndWait", ctx, clientName, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContextAndWait indicates an expected call of SetNamedProviderWithContextAndWait.
+func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContextAndWait(ctx, clientName, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContextAndWait", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContextAndWait), ctx, clientName, provider)
+}
+
 // MockeventingImpl is a mock of eventingImpl interface.
 type MockeventingImpl struct {
 	ctrl     *gomock.Controller

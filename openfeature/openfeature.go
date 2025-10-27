@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 )
 
@@ -177,10 +178,10 @@ func SetNamedProviderWithContext(ctx context.Context, domain string, provider Fe
 //	}
 //
 //	// Now safe to use the client
-//	client := NewClient("critical-service")
+//	:= NewClient("critical-service")
 //	enabled, _ := client.BooleanValue(context.Background(), "feature-x", false, EvaluationContext{})
 func SetNamedProviderWithContextAndWait(ctx context.Context, domain string, provider FeatureProvider) error {
-	return api.SetNamedProviderWithContext(ctx, domain, provider, false)
+	return api.SetNamedProviderWithContextAndWait(ctx, domain, provider)
 }
 
 // NamedProviderMetadata returns the named provider's Metadata

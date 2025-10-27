@@ -72,6 +72,7 @@ type evaluationImpl interface {
 	SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
 	SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error
 	SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error
+	SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error
 }
 
 // eventingImpl is an internal reference interface extending IEventing
