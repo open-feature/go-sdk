@@ -1,0 +1,100 @@
+package openfeature
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+)
+
+// ExampleSetProviderWithContext demonstrates asynchronous provider setup with timeout control.
+func ExampleSetProviderWithContext() {
+	// Create a test provider for demonstration
+	provider := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := SetProviderWithContext(ctx, provider)
+	if err != nil {
+		log.Printf("Failed to start provider setup: %v", err)
+		return
+	}
+
+	// Provider continues initializing in background
+	fmt.Println("Provider setup initiated")
+	// Output: Provider setup initiated
+}
+
+// ExampleSetProviderWithContextAndWait demonstrates synchronous provider setup with error handling.
+func ExampleSetProviderWithContextAndWait() {
+	// Create a test provider for demonstration
+	provider := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err := SetProviderWithContextAndWait(ctx, provider)
+	if err != nil {
+		log.Printf("Provider initialization failed: %v", err)
+		return
+	}
+
+	// Provider is now ready to use
+	fmt.Println("Provider is ready")
+	// Output: Provider is ready
+}
+
+// ExampleSetNamedProviderWithContext demonstrates multi-tenant provider setup.
+func ExampleSetNamedProviderWithContext() {
+	// Create test providers for different services
+	userProvider := &NoopProvider{}
+	billingProvider := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	err := SetNamedProviderWithContext(ctx, "user-service", userProvider)
+	if err != nil {
+		log.Printf("Failed to setup user service provider: %v", err)
+		return
+	}
+
+	err = SetNamedProviderWithContext(ctx, "billing-service", billingProvider)
+	if err != nil {
+		log.Printf("Failed to setup billing service provider: %v", err)
+		return
+	}
+
+	// Create clients for different domains
+	userClient := NewClient("user-service")
+	billingClient := NewClient("billing-service")
+
+	fmt.Printf("User client domain: %s\n", userClient.domain)
+	fmt.Printf("Billing client domain: %s\n", billingClient.domain)
+	// Output: User client domain: user-service
+	// Billing client domain: billing-service
+}
+
+// ExampleSetNamedProviderWithContextAndWait demonstrates critical service provider setup.
+func ExampleSetNamedProviderWithContextAndWait() {
+	// Create a test provider for demonstration
+	criticalProvider := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Wait for critical providers to be ready
+	err := SetNamedProviderWithContextAndWait(ctx, "critical-service", criticalProvider)
+	if err != nil {
+		log.Printf("Critical provider failed to initialize: %v", err)
+		return
+	}
+
+	// Now safe to use the client
+	client := NewClient("critical-service")
+	enabled, _ := client.BooleanValue(context.Background(), "feature-x", false, EvaluationContext{})
+
+	fmt.Printf("Critical service ready, feature-x enabled: %v\n", enabled)
+	// Output: Critical service ready, feature-x enabled: false
+}

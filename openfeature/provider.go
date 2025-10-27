@@ -75,27 +75,6 @@ type StateHandler interface {
 // - Support graceful cancellation during setup
 // - Integrate with request-scoped contexts
 //
-// Example implementation:
-//
-//	type MyProvider struct { /* ... */ }
-//
-//	func (p *MyProvider) InitWithContext(ctx context.Context, evalCtx EvaluationContext) error {
-//		// Perform initialization that respects the context
-//		select {
-//		case <-time.After(p.initializationDelay):
-//			// Initialization complete
-//			return nil
-//		case <-ctx.Done():
-//			// Context cancelled or timed out
-//			return ctx.Err()
-//		}
-//	}
-//
-//	// Standard Init method for backward compatibility
-//	func (p *MyProvider) Init(evalCtx EvaluationContext) error {
-//		return p.InitWithContext(context.Background(), evalCtx)
-//	}
-//
 // Best practices:
 // - Always check ctx.Done() in long-running initialization operations
 // - Use reasonable timeout values (typically 5-30 seconds)
