@@ -114,7 +114,7 @@ func (api *evaluationAPI) setProviderWithContext(ctx context.Context, provider F
 	oldProvider := api.defaultProvider
 	api.defaultProvider = provider
 
-	err := api.initNewAndShutdownOldWithContext(ctx, "", provider, oldProvider, async)
+	err := api.initNewAndShutdownOldInternal(ctx, "", provider, oldProvider, async)
 	if err != nil {
 		return fmt.Errorf("failed to initialize default provider %q: %w", provider.Metadata().Name, err)
 	}
@@ -140,7 +140,7 @@ func (api *evaluationAPI) SetNamedProviderWithContext(ctx context.Context, clien
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
 
-	err := api.initNewAndShutdownOldWithContext(ctx, clientName, provider, oldProvider, async)
+	err := api.initNewAndShutdownOldInternal(ctx, clientName, provider, oldProvider, async)
 	if err != nil {
 		return fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, clientName, err)
 	}
@@ -158,10 +158,6 @@ func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context
 	return api.SetNamedProviderWithContext(ctx, clientName, provider, false)
 }
 
-// initNewAndShutdownOldWithContext is a context-aware helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
-func (api *evaluationAPI) initNewAndShutdownOldWithContext(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
-	return api.initNewAndShutdownOldInternal(ctx, clientName, newProvider, oldProvider, async)
-}
 
 // initNewAndShutdownOldInternal is the unified helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 // Always uses the context-aware initializer with the provided context.
