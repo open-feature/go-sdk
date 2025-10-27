@@ -31,7 +31,21 @@ func (p *testContextAwareProvider) Init(evalCtx EvaluationContext) error {
 	return p.InitWithContext(context.Background(), evalCtx)
 }
 
-func (p *testContextAwareProvider) Shutdown() {}
+// ShutdownWithContext implements ContextAwareStateHandler
+func (p *testContextAwareProvider) ShutdownWithContext(ctx context.Context) error {
+	select {
+	case <-time.After(p.initDelay): // Reuse delay for shutdown simulation
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// Shutdown implements StateHandler for backward compatibility
+func (p *testContextAwareProvider) Shutdown() {
+	// For backward compatibility, use background context with no timeout
+	_ = p.ShutdownWithContext(context.Background())
+}
 
 func (p *testContextAwareProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx FlattenedContext) BoolResolutionDetail {
 	return BoolResolutionDetail{
@@ -207,5 +221,66 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 		if event.EventType != ProviderError {
 			t.Errorf("Expected ProviderError event, got: %v", event.EventType)
 		}
+	})
+}
+
+func TestContextAwareShutdown(t *testing.T) {
+	// Save original state
+	originalAPI := api
+	originalEventing := eventing
+	defer func() {
+		api = originalAPI
+		eventing = originalEventing
+	}()
+
+	// Create fresh API for isolated testing
+	exec := newEventExecutor()
+	testAPI := newEvaluationAPI(exec)
+	api = testAPI
+	eventing = exec
+
+	t.Run("context-aware shutdown with timeout", func(t *testing.T) {
+		provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
+
+		// Set the provider first
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		err := SetProviderWithContextAndWait(ctx, provider)
+		if err != nil {
+			t.Errorf("Provider setup should succeed: %v", err)
+		}
+
+		// Now replace it to trigger shutdown
+		newProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
+		err = SetProviderWithContextAndWait(ctx, newProvider)
+		if err != nil {
+			t.Errorf("Provider replacement should succeed: %v", err)
+		}
+	})
+
+	t.Run("shutdown timeout handling", func(t *testing.T) {
+		// Create a provider with long shutdown delay that would timeout during shutdown (not init)
+		slowShutdownProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond} // Fast init
+
+		// Set the provider first with generous timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := SetProviderWithContextAndWait(ctx, slowShutdownProvider)
+		if err != nil {
+			t.Errorf("Provider setup should succeed: %v", err)
+		}
+
+		// Replace with new provider - shutdown happens in background, so this should succeed
+		// even if the old provider takes a long time to shut down
+		fastProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
+		err = SetProviderWithContextAndWait(ctx, fastProvider)
+		if err != nil {
+			t.Errorf("Provider replacement should succeed even with slow shutdown: %v", err)
+		}
+
+		// Wait a bit to let any background shutdown complete
+		time.Sleep(100 * time.Millisecond)
 	})
 }

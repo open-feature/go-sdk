@@ -98,3 +98,30 @@ func ExampleSetNamedProviderWithContextAndWait() {
 	fmt.Printf("Critical service ready, feature-x enabled: %v\n", enabled)
 	// Output: Critical service ready, feature-x enabled: false
 }
+
+// ExampleContextAwareStateHandler demonstrates how context-aware shutdown works automatically.
+func ExampleContextAwareStateHandler() {
+	// Context-aware providers automatically use ShutdownWithContext when replaced
+	provider1 := &NoopProvider{}
+	provider2 := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Set first provider
+	err := SetProviderWithContextAndWait(ctx, provider1)
+	if err != nil {
+		log.Printf("Provider setup failed: %v", err)
+		return
+	}
+
+	// Replace with second provider - this triggers context-aware shutdown of provider1 if it supports it
+	err = SetProviderWithContextAndWait(ctx, provider2)
+	if err != nil {
+		log.Printf("Provider replacement failed: %v", err)
+		return
+	}
+
+	fmt.Println("Context-aware provider lifecycle completed")
+	// Output: Context-aware provider lifecycle completed
+}

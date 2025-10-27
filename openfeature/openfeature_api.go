@@ -7,6 +7,7 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 )
@@ -207,7 +208,16 @@ func (api *evaluationAPI) initNewAndShutdownOldInternal(ctx *context.Context, cl
 	}
 
 	go func(forShutdown StateHandler) {
-		forShutdown.Shutdown()
+		// Check if the provider supports context-aware shutdown
+		if contextHandler, ok := forShutdown.(ContextAwareStateHandler); ok {
+			// Use a reasonable timeout for shutdown (10 seconds)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			_ = contextHandler.ShutdownWithContext(shutdownCtx)
+		} else {
+			// Fall back to regular shutdown for backward compatibility
+			forShutdown.Shutdown()
+		}
 	}(v)
 
 	return nil

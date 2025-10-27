@@ -66,23 +66,24 @@ type StateHandler interface {
 	Shutdown()
 }
 
-// ContextAwareStateHandler extends StateHandler with context-aware initialization
+// ContextAwareStateHandler extends StateHandler with context-aware initialization and shutdown
 // for providers that need to respect request timeouts and cancellation.
-// If a provider implements this interface, InitWithContext will be called instead of Init.
+// If a provider implements this interface, InitWithContext and ShutdownWithContext will be called instead of Init and Shutdown.
 //
 // Use this interface when your provider needs to:
-// - Respect initialization timeouts (e.g., network calls, database connections)
-// - Support graceful cancellation during setup
+// - Respect initialization/shutdown timeouts (e.g., network calls, database connections)
+// - Support graceful cancellation during setup and teardown
 // - Integrate with request-scoped contexts
 //
 // Best practices:
-// - Always check ctx.Done() in long-running initialization operations
+// - Always check ctx.Done() in long-running initialization and shutdown operations
 // - Use reasonable timeout values (typically 5-30 seconds)
 // - Return ctx.Err() when the context is cancelled
 // - Maintain backward compatibility by implementing both interfaces
 type ContextAwareStateHandler interface {
 	StateHandler // Embed existing interface for backward compatibility
 	InitWithContext(ctx context.Context, evaluationContext EvaluationContext) error
+	ShutdownWithContext(ctx context.Context) error
 }
 
 // Tracker is the contract for tracking
