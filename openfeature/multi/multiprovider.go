@@ -220,7 +220,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	}
 
 	if len(config.providers) == 0 {
-		return nil, errors.New("providers cannot be nil or empty")
+		return nil, errors.New("no providers configured: at least one provider must be registered using WithProvider()")
 	}
 
 	providers := make([]NamedProvider, 0, len(config.providers))
@@ -228,9 +228,9 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	for i, provider := range config.providers {
 		// Validate Providers
 		if provider.FeatureProvider == nil {
-			return nil, fmt.Errorf("provider at %d cannot be nil", i)
+			return nil, fmt.Errorf("provider %s at %d cannot be nil", provider.name, i)
 		}
-		if provider.Name() == "" {
+		if provider.name == "" {
 			return nil, fmt.Errorf("provider name at %d cannot be the empty string", i)
 		}
 
@@ -396,11 +396,10 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 				Err:          err,
 				ProviderName: "unknown",
 			}
-			p.setStatus(of.ErrorState)
-			return pErr
 		}
 
-		return err
+		p.setStatus(of.ErrorState)
+		return pErr
 	}
 	close(handlers)
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
@@ -448,8 +447,13 @@ func (p *Provider) startListening(ctx context.Context, name string, h of.EventHa
 	for {
 		select {
 		case e := <-h.EventChannel():
+			if e.EventMetadata == nil {
+				e.EventMetadata = make(map[string]any)
+			}
 			e.EventMetadata[MetadataProviderName] = name
-			e.EventMetadata[MetadataProviderType] = h.(of.FeatureProvider).Metadata().Name
+			if p, ok := h.(of.FeatureProvider); ok {
+				e.EventMetadata[MetadataProviderType] = p.Metadata().Name
+			}
 			p.inboundEvents <- namedEvent{
 				Event:        e,
 				providerName: name,

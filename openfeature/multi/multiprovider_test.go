@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"testing"
+	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
@@ -342,7 +343,14 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 	primaryProvider.EmitEvent(of.ProviderError, "fail to fetch data")
 	secondaryProvider.EmitEvent(of.ProviderReady, "rev 1")
 	// wait for processing
-	<-mp.outboundEvents
+	require.Eventually(t, func() bool {
+		select {
+		case <-mp.outboundEvents:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, 50*time.Millisecond, "expected event was not emitted within timeout")
 
 	// Check the state after the error event
 	mp.providerStatusLock.Lock()
@@ -444,7 +452,14 @@ func TestMultiProvider_Track(t *testing.T) {
 		errorProvider.EmitEvent(of.ProviderError, "error")
 
 		// wait for event processing
-		<-mp.outboundEvents
+		require.Eventually(t, func() bool {
+			select {
+			case <-mp.outboundEvents:
+				return true
+			default:
+				return false
+			}
+		}, time.Second, 50*time.Millisecond, "expected event was not emitted within timeout")
 
 		trackingEventName := "page-view"
 		details := of.TrackingEventDetails{}
