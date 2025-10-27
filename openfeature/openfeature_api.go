@@ -167,12 +167,12 @@ func (api *evaluationAPI) initNewAndShutdownOldWithContext(ctx context.Context, 
 // Always uses the context-aware initializer with the provided context.
 func (api *evaluationAPI) initNewAndShutdownOldInternal(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
-		go func(executor *eventExecutor, evalCtx EvaluationContext) {
+		go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, clientName string) {
 			// for async initialization, error is conveyed as an event
-			event, _ := initializerWithContext(ctx, newProvider, evalCtx)
+			event, _ := initializerWithContext(ctx, provider, evalCtx)
 			executor.states.Store(clientName, stateFromEventOrError(event, nil))
-			executor.triggerEvent(event, newProvider)
-		}(api.eventExecutor, api.evalCtx)
+			executor.triggerEvent(event, provider)
+		}(api.eventExecutor, api.evalCtx, ctx, newProvider, clientName)
 	} else {
 		event, err := initializerWithContext(ctx, newProvider, api.evalCtx)
 		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
