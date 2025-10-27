@@ -205,6 +205,20 @@ func (mr *MockIEvaluationMockRecorder) Shutdown() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockIEvaluation)(nil).Shutdown))
 }
 
+// ShutdownWithContext mocks base method.
+func (m *MockIEvaluation) ShutdownWithContext(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShutdownWithContext", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ShutdownWithContext indicates an expected call of ShutdownWithContext.
+func (mr *MockIEvaluationMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockIEvaluation)(nil).ShutdownWithContext), ctx)
+}
+
 // MockIClient is a mock of IClient interface.
 type MockIClient struct {
 	ctrl     *gomock.Controller
@@ -932,6 +946,20 @@ func (m *MockevaluationImpl) Shutdown() {
 func (mr *MockevaluationImplMockRecorder) Shutdown() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockevaluationImpl)(nil).Shutdown))
+}
+
+// ShutdownWithContext mocks base method.
+func (m *MockevaluationImpl) ShutdownWithContext(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShutdownWithContext", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ShutdownWithContext indicates an expected call of ShutdownWithContext.
+func (mr *MockevaluationImplMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).ShutdownWithContext), ctx)
 }
 
 // SetProviderWithContext mocks base method.

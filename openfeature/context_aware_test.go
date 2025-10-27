@@ -284,3 +284,126 @@ func TestContextAwareShutdown(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	})
 }
+
+func TestGlobalContextAwareShutdown(t *testing.T) {
+	// Save original state
+	originalAPI := api
+	originalEventing := eventing
+	defer func() {
+		api = originalAPI
+		eventing = originalEventing
+	}()
+
+	t.Run("shutdown with context affects all providers", func(t *testing.T) {
+		// Create fresh API for isolated testing
+		exec := newEventExecutor()
+		testAPI := newEvaluationAPI(exec)
+		api = testAPI
+		eventing = exec
+
+		// Set up multiple providers
+		defaultProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
+		namedProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		// Set default provider
+		err := SetProviderWithContextAndWait(ctx, defaultProvider)
+		if err != nil {
+			t.Errorf("Default provider setup should succeed: %v", err)
+		}
+
+		// Set named provider
+		err = SetNamedProviderWithContextAndWait(ctx, "test-service", namedProvider)
+		if err != nil {
+			t.Errorf("Named provider setup should succeed: %v", err)
+		}
+
+		// Shutdown all providers with context
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer shutdownCancel()
+
+		err = ShutdownWithContext(shutdownCtx)
+		if err != nil {
+			t.Errorf("Global shutdown should succeed: %v", err)
+		}
+	})
+
+	t.Run("shutdown timeout handling", func(t *testing.T) {
+		// Create fresh API for isolated testing
+		exec := newEventExecutor()
+		testAPI := newEvaluationAPI(exec)
+		api = testAPI
+		eventing = exec
+
+		// Set up a provider with fast init but simulates long shutdown delay
+		slowShutdownProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond} // Fast init
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		// Set the provider (this should succeed quickly)
+		err := SetProviderWithContextAndWait(ctx, slowShutdownProvider)
+		if err != nil {
+			t.Errorf("Provider setup should succeed: %v", err)
+		}
+
+		// Create a provider that uses the initDelay for shutdown simulation too
+		// When shutdown is called, it will use the same delay, which would be longer than our timeout
+		// For this test, we'll create a new provider instance with a longer delay to simulate slow shutdown
+		testAPI.mu.Lock()
+		// Replace the provider's delay to simulate slow shutdown
+		if contextProvider, ok := testAPI.defaultProvider.(*testContextAwareProvider); ok {
+			contextProvider.initDelay = 5 * time.Second // This will be used by ShutdownWithContext
+		}
+		testAPI.mu.Unlock()
+
+		// Try to shutdown with short timeout - this should timeout
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer shutdownCancel()
+
+		err = ShutdownWithContext(shutdownCtx)
+		if err == nil {
+			t.Error("Expected shutdown timeout error")
+		}
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected context deadline exceeded, got: %v", err)
+		}
+	})
+
+	t.Run("backward compatibility with regular providers", func(t *testing.T) {
+		// Create fresh API for isolated testing
+		exec := newEventExecutor()
+		testAPI := newEvaluationAPI(exec)
+		api = testAPI
+		eventing = exec
+
+		// Set up regular (non-context-aware) providers
+		defaultProvider := &NoopProvider{}
+		namedProvider := &NoopProvider{}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		// Set providers
+		err := SetProviderWithContextAndWait(ctx, defaultProvider)
+		if err != nil {
+			t.Errorf("Default provider setup should succeed: %v", err)
+		}
+
+		err = SetNamedProviderWithContextAndWait(ctx, "test-service", namedProvider)
+		if err != nil {
+			t.Errorf("Named provider setup should succeed: %v", err)
+		}
+
+		// Shutdown should work even with non-context-aware providers
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer shutdownCancel()
+
+		err = ShutdownWithContext(shutdownCtx)
+		if err != nil {
+			t.Errorf("Global shutdown should succeed with regular providers: %v", err)
+		}
+	})
+}

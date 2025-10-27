@@ -125,3 +125,41 @@ func ExampleContextAwareStateHandler() {
 	fmt.Println("Context-aware provider lifecycle completed")
 	// Output: Context-aware provider lifecycle completed
 }
+
+// ExampleShutdownWithContext demonstrates graceful application shutdown with timeout control.
+func ExampleShutdownWithContext() {
+	// Set up providers
+	provider1 := &NoopProvider{}
+	provider2 := &NoopProvider{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Set up multiple providers
+	err := SetProviderWithContextAndWait(ctx, provider1)
+	if err != nil {
+		log.Printf("Provider setup failed: %v", err)
+		return
+	}
+
+	err = SetNamedProviderWithContextAndWait(ctx, "service-a", provider2)
+	if err != nil {
+		log.Printf("Named provider setup failed: %v", err)
+		return
+	}
+
+	// Application is running...
+
+	// When application is shutting down, use context-aware shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	err = ShutdownWithContext(shutdownCtx)
+	if err != nil {
+		log.Printf("Shutdown completed with errors: %v", err)
+	} else {
+		fmt.Println("All providers shut down successfully")
+	}
+
+	// Output: All providers shut down successfully
+}

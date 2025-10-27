@@ -151,3 +151,14 @@ func Shutdown() {
 	api.Shutdown()
 	initSingleton()
 }
+
+// ShutdownWithContext calls context-aware shutdown on all registered providers.
+// If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
+// It resets the state of the API, removing all hooks, event handlers, and providers.
+// This is intended to be called when your application is terminating.
+// Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
+func ShutdownWithContext(ctx context.Context) error {
+	err := api.ShutdownWithContext(ctx)
+	initSingleton()
+	return err
+}

@@ -18,6 +18,7 @@ type IEvaluation interface {
 	SetEvaluationContext(evalCtx EvaluationContext)
 	AddHooks(hooks ...Hook)
 	Shutdown()
+	ShutdownWithContext(ctx context.Context) error
 	IEventing
 }
 

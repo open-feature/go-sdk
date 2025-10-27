@@ -293,6 +293,40 @@ func (api *evaluationAPI) Shutdown() {
 	}
 }
 
+// ShutdownWithContext calls context-aware shutdown on all registered providers.
+// If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
+// Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
+func (api *evaluationAPI) ShutdownWithContext(ctx context.Context) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	var firstError error
+
+	// Shutdown default provider
+	if api.defaultProvider != nil {
+		if contextHandler, ok := api.defaultProvider.(ContextAwareStateHandler); ok {
+			if err := contextHandler.ShutdownWithContext(ctx); err != nil && firstError == nil {
+				firstError = fmt.Errorf("default provider shutdown failed: %w", err)
+			}
+		} else if stateHandler, ok := api.defaultProvider.(StateHandler); ok {
+			stateHandler.Shutdown()
+		}
+	}
+
+	// Shutdown all named providers
+	for name, provider := range api.namedProviders {
+		if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
+			if err := contextHandler.ShutdownWithContext(ctx); err != nil && firstError == nil {
+				firstError = fmt.Errorf("named provider %q shutdown failed: %w", name, err)
+			}
+		} else if stateHandler, ok := provider.(StateHandler); ok {
+			stateHandler.Shutdown()
+		}
+	}
+
+	return firstError
+}
+
 // ForEvaluation is a helper to retrieve transaction scoped operators.
 // Returns the default FeatureProvider if no provider mapping exist for the given client name.
 func (api *evaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
