@@ -32,7 +32,7 @@ func TestContextClosureBug(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		// Start the async operation
-		err := testAPI.initNewAndShutdownOldInternal(ctx, "test", slowProvider, nil, true)
+		err := testAPI.initNewAndShutdownOld(ctx, "test", slowProvider, nil, true)
 		if err != nil {
 			t.Errorf("Unexpected error starting async operation: %v", err)
 			continue
@@ -52,7 +52,7 @@ func TestContextClosureBug(t *testing.T) {
 			t.Log("BUG DEMONSTRATED: Provider failed due to context cancellation race condition")
 			t.Log("The async goroutine captured the context by reference and saw it cancelled")
 			t.Log("even though the context was valid when the async operation started")
-			t.Log("ROOT CAUSE: In initNewAndShutdownOldInternal, the goroutine closure captures")
+			t.Log("ROOT CAUSE: In initNewAndShutdownOld, the goroutine closure captures")
 			t.Log("'ctx' and 'newProvider' by reference instead of passing them as parameters")
 			return // Test passed - bug demonstrated
 		}
