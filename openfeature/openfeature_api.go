@@ -159,15 +159,32 @@ func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context
 
 // initNewAndShutdownOldWithContext is a context-aware helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 func (api *evaluationAPI) initNewAndShutdownOldWithContext(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
+	return api.initNewAndShutdownOldInternal(&ctx, clientName, newProvider, oldProvider, async)
+}
+
+// initNewAndShutdownOldInternal is the unified helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
+// If ctx is nil, uses the non-context-aware initializer; otherwise uses the context-aware initializer.
+func (api *evaluationAPI) initNewAndShutdownOldInternal(ctx *context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
 		go func(executor *eventExecutor, evalCtx EvaluationContext) {
 			// for async initialization, error is conveyed as an event
-			event, _ := initializerWithContext(ctx, newProvider, evalCtx)
+			var event Event
+			if ctx != nil {
+				event, _ = initializerWithContext(*ctx, newProvider, evalCtx)
+			} else {
+				event, _ = initializer(newProvider, evalCtx)
+			}
 			executor.states.Store(clientName, stateFromEventOrError(event, nil))
 			executor.triggerEvent(event, newProvider)
 		}(api.eventExecutor, api.evalCtx)
 	} else {
-		event, err := initializerWithContext(ctx, newProvider, api.evalCtx)
+		var event Event
+		var err error
+		if ctx != nil {
+			event, err = initializerWithContext(*ctx, newProvider, api.evalCtx)
+		} else {
+			event, err = initializer(newProvider, api.evalCtx)
+		}
 		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
 		api.eventExecutor.triggerEvent(event, newProvider)
 		if err != nil {
@@ -318,41 +335,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 
 // initNewAndShutdownOld is a helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 func (api *evaluationAPI) initNewAndShutdownOld(clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
-	if async {
-		go func(executor *eventExecutor, ctx EvaluationContext) {
-			// for async initialization, error is conveyed as an event
-			event, _ := initializer(newProvider, ctx)
-			executor.states.Store(clientName, stateFromEventOrError(event, nil))
-			executor.triggerEvent(event, newProvider)
-		}(api.eventExecutor, api.evalCtx)
-	} else {
-		event, err := initializer(newProvider, api.evalCtx)
-		api.eventExecutor.states.Store(clientName, stateFromEventOrError(event, err))
-		api.eventExecutor.triggerEvent(event, newProvider)
-		if err != nil {
-			return err
-		}
-	}
-
-	v, ok := oldProvider.(StateHandler)
-
-	// oldProvider can be nil or without state handling capability
-	if oldProvider == nil || !ok {
-		return nil
-	}
-
-	namedProviders := slices.Collect(maps.Values(api.namedProviders))
-
-	// check for multiple bindings
-	if oldProvider == api.defaultProvider || slices.Contains(namedProviders, oldProvider) {
-		return nil
-	}
-
-	go func(forShutdown StateHandler) {
-		forShutdown.Shutdown()
-	}(v)
-
-	return nil
+	return api.initNewAndShutdownOldInternal(nil, clientName, newProvider, oldProvider, async)
 }
 
 // initializer is a helper to execute provider initialization and generate appropriate event for the initialization
