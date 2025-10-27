@@ -416,19 +416,18 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 		for {
 			select {
 			case <-ctx.Done():
-				close(p.outboundEvents)
 				return
 			case e := <-p.inboundEvents:
 				l := workerLogger.With(
 					slog.String(MetadataProviderName, e.providerName),
 					slog.String(MetadataProviderType, e.ProviderName),
 				)
-				l.LogAttrs(context.Background(), slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
+				l.LogAttrs(ctx, slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
 				if p.updateProviderStateFromEvent(e) {
 					p.outboundEvents <- e.Event
-					l.LogAttrs(context.Background(), slog.LevelDebug, "forwarded state update event")
+					l.LogAttrs(ctx, slog.LevelDebug, "forwarded state update event")
 				} else {
-					l.LogAttrs(context.Background(), slog.LevelDebug, "total state not updated, inbound event will not be emitted")
+					l.LogAttrs(ctx, slog.LevelDebug, "total state not updated, inbound event will not be emitted")
 				}
 			}
 		}
@@ -552,7 +551,9 @@ func (p *Provider) Shutdown() {
 	close(p.inboundEvents)
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
+	close(p.outboundEvents)
 	p.setStatus(of.NotReadyState)
+
 	p.outboundEvents = nil
 	p.inboundEvents = nil
 	p.initialized = false
