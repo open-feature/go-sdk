@@ -61,7 +61,8 @@ type (
 	// The name will be used when reporting errors & results to specify the provider associated with them.
 	namedProvider struct {
 		of.FeatureProvider
-		name string
+		name       string
+		extraHooks []of.Hook
 	}
 
 	// Option function used for setting configuration via the options pattern
@@ -80,7 +81,6 @@ type (
 		customStrategy   StrategyConstructor
 		logger           *slog.Logger
 		hooks            []of.Hook
-		providerHooks    map[string][]of.Hook
 		providers        []*namedProvider
 		customComparator Comparator
 	}
@@ -181,10 +181,10 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 // are provided determines the order in which the providers are registered and evaluated.
 func WithProvider(providerName string, provider of.FeatureProvider, hooks ...of.Hook) Option {
 	return func(conf *configuration) {
-		conf.providerHooks[providerName] = hooks
 		conf.providers = append(conf.providers, &namedProvider{
 			name:            providerName,
 			FeatureProvider: provider,
+			extraHooks:      hooks,
 		})
 	}
 }
@@ -210,9 +210,8 @@ func buildMetadata(m []NamedProvider) of.Metadata {
 // NewProvider returns a new [multi.Provider] that acts as a unified interface of multiple providers for interaction.
 func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
 	config := &configuration{
-		logger:        slog.New(slog.DiscardHandler),
-		providerHooks: make(map[string][]of.Hook),
-		providers:     make([]*namedProvider, 0, 2),
+		logger:    slog.New(slog.DiscardHandler),
+		providers: make([]*namedProvider, 0, 2),
 	}
 
 	for _, opt := range options {
@@ -235,16 +234,16 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		}
 
 		// Wrap any providers that include hooks
-		if (len(provider.Hooks()) + len(config.providerHooks[provider.Name()])) == 0 {
+		if (len(provider.Hooks()) + len(provider.extraHooks)) == 0 {
 			providers = append(providers, provider)
 			continue
 		}
 
 		var wrappedProvider NamedProvider
 		if _, ok := provider.FeatureProvider.(of.EventHandler); ok {
-			wrappedProvider = isolateProviderWithEvents(provider, config.providerHooks[provider.Name()])
+			wrappedProvider = isolateProviderWithEvents(provider, provider.extraHooks)
 		} else {
-			wrappedProvider = isolateProvider(provider, config.providerHooks[provider.Name()])
+			wrappedProvider = isolateProvider(provider, provider.extraHooks)
 		}
 
 		providers = append(providers, wrappedProvider)
