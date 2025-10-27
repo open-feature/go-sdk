@@ -12,11 +12,8 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// DefaultShutdownTimeout is the maximum time to wait for provider shutdown.
-// This prevents hanging if a provider becomes unresponsive during shutdown.
-// 10 seconds allows sufficient time for network cleanup while preventing
-// indefinite hangs during application termination.
-const DefaultShutdownTimeout = 10 * time.Second
+// defaultShutdownTimeout is the maximum time to wait for provider shutdown.
+const defaultShutdownTimeout = 10 * time.Second
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
 type evaluationAPI struct {
@@ -166,6 +163,9 @@ func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context
 
 // initNewAndShutdownOld is the main helper to initialise new FeatureProvider and Shutdown the old FeatureProvider.
 // Always uses the context-aware initializer with the provided context.
+//
+// When shutting down old providers that implement ContextAwareStateHandler, a 10-second timeout
+// is applied to prevent hanging if the provider becomes unresponsive during shutdown.
 func (api *evaluationAPI) initNewAndShutdownOld(ctx context.Context, clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
 	if async {
 		go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, clientName string) {
@@ -200,7 +200,7 @@ func (api *evaluationAPI) initNewAndShutdownOld(ctx context.Context, clientName 
 	go func(forShutdown StateHandler) {
 		// Check if the provider supports context-aware shutdown
 		if contextHandler, ok := forShutdown.(ContextAwareStateHandler); ok {
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), DefaultShutdownTimeout)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
 			defer cancel()
 			_ = contextHandler.ShutdownWithContext(shutdownCtx)
 		} else {
