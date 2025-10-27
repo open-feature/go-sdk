@@ -289,13 +289,13 @@ func (api *evaluationAPI) ShutdownWithContext(ctx context.Context) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
-	var firstError error
+	var errs []error
 
 	// Shutdown default provider
 	if api.defaultProvider != nil {
 		if contextHandler, ok := api.defaultProvider.(ContextAwareStateHandler); ok {
-			if err := contextHandler.ShutdownWithContext(ctx); err != nil && firstError == nil {
-				firstError = fmt.Errorf("default provider shutdown failed: %w", err)
+			if err := contextHandler.ShutdownWithContext(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("default provider shutdown failed: %w", err))
 			}
 		} else if stateHandler, ok := api.defaultProvider.(StateHandler); ok {
 			stateHandler.Shutdown()
@@ -305,15 +305,15 @@ func (api *evaluationAPI) ShutdownWithContext(ctx context.Context) error {
 	// Shutdown all named providers
 	for name, provider := range api.namedProviders {
 		if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
-			if err := contextHandler.ShutdownWithContext(ctx); err != nil && firstError == nil {
-				firstError = fmt.Errorf("named provider %q shutdown failed: %w", name, err)
+			if err := contextHandler.ShutdownWithContext(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("named provider %q shutdown failed: %w", name, err))
 			}
 		} else if stateHandler, ok := provider.(StateHandler); ok {
 			stateHandler.Shutdown()
 		}
 	}
 
-	return firstError
+	return errors.Join(errs...)
 }
 
 // ForEvaluation is a helper to retrieve transaction scoped operators.
