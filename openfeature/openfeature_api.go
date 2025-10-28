@@ -67,7 +67,7 @@ func (api *evaluationAPI) SetNamedProvider(clientName string, provider FeaturePr
 	oldProvider := api.namedProviders[clientName]
 	api.namedProviders[clientName] = provider
 
-	err := api.initNewAndShutdownOldLegacy(clientName, provider, oldProvider, async)
+	err := api.initNewAndShutdownOld(context.Background(), clientName, provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
@@ -266,20 +266,9 @@ func (api *evaluationAPI) RemoveHandler(eventType EventType, callback EventCallb
 }
 
 func (api *evaluationAPI) Shutdown() {
-	api.mu.Lock()
-	defer api.mu.Unlock()
-
-	v, ok := api.defaultProvider.(StateHandler)
-	if ok {
-		v.Shutdown()
-	}
-
-	for _, provider := range api.namedProviders {
-		v, ok = provider.(StateHandler)
-		if ok {
-			v.Shutdown()
-		}
-	}
+	// Use the context-aware shutdown with background context and ignore errors
+	// to maintain backward compatibility (Shutdown doesn't return an error)
+	_ = api.ShutdownWithContext(context.Background())
 }
 
 // ShutdownWithContext calls context-aware shutdown on all registered providers.
@@ -353,7 +342,7 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 	oldProvider := api.defaultProvider
 	api.defaultProvider = provider
 
-	err := api.initNewAndShutdownOldLegacy("", provider, oldProvider, async)
+	err := api.initNewAndShutdownOld(context.Background(), "", provider, oldProvider, async)
 	if err != nil {
 		return err
 	}
@@ -364,11 +353,6 @@ func (api *evaluationAPI) setProvider(provider FeatureProvider, async bool) erro
 	}
 
 	return nil
-}
-
-// initNewAndShutdownOldLegacy is a helper to initialise new FeatureProvider and Shutdown the old FeatureProvider using background context.
-func (api *evaluationAPI) initNewAndShutdownOldLegacy(clientName string, newProvider FeatureProvider, oldProvider FeatureProvider, async bool) error {
-	return api.initNewAndShutdownOld(context.Background(), clientName, newProvider, oldProvider, async)
 }
 
 // initializerWithContext is a context-aware helper to execute provider initialization and generate appropriate event for the initialization
