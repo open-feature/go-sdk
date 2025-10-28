@@ -197,17 +197,23 @@ func (api *evaluationAPI) initNewAndShutdownOld(ctx context.Context, clientName 
 		return nil
 	}
 
-	go func(forShutdown StateHandler) {
+	go func(forShutdown StateHandler, parentCtx context.Context) {
 		// Check if the provider supports context-aware shutdown
 		if contextHandler, ok := forShutdown.(ContextAwareStateHandler); ok {
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
-			defer cancel()
+			// Use the passed context but ensure we have a reasonable timeout for shutdown
+			shutdownCtx := parentCtx
+			if deadline, ok := parentCtx.Deadline(); !ok || time.Until(deadline) < defaultShutdownTimeout {
+				// If parent context has no deadline or insufficient time, create a timeout context
+				var cancel context.CancelFunc
+				shutdownCtx, cancel = context.WithTimeout(parentCtx, defaultShutdownTimeout)
+				defer cancel()
+			}
 			_ = contextHandler.ShutdownWithContext(shutdownCtx)
 		} else {
 			// Fall back to regular shutdown for backward compatibility
 			forShutdown.Shutdown()
 		}
-	}(v)
+	}(v, ctx)
 
 	return nil
 }
@@ -367,39 +373,24 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 		},
 	}
 
-	// Validate that the context is not already done before starting initialization
-	select {
-	case <-ctx.Done():
-		event.EventType = ProviderError
-		if errors.Is(ctx.Err(), context.Canceled) {
-			event.Message = "Provider initialization cancelled before start"
-		} else {
-			event.Message = "Provider initialization timed out before start"
-		}
-		return event, ctx.Err()
-	default:
-		// Context is still valid, proceed with initialization
-	}
 
 	// Check for context-aware handler first
 	if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
 		err := contextHandler.InitWithContext(ctx, evalCtx)
 		if err != nil {
 			event.EventType = ProviderError
-			// Handle context cancellation/timeout separately from provider errors
-			if errors.Is(err, context.Canceled) {
+
+			// Check for specific provider initialization errors first
+			var initErr *ProviderInitError
+			if errors.As(err, &initErr) {
+				event.ErrorCode = initErr.ErrorCode
+				event.Message = initErr.Message
+			} else if errors.Is(err, context.Canceled) {
 				event.Message = "Provider initialization cancelled"
 			} else if errors.Is(err, context.DeadlineExceeded) {
 				event.Message = "Provider initialization timed out"
 			} else {
 				event.Message = fmt.Sprintf("Provider initialization failed: %v", err)
-			}
-
-			var initErr *ProviderInitError
-			if errors.As(err, &initErr) {
-				event.EventType = ProviderError
-				event.ErrorCode = initErr.ErrorCode
-				event.Message = initErr.Message
 			}
 		}
 		return event, err
