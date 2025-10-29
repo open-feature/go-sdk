@@ -43,7 +43,6 @@ type (
 		strategyFunc       StrategyFn[FlagTypes] // used for evaluating strategies
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
-		inboundEvents      chan namedEvent
 		workerGroup        sync.WaitGroup
 		shutdownFunc       context.CancelFunc
 		globalHooks        []of.Hook
@@ -83,6 +82,12 @@ type (
 		hooks            []of.Hook
 		providers        []*namedProvider
 		customComparator Comparator
+	}
+
+	// namedEventHandler is a wrapper around an [of.EventHandler] that includes the provider name.
+	namedEventHandler struct {
+		of.EventHandler
+		name string
 	}
 )
 
@@ -352,12 +357,7 @@ func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultVal
 func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
-	type namedEventHandler struct {
-		of.EventHandler
-		name string
-	}
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
-	p.inboundEvents = make(chan namedEvent, len(p.providers))
 	handlers := make(chan namedEventHandler, len(p.providers))
 	for _, provider := range p.providers {
 		name := provider.Name()
@@ -402,62 +402,77 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	}
 	close(handlers)
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
-	for h := range handlers {
-		go p.startListening(workerCtx, h.name, h.EventHandler, &p.workerGroup)
-	}
 	p.shutdownFunc = shutdownFunc
 
-	p.workerGroup.Add(1)
-	go func(ctx context.Context) {
-		workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
-		defer p.workerGroup.Done()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case e := <-p.inboundEvents:
-				l := workerLogger.With(
-					slog.String(MetadataProviderName, e.providerName),
-					slog.String(MetadataProviderType, e.ProviderName),
-				)
-				l.LogAttrs(ctx, slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
-				if p.updateProviderStateFromEvent(e) {
-					p.outboundEvents <- e.Event
-					l.LogAttrs(ctx, slog.LevelDebug, "forwarded state update event")
-				} else {
-					l.LogAttrs(ctx, slog.LevelDebug, "total state not updated, inbound event will not be emitted")
-				}
-			}
-		}
-	}(workerCtx)
+	if len(handlers) > 0 {
+		go p.forwardProviderEvents(workerCtx, handlers)
+	} else {
+		// we don't emit any events so we can just close the channel
+		close(p.outboundEvents)
+	}
 
 	p.setStatus(of.ReadyState)
 	p.initialized = true
 	return nil
 }
 
-// startListening is intended to be called on a per-provider basis as a goroutine to listen to events from a provider
-// implementing [of.EventHandler].
-func (p *Provider) startListening(ctx context.Context, name string, h of.EventHandler, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-	for {
-		select {
-		case e := <-h.EventChannel():
-			if e.EventMetadata == nil {
-				e.EventMetadata = make(map[string]any)
+// forwardProviderEvents establishes an event forwarding pipeline that collects events from multiple provider
+// event handlers and forwards them to the multiprovider's outbound event channel. It spawns a goroutine for
+// each provider handler to listen for events, aggregates them through an internal pipe, and selectively forwards
+// events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
+// channels are closed, ensuring proper cleanup by closing the outbound channel when complete.
+func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers chan namedEventHandler) {
+	p.workerGroup.Add(1)
+	defer p.workerGroup.Done()
+	defer close(p.outboundEvents)
+
+	workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
+	pipe := make(chan namedEvent)
+	var wg sync.WaitGroup
+	for ch := range handlers {
+		wg.Add(1)
+		go func(ctx context.Context, h of.EventHandler, name string, out chan<- namedEvent) {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case e, ok := <-h.EventChannel():
+					if !ok {
+						return
+					}
+					if e.EventMetadata == nil {
+						e.EventMetadata = make(map[string]any)
+					}
+					e.EventMetadata[MetadataProviderName] = name
+					if p, ok := h.(of.FeatureProvider); ok {
+						e.EventMetadata[MetadataProviderType] = p.Metadata().Name
+					}
+					out <- namedEvent{
+						Event:        e,
+						providerName: name,
+					}
+				}
 			}
-			e.EventMetadata[MetadataProviderName] = name
-			if p, ok := h.(of.FeatureProvider); ok {
-				e.EventMetadata[MetadataProviderType] = p.Metadata().Name
-			}
-			p.inboundEvents <- namedEvent{
-				Event:        e,
-				providerName: name,
-			}
-		case <-ctx.Done():
-			return
+		}(workerCtx, ch.EventHandler, ch.name, pipe)
+	}
+
+	go func() {
+		wg.Wait()
+		close(pipe)
+	}()
+
+	for e := range pipe {
+		l := workerLogger.With(
+			slog.String(MetadataProviderName, e.providerName),
+			slog.String(MetadataProviderType, e.ProviderName),
+		)
+		l.LogAttrs(workerCtx, slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
+		if p.updateProviderStateFromEvent(e) {
+			p.outboundEvents <- e.Event
+			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
+		} else {
+			l.LogAttrs(workerCtx, slog.LevelDebug, "total state not updated, inbound event will not be emitted")
 		}
 	}
 }
@@ -483,7 +498,10 @@ func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 	if e.EventType == of.ProviderConfigChange {
 		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
-	logProviderState(p.logger, e, p.providerStatus[e.providerName])
+	p.providerStatusLock.Lock()
+	previousState := p.providerStatus[e.providerName]
+	p.providerStatusLock.Unlock()
+	logProviderState(p.logger, e, previousState)
 	return p.updateProviderState(e.providerName, eventTypeToState[e.EventType])
 }
 
@@ -530,14 +548,13 @@ func (p *Provider) Shutdown() {
 
 	var wg sync.WaitGroup
 	for _, provider := range p.providers {
-		wg.Add(1)
-
-		go func(p NamedProvider) {
-			defer wg.Done()
-			if stateHandle, ok := p.unwrap().(of.StateHandler); ok {
-				stateHandle.Shutdown()
-			}
-		}(provider)
+		if stateHandle, ok := provider.unwrap().(of.StateHandler); ok {
+			wg.Add(1)
+			go func(p of.StateHandler) {
+				defer wg.Done()
+				p.Shutdown()
+			}(stateHandle)
+		}
 	}
 
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "waiting for provider shutdown completion")
@@ -547,15 +564,10 @@ func (p *Provider) Shutdown() {
 	// Wait for workers to stop
 	p.workerGroup.Wait()
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
-	close(p.inboundEvents)
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
-	close(p.outboundEvents)
 	p.setStatus(of.NotReadyState)
-
-	p.outboundEvents = nil
-	p.inboundEvents = nil
 	p.initialized = false
+	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
 }
 
 // Status provides the current state of the [multi.Provider].

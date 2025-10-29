@@ -454,8 +454,8 @@ func TestMultiProvider_Track(t *testing.T) {
 		// wait for event processing
 		require.Eventually(t, func() bool {
 			select {
-			case <-mp.outboundEvents:
-				return true
+			case e := <-mp.outboundEvents:
+				return e.ProviderName == "error-provider" && e.EventType == of.ProviderError
 			default:
 				return false
 			}
