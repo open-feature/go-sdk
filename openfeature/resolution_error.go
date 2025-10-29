@@ -103,6 +103,16 @@ func NewInvalidContextResolutionError(msg string) ResolutionError {
 	}
 }
 
+// NewProviderFatalResolutionError constructs a resolution error with code PROVIDER_FATAL
+//
+// Explanation - The provider is in an irrecoverable error state.
+func NewProviderFatalResolutionError(msg string) ResolutionError {
+	return ResolutionError{
+		code:    ProviderFatalCode,
+		message: msg,
+	}
+}
+
 // NewGeneralResolutionError constructs a resolution error with code GENERAL
 //
 // Explanation - The error was for a reason not enumerated above.
@@ -142,7 +152,7 @@ func (e *ProviderInitError) Error() string {
 //nolint:staticcheck // Renaming these would be a breaking change
 var (
 	// ProviderNotReadyError signifies that an operation failed because the provider is in a NOT_READY state.
-	ProviderNotReadyError = errors.New("provider not yet initialized")
+	ProviderNotReadyError = NewProviderNotReadyResolutionError("provider not yet initialized")
 	// ProviderFatalError signifies that an operation failed because the provider is in a FATAL state.
-	ProviderFatalError = errors.New("provider is in an irrecoverable error state")
+	ProviderFatalError = NewProviderFatalResolutionError("provider is in an irrecoverable error state")
 )
