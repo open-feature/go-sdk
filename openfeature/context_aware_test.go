@@ -517,7 +517,7 @@ func TestContextPropagationFixes(t *testing.T) {
 		// Replace provider with short timeout - shutdown should respect the timeout
 		newProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
 
-		// Use a short timeout that's shorter than the shutdown delay but longer than defaultShutdownTimeout
+		// Use a short timeout that's shorter than the shutdown delay
 		replaceCtx, replaceCancel := context.WithTimeout(context.Background(), 200 * time.Millisecond)
 		defer replaceCancel()
 
@@ -736,30 +736,6 @@ func TestEdgeCases(t *testing.T) {
 	api = testAPI
 	eventing = exec
 
-	t.Run("context with very short deadline extended for shutdown", func(t *testing.T) {
-		provider := &testContextAwareProviderWithShutdownDelay{
-			initDelay:     10 * time.Millisecond,
-			shutdownDelay: 100 * time.Millisecond,
-		}
-
-		// Set provider first
-		err := SetProviderWithContextAndWait(context.Background(), provider)
-		if err != nil {
-			t.Errorf("Provider setup should succeed: %v", err)
-		}
-
-		// Replace with very short context (shorter than shutdown delay)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-		defer cancel()
-
-		newProvider := &testContextAwareProvider{initDelay: 5 * time.Millisecond}
-		err = SetProviderWithContextAndWait(ctx, newProvider)
-
-		// Should succeed because init is fast and shutdown gets extended timeout
-		if err != nil {
-			t.Errorf("Provider replacement should succeed with short context: %v", err)
-		}
-	})
 
 	t.Run("rapid provider switching", func(t *testing.T) {
 		// Reset API

@@ -7,13 +7,10 @@ import (
 	"maps"
 	"slices"
 	"sync"
-	"time"
 
 	"github.com/go-logr/logr"
 )
 
-// defaultShutdownTimeout is the maximum time to wait for provider shutdown.
-const defaultShutdownTimeout = 10 * time.Second
 
 // evaluationAPI wraps OpenFeature evaluation API functionalities
 type evaluationAPI struct {
@@ -200,15 +197,8 @@ func (api *evaluationAPI) initNewAndShutdownOld(ctx context.Context, clientName 
 	go func(forShutdown StateHandler, parentCtx context.Context) {
 		// Check if the provider supports context-aware shutdown
 		if contextHandler, ok := forShutdown.(ContextAwareStateHandler); ok {
-			// Use the passed context but ensure we have a reasonable timeout for shutdown
-			shutdownCtx := parentCtx
-			if deadline, ok := parentCtx.Deadline(); !ok || time.Until(deadline) < defaultShutdownTimeout {
-				// If parent context has no deadline or insufficient time, create a timeout context
-				var cancel context.CancelFunc
-				shutdownCtx, cancel = context.WithTimeout(parentCtx, defaultShutdownTimeout)
-				defer cancel()
-			}
-			_ = contextHandler.ShutdownWithContext(shutdownCtx)
+			// Use the provided context directly - user controls timeout
+			_ = contextHandler.ShutdownWithContext(parentCtx)
 		} else {
 			// Fall back to regular shutdown for backward compatibility
 			forShutdown.Shutdown()
