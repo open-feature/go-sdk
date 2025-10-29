@@ -518,7 +518,7 @@ func TestContextPropagationFixes(t *testing.T) {
 		newProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
 
 		// Use a short timeout that's shorter than the shutdown delay
-		replaceCtx, replaceCancel := context.WithTimeout(context.Background(), 200 * time.Millisecond)
+		replaceCtx, replaceCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer replaceCancel()
 
 		start := time.Now()
@@ -568,7 +568,6 @@ func TestContextPropagationFixes(t *testing.T) {
 
 		newProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
 		err = SetProviderWithContextAndWait(replaceCtx, newProvider)
-
 		// Should succeed because init is fast, shutdown is async
 		if err != nil {
 			t.Errorf("Provider replacement should succeed even with cancellation: %v", err)
@@ -736,7 +735,6 @@ func TestEdgeCases(t *testing.T) {
 	api = testAPI
 	eventing = exec
 
-
 	t.Run("rapid provider switching", func(t *testing.T) {
 		// Reset API
 		exec = newEventExecutor()
@@ -796,7 +794,7 @@ func TestEdgeCases(t *testing.T) {
 		}()
 
 		// Wait for both to complete
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			if err := <-done; err != nil {
 				t.Errorf("Concurrent operation %d failed: %v", i, err)
 			}

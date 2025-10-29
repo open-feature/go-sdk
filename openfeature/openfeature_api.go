@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 )
 
-
 // evaluationAPI wraps OpenFeature evaluation API functionalities
 type evaluationAPI struct {
 	defaultProvider FeatureProvider
@@ -362,7 +361,6 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 			Message: "Provider initialization successful",
 		},
 	}
-
 
 	// Check for context-aware handler first
 	if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
