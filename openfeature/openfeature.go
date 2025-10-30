@@ -1,6 +1,10 @@
 package openfeature
 
-import "github.com/go-logr/logr"
+import (
+	"context"
+
+	"github.com/go-logr/logr"
+)
 
 // api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
 var (
@@ -47,6 +51,30 @@ func SetProviderAndWait(provider FeatureProvider) error {
 	return api.SetProviderAndWait(provider)
 }
 
+// SetProviderWithContext sets the default [FeatureProvider] with context-aware initialization.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Provider initialization is asynchronous and status can be checked from provider status.
+// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+//
+// Use this function for non-blocking provider setup with timeout control where you want
+// to continue application startup while the provider initializes in background.
+// For providers that don't implement ContextAwareStateHandler, this behaves
+// identically to SetProvider() but with timeout protection.
+func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+	return api.SetProviderWithContext(ctx, provider)
+}
+
+// SetProviderWithContextAndWait sets the default [FeatureProvider] with context-aware initialization and waits for completion.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Returns an error if initialization causes an error, or if context is cancelled during initialization.
+//
+// Use this function for synchronous provider setup with guaranteed readiness when you need
+// application startup to wait for the provider before continuing.
+// Recommended timeout values: 1-5s for local providers, 10-30s for network-based providers.
+func SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+	return api.SetProviderWithContextAndWait(ctx, provider)
+}
+
 // ProviderMetadata returns the default [FeatureProvider] metadata
 func ProviderMetadata() Metadata {
 	return api.GetProviderMetadata()
@@ -62,6 +90,27 @@ func SetNamedProvider(domain string, provider FeatureProvider) error {
 // Returns an error if initialization cause error
 func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 	return api.SetNamedProvider(domain, provider, false)
+}
+
+// SetNamedProviderWithContext sets a [FeatureProvider] mapped to the given [Client] domain with context-aware initialization.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Provider initialization is asynchronous and status can be checked from provider status.
+// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+//
+// Named providers allow different domains to use different feature flag providers,
+// enabling multi-tenant applications or microservice architectures.
+func SetNamedProviderWithContext(ctx context.Context, domain string, provider FeatureProvider) error {
+	return api.SetNamedProviderWithContext(ctx, domain, provider, true)
+}
+
+// SetNamedProviderWithContextAndWait sets a provider mapped to the given [Client] domain with context-aware initialization and waits for completion.
+// If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
+// Returns an error if initialization causes an error, or if context is cancelled during initialization.
+//
+// Use this for synchronous named provider setup where you need to ensure
+// the provider is ready before proceeding.
+func SetNamedProviderWithContextAndWait(ctx context.Context, domain string, provider FeatureProvider) error {
+	return api.SetNamedProviderWithContextAndWait(ctx, domain, provider)
 }
 
 // NamedProviderMetadata returns the named provider's Metadata
@@ -101,4 +150,15 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 func Shutdown() {
 	api.Shutdown()
 	initSingleton()
+}
+
+// ShutdownWithContext calls context-aware shutdown on all registered providers.
+// If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
+// It resets the state of the API, removing all hooks, event handlers, and providers.
+// This is intended to be called when your application is terminating.
+// Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
+func ShutdownWithContext(ctx context.Context) error {
+	err := api.ShutdownWithContext(ctx)
+	initSingleton()
+	return err
 }
