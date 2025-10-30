@@ -18,6 +18,7 @@ type IEvaluation interface {
 	SetEvaluationContext(evalCtx EvaluationContext)
 	AddHooks(hooks ...Hook)
 	Shutdown()
+	ShutdownWithContext(ctx context.Context) error
 	IEventing
 }
 
@@ -67,6 +68,12 @@ type evaluationImpl interface {
 	SetLogger(l logr.Logger)
 
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
+
+	// Context-aware provider setup methods
+	SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
+	SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error
+	SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error
+	SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error
 }
 
 // eventingImpl is an internal reference interface extending IEventing
