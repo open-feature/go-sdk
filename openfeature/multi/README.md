@@ -34,7 +34,7 @@ import (
 
 mprovider, err := multi.NewProvider(
   multi.StrategyFirstMatch,
-  multi.WithProvider("providerA", memprovider.NewInMemoryProvider(/*...*/),
+  multi.WithProvider("providerA", memprovider.NewInMemoryProvider(/*...*/)),
   multi.WithProvider("providerB", myCustomProvider),
 )
 if err != nil {
