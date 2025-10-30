@@ -105,11 +105,11 @@ var (
 	eventTypeToState map[of.EventType]of.State
 
 	// Compile-time interface compliance checks
-	_ of.FeatureProvider = (*Provider)(nil)
-	_ of.EventHandler    = (*Provider)(nil)
-	_ of.StateHandler    = (*Provider)(nil)
-	_ of.Tracker         = (*Provider)(nil)
-	_ NamedProvider      = (*namedProvider)(nil)
+	_ of.FeatureProvider          = (*Provider)(nil)
+	_ of.EventHandler             = (*Provider)(nil)
+	_ of.ContextAwareStateHandler = (*Provider)(nil)
+	_ of.Tracker                  = (*Provider)(nil)
+	_ NamedProvider               = (*namedProvider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.
@@ -355,9 +355,14 @@ func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultVal
 
 // Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
 func (p *Provider) Init(evalCtx of.EvaluationContext) error {
+	return p.InitWithContext(context.Background(), evalCtx)
+}
+
+// InitWithContext will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
+func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
 	var eg errgroup.Group
 	// wrapper type used only for initialization of event listener workers
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "start initialization")
+	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
 	handlers := make(chan namedEventHandler, len(p.providers))
 	for _, provider := range p.providers {
 		name := provider.Name()
@@ -366,19 +371,27 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 		l := p.logger.With(slog.String(MetadataProviderName, name))
 		prov := provider
 		eg.Go(func() error {
-			l.LogAttrs(context.Background(), slog.LevelDebug, "starting initialization")
-			stateHandle, ok := prov.unwrap().(of.StateHandler)
-			if !ok {
-				l.LogAttrs(context.Background(), slog.LevelDebug, "StateHandle not implemented, skipping initialization")
-			} else if err := stateHandle.Init(evalCtx); err != nil {
-				l.LogAttrs(context.Background(), slog.LevelError, "initialization failed", slog.Any("error", err))
-				p.updateProviderState(name, of.ErrorState)
-				return &ProviderError{
-					Err:          err,
-					ProviderName: name,
+			l.LogAttrs(ctx, slog.LevelDebug, "starting initialization")
+			if stateHandle, ok := prov.unwrap().(of.StateHandler); ok {
+				var err error
+				if contextAwareHandle, ok := stateHandle.(of.ContextAwareStateHandler); ok {
+					err = contextAwareHandle.InitWithContext(ctx, evalCtx)
+				} else {
+					err = stateHandle.Init(evalCtx)
 				}
+
+				if err != nil {
+					l.LogAttrs(ctx, slog.LevelError, "initialization failed", slog.Any("error", err))
+					p.updateProviderState(name, of.ErrorState)
+					return &ProviderError{
+						Err:          err,
+						ProviderName: name,
+					}
+				}
+			} else {
+				l.LogAttrs(ctx, slog.LevelDebug, "StateHandle not implemented, skipping initialization")
 			}
-			l.LogAttrs(context.Background(), slog.LevelDebug, "initialization successful")
+			l.LogAttrs(ctx, slog.LevelDebug, "initialization successful")
 			if eventer, ok := prov.unwrap().(of.EventHandler); ok {
 				l.LogAttrs(context.Background(), slog.LevelDebug, "detected EventHandler implementation")
 				handlers <- namedEventHandler{eventer, name}
@@ -405,6 +418,7 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 	p.shutdownFunc = shutdownFunc
 
 	if len(handlers) > 0 {
+		p.workerGroup.Add(1)
 		go p.forwardProviderEvents(workerCtx, handlers)
 	} else {
 		// we don't emit any events so we can just close the channel
@@ -422,7 +436,6 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 // events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
 // channels are closed, ensuring proper cleanup by closing the outbound channel when complete.
 func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers chan namedEventHandler) {
-	p.workerGroup.Add(1)
 	defer p.workerGroup.Done()
 	defer close(p.outboundEvents)
 
@@ -538,21 +551,40 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 
 // Shutdown Shuts down all internal [of.FeatureProvider] instances and internal event listeners
 func (p *Provider) Shutdown() {
+	ctx := context.Background()
+	err := p.ShutdownWithContext(ctx)
+	if err != nil {
+		p.logger.LogAttrs(ctx, slog.LevelWarn, "error during shutdown", slog.Any("error", err))
+	}
+}
+
+// ShutdownWithContext shuts down all internal [of.FeatureProvider] instances and internal event listeners
+func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	if !p.initialized {
 		// Don't do anything if we were never initialized
-		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider not initialized, skipping shutdown")
-		return
+		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping shutdown")
+		return nil
 	}
+
+	p.logger.LogAttrs(ctx, slog.LevelDebug, "starting provider shutdown")
 	// Stop all event listener workers, shutdown events should not affect overall state
 	p.shutdownFunc()
 
 	var wg sync.WaitGroup
+	var errs []error
 	for _, provider := range p.providers {
+		name := provider.Name()
 		if stateHandle, ok := provider.unwrap().(of.StateHandler); ok {
 			wg.Add(1)
 			go func(p of.StateHandler) {
 				defer wg.Done()
-				p.Shutdown()
+				if contextAwareHandle, ok := p.(of.ContextAwareStateHandler); ok {
+					if err := contextAwareHandle.ShutdownWithContext(ctx); err != nil {
+						errs = append(errs, fmt.Errorf("provider %s shutdown failed: %w", name, err))
+					}
+				} else {
+					p.Shutdown()
+				}
 			}(stateHandle)
 		}
 	}
@@ -564,10 +596,11 @@ func (p *Provider) Shutdown() {
 	// Wait for workers to stop
 	p.workerGroup.Wait()
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "worker shutdown completed")
-	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "starting provider shutdown")
 	p.setStatus(of.NotReadyState)
 	p.initialized = false
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "provider shutdown completed")
+
+	return errors.Join(errs...)
 }
 
 // Status provides the current state of the [multi.Provider].
