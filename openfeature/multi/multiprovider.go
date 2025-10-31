@@ -393,7 +393,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 			}
 			l.LogAttrs(ctx, slog.LevelDebug, "initialization successful")
 			if eventer, ok := prov.unwrap().(of.EventHandler); ok {
-				l.LogAttrs(context.Background(), slog.LevelDebug, "detected EventHandler implementation")
+l.LogAttrs(ctx, slog.LevelDebug, "detected EventHandler implementation")
 				handlers <- namedEventHandler{eventer, name}
 			}
 			p.updateProviderState(name, of.ReadyState)
