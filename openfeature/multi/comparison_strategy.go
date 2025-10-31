@@ -125,7 +125,7 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 				if !notFound && result.Error() != nil {
 					return &ProviderError{
 						ProviderName: closedProvider.Name(),
-						Err:          result.Error(),
+						err:          result.Error(),
 					}
 				}
 				if !notFound {
