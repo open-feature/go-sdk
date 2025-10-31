@@ -10,6 +10,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_ProviderError_Error(t *testing.T) {
+	t.Run("with nil err", func(t *testing.T) {
+		err := &ProviderError{
+			ProviderName: "TestError",
+		}
+		assert.EqualError(t, err, "Provider TestError: <nil>")
+		assert.Equal(t, "TestError", err.ProviderName)
+	})
+
+	t.Run("with custom error", func(t *testing.T) {
+		originalErr := errors.New("custom error message")
+		err := &ProviderError{
+			ProviderName: "TestError",
+			err:          originalErr,
+		}
+		assert.EqualError(t, err, "Provider TestError: custom error message")
+		assert.Equal(t, "TestError", err.ProviderName)
+		assert.ErrorIs(t, err, originalErr)
+	})
+}
+
 func Test_AggregateError_Error(t *testing.T) {
 	t.Run("empty error", func(t *testing.T) {
 		err := NewAggregateError([]ProviderError{})

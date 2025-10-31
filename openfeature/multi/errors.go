@@ -25,10 +25,15 @@ var (
 	_ error = (AggregateError)(nil)
 )
 
+// Error implements the error interface for ProviderError.
 func (e *ProviderError) Error() string {
+	if e.err == nil {
+		return fmt.Sprintf("Provider %s: <nil>", e.ProviderName)
+	}
 	return fmt.Sprintf("Provider %s: %s", e.ProviderName, e.err.Error())
 }
 
+// Unwrap allows access to the original error, if any.
 func (e *ProviderError) Unwrap() error {
 	return e.err
 }
