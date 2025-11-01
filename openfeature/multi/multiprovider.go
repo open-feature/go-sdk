@@ -54,8 +54,6 @@ type (
 		of.FeatureProvider
 		// Name returns the unique name assigned to the provider.
 		Name() string
-		// unwrap returns the underlying [of.FeatureProvider] instance.
-		unwrap() of.FeatureProvider
 	}
 
 	// namedProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
@@ -93,10 +91,12 @@ type (
 	}
 )
 
+// Name returns the unique name assigned to the provider.
 func (n *namedProvider) Name() string {
 	return n.name
 }
 
+// unwrap returns the underlying [of.FeatureProvider] instance wrapped by this [namedProvider].
 func (n *namedProvider) unwrap() of.FeatureProvider {
 	return n.FeatureProvider
 }
@@ -374,7 +374,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 		prov := provider
 		eg.Go(func() error {
 			l.LogAttrs(ctx, slog.LevelDebug, "starting initialization")
-			if stateHandle, ok := prov.unwrap().(of.StateHandler); ok {
+			if stateHandle, ok := tryAs[of.StateHandler](prov); ok {
 				var err error
 				if contextAwareHandle, ok := stateHandle.(of.ContextAwareStateHandler); ok {
 					err = contextAwareHandle.InitWithContext(ctx, evalCtx)
@@ -394,7 +394,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 				l.LogAttrs(ctx, slog.LevelDebug, "StateHandle not implemented, skipping initialization")
 			}
 			l.LogAttrs(ctx, slog.LevelDebug, "initialization successful")
-			if eventer, ok := prov.unwrap().(of.EventHandler); ok {
+			if eventer, ok := tryAs[of.EventHandler](prov); ok {
 				l.LogAttrs(ctx, slog.LevelDebug, "detected EventHandler implementation")
 				handlers <- namedEventHandler{eventer, name}
 			}
@@ -575,7 +575,7 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 
 	for _, provider := range p.providers {
 		name := provider.Name()
-		if stateHandle, ok := provider.unwrap().(of.StateHandler); ok {
+		if stateHandle, ok := tryAs[of.StateHandler](provider); ok {
 			meg.Go(func() error {
 				if contextAwareHandle, ok := stateHandle.(of.ContextAwareStateHandler); ok {
 					if err := contextAwareHandle.ShutdownWithContext(ctx); err != nil {
@@ -640,8 +640,28 @@ func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluati
 		}
 	}
 	for _, provider := range providers {
-		if tracker, ok := provider.unwrap().(of.Tracker); ok {
+		if tracker, ok := tryAs[of.Tracker](provider); ok {
 			tracker.Track(ctx, trackingEventName, evaluationContext, details)
 		}
 	}
+}
+
+// tryAs attempts to extract and type-assert the underlying [of.FeatureProvider] from a [NamedProvider].
+// It first checks if the provider implements an unwrap() method to access the wrapped provider,
+// then attempts to cast that provider to type T. Returns the casted value and true if successful,
+// or the zero value of T and false if the provider doesn't support unwrapping or doesn't implement type T.
+// This is used internally to check if wrapped providers implement optional interfaces like
+// [of.StateHandler], [of.EventHandler], or [of.Tracker].
+func tryAs[T any](p NamedProvider) (T, bool) {
+	var v T
+
+	unwrapped, ok := p.(interface {
+		unwrap() of.FeatureProvider
+	})
+	if !ok {
+		return v, false
+	}
+
+	v, ok = unwrapped.unwrap().(T)
+	return v, ok
 }
