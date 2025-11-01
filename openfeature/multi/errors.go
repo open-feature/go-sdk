@@ -76,7 +76,7 @@ func (g *multiErrGroup) Go(fn func() error) {
 }
 
 // Wait waits for all goroutines to complete.
-// Returns a combined error or nil if none).
+// Returns a combined error or nil if none.
 func (g *multiErrGroup) Wait() error {
 	g.wg.Wait()
 	return errors.Join(g.errors...)
