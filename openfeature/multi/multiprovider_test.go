@@ -3,7 +3,6 @@ package multi
 import (
 	"context"
 	"errors"
-	"regexp"
 	"testing"
 	"time"
 
@@ -25,10 +24,10 @@ func TestMultiProvider_ProvidersMethod(t *testing.T) {
 	assert.Len(t, p, 2)
 	assert.NotNil(t, p[0])
 	assert.Implements(t, (*of.FeatureProvider)(nil), p[0])
-	assert.Regexp(t, regexp.MustCompile("provider1"), p[0].Name())
+	assert.Equal(t, "provider1", p[0].Name())
 	assert.NotNil(t, p[1])
 	assert.Implements(t, (*of.FeatureProvider)(nil), p[1])
-	assert.Regexp(t, regexp.MustCompile("provider2"), p[1].Name())
+	assert.Equal(t, "provider2", p[1].Name())
 }
 
 func TestMultiProvider_NewMultiProvider(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"slices"
 	"strings"
 	"sync"
 
@@ -48,11 +49,12 @@ type (
 		globalHooks        []of.Hook
 	}
 
-	// NamedProvider extends [of.FeatureProvider] by adding a unique provider name. The Name method returns
-	// the assigned provider name, while provider returns the underlying [of.FeatureProvider] instance.
+	// NamedProvider extends [of.FeatureProvider] by adding a unique provider name.
 	NamedProvider interface {
 		of.FeatureProvider
+		// Name returns the unique name assigned to the provider.
 		Name() string
+		// unwrap returns the underlying [of.FeatureProvider] instance.
 		unwrap() of.FeatureProvider
 	}
 
@@ -171,8 +173,8 @@ func WithCustomStrategy(s StrategyConstructor) Option {
 }
 
 // WithGlobalHooks sets the global hooks for the provider. These are [of.Hook] instances that affect ALL [of.FeatureProvider]
-// instances. For hooks that target specific providers make sure to attach them to that provider directly, or use the
-// [WithProviderHooks] [Option] if that provider does not provide its own hook functionality.
+// instances. To apply hooks to specific providers, attach them directly to that provider, or include them in the [WithProvider] [Option]
+// if the provider does not support its own hook functionality.
 func WithGlobalHooks(hooks ...of.Hook) Option {
 	return func(conf *configuration) {
 		conf.hooks = hooks
