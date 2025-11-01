@@ -55,7 +55,7 @@ type (
 	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T]
 	// StrategyConstructor defines the signature for the function that will be called to retrieve the closure that acts
 	// as the custom strategy implementation. This function should return a [StrategyFn]
-	StrategyConstructor func(providers []*NamedProvider) StrategyFn[FlagTypes]
+	StrategyConstructor func(providers []NamedProvider) StrategyFn[FlagTypes]
 )
 
 // Common Components
@@ -136,7 +136,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 // Evaluate is a generic method used to resolve a flag from a single [NamedProvider] without losing type information.
 // This method is exported for those writing their own custom [StrategyFn]. Since any is an allowed [FlagTypes] this can
 // be set to any type, but this should be done with care outside the specified primitive [FlagTypes]
-func Evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+func Evaluate[T FlagTypes](ctx context.Context, provider NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 	var resolution of.GenericResolutionDetail[T]
 	switch v := any(defaultVal).(type) {
 	case bool:
@@ -165,7 +165,7 @@ func Evaluate[T FlagTypes](ctx context.Context, provider *NamedProvider, flag st
 		resolution.FlagMetadata = make(of.FlagMetadata, 2)
 	}
 
-	resolution.FlagMetadata[MetadataProviderName] = provider.Name
+	resolution.FlagMetadata[MetadataProviderName] = provider.Name()
 	resolution.FlagMetadata[MetadataProviderType] = provider.Metadata().Name
 
 	return resolution

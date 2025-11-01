@@ -18,6 +18,7 @@ type (
 		hooks           []of.Hook
 		capturedContext of.HookContext
 		capturedHints   of.HookHints
+		name            string
 	}
 
 	// eventHandlingHookIsolator is equivalent to hookIsolator, but also implements [of.EventHandler]
@@ -28,27 +29,37 @@ type (
 
 // Compile-time interface compliance checks
 var (
+	_ NamedProvider      = (*hookIsolator)(nil)
 	_ of.FeatureProvider = (*hookIsolator)(nil)
 	_ of.Hook            = (*hookIsolator)(nil)
 	_ of.EventHandler    = (*eventHandlingHookIsolator)(nil)
 )
 
 // isolateProvider wraps a [of.FeatureProvider] to execute its hooks along with any additional ones.
-func isolateProvider(provider of.FeatureProvider, extraHooks []of.Hook) *hookIsolator {
+func isolateProvider(provider NamedProvider, extraHooks []of.Hook) *hookIsolator {
 	return &hookIsolator{
 		FeatureProvider: provider,
 		hooks:           append(provider.Hooks(), extraHooks...),
+		name:            provider.Name(),
 	}
 }
 
 // isolateProviderWithEvents wraps a [of.FeatureProvider] to execute its hooks along with any additional ones. This is
 // identical to [isolateProvider], but also this will also implement [of.EventHandler].
-func isolateProviderWithEvents(provider of.FeatureProvider, extraHooks []of.Hook) *eventHandlingHookIsolator {
+func isolateProviderWithEvents(provider NamedProvider, extraHooks []of.Hook) *eventHandlingHookIsolator {
 	return &eventHandlingHookIsolator{*isolateProvider(provider, extraHooks)}
 }
 
 func (h *eventHandlingHookIsolator) EventChannel() <-chan of.Event {
 	return h.FeatureProvider.(of.EventHandler).EventChannel()
+}
+
+func (h *hookIsolator) Name() string {
+	return h.name
+}
+
+func (h *hookIsolator) unwrap() of.FeatureProvider {
+	return h.FeatureProvider
 }
 
 func (h *hookIsolator) Before(_ context.Context, hookContext of.HookContext, hookHints of.HookHints) (*of.EvaluationContext, error) {

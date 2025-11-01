@@ -24,7 +24,10 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := isolateProvider(provider, []of.Hook{})
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, []of.Hook{})
 	assert.Zero(t, isolator.capturedContext)
 	assert.Zero(t, isolator.capturedHints)
 	evalCtx, err := isolator.Before(context.Background(), hookCtx, hookHints)
@@ -32,13 +35,17 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	assert.NotNil(t, evalCtx)
 	assert.Equal(t, hookCtx, isolator.capturedContext)
 	assert.Equal(t, hookHints, isolator.capturedHints)
+	assert.Equal(t, "test-provider", isolator.Name())
 }
 
 func Test_HookIsolator_Hooks_ReturnsSelf(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := isolateProvider(provider, []of.Hook{})
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, []of.Hook{})
 	hooks := isolator.Hooks()
 	assert.NotEmpty(t, hooks)
 	assert.Same(t, isolator, hooks[0])
@@ -59,7 +66,10 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_NoError(t *testing.T) {
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := isolateProvider(provider, nil)
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.True(t, result.Value)
 }
@@ -75,7 +85,10 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{testHook})
 
-	isolator := isolateProvider(provider, nil)
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }
@@ -95,7 +108,10 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := isolateProvider(provider, nil)
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, nil)
 	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }

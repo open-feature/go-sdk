@@ -3,13 +3,14 @@ package multi
 import (
 	"errors"
 	"fmt"
+	"sync"
 )
 
 type (
 	// ProviderError is an error wrapper that includes the provider name.
 	ProviderError struct {
-		// Err is the original error that was returned from a provider
-		Err error
+		// err is the original error that was returned from a provider
+		err error
 		// ProviderName is the name of the provider that returned the included error
 		ProviderName string
 	}
@@ -24,8 +25,17 @@ var (
 	_ error = (AggregateError)(nil)
 )
 
+// Error implements the error interface for ProviderError.
 func (e *ProviderError) Error() string {
-	return fmt.Sprintf("Provider %s: %s", e.ProviderName, e.Err.Error())
+	if e.err == nil {
+		return fmt.Sprintf("Provider %s: <nil>", e.ProviderName)
+	}
+	return fmt.Sprintf("Provider %s: %s", e.ProviderName, e.err.Error())
+}
+
+// Unwrap allows access to the original error, if any.
+func (e *ProviderError) Unwrap() error {
+	return e.err
 }
 
 // NewAggregateError creates a new AggregateError from a slice of [ProviderError] instances
@@ -43,4 +53,31 @@ func (ae AggregateError) Error() string {
 		errs = append(errs, &ae[i])
 	}
 	return errors.Join(errs...).Error()
+}
+
+// multiErrGroup collects all errors from concurrent goroutines.
+type multiErrGroup struct {
+	wg     sync.WaitGroup
+	mu     sync.Mutex
+	errors []error
+}
+
+// Go starts a function in a goroutine.
+func (g *multiErrGroup) Go(fn func() error) {
+	g.wg.Add(1)
+	go func() {
+		defer g.wg.Done()
+		if err := fn(); err != nil {
+			g.mu.Lock()
+			g.errors = append(g.errors, err)
+			g.mu.Unlock()
+		}
+	}()
+}
+
+// Wait waits for all goroutines to complete.
+// Returns a combined error or nil if none.
+func (g *multiErrGroup) Wait() error {
+	g.wg.Wait()
+	return errors.Join(g.errors...)
 }
