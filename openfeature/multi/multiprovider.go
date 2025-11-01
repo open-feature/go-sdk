@@ -180,7 +180,7 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 }
 
 // WithProvider registers a specific [of.FeatureProvider] instance under the given providerName. The providerName
-// must be unique and correspond to the name used when creating the [multi.Provider]. Optional [of.Hook] instances
+// must be unique and correspond to the name used when creating the [Provider]. Optional [of.Hook] instances
 // may also be provided, which will execute only for this specific provider. This [Option] can be used multiple times
 // with unique provider names to register multiple providers. The order in which options
 // are provided determines the order in which the providers are registered and evaluated.
