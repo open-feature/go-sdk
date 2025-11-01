@@ -252,7 +252,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		}
 
 		providers = append(providers, wrappedProvider)
-		collectedHooks = append(collectedHooks, wrappedProvider.Hooks()...)
+		collectedHooks = slices.Concat(collectedHooks, wrappedProvider.Hooks())
 	}
 
 	multiProvider := &Provider{
