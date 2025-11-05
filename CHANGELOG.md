@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.17.0](https://github.com/open-feature/go-sdk/compare/v1.16.0...v1.17.0) (2025-11-05)
+
+
+### 🐛 Bug Fixes
+
+* **multi-provider:** correct provider state tracking and improve robustness ([#441](https://github.com/open-feature/go-sdk/issues/441)) ([7fd7ab6](https://github.com/open-feature/go-sdk/commit/7fd7ab6c25108def02a2459524139f26e30aabfa))
+
+
+### ✨ New Features
+
+* add error wrapping support to ResolutionError ([#438](https://github.com/open-feature/go-sdk/issues/438)) ([1c624c9](https://github.com/open-feature/go-sdk/commit/1c624c9a9e2b2e5be2a667aa8cd40969bfaf6871))
+* add fatal error constructor ([#445](https://github.com/open-feature/go-sdk/issues/445)) ([c2034e5](https://github.com/open-feature/go-sdk/commit/c2034e52d7d129ab2bbaa9917e64d365f2f1c802))
+* Adds ability to pass a context.Context to provider with new public methods. ([#442](https://github.com/open-feature/go-sdk/issues/442)) ([1a0d39e](https://github.com/open-feature/go-sdk/commit/1a0d39ea7e4f6c24a54127854a9b8cff64244450))
+* Implement multiprovider ([#354](https://github.com/open-feature/go-sdk/issues/354)) ([c7c86d3](https://github.com/open-feature/go-sdk/commit/c7c86d342bb2469ea0eebf3e5b082521fb7969c1))
+* **multi:** add tracking, functional options ([#446](https://github.com/open-feature/go-sdk/issues/446)) ([f12e483](https://github.com/open-feature/go-sdk/commit/f12e48354649fbe6cc131756e853cf18120d9770))
+
+
+### 🧹 Chore
+
+* **deps:** update module golang.org/x/text to v0.30.0 ([#440](https://github.com/open-feature/go-sdk/issues/440)) ([1be83ec](https://github.com/open-feature/go-sdk/commit/1be83ec5dff402a7fb7bfef478fd91420730d03c))
+
 ## [1.16.0](https://github.com/open-feature/go-sdk/compare/v1.15.1...v1.16.0) (2025-09-24)
 
 
