@@ -8,7 +8,7 @@ import (
 )
 
 // newFirstSuccessStrategy returns a [StrategyFn] that returns the result of the First [of.FeatureProvider] whose response
-// is not an error.
+// is not an error. The definition of "first" depends on the configured run-mode. With sequential execution, it's the first provider in order. With parallel, it's the first to return a result.
 func newFirstSuccessStrategy(providers []NamedProvider, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
 	return firstSuccessStrategyFn(providers, runMode)
 }
