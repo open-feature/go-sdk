@@ -33,15 +33,15 @@ type (
 	// Provider is an implementation of [of.FeatureProvider] that can execute multiple providers using various
 	// strategies.
 	Provider struct {
-		providers          []NamedProvider
+		providers          []namedProvider
 		metadata           of.Metadata
 		initialized        bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
 		providerStatus     map[string]of.State
 		providerStatusLock sync.Mutex
-		strategyName       EvaluationStrategy    // the name of the strategy used for evaluation
-		strategyFunc       StrategyFn[FlagTypes] // used for evaluating strategies
+		strategyName       EvaluationStrategy // the name of the strategy used for evaluation
+		evaluationFunc     evaluationFn[FlagTypes]
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
 		workerGroup        sync.WaitGroup
@@ -49,16 +49,16 @@ type (
 		globalHooks        []of.Hook
 	}
 
-	// NamedProvider extends [of.FeatureProvider] by adding a unique provider name.
-	NamedProvider interface {
+	// namedProvider extends [of.FeatureProvider] by adding a unique provider name.
+	namedProvider interface {
 		of.FeatureProvider
 		// Name returns the unique name assigned to the provider.
 		Name() string
 	}
 
-	// namedProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
+	// registeredProvider allows for a unique name to be assigned to a provider during a multi-provider set up.
 	// The name will be used when reporting errors & results to specify the provider associated with them.
-	namedProvider struct {
+	registeredProvider struct {
 		of.FeatureProvider
 		name       string
 		extraHooks []of.Hook
@@ -70,7 +70,7 @@ type (
 	// Private Types
 	namedEvent struct {
 		of.Event
-		providerName string
+		registredProviderName string
 	}
 
 	// configuration is the internal configuration of a [multi.Provider]
@@ -80,8 +80,9 @@ type (
 		customStrategy   StrategyConstructor
 		logger           *slog.Logger
 		hooks            []of.Hook
-		providers        []*namedProvider
+		providers        []*registeredProvider
 		customComparator Comparator
+		runMode          runModeFn[FlagTypes]
 	}
 
 	// namedEventHandler is a wrapper around an [of.EventHandler] that includes the provider name.
@@ -92,12 +93,12 @@ type (
 )
 
 // Name returns the unique name assigned to the provider.
-func (n *namedProvider) Name() string {
+func (n *registeredProvider) Name() string {
 	return n.name
 }
 
 // unwrap returns the underlying [of.FeatureProvider] instance wrapped by this [namedProvider].
-func (n *namedProvider) unwrap() of.FeatureProvider {
+func (n *registeredProvider) unwrap() of.FeatureProvider {
 	return n.FeatureProvider
 }
 
@@ -111,7 +112,7 @@ var (
 	_ of.EventHandler             = (*Provider)(nil)
 	_ of.ContextAwareStateHandler = (*Provider)(nil)
 	_ of.Tracker                  = (*Provider)(nil)
-	_ NamedProvider               = (*namedProvider)(nil)
+	_ namedProvider               = (*registeredProvider)(nil)
 )
 
 // init Initialize "constants" used for event handling priorities and filtering.
@@ -165,7 +166,7 @@ func WithCustomComparator(comparator Comparator) Option {
 }
 
 // WithCustomStrategy sets a custom strategy function by defining a "constructor" that acts as closure over a slice of
-// [NamedProvider] instances with your returned custom strategy function. This must be used in conjunction with [StrategyCustom]
+// [namedProvider] instances with your returned custom strategy function. This must be used in conjunction with [StrategyCustom]
 func WithCustomStrategy(s StrategyConstructor) Option {
 	return func(conf *configuration) {
 		conf.customStrategy = s
@@ -188,7 +189,7 @@ func WithGlobalHooks(hooks ...of.Hook) Option {
 // are provided determines the order in which the providers are registered and evaluated.
 func WithProvider(providerName string, provider of.FeatureProvider, hooks ...of.Hook) Option {
 	return func(conf *configuration) {
-		conf.providers = append(conf.providers, &namedProvider{
+		conf.providers = append(conf.providers, &registeredProvider{
 			name:            providerName,
 			FeatureProvider: provider,
 			extraHooks:      hooks,
@@ -196,8 +197,15 @@ func WithProvider(providerName string, provider of.FeatureProvider, hooks ...of.
 	}
 }
 
+// WithRunModeParallel configures the run mode to evaluate providers in parallel.
+func WithRunModeParallel() Option {
+	return func(conf *configuration) {
+		conf.runMode = runModeParallel[FlagTypes]
+	}
+}
+
 // Multiprovider Implementation
-func buildMetadata(m []NamedProvider) of.Metadata {
+func buildMetadata(m []namedProvider) of.Metadata {
 	var separator string
 	var metaName strings.Builder
 	metaName.WriteString("MultiProvider {")
@@ -218,7 +226,8 @@ func buildMetadata(m []NamedProvider) of.Metadata {
 func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Provider, error) {
 	config := &configuration{
 		logger:    slog.New(slog.DiscardHandler),
-		providers: make([]*namedProvider, 0, 2),
+		providers: make([]*registeredProvider, 0, 2),
+		runMode:   runModeSequential[FlagTypes],
 	}
 
 	for _, opt := range options {
@@ -229,7 +238,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		return nil, errors.New("no providers configured: at least one provider must be registered using WithProvider()")
 	}
 
-	providers := make([]NamedProvider, 0, len(config.providers))
+	providers := make([]namedProvider, 0, len(config.providers))
 	collectedHooks := make([]of.Hook, 0, len(config.providers))
 	for i, provider := range config.providers {
 		// Validate Providers
@@ -246,7 +255,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 			continue
 		}
 
-		var wrappedProvider NamedProvider
+		var wrappedProvider namedProvider
 		if _, ok := provider.FeatureProvider.(of.EventHandler); ok {
 			wrappedProvider = isolateProviderWithEvents(provider, provider.extraHooks)
 		} else {
@@ -270,25 +279,40 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	var strategy StrategyFn[FlagTypes]
 	switch evaluationStrategy {
 	case StrategyFirstMatch:
-		strategy = newFirstMatchStrategy(multiProvider.Providers())
+		strategy = newFirstMatchStrategy()
 	case StrategyFirstSuccess:
-		strategy = newFirstSuccessStrategy(multiProvider.Providers())
+		strategy = newFirstSuccessStrategy()
 	case StrategyComparison:
-		strategy = newComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator)
+		strategy = newComparisonStrategy(config.fallbackProvider, config.customComparator)
 	default:
 		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)
 		}
-		strategy = config.customStrategy(multiProvider.Providers())
+		strategy = config.customStrategy()
 	}
-	multiProvider.strategyFunc = strategy
+	multiProvider.evaluationFunc = newEvaluationFunc(providers, config.runMode, strategy)
 	multiProvider.strategyName = evaluationStrategy
 
 	return multiProvider, nil
 }
 
-// Providers returns slice of providers wrapped in [NamedProvider] structs.
-func (p *Provider) Providers() []NamedProvider {
+// newEvaluationFunc creates an evaluation function that:
+// 1. Executes providers using the specified runMode (parallel/sequential)
+// 2. Collects resolutions into an iterator
+// 3. Applies the strategy to select the final result
+func newEvaluationFunc[T FlagTypes](providers []namedProvider, runMode runModeFn[T], strategy StrategyFn[T]) evaluationFn[T] {
+	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) *of.GenericResolutionDetail[T] {
+		return strategy(
+			runMode(ctx, providers, flag, defaultValue, flatCtx),
+			defaultValue,
+			func(p of.FeatureProvider) *of.GenericResolutionDetail[T] {
+				return evaluate(ctx, p, "fallback", flag, defaultValue, flatCtx)
+			})
+	}
+}
+
+// Providers returns slice of providers wrapped in [namedProvider] structs.
+func (p *Provider) Providers() []namedProvider {
 	return p.providers
 }
 
@@ -309,7 +333,7 @@ func (p *Provider) Hooks() []of.Hook {
 
 // BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
 func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
-	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
+	res := p.evaluationFunc(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
 		Value:                    res.Value.(bool),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -318,7 +342,7 @@ func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultVa
 
 // StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
 func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
-	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
+	res := p.evaluationFunc(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
 		Value:                    res.Value.(string),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -327,7 +351,7 @@ func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultVal
 
 // FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
 func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
-	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
+	res := p.evaluationFunc(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
 		Value:                    res.Value.(float64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -336,7 +360,7 @@ func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValu
 
 // IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
 func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
-	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
+	res := p.evaluationFunc(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
 		Value:                    res.Value.(int64),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -348,7 +372,7 @@ func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue 
 // This is especially important when using the [StrategyComparison] configuration as an internal error will occur if this
 // is not a comparable type unless the [WithCustomComparator] [Option] is configured.
 func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
+	res := p.evaluationFunc(ctx, flag, defaultValue, flatCtx)
 	return of.InterfaceResolutionDetail{
 		Value:                    res.Value,
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
@@ -464,8 +488,8 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 						e.EventMetadata[MetadataProviderType] = p.Metadata().Name
 					}
 					out <- namedEvent{
-						Event:        e,
-						providerName: name,
+						Event:                 e,
+						registredProviderName: name,
 					}
 				}
 			}
@@ -479,7 +503,7 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 
 	for e := range pipe {
 		l := workerLogger.With(
-			slog.String(MetadataProviderName, e.providerName),
+			slog.String(MetadataProviderName, e.registredProviderName),
 			slog.String(MetadataProviderType, e.ProviderName),
 		)
 		l.LogAttrs(workerCtx, slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
@@ -514,10 +538,10 @@ func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
 	}
 	p.providerStatusLock.Lock()
-	previousState := p.providerStatus[e.providerName]
+	previousState := p.providerStatus[e.registredProviderName]
 	p.providerStatusLock.Unlock()
 	logProviderState(p.logger, e, previousState)
-	return p.updateProviderState(e.providerName, eventTypeToState[e.EventType])
+	return p.updateProviderState(e.registredProviderName, eventTypeToState[e.EventType])
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
@@ -538,16 +562,16 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 	case of.ReadyState:
 		if previousState != of.NotReadyState {
 			l.LogAttrs(context.Background(), slog.LevelInfo, "provider has returned to ready state",
-				slog.String(MetadataProviderName, e.providerName), slog.String("previous-state", string(previousState)))
+				slog.String(MetadataProviderName, e.registredProviderName), slog.String("previous-state", string(previousState)))
 			return
 		}
-		l.LogAttrs(context.Background(), slog.LevelDebug, "provider is ready", slog.String(MetadataProviderName, e.providerName))
+		l.LogAttrs(context.Background(), slog.LevelDebug, "provider is ready", slog.String(MetadataProviderName, e.registredProviderName))
 	case of.StaleState:
 		l.LogAttrs(context.Background(), slog.LevelWarn, "provider is stale",
-			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
+			slog.String(MetadataProviderName, e.registredProviderName), slog.String("event-message", e.Message))
 	case of.ErrorState:
 		l.LogAttrs(context.Background(), slog.LevelError, "provider is in an error state",
-			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
+			slog.String(MetadataProviderName, e.registredProviderName), slog.String("event-message", e.Message))
 	}
 }
 
@@ -633,7 +657,7 @@ func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluati
 	p.providerStatusLock.Lock()
 	statuses := maps.Clone(p.providerStatus)
 	p.providerStatusLock.Unlock()
-	providers := make([]NamedProvider, 0, len(p.providers))
+	providers := make([]namedProvider, 0, len(p.providers))
 	for _, p := range p.providers {
 		if statuses[p.Name()] == of.ReadyState {
 			providers = append(providers, p)
@@ -646,13 +670,13 @@ func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluati
 	}
 }
 
-// tryAs attempts to extract and type-assert the underlying [of.FeatureProvider] from a [NamedProvider].
+// tryAs attempts to extract and type-assert the underlying [of.FeatureProvider] from a [namedProvider].
 // It first checks if the provider implements an unwrap() method to access the wrapped provider,
 // then attempts to cast that provider to type T. Returns the casted value and true if successful,
 // or the zero value of T and false if the provider doesn't support unwrapping or doesn't implement type T.
 // This is used internally to check if wrapped providers implement optional interfaces like
 // [of.StateHandler], [of.EventHandler], or [of.Tracker].
-func tryAs[T any](p NamedProvider) (T, bool) {
+func tryAs[T any](p namedProvider) (T, bool) {
 	var v T
 
 	unwrapped, ok := p.(interface {

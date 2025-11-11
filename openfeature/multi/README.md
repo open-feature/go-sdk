@@ -1,9 +1,7 @@
-OpenFeature Multi-Provider
-------------
+## OpenFeature Multi-Provider
 
 > [!WARNING]
-> The multi package for the go-sdk is experimental. 
-
+> The multi package for the go-sdk is experimental.
 
 The multi-provider allows you to use multiple underlying providers as sources of flag data for the OpenFeature server SDK.
 The multi-provider acts as a wrapper providing a unified interface to interact with all of those providers at once.
@@ -11,8 +9,8 @@ When a flag is being evaluated, the Multi-Provider will consult each underlying 
 determine the final result. Different evaluation strategies can be defined to control which providers get evaluated and
 which result is used.
 
-The multi-provider is defined within [Appendix A: Included Utilities](https://openfeature.dev/specification/appendix-a#multi-provider) 
-of the openfeature spec. 
+The multi-provider is defined within [Appendix A: Included Utilities](https://openfeature.dev/specification/appendix-a#multi-provider)
+of the openfeature spec.
 
 The multi-provider is a powerful tool for performing migrations between flag providers, or combining multiple providers
 into a single feature flagging interface. For example:
@@ -27,9 +25,9 @@ into a single feature flagging interface. For example:
 
 ```go
 import (
-	"github.com/open-feature/go-sdk/openfeature"
-	"github.com/open-feature/go-sdk/openfeature/multi"
-	"github.com/open-feature/go-sdk/openfeature/memprovider"
+ "github.com/open-feature/go-sdk/openfeature"
+ "github.com/open-feature/go-sdk/openfeature/multi"
+ "github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
 mprovider, err := multi.NewProvider(
@@ -57,7 +55,7 @@ The three provided strategies are:
 
 ## First Match Strategy
 
-The first match strategy works by **sequentially**  calling each provider until a valid result is returned.
+The first match strategy works by **sequentially** calling each provider until a valid result is returned.
 The first provider that returns a result will be used. It will try calling the next provider whenever it encounters a `FLAG_NOT_FOUND`
 error. However, if a provider returns an error other than `FLAG_NOT_FOUND` the provider will stop and return the default
 value along with setting the error details if a detailed request is issued.
@@ -65,22 +63,22 @@ value along with setting the error details if a detailed request is issued.
 ## First Success Strategy
 
 The first success strategy also works by calling each provider **sequentially**. The first provider that returns a response
-with no errors is used. This differs from the first match strategy in that any provider raising an error will not halt 
-calling the next provider if a successful result has not yet been encountered. If no provider provides a successful result 
+with no errors is used. This differs from the first match strategy in that any provider raising an error will not halt
+calling the next provider if a successful result has not yet been encountered. If no provider provides a successful result
 the default value will be returned to the caller.
 
 ## Comparison Strategy
 
 The comparison strategy works by calling each provider in **parallel**. All results are collected from each provider and
 then the resolved results are compared to each other. If they all agree then that value is returned. If not a fallback
-provider can be specified to be executed instead or the default value will be returned. If a provider returns 
-`FLAG_NOT_FOUND` that result will not be included in the comparison. If all providers return not found then the default 
-value is returned. Finally, if any provider returns an error other than `FLAG_NOT_FOUND` the evaluation immediately stops 
-and that error result is returned with the default value. 
+provider can be specified to be executed instead or the default value will be returned. If a provider returns
+`FLAG_NOT_FOUND` that result will not be included in the comparison. If all providers return not found then the default
+value is returned. Finally, if any provider returns an error other than `FLAG_NOT_FOUND` the evaluation immediately stops
+and that error result is returned with the default value.
 
 The fallback provider can be set using the `WithFallbackProvider` [`Option`](#options).
 
-Special care must be taken when this strategy is used with `ObjectEvaluation`. If the resulting value is not a 
+Special care must be taken when this strategy is used with `ObjectEvaluation`. If the resulting value is not a
 [`comparable`](https://go.dev/blog/comparable) type then the default result or fallback provider will always be used. In
 order to evaluate non `comparable` types a `Comparator` function must be provided as an `Option` to the constructor.
 
@@ -90,31 +88,45 @@ A custom strategy can be defined using the `WithCustomStrategy` `Option` along w
 A custom strategy is defined by the following generic function signature:
 
 ```go
-StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx openfeature.FlattenedContext) openfeature.GenericResolutionDetail[T]
+StrategyFn[T FlagTypes] func(resolutions ResolutionIterator[T], defaultValue T, fallbackEvaluator FallbackEvaluator[T]) openfeature.GenericResolutionDetail[T]
 ```
 
-However, this doesn't provide any way to retrieve the providers! Therefore, there's the type `StrategyConstructor` that
-is called for you to close over the providers inside your `StratetegyFn` implementation.
+Where:
 
 ```go
-type StrategyConstructor func(providers []*NamedProvider) StrategyFn[FlagTypes]
+ResolutionIterator[T FlagTypes] = iter.Seq2[string, openfeature.GenericResolutionDetail[T]]
+FallbackEvaluator[T FlagTypes] = func(fallbackProvider openfeature.FeatureProvider) openfeature.GenericResolutionDetail[T]
 ```
 
-Build your strategy to wrap around the slice of providers
+The strategy function receives:
+
+- `resolutions`: An iterator of provider names and their resolution results
+- `defaultValue`: The default value to return if strategy fails
+- `fallbackEvaluator`: A function to evaluate the fallback provider if needed
+
+The `StrategyConstructor` type is used to create your custom strategy:
+
 ```go
-option := multi.WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
-	return func[T FlagTypes](ctx context.Context, flag string, defaultValue T, flatCtx openfeature.FlattenedContext) openfeature.GenericResolutionDetail[T] {
-		// implementation
-		// ...
+type StrategyConstructor func() StrategyFn[FlagTypes]
+```
+
+Build your custom strategy like this:
+
+```go
+option := multi.WithCustomStrategy(func() StrategyFn[FlagTypes] {
+ return func(resolutions ResolutionIterator[FlagTypes], defaultValue FlagTypes, fallbackEvaluator FallbackEvaluator[FlagTypes]) *openfeature.GenericResolutionDetail[FlagTypes] {
+  // Iterate through provider resolutions
+  for name, resolution := range resolutions {
+   // Your custom logic here
+   // ...
+  }
+  // Return selected resolution or use fallbackEvaluator if needed
+  return resolution
     }
 })
 ```
 
-It is highly recommended to use the provided exposed functions to build your custom strategy. Specifically, the functions 
-`BuildDefaultResult` & `Evaluate` are exposed for those implementing their own custom strategies.
-
-The `Evaluate` method should be used for evaluating the result of a single `NamedProvider`. It determines the evaluation
-type via the type of the generic `defaultVal` parameter.
+It is highly recommended to use the provided exposed function `BuildDefaultResult` when building your custom strategy.
 
 The `BuildDefaultResult` method should be called when an error is encountered or the strategy "fails" and needs to return
 the default result passed to one of the Evaluation methods of `openfeature.FeatureProvider`.

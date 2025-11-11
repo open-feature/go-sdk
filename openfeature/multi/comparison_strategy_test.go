@@ -103,15 +103,17 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider := of.NewMockFeatureProvider(ctrl)
 				fallback := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider, successVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider",
 						FeatureProvider: provider,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -127,19 +129,22 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				strategy := newComparisonStrategy(fallback, nil)
+
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -158,23 +163,26 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				strategy := newComparisonStrategy(fallback, nil)
+
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -192,23 +200,25 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -231,26 +241,29 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider4 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider4, successVal, true, TestErrorNone, false)
 
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider4",
 						FeatureProvider: provider4,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -270,23 +283,25 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -304,19 +319,21 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider1, defaultVal, true, TestErrorNotFound, false)
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorNotFound, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, defaultVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -339,27 +356,29 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				configureComparisonProvider(provider3, successVal, true, TestErrorNone, false)
 				provider4 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider4, defaultVal, true, TestErrorNone, false)
-
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider4",
 						FeatureProvider: provider4,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -378,18 +397,21 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureComparisonProvider(provider2, defaultVal, true, TestErrorError, false)
 
-				strategy := newComparisonStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}
+				strategy := newComparisonStrategy(fallback, nil)
 
-				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeParallel, strategy)
+				result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, defaultVal, result.Value)
 				assert.Equal(t, of.ErrorReason, result.Reason)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
@@ -497,18 +519,21 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			provider2 := of.NewMockFeatureProvider(ctrl)
 			configureComparisonProvider(provider2, testCase.successValue, true, TestErrorNone, true)
 
-			strategy := newComparisonStrategy([]NamedProvider{
-				&namedProvider{
+			providers := []namedProvider{
+				&registeredProvider{
 					name:            "test-provider1",
 					FeatureProvider: provider1,
 				},
-				&namedProvider{
+				&registeredProvider{
 					name:            "test-provider2",
 					FeatureProvider: provider2,
 				},
-			}, fallback, nil)
+			}
+			strategy := newComparisonStrategy(fallback, nil)
 
-			result := strategy(t.Context(), testFlag, tc.defaultValue, of.FlattenedContext{})
+			fn := newEvaluationFunc(providers, runModeParallel, strategy)
+			result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 			assert.Equal(t, tc.successValue, result.Value)
 			assert.NoError(t, result.Error())
 			assert.Equal(t, ReasonAggregated, result.Reason)
@@ -528,17 +553,21 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			provider2 := of.NewMockFeatureProvider(ctrl)
 			configureComparisonProvider(provider2, tc.defaultValue, true, TestErrorNone, true)
 
-			strategy := newComparisonStrategy([]NamedProvider{
-				&namedProvider{
+			providers := []namedProvider{
+				&registeredProvider{
 					name:            "test-provider1",
 					FeatureProvider: provider1,
 				},
-				&namedProvider{
+				&registeredProvider{
 					name:            "test-provider2",
 					FeatureProvider: provider2,
 				},
-			}, fallback, nil)
-			result := strategy(t.Context(), testFlag, tc.defaultValue, of.FlattenedContext{})
+			}
+			strategy := newComparisonStrategy(fallback, nil)
+
+			fn := newEvaluationFunc(providers, runModeParallel, strategy)
+			result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 			assert.Equal(t, tc.successValue, result.Value)
 			assert.NoError(t, result.Error())
 			assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -558,18 +587,21 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, true)
 
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
+		}
+		strategy := newComparisonStrategy(fallback, nil)
 
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -589,17 +621,22 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, true)
 
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		}
+
+		strategy := newComparisonStrategy(fallback, nil)
+
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -619,19 +656,23 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, true)
 
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, func(val []any) bool {
+		}
+		strategy := newComparisonStrategy(fallback, func(val []any) bool {
 			return true
 		})
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -650,21 +691,24 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, successVal, true, TestErrorNone, false)
-
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, func(val []any) bool {
-			return true
-		})
+		}
+		strategy := newComparisonStrategy(
+			fallback, func(val []any) bool {
+				return true
+			})
 
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -685,20 +729,23 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		configureComparisonProvider(provider1, defaultVal, true, TestErrorNone, false)
 		provider2 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider2, defaultVal, true, TestErrorNone, false)
-
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, func(val []any) bool {
+		}
+
+		strategy := newComparisonStrategy(fallback, func(val []any) bool {
 			return false
 		})
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -717,18 +764,23 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		provider1 := of.NewMockFeatureProvider(ctrl)
 		configureComparisonProvider(provider1, successVal, true, TestErrorNone, false)
 		provider2 := of.NewMockFeatureProvider(ctrl)
-		configureComparisonProvider(provider2, successVal, true, TestErrorError, false)
-		strategy := newComparisonStrategy([]NamedProvider{
-			&namedProvider{
+		providers := []namedProvider{
+			&registeredProvider{
 				name:            "test-provider1",
 				FeatureProvider: provider1,
 			},
-			&namedProvider{
+			&registeredProvider{
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
-		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		}
+
+		configureComparisonProvider(provider2, successVal, true, TestErrorError, false)
+		strategy := newComparisonStrategy(fallback, nil)
+
+		fn := newEvaluationFunc(providers, runModeParallel, strategy)
+		result := fn(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)

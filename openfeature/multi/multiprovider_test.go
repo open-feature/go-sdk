@@ -63,9 +63,9 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	})
 
 	t.Run("success with custom provider", func(t *testing.T) {
-		mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
-			return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
-				return of.GenericResolutionDetail[FlagTypes]{
+		mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func() StrategyFn[FlagTypes] {
+			return func(resolutions ResolutionIterator[FlagTypes], defaultValue FlagTypes, _ FallbackEvaluator[FlagTypes]) *of.GenericResolutionDetail[FlagTypes] {
+				return &of.GenericResolutionDetail[FlagTypes]{
 					Value:                    defaultValue,
 					ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.UnknownReason},
 				}

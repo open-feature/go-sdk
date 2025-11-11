@@ -23,7 +23,7 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := isolateProvider(&namedProvider{
+	isolator := isolateProvider(&registeredProvider{
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, []of.Hook{})
@@ -41,7 +41,7 @@ func Test_HookIsolator_Hooks_ReturnsSelf(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
-	isolator := isolateProvider(&namedProvider{
+	isolator := isolateProvider(&registeredProvider{
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, []of.Hook{})
@@ -65,7 +65,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_NoError(t *testing.T) {
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := isolateProvider(&namedProvider{
+	isolator := isolateProvider(&registeredProvider{
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)
@@ -84,7 +84,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 	provider := of.NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Hooks().Return([]of.Hook{testHook})
 
-	isolator := isolateProvider(&namedProvider{
+	isolator := isolateProvider(&registeredProvider{
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)
@@ -107,7 +107,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T
 		ProviderResolutionDetail: of.ProviderResolutionDetail{},
 	})
 
-	isolator := isolateProvider(&namedProvider{
+	isolator := isolateProvider(&registeredProvider{
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)

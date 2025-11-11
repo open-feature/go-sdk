@@ -2,6 +2,7 @@ package multi
 
 import (
 	"context"
+	"iter"
 	"maps"
 	"regexp"
 	"strings"
@@ -51,11 +52,29 @@ type (
 	FlagTypes interface {
 		int64 | float64 | string | bool | any
 	}
-	// StrategyFn defines the signature for a strategy function.
-	StrategyFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T]
+
+	// ResolutionIterator provides an iterator over provider names and their resolution results.
+	ResolutionIterator[T FlagTypes] = iter.Seq2[string, *of.GenericResolutionDetail[T]]
+
+	// FallbackEvaluator evaluates the fallback provider when the strategy needs it.
+	FallbackEvaluator[T FlagTypes] = func(fallbackProvider of.FeatureProvider) *of.GenericResolutionDetail[T]
+
+	// StrategyFn defines the signature for a strategy function that processes resolutions from multiple providers.
+	// Parameters:
+	//   - resolutions: An iterator of provider names and their resolution results
+	//   - defaultValue: The default value to return if strategy fails
+	//   - fallbackEvaluator: A function to evaluate the fallback provider if needed
+	// Returns: The final resolution detail selected by the strategy
+	StrategyFn[T FlagTypes] func(resolutions ResolutionIterator[T], defaultValue T, fallbackEvaluator FallbackEvaluator[T]) *of.GenericResolutionDetail[T]
+
 	// StrategyConstructor defines the signature for the function that will be called to retrieve the closure that acts
 	// as the custom strategy implementation. This function should return a [StrategyFn]
-	StrategyConstructor func(providers []NamedProvider) StrategyFn[FlagTypes]
+	StrategyConstructor func() StrategyFn[FlagTypes]
+
+	// evaluationFn wraps a strategy with run mode logic to create a complete evaluation function.
+	// It executes providers using the specified run mode (parallel/sequential), collects resolutions
+	// into an iterator, and applies the strategy to select the final result.
+	evaluationFn[T FlagTypes] func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) *of.GenericResolutionDetail[T]
 )
 
 // Common Components
@@ -112,7 +131,7 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 // BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
 // This method will build a resolution detail with the internal provided error set. This method is exported for those
 // writing their own custom [StrategyFn].
-func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) of.GenericResolutionDetail[R] {
+func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R, err error) *of.GenericResolutionDetail[R] {
 	var rErr of.ResolutionError
 	var reason of.Reason
 	if err != nil {
@@ -123,7 +142,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 		reason = of.DefaultReason
 	}
 
-	return of.GenericResolutionDetail[R]{
+	return &of.GenericResolutionDetail[R]{
 		Value: defaultValue,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
 			ResolutionError: rErr,
@@ -133,10 +152,10 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 	}
 }
 
-// Evaluate is a generic method used to resolve a flag from a single [NamedProvider] without losing type information.
+// evaluate is a generic method used to resolve a flag from a single [namedProvider] without losing type information.
 // This method is exported for those writing their own custom [StrategyFn]. Since any is an allowed [FlagTypes] this can
 // be set to any type, but this should be done with care outside the specified primitive [FlagTypes]
-func Evaluate[T FlagTypes](ctx context.Context, provider NamedProvider, flag string, defaultVal T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+func evaluate[T FlagTypes](ctx context.Context, provider of.FeatureProvider, registeredName string, flag string, defaultVal T, flatCtx of.FlattenedContext) *of.GenericResolutionDetail[T] {
 	var resolution of.GenericResolutionDetail[T]
 	switch v := any(defaultVal).(type) {
 	case bool:
@@ -165,8 +184,8 @@ func Evaluate[T FlagTypes](ctx context.Context, provider NamedProvider, flag str
 		resolution.FlagMetadata = make(of.FlagMetadata, 2)
 	}
 
-	resolution.FlagMetadata[MetadataProviderName] = provider.Name()
+	resolution.FlagMetadata[MetadataProviderName] = registeredName
 	resolution.FlagMetadata[MetadataProviderType] = provider.Metadata().Name
 
-	return resolution
+	return &resolution
 }
