@@ -119,12 +119,12 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 		for name, result := range runMode(ctx, providers, flag, defaultValue, evalCtx) {
 			notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
 			if !notFound && result.Error() != nil {
-				result := BuildDefaultResult(StrategyComparison, defaultValue, result.Error())
-				result.FlagMetadata[MetadataFallbackUsed] = false
-				result.FlagMetadata[MetadataIsDefaultValue] = true
-				result.FlagMetadata[MetadataEvaluationError] = result.Error()
-				result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
-				return result
+				resultError := BuildDefaultResult(StrategyComparison, defaultValue, result.Error())
+				resultError.FlagMetadata[MetadataFallbackUsed] = false
+				resultError.FlagMetadata[MetadataIsDefaultValue] = true
+				resultError.FlagMetadata[MetadataEvaluationError] = result.Error()
+				resultError.ResolutionError = comparisonResolutionError(result.FlagMetadata)
+				return resultError
 			}
 			if !notFound {
 				r := namedResult{
