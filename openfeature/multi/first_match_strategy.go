@@ -7,7 +7,7 @@ import (
 )
 
 // newFirstMatchStrategy returns a [StrategyFn] that returns the result of the first [of.FeatureProvider] whose response is
-// not [of.FlagNotFoundCode].
+// not [of.FlagNotFoundCode]. The definition of "first" depends on the configured run-mode. With sequential execution, it's the first provider in order. With parallel, it's the first to return a result.
 func newFirstMatchStrategy(providers []NamedProvider, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
 	return firstMatchStrategyFn(providers, runMode)
 }
