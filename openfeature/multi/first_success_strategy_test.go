@@ -98,7 +98,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 						name:            "test-provider",
 						FeatureProvider: provider,
 					},
-				})
+				}, runModeSequential)
 				result := strategy(context.Background(), testFlag, tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
@@ -123,7 +123,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
-				})
+				}, runModeSequential)
 
 				result := strategy(context.Background(), testFlag, tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
@@ -148,7 +148,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
-				})
+				}, runModeSequential)
 
 				result := strategy(context.Background(), testFlag, tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
@@ -179,7 +179,7 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 						name:            "provider3",
 						FeatureProvider: provider3,
 					},
-				})
+				}, runModeSequential)
 
 				result := strategy(context.Background(), testFlag, tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.defaultVal, result.Value)

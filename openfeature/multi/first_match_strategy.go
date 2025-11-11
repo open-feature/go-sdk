@@ -7,15 +7,14 @@ import (
 )
 
 // newFirstMatchStrategy returns a [StrategyFn] that returns the result of the first [of.FeatureProvider] whose response is
-// not [of.FlagNotFoundCode]. This is executed sequentially, and not in parallel.
-func newFirstMatchStrategy(providers []NamedProvider) StrategyFn[FlagTypes] {
-	return firstMatchStrategyFn[FlagTypes](providers)
+// not [of.FlagNotFoundCode].
+func newFirstMatchStrategy(providers []NamedProvider, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
+	return firstMatchStrategyFn(providers, runMode)
 }
 
-func firstMatchStrategyFn[T FlagTypes](providers []NamedProvider) StrategyFn[T] {
+func firstMatchStrategyFn[T FlagTypes](providers []NamedProvider, runMode runModeFn[T]) StrategyFn[T] {
 	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
-		for _, provider := range providers {
-			resolution := Evaluate(ctx, provider, flag, defaultValue, flatCtx)
+		for providerName, resolution := range runMode(ctx, providers, flag, defaultValue, flatCtx) {
 			if resolution.Error() != nil && resolution.ResolutionDetail().ErrorCode == of.FlagNotFoundCode {
 				continue
 			}
@@ -30,7 +29,7 @@ func firstMatchStrategyFn[T FlagTypes](providers []NamedProvider) StrategyFn[T] 
 			}
 
 			// success!
-			resolution.FlagMetadata = setFlagMetadata(StrategyFirstMatch, provider.Name(), resolution.FlagMetadata)
+			resolution.FlagMetadata = setFlagMetadata(StrategyFirstMatch, providerName, resolution.FlagMetadata)
 			return resolution
 		}
 

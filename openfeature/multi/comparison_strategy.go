@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	of "github.com/open-feature/go-sdk/openfeature"
-	"golang.org/x/sync/errgroup"
 )
 
 // ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
@@ -24,8 +23,8 @@ type Comparator func(values []any) bool
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
 // called without setting a [Comparator], and the returned object(s) are not comparable, then an error will occur.
-func newComparisonStrategy(providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
-	return evaluateComparison[FlagTypes](providers, fallbackProvider, comparator)
+func newComparisonStrategy(providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
+	return evaluateComparison(providers, fallbackProvider, comparator, runMode)
 }
 
 func defaultComparator(values []any) bool {
@@ -81,7 +80,7 @@ func comparisonResolutionError(metadata of.FlagMetadata) of.ResolutionError {
 	return of.NewGeneralResolutionError("comparison failure")
 }
 
-func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
+func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator, runMode runModeFn[T]) StrategyFn[T] {
 	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
 		if comparator == nil {
 			comparator = defaultComparator
@@ -114,69 +113,39 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			res  *of.GenericResolutionDetail[T]
 		}
 
-		resultChan := make(chan *namedResult, len(providers))
-		notFoundChan := make(chan any)
-		errGrp, grpCtx := errgroup.WithContext(ctx)
-		for _, provider := range providers {
-			closedProvider := provider
-			errGrp.Go(func() error {
-				result := Evaluate(grpCtx, closedProvider, flag, defaultValue, evalCtx)
-				notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
-				if !notFound && result.Error() != nil {
-					return &ProviderError{
-						ProviderName: closedProvider.Name(),
-						err:          result.Error(),
-					}
-				}
-				if !notFound {
-					resultChan <- &namedResult{
-						name: closedProvider.Name(),
-						res:  &result,
-					}
-				} else {
-					notFoundChan <- struct{}{}
-				}
-				return nil
-			})
-		}
-
 		results := make([]namedResult, 0, len(providers))
 		resultValues := make([]T, 0, len(providers))
 		notFoundCount := 0
-
-	ListenerLoop:
-		for {
-			select {
-			case <-grpCtx.Done():
-				// Error occurred
-				result := BuildDefaultResult(StrategyComparison, defaultValue, grpCtx.Err())
+		for name, result := range runMode(ctx, providers, flag, defaultValue, evalCtx) {
+			notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
+			if !notFound && result.Error() != nil {
+				result := BuildDefaultResult(StrategyComparison, defaultValue, result.Error())
 				result.FlagMetadata[MetadataFallbackUsed] = false
 				result.FlagMetadata[MetadataIsDefaultValue] = true
-				result.FlagMetadata[MetadataEvaluationError] = grpCtx.Err().Error()
+				result.FlagMetadata[MetadataEvaluationError] = result.Error()
 				result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
 				return result
-			case r := <-resultChan:
-				results = append(results, *r)
+			}
+			if !notFound {
+				r := namedResult{
+					name: name,
+					res:  &result,
+				}
+				results = append(results, r)
 				resultValues = append(resultValues, r.res.Value)
-				if (len(results) + notFoundCount) == len(providers) {
-					// All results accounted for
-					break ListenerLoop
-				}
-			case <-notFoundChan:
-				notFoundCount += 1
-				if notFoundCount == len(providers) {
-					result := BuildDefaultResult(StrategyComparison, defaultValue, nil)
-					result.FlagMetadata[MetadataFallbackUsed] = false
-					result.FlagMetadata[MetadataIsDefaultValue] = true
-					result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
-					return result
-				}
-				if (len(results) + notFoundCount) == len(providers) {
-					// All results accounted for
-					break ListenerLoop
-				}
+			} else {
+				notFoundCount++
 			}
 		}
+
+		if notFoundCount == len(providers) {
+			result := BuildDefaultResult(StrategyComparison, defaultValue, nil)
+			result.FlagMetadata[MetadataFallbackUsed] = false
+			result.FlagMetadata[MetadataIsDefaultValue] = true
+			result.ResolutionError = comparisonResolutionError(result.FlagMetadata)
+			return result
+		}
+
 		// Evaluate Results Are Equal
 		metadata := make(of.FlagMetadata)
 		metadata[MetadataStrategyUsed] = StrategyComparison

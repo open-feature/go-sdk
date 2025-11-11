@@ -82,6 +82,7 @@ type (
 		hooks            []of.Hook
 		providers        []*namedProvider
 		customComparator Comparator
+		runMode          runModeFn[FlagTypes]
 	}
 
 	// namedEventHandler is a wrapper around an [of.EventHandler] that includes the provider name.
@@ -196,6 +197,13 @@ func WithProvider(providerName string, provider of.FeatureProvider, hooks ...of.
 	}
 }
 
+// WithRunModeParallel configures the run mode to evaluate providers in parallel.
+func WithRunModeParallel() Option {
+	return func(conf *configuration) {
+		conf.runMode = runModeParallel[FlagTypes]
+	}
+}
+
 // Multiprovider Implementation
 func buildMetadata(m []NamedProvider) of.Metadata {
 	var separator string
@@ -219,6 +227,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	config := &configuration{
 		logger:    slog.New(slog.DiscardHandler),
 		providers: make([]*namedProvider, 0, 2),
+		runMode:   runModeSequential[FlagTypes],
 	}
 
 	for _, opt := range options {
@@ -270,11 +279,11 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	var strategy StrategyFn[FlagTypes]
 	switch evaluationStrategy {
 	case StrategyFirstMatch:
-		strategy = newFirstMatchStrategy(multiProvider.Providers())
+		strategy = newFirstMatchStrategy(multiProvider.Providers(), config.runMode)
 	case StrategyFirstSuccess:
-		strategy = newFirstSuccessStrategy(multiProvider.Providers())
+		strategy = newFirstSuccessStrategy(multiProvider.Providers(), config.runMode)
 	case StrategyComparison:
-		strategy = newComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator)
+		strategy = newComparisonStrategy(multiProvider.Providers(), config.fallbackProvider, config.customComparator, config.runMode)
 	default:
 		if config.customStrategy == nil {
 			return nil, fmt.Errorf("%s is an unknown evaluation strategy", evaluationStrategy)

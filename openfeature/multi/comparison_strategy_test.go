@@ -109,7 +109,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider",
 						FeatureProvider: provider,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -137,7 +137,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -172,7 +172,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -206,7 +206,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -248,7 +248,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider4",
 						FeatureProvider: provider4,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -284,7 +284,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider3",
 						FeatureProvider: provider3,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -314,7 +314,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, defaultVal, result.Value)
@@ -357,7 +357,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider4",
 						FeatureProvider: provider4,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
@@ -387,7 +387,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 						name:            "test-provider2",
 						FeatureProvider: provider2,
 					},
-				}, fallback, nil)
+				}, fallback, nil, runModeParallel)
 
 				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, defaultVal, result.Value)
@@ -506,7 +506,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 					name:            "test-provider2",
 					FeatureProvider: provider2,
 				},
-			}, fallback, nil)
+			}, fallback, nil, runModeParallel)
 
 			result := strategy(context.Background(), testFlag, tc.defaultValue, of.FlattenedContext{})
 			assert.Equal(t, tc.successValue, result.Value)
@@ -537,7 +537,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 					name:            "test-provider2",
 					FeatureProvider: provider2,
 				},
-			}, fallback, nil)
+			}, fallback, nil, runModeParallel)
 			result := strategy(context.Background(), testFlag, tc.defaultValue, of.FlattenedContext{})
 			assert.Equal(t, tc.successValue, result.Value)
 			assert.NoError(t, result.Error())
@@ -567,7 +567,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
+		}, fallback, nil, runModeParallel)
 
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
@@ -598,7 +598,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
+		}, fallback, nil, runModeParallel)
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
@@ -630,7 +630,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, fallback, func(val []any) bool {
 			return true
-		})
+		}, runModeParallel)
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
@@ -662,7 +662,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, fallback, func(val []any) bool {
 			return true
-		})
+		}, runModeParallel)
 
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
@@ -697,7 +697,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, fallback, func(val []any) bool {
 			return false
-		})
+		}, runModeParallel)
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
@@ -727,7 +727,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				name:            "test-provider2",
 				FeatureProvider: provider2,
 			},
-		}, fallback, nil)
+		}, fallback, nil, runModeParallel)
 		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
