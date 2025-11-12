@@ -114,15 +114,17 @@ Build your custom strategy like this:
 
 ```go
 option := multi.WithCustomStrategy(func() StrategyFn[FlagTypes] {
- return func(resolutions ResolutionIterator[FlagTypes], defaultValue FlagTypes, fallbackEvaluator FallbackEvaluator[FlagTypes]) *openfeature.GenericResolutionDetail[FlagTypes] {
-  // Iterate through provider resolutions
-  for name, resolution := range resolutions {
-   // Your custom logic here
-   // ...
-  }
-  // Return selected resolution or use fallbackEvaluator if needed
-  return resolution
-    }
+	return func(resolutions ResolutionIterator[FlagTypes], defaultValue FlagTypes, fallbackEvaluator FallbackEvaluator[FlagTypes]) *openfeature.GenericResolutionDetail[FlagTypes] {
+		// Iterate through provider resolutions and implement custom logic.
+		// For example, this strategy returns the first successful resolution.
+		for _, resolution := range resolutions {
+			if resolution.Error() == nil {
+				return resolution
+			}
+		}
+		// If no provider was successful, return a default result.
+		return multi.BuildDefaultResult(multi.StrategyCustom, defaultValue, errors.New("no successful resolution found"))
+	}
 })
 ```
 
