@@ -1,20 +1,18 @@
 package multi
 
 import (
-	"context"
-
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
 // newFirstMatchStrategy returns a [StrategyFn] that returns the result of the first [of.FeatureProvider] whose response is
 // not [of.FlagNotFoundCode]. The definition of "first" depends on the configured run-mode. With sequential execution, it's the first provider in order. With parallel, it's the first to return a result.
-func newFirstMatchStrategy(providers []NamedProvider, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
-	return firstMatchStrategyFn(providers, runMode)
+func newFirstMatchStrategy() StrategyFn[FlagTypes] {
+	return firstMatchStrategyFn[FlagTypes]()
 }
 
-func firstMatchStrategyFn[T FlagTypes](providers []NamedProvider, runMode runModeFn[T]) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
-		for providerName, resolution := range runMode(ctx, providers, flag, defaultValue, flatCtx) {
+func firstMatchStrategyFn[T FlagTypes]() StrategyFn[T] {
+	return func(resolutions ResolutionIterator[T], defaultValue T, _ FallbackEvaluator[T]) *of.GenericResolutionDetail[T] {
+		for providerName, resolution := range resolutions {
 			if resolution.Error() != nil && resolution.ResolutionDetail().ErrorCode == of.FlagNotFoundCode {
 				continue
 			}

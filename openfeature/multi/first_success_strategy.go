@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"context"
 	"errors"
 
 	of "github.com/open-feature/go-sdk/openfeature"
@@ -9,14 +8,14 @@ import (
 
 // newFirstSuccessStrategy returns a [StrategyFn] that returns the result of the First [of.FeatureProvider] whose response
 // is not an error. The definition of "first" depends on the configured run-mode. With sequential execution, it's the first provider in order. With parallel, it's the first to return a result.
-func newFirstSuccessStrategy(providers []NamedProvider, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
-	return firstSuccessStrategyFn(providers, runMode)
+func newFirstSuccessStrategy() StrategyFn[FlagTypes] {
+	return firstSuccessStrategyFn[FlagTypes]()
 }
 
-func firstSuccessStrategyFn[T FlagTypes](providers []NamedProvider, runMode runModeFn[T]) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
-		resolutionErrors := make([]error, 0, len(providers))
-		for name, resolution := range runMode(ctx, providers, flag, defaultValue, flatCtx) {
+func firstSuccessStrategyFn[T FlagTypes]() StrategyFn[T] {
+	return func(resolutions ResolutionIterator[T], defaultValue T, _ FallbackEvaluator[T]) *of.GenericResolutionDetail[T] {
+		resolutionErrors := make([]error, 0)
+		for name, resolution := range resolutions {
 			if resolution.Error() != nil {
 				resolutionErrors = append(resolutionErrors, resolution.Error())
 				continue

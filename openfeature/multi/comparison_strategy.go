@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"context"
 	"errors"
 	"reflect"
 	"slices"
@@ -10,9 +9,15 @@ import (
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
-// ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
-// strategy without a custom [Comparator] function configured when response objects are not comparable.
-var ErrAggregationNotAllowed = errors.New(errAggregationNotAllowedText)
+var (
+	// ErrAggregationNotAllowed is an error returned if [of.FeatureProvider.ObjectEvaluation] is called using the [StrategyComparison]
+	// strategy without a custom [Comparator] function configured when response objects are not comparable.
+	ErrAggregationNotAllowed = errors.New(errAggregationNotAllowedText)
+
+	// errNoFallbackProvider is an error returned when a comparison failure occurs in [StrategyComparison]
+	// and no fallback provider is configured to handle the disagreement.
+	errNoFallbackProvider = errors.New("no fallback provider configured")
+)
 
 // Comparator is used to compare the results of [of.FeatureProvider.ObjectEvaluation].
 // This is required if returned results are not comparable.
@@ -23,8 +28,8 @@ type Comparator func(values []any) bool
 // can be passed as long as ObjectEvaluation is never called with objects that are not comparable. The custom [Comparator]
 // will only be used for [of.FeatureProvider.ObjectEvaluation] if set. If [of.FeatureProvider.ObjectEvaluation] is
 // called without setting a [Comparator], and the returned object(s) are not comparable, then an error will occur.
-func newComparisonStrategy(providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator, runMode runModeFn[FlagTypes]) StrategyFn[FlagTypes] {
-	return evaluateComparison(providers, fallbackProvider, comparator, runMode)
+func newComparisonStrategy(fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[FlagTypes] {
+	return evaluateComparison[FlagTypes](fallbackProvider, comparator)
 }
 
 func defaultComparator(values []any) bool {
@@ -80,8 +85,8 @@ func comparisonResolutionError(metadata of.FlagMetadata) of.ResolutionError {
 	return of.NewGeneralResolutionError("comparison failure")
 }
 
-func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider of.FeatureProvider, comparator Comparator, runMode runModeFn[T]) StrategyFn[T] {
-	return func(ctx context.Context, flag string, defaultValue T, evalCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+func evaluateComparison[T FlagTypes](fallbackProvider of.FeatureProvider, comparator Comparator) StrategyFn[T] {
+	return func(resolutions ResolutionIterator[T], defaultValue T, evaluator FallbackEvaluator[T]) *of.GenericResolutionDetail[T] {
 		if comparator == nil {
 			comparator = defaultComparator
 			switch any(defaultValue).(type) {
@@ -99,24 +104,17 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			}
 		}
 
-		// Short circuit if there's only one provider as no comparison nor workers are needed
-		if len(providers) == 1 {
-			result := Evaluate(ctx, providers[0], flag, defaultValue, evalCtx)
-			metadata := setFlagMetadata(StrategyComparison, providers[0].Name(), make(of.FlagMetadata))
-			metadata[MetadataFallbackUsed] = false
-			result.FlagMetadata = mergeFlagMeta(result.FlagMetadata, metadata)
-			return result
-		}
-
 		type namedResult struct {
 			name string
 			res  *of.GenericResolutionDetail[T]
 		}
 
-		results := make([]namedResult, 0, len(providers))
-		resultValues := make([]T, 0, len(providers))
+		results := make([]*namedResult, 0)
+		resultValues := make([]T, 0)
 		notFoundCount := 0
-		for name, result := range runMode(ctx, providers, flag, defaultValue, evalCtx) {
+		total := 0
+		for name, result := range resolutions {
+			total += 1
 			notFound := result.ResolutionDetail().ErrorCode == of.FlagNotFoundCode
 			if !notFound && result.Error() != nil {
 				resultError := BuildDefaultResult(StrategyComparison, defaultValue, result.Error())
@@ -127,9 +125,9 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 				return resultError
 			}
 			if !notFound {
-				r := namedResult{
+				r := &namedResult{
 					name: name,
-					res:  &result,
+					res:  result,
 				}
 				results = append(results, r)
 				resultValues = append(resultValues, r.res.Value)
@@ -138,7 +136,7 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			}
 		}
 
-		if notFoundCount == len(providers) {
+		if notFoundCount == total {
 			result := BuildDefaultResult(StrategyComparison, defaultValue, nil)
 			result.FlagMetadata[MetadataFallbackUsed] = false
 			result.FlagMetadata[MetadataIsDefaultValue] = true
@@ -146,6 +144,14 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			return result
 		}
 
+		// Short circuit if there's only one provider as no comparison nor workers are needed
+		if total == 1 {
+			result := results[0].res
+			metadata := setFlagMetadata(StrategyComparison, results[0].name, make(of.FlagMetadata))
+			metadata[MetadataFallbackUsed] = false
+			result.FlagMetadata = mergeFlagMeta(result.FlagMetadata, metadata)
+			return result
+		}
 		// Evaluate Results Are Equal
 		metadata := make(of.FlagMetadata)
 		metadata[MetadataStrategyUsed] = StrategyComparison
@@ -161,8 +167,8 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			metadata[MetadataFallbackUsed] = false
 			metadata[MetadataIsDefaultValue] = false
 			metadata[MetadataComparisonDisagreeingProviders] = []string{}
-			success := make([]string, 0, len(providers))
-			variants := make([]string, 0, len(providers))
+			success := make([]string, 0, total)
+			variants := make([]string, 0, total)
 			// Gather metadata from provider results
 			for _, r := range results {
 				metadata[r.name] = r.res.FlagMetadata
@@ -181,7 +187,7 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			} else {
 				variantResults = strings.Join(variants, ", ")
 			}
-			return of.GenericResolutionDetail[T]{
+			return &of.GenericResolutionDetail[T]{
 				Value: resultValues[0], // All values should be equal
 				ProviderResolutionDetail: of.ProviderResolutionDetail{
 					Reason:       ReasonAggregated,
@@ -192,13 +198,7 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 		}
 
 		if fallbackProvider != nil {
-			fallbackResult := Evaluate(
-				ctx,
-				&namedProvider{name: "fallback", FeatureProvider: fallbackProvider},
-				flag,
-				defaultValue,
-				evalCtx,
-			)
+			fallbackResult := evaluator(fallbackProvider)
 			fallbackResult.FlagMetadata = mergeFlagMeta(fallbackResult.FlagMetadata, metadata)
 			fallbackResult.FlagMetadata[MetadataFallbackUsed] = true
 			fallbackResult.FlagMetadata[MetadataIsDefaultValue] = false
@@ -208,7 +208,7 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			return fallbackResult
 		}
 
-		defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errors.New("no fallback provider configured"))
+		defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, errNoFallbackProvider)
 		defaultResult.FlagMetadata = mergeFlagMeta(defaultResult.FlagMetadata, metadata)
 		defaultResult.FlagMetadata[MetadataFallbackUsed] = false
 		defaultResult.FlagMetadata[MetadataIsDefaultValue] = true
