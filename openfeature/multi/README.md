@@ -95,7 +95,7 @@ Where:
 
 ```go
 ResolutionIterator[T FlagTypes] = iter.Seq2[string, openfeature.GenericResolutionDetail[T]]
-FallbackEvaluator[T FlagTypes] = func(fallbackProvider openfeature.FeatureProvider) openfeature.GenericResolutionDetail[T]
+FallbackEvaluator[T FlagTypes] = func(fallbackProvider openfeature.FeatureProvider) *openfeature.GenericResolutionDetail[T]
 ```
 
 The strategy function receives:
