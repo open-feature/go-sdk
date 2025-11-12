@@ -88,7 +88,7 @@ A custom strategy can be defined using the `WithCustomStrategy` `Option` along w
 A custom strategy is defined by the following generic function signature:
 
 ```go
-StrategyFn[T FlagTypes] func(resolutions ResolutionIterator[T], defaultValue T, fallbackEvaluator FallbackEvaluator[T]) openfeature.GenericResolutionDetail[T]
+StrategyFn[T FlagTypes] func(resolutions ResolutionIterator[T], defaultValue T, fallbackEvaluator FallbackEvaluator[T]) *openfeature.GenericResolutionDetail[T]
 ```
 
 Where:
