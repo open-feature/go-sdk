@@ -29,14 +29,14 @@ type (
 
 // Compile-time interface compliance checks
 var (
-	_ NamedProvider      = (*hookIsolator)(nil)
+	_ namedProvider      = (*hookIsolator)(nil)
 	_ of.FeatureProvider = (*hookIsolator)(nil)
 	_ of.Hook            = (*hookIsolator)(nil)
 	_ of.EventHandler    = (*eventHandlingHookIsolator)(nil)
 )
 
 // isolateProvider wraps a [of.FeatureProvider] to execute its hooks along with any additional ones.
-func isolateProvider(provider NamedProvider, extraHooks []of.Hook) *hookIsolator {
+func isolateProvider(provider namedProvider, extraHooks []of.Hook) *hookIsolator {
 	return &hookIsolator{
 		FeatureProvider: provider,
 		hooks:           append(provider.Hooks(), extraHooks...),
@@ -46,7 +46,7 @@ func isolateProvider(provider NamedProvider, extraHooks []of.Hook) *hookIsolator
 
 // isolateProviderWithEvents wraps a [of.FeatureProvider] to execute its hooks along with any additional ones. This is
 // identical to [isolateProvider], but also this will also implement [of.EventHandler].
-func isolateProviderWithEvents(provider NamedProvider, extraHooks []of.Hook) *eventHandlingHookIsolator {
+func isolateProviderWithEvents(provider namedProvider, extraHooks []of.Hook) *eventHandlingHookIsolator {
 	return &eventHandlingHookIsolator{*isolateProvider(provider, extraHooks)}
 }
 
