@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/open-feature/go-sdk/compare/v1.17.0...v1.17.1) (2025-11-16)
+
+
+### 🧹 Chore
+
+* update LICENSE and .gitignore ([#448](https://github.com/open-feature/go-sdk/issues/448)) ([1e080b2](https://github.com/open-feature/go-sdk/commit/1e080b2148f6268ca29b218cc9318c88c384209e))
+
 ## [1.17.0](https://github.com/open-feature/go-sdk/compare/v1.16.0...v1.17.0) (2025-11-05)
 
 
