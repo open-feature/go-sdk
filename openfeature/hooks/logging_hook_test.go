@@ -2,7 +2,6 @@ package hooks
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"log/slog"
 	"os"
@@ -93,7 +92,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 
 	t.Run("test boolean success", func(t *testing.T) {
 		res, err := client.BooleanValue(
-			context.Background(),
+			t.Context(),
 			"boolFlag",
 			false,
 			openfeature.NewEvaluationContext(
@@ -131,7 +130,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 
 	t.Run("test boolean error", func(t *testing.T) {
 		res, err := client.BooleanValue(
-			context.Background(),
+			t.Context(),
 			"non-existing",
 			false,
 			openfeature.NewEvaluationContext(
@@ -170,7 +169,7 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 
 func prepareOutput(buf *bytes.Buffer, t *testing.T) map[string]map[string]any {
 	ms := make(map[string]map[string]any)
-	for _, line := range bytes.Split(buf.Bytes(), []byte{'\n'}) {
+	for line := range bytes.SplitSeq(buf.Bytes(), []byte{'\n'}) {
 		if len(line) == 0 {
 			continue
 		}

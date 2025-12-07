@@ -1,7 +1,6 @@
 package openfeature
 
 import (
-	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -784,11 +783,9 @@ func TestLateBindingOfDefaultProvider(t *testing.T) {
 	defaultProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(StringResolutionDetail{Value: expectedResultFromLateDefaultProvider})
 
 	client := NewClient("app")
-	strResult, err := client.StringValue(context.TODO(), "flag", expectedResultUnboundProvider, EvaluationContext{})
+	strResult, err := client.StringValue(t.Context(), "flag", expectedResultUnboundProvider, EvaluationContext{})
 	if err != nil {
-		if err != nil {
-			t.Errorf("flag evaluation failed %v", err)
-		}
+		t.Errorf("flag evaluation failed %v", err)
 	}
 
 	if strResult != expectedResultUnboundProvider {
@@ -800,11 +797,9 @@ func TestLateBindingOfDefaultProvider(t *testing.T) {
 		t.Errorf("provider registration failed %v", err)
 	}
 
-	strResult, err = client.StringValue(context.TODO(), "flag", "default", EvaluationContext{})
+	strResult, err = client.StringValue(t.Context(), "flag", "default", EvaluationContext{})
 	if err != nil {
-		if err != nil {
-			t.Errorf("flag evaluation failed %v", err)
-		}
+		t.Errorf("flag evaluation failed %v", err)
 	}
 
 	if strResult != expectedResultFromLateDefaultProvider {

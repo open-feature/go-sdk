@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -29,7 +28,7 @@ func FuzzBooleanEvaluation(f *testing.F) {
 	f.Add("FoO234", false)
 	f.Add("FoO2\b34", true)
 	f.Fuzz(func(t *testing.T, flagKey string, defaultValue bool) {
-		res, err := client.BooleanValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
+		res, err := client.BooleanValueDetails(t.Context(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {
 				return
@@ -50,7 +49,7 @@ func FuzzStringEvaluation(f *testing.F) {
 	f.Add("FoO234", "Ba1232")
 	f.Add("FoO2\b34", "BaaR\b2312")
 	f.Fuzz(func(t *testing.T, flagKey string, defaultValue string) {
-		res, err := client.StringValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
+		res, err := client.StringValueDetails(t.Context(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {
 				return
@@ -71,7 +70,7 @@ func FuzzIntEvaluation(f *testing.F) {
 	f.Add("FoO234", int64(100029))
 	f.Add("FoO2\b34", int64(-1))
 	f.Fuzz(func(t *testing.T, flagKey string, defaultValue int64) {
-		res, err := client.IntValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
+		res, err := client.IntValueDetails(t.Context(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {
 				return
@@ -92,7 +91,7 @@ func FuzzFloatEvaluation(f *testing.F) {
 	f.Add("FoO234", 0.00004)
 	f.Add("FoO2\b34", -1.9203)
 	f.Fuzz(func(t *testing.T, flagKey string, defaultValue float64) {
-		res, err := client.FloatValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
+		res, err := client.FloatValueDetails(t.Context(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {
 				return
@@ -113,7 +112,7 @@ func FuzzObjectEvaluation(f *testing.F) {
 	f.Add("FoO234", "-1.23")
 	f.Add("FoO2\b34", "1")
 	f.Fuzz(func(t *testing.T, flagKey string, defaultValue string) { // any is not supported, using a string
-		res, err := client.ObjectValueDetails(context.Background(), flagKey, defaultValue, openfeature.EvaluationContext{})
+		res, err := client.ObjectValueDetails(t.Context(), flagKey, defaultValue, openfeature.EvaluationContext{})
 		if err != nil {
 			if res.ErrorCode == openfeature.FlagNotFoundCode {
 				return

@@ -105,7 +105,7 @@ func TestTestAwareProvider(t *testing.T) {
 
 	t.Run("test bool evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.BooleanEvaluation(context.TODO(), "ff-bool", false, openfeature.FlattenedContext{})
+		result := taw.BooleanEvaluation(t.Context(), "ff-bool", false, openfeature.FlattenedContext{})
 		if result.Value != true {
 			t.Errorf("got %v, want %v", result, true)
 		}
@@ -113,7 +113,7 @@ func TestTestAwareProvider(t *testing.T) {
 
 	t.Run("test string evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.StringEvaluation(context.TODO(), "ff-string", "otherStr", openfeature.FlattenedContext{})
+		result := taw.StringEvaluation(t.Context(), "ff-string", "otherStr", openfeature.FlattenedContext{})
 		if result.Value != "str" {
 			t.Errorf("got %v, want %v", result, true)
 		}
@@ -121,7 +121,7 @@ func TestTestAwareProvider(t *testing.T) {
 
 	t.Run("test int evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.IntEvaluation(context.TODO(), "ff-int", int64(2), openfeature.FlattenedContext{})
+		result := taw.IntEvaluation(t.Context(), "ff-int", int64(2), openfeature.FlattenedContext{})
 		if result.Value != 1 {
 			t.Errorf("got %v, want %v", result, true)
 		}
@@ -129,14 +129,14 @@ func TestTestAwareProvider(t *testing.T) {
 
 	t.Run("test float evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.FloatEvaluation(context.TODO(), "ff-float", float64(2), openfeature.FlattenedContext{})
+		result := taw.FloatEvaluation(t.Context(), "ff-float", float64(2), openfeature.FlattenedContext{})
 		if result.Value != float64(1) {
 			t.Errorf("got %v, want %v", result, true)
 		}
 	})
 	t.Run("test obj evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.ObjectEvaluation(context.TODO(), "ff-obj", "stringobj", openfeature.FlattenedContext{})
+		result := taw.ObjectEvaluation(t.Context(), "ff-obj", "stringobj", openfeature.FlattenedContext{})
 		if result.Value != "obj" {
 			t.Errorf("got %v, want %v", result, true)
 		}
@@ -152,7 +152,7 @@ func Test_TestAwareProviderPanics(t *testing.T) {
 		}()
 
 		taw := NewTestProvider()
-		taw.BooleanEvaluation(context.TODO(), "my-flag", true, openfeature.FlattenedContext{})
+		taw.BooleanEvaluation(t.Context(), "my-flag", true, openfeature.FlattenedContext{})
 	})
 }
 

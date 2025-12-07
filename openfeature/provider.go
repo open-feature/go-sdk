@@ -3,6 +3,7 @@ package openfeature
 import (
 	"context"
 	"errors"
+	"maps"
 )
 
 const (
@@ -225,9 +226,7 @@ func (t TrackingEventDetails) Add(key string, value any) TrackingEventDetails {
 func (t TrackingEventDetails) Attributes() map[string]any {
 	// copy fields to new map to prevent mutation (maps are passed by reference)
 	fields := make(map[string]any, len(t.attributes))
-	for key, value := range t.attributes {
-		fields[key] = value
-	}
+	maps.Copy(fields, t.attributes)
 	return fields
 }
 

@@ -12,16 +12,44 @@ linters:
     - copyloopvar
     - dupword
     - errcheck
+    - gosec
     - govet
     - ineffassign
     - intrange
     - misspell
+    - modernize
+    - nolintlint
     - staticcheck
     - unused
+    - usetesting
   settings:
+    gosec:
+      excludes:
+        - G101
+        - G404
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+      enable-all: true
+    nolintlint:
+      allow-unused: false
+      require-specific: true
     staticcheck:
       checks:
         - "all"
+    usetesting:
+      context-background: true
+      context-todo: true
+      os-chdir: true
+      os-mkdir-temp: true
+      os-setenv: true
+      os-temp-dir: true
+      os-create-temp: true
+  exclusions:
+    generated: lax
+    presets:
+      - std-error-handling
 
 issues:
   max-issues-per-linter: 0

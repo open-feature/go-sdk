@@ -29,7 +29,7 @@ func TestRequirement_2_1_1(t *testing.T) {
 	fieldName := "Name"
 
 	field := metaValue.FieldByName(fieldName)
-	if field == (reflect.Value{}) {
+	if !field.IsValid() {
 		t.Errorf("field %s doesn't exist in the Metadata struct", fieldName)
 	}
 }

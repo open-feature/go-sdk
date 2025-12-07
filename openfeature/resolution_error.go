@@ -149,7 +149,6 @@ func (e *ProviderInitError) Error() string {
 	return fmt.Sprintf("ProviderInitError: %s (code: %s)", e.Message, e.ErrorCode)
 }
 
-//nolint:staticcheck // Renaming these would be a breaking change
 var (
 	// ProviderNotReadyError signifies that an operation failed because the provider is in a NOT_READY state.
 	ProviderNotReadyError = NewProviderNotReadyResolutionError("provider not yet initialized")
