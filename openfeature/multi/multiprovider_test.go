@@ -266,7 +266,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 		"foo": "bar",
 	})
 	eventChan := make(chan of.Event)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	go func() {
 		select {
 		case e := <-mp.EventChannel():
@@ -417,7 +417,7 @@ func TestMultiProvider_Track(t *testing.T) {
 		t.Cleanup(mp.Shutdown)
 
 		// Don't initialize the multi-provider
-		ctx := context.Background()
+		ctx := t.Context()
 		trackingEventName := "button-clicked"
 		evalCtx := of.NewEvaluationContext("user-123", map[string]any{})
 		details := of.TrackingEventDetails{}

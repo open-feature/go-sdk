@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"context"
 	"strconv"
 	"testing"
 
@@ -37,7 +36,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 					})
 				}
 				strategy := newFirstMatchStrategy(providers)
-				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 				assert.Equal(t, providers[0].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -54,7 +53,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 					})
 				}
 				strategy := newFirstMatchStrategy(providers)
-				result := strategy(context.Background(), "test-string", tt.defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.defaultVal, result.Value)
 				assert.Equal(t, of.DefaultReason, result.Reason)
 				assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -75,7 +74,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				}
 
 				strategy := newFirstMatchStrategy(providers)
-				result := strategy(context.Background(), "test-flag", tt.defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), "test-flag", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 				assert.Equal(t, providers[1].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -99,7 +98,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 
 				}
 				strategy := newFirstMatchStrategy(providers)
-				result := strategy(context.Background(), "test-string", tt.successVal, of.FlattenedContext{})
+				result := strategy(t.Context(), "test-string", tt.successVal, of.FlattenedContext{})
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Equal(t, of.ErrorReason, result.Reason)
 				assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())

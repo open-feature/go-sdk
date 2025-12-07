@@ -111,7 +111,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -139,7 +139,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -174,7 +174,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -208,7 +208,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -250,7 +250,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -286,7 +286,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -316,7 +316,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, defaultVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -359,7 +359,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyComparison, result.FlagMetadata[MetadataStrategyUsed])
@@ -389,7 +389,7 @@ func Test_ComparisonStrategy_Evaluation(t *testing.T) {
 					},
 				}, fallback, nil)
 
-				result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+				result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 				assert.Equal(t, defaultVal, result.Value)
 				assert.Equal(t, of.ErrorReason, result.Reason)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
@@ -508,7 +508,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				},
 			}, fallback, nil)
 
-			result := strategy(context.Background(), testFlag, tc.defaultValue, of.FlattenedContext{})
+			result := strategy(t.Context(), testFlag, tc.defaultValue, of.FlattenedContext{})
 			assert.Equal(t, tc.successValue, result.Value)
 			assert.NoError(t, result.Error())
 			assert.Equal(t, ReasonAggregated, result.Reason)
@@ -538,7 +538,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 					FeatureProvider: provider2,
 				},
 			}, fallback, nil)
-			result := strategy(context.Background(), testFlag, tc.defaultValue, of.FlattenedContext{})
+			result := strategy(t.Context(), testFlag, tc.defaultValue, of.FlattenedContext{})
 			assert.Equal(t, tc.successValue, result.Value)
 			assert.NoError(t, result.Error())
 			assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -569,7 +569,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			},
 		}, fallback, nil)
 
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -599,7 +599,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				FeatureProvider: provider2,
 			},
 		}, fallback, nil)
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -631,7 +631,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		}, fallback, func(val []any) bool {
 			return true
 		})
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -664,7 +664,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 			return true
 		})
 
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregated, result.Reason)
@@ -698,7 +698,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		}, fallback, func(val []any) bool {
 			return false
 		})
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, successVal, result.Value)
 		assert.NoError(t, result.Error())
 		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
@@ -728,7 +728,7 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 				FeatureProvider: provider2,
 			},
 		}, fallback, nil)
-		result := strategy(context.Background(), testFlag, defaultVal, of.FlattenedContext{})
+		result := strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
 		assert.Equal(t, defaultVal, result.Value)
 		assert.Equal(t, of.ErrorReason, result.Reason)
 		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)

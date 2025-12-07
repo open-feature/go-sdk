@@ -18,7 +18,7 @@ func TestRequirement_3_1_1(t *testing.T) {
 	fieldName := "targetingKey"
 
 	field := metaValue.FieldByName(fieldName)
-	if field == (reflect.Value{}) {
+	if !field.IsValid() {
 		t.Errorf("field %s doesn't exist in the EvaluationContext struct", fieldName)
 	}
 }
@@ -26,9 +26,7 @@ func TestRequirement_3_1_1(t *testing.T) {
 // The evaluation context MUST support the inclusion of custom fields,
 // having keys of type `string`, and values of type `boolean | string | number | datetime | structure`.
 func TestRequirement_3_1_2(t *testing.T) {
-	evalCtx := EvaluationContext{}
-
-	tpe := reflect.TypeOf(evalCtx.attributes)
+	tpe := reflect.TypeFor[map[string]any]()
 	if tpe.Kind() != reflect.Map {
 		t.Fatalf("expected EvaluationContext.attributes kind to be map, got %s", tpe.Kind())
 	}
@@ -108,7 +106,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 			"user":               2,
 		},
 	}
-	transactionCtx := WithTransactionContext(context.Background(), transactionEvalCtx)
+	transactionCtx := WithTransactionContext(t.Context(), transactionEvalCtx)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -173,7 +171,7 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 
 func TestRequirement_3_3_1(t *testing.T) {
 	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		ctx = WithTransactionContext(ctx, EvaluationContext{})
 		val, ok := ctx.Value(internal.TransactionContext).(EvaluationContext)
 
@@ -220,7 +218,7 @@ func TestMergeTransactionContext(t *testing.T) {
 		"overwrite": "new",
 	})
 
-	ctx := WithTransactionContext(context.Background(), oldEvalCtx)
+	ctx := WithTransactionContext(t.Context(), oldEvalCtx)
 	ctx = MergeTransactionContext(ctx, newEvalCtx)
 
 	expectedMergedEvalCtx := EvaluationContext{

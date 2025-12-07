@@ -104,7 +104,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("fast provider succeeds within timeout", func(t *testing.T) {
 		fastProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, fastProvider)
@@ -116,7 +116,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("slow provider times out", func(t *testing.T) {
 		slowProvider := &testContextAwareProvider{initDelay: 800 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, slowProvider)
@@ -131,7 +131,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("async initialization returns immediately", func(t *testing.T) {
 		asyncProvider := &testContextAwareProvider{initDelay: 200 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 		defer cancel()
 
 		start := time.Now()
@@ -149,7 +149,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("named provider with context works", func(t *testing.T) {
 		namedProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetNamedProviderWithContextAndWait(ctx, "test-domain", namedProvider)
@@ -161,7 +161,7 @@ func TestContextAwareInitialization(t *testing.T) {
 	t.Run("backward compatibility with regular provider", func(t *testing.T) {
 		legacyProvider := &NoopProvider{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, legacyProvider)
@@ -178,7 +178,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	t.Run("detects ContextAwareStateHandler", func(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -193,7 +193,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	t.Run("falls back to regular StateHandler", func(t *testing.T) {
 		provider := &NoopProvider{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -208,7 +208,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 	t.Run("handles timeout in context-aware provider", func(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 500 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -243,7 +243,7 @@ func TestContextAwareShutdown(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
 		// Set the provider first
-		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, provider)
@@ -264,7 +264,7 @@ func TestContextAwareShutdown(t *testing.T) {
 		slowShutdownProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond} // Fast init
 
 		// Set the provider first with generous timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(ctx, slowShutdownProvider)
@@ -305,7 +305,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		defaultProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 		namedProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 
 		// Set default provider
@@ -321,7 +321,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		}
 
 		// Shutdown all providers with context
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer shutdownCancel()
 
 		err = ShutdownWithContext(shutdownCtx)
@@ -340,7 +340,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		// Set up a provider with fast init but simulates long shutdown delay
 		slowShutdownProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond} // Fast init
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 
 		// Set the provider (this should succeed quickly)
@@ -360,7 +360,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		testAPI.mu.Unlock()
 
 		// Try to shutdown with short timeout - this should timeout
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 		defer shutdownCancel()
 
 		err = ShutdownWithContext(shutdownCtx)
@@ -383,7 +383,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		defaultProvider := &NoopProvider{}
 		namedProvider := &NoopProvider{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 
 		// Set providers
@@ -398,7 +398,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		}
 
 		// Shutdown should work even with non-context-aware providers
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer shutdownCancel()
 
 		err = ShutdownWithContext(shutdownCtx)
@@ -506,7 +506,7 @@ func TestContextPropagationFixes(t *testing.T) {
 		}
 
 		// Set provider with long timeout - should succeed
-		initCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		initCtx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 
 		err := SetProviderWithContextAndWait(initCtx, provider)
@@ -518,7 +518,7 @@ func TestContextPropagationFixes(t *testing.T) {
 		newProvider := &testContextAwareProvider{initDelay: 10 * time.Millisecond}
 
 		// Use a short timeout that's shorter than the shutdown delay
-		replaceCtx, replaceCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		replaceCtx, replaceCancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
 		defer replaceCancel()
 
 		start := time.Now()
@@ -552,13 +552,13 @@ func TestContextPropagationFixes(t *testing.T) {
 		}
 
 		// Set up provider
-		err := SetProviderWithContextAndWait(context.Background(), provider)
+		err := SetProviderWithContextAndWait(t.Context(), provider)
 		if err != nil {
 			t.Errorf("Provider setup should succeed: %v", err)
 		}
 
 		// Create a context that we'll cancel quickly
-		replaceCtx, cancel := context.WithCancel(context.Background())
+		replaceCtx, cancel := context.WithCancel(t.Context())
 
 		// Start provider replacement
 		go func() {
@@ -581,7 +581,7 @@ func TestSimplifiedErrorHandling(t *testing.T) {
 	t.Run("context cancellation error message", func(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 200 * time.Millisecond}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // Cancel immediately
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -602,7 +602,7 @@ func TestSimplifiedErrorHandling(t *testing.T) {
 	t.Run("context timeout error message", func(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 200 * time.Millisecond}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -630,7 +630,7 @@ func TestSimplifiedErrorHandling(t *testing.T) {
 			},
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond) // Longer than init
+		ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond) // Longer than init
 		defer cancel()
 
 		event, err := initializerWithContext(ctx, provider, evalCtx)
@@ -750,7 +750,7 @@ func TestEdgeCases(t *testing.T) {
 
 		// Rapidly switch providers
 		for i, provider := range providers {
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 			err := SetProviderWithContextAndWait(ctx, provider)
 			cancel()
 
@@ -775,7 +775,7 @@ func TestEdgeCases(t *testing.T) {
 
 		// Start two concurrent provider operations
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+			ctx, cancel := context.WithTimeout(t.Context(), 150*time.Millisecond)
 			defer cancel()
 
 			provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
@@ -785,7 +785,7 @@ func TestEdgeCases(t *testing.T) {
 
 		go func() {
 			time.Sleep(25 * time.Millisecond) // Start slightly later
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 			defer cancel()
 
 			provider := &testContextAwareProvider{initDelay: 30 * time.Millisecond}

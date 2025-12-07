@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -30,7 +29,7 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	}, []of.Hook{})
 	assert.Zero(t, isolator.capturedContext)
 	assert.Zero(t, isolator.capturedHints)
-	evalCtx, err := isolator.Before(context.Background(), hookCtx, hookHints)
+	evalCtx, err := isolator.Before(t.Context(), hookCtx, hookHints)
 	require.NoError(t, err)
 	assert.NotNil(t, evalCtx)
 	assert.Equal(t, hookCtx, isolator.capturedContext)
@@ -70,7 +69,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_NoError(t *testing.T) {
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)
-	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
+	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.True(t, result.Value)
 }
 
@@ -89,7 +88,7 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)
-	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
+	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }
 
@@ -112,6 +111,6 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T
 		FeatureProvider: provider,
 		name:            "test-provider",
 	}, nil)
-	result := isolator.BooleanEvaluation(context.Background(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
+	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }

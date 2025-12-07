@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"maps"
 
 	"github.com/open-feature/go-sdk/openfeature/internal"
 )
@@ -29,9 +30,7 @@ func (e EvaluationContext) TargetingKey() string {
 func (e EvaluationContext) Attributes() map[string]any {
 	// copy attributes to new map to prevent mutation (maps are passed by reference)
 	attrs := make(map[string]any, len(e.attributes))
-	for key, value := range e.attributes {
-		attrs[key] = value
-	}
+	maps.Copy(attrs, e.attributes)
 
 	return attrs
 }
@@ -43,9 +42,7 @@ func (e EvaluationContext) Attributes() map[string]any {
 func NewEvaluationContext(targetingKey string, attributes map[string]any) EvaluationContext {
 	// copy attributes to new map to avoid reference being externally available, thereby enforcing immutability
 	attrs := make(map[string]any, len(attributes))
-	for key, value := range attributes {
-		attrs[key] = value
-	}
+	maps.Copy(attrs, attributes)
 
 	return EvaluationContext{
 		targetingKey: targetingKey,
