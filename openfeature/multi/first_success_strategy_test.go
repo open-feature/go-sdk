@@ -93,13 +93,17 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider, tt.successVal, true, TestErrorNone)
 
-				strategy := newFirstSuccessStrategy([]NamedProvider{
-					&namedProvider{
+				strategy := newFirstSuccessStrategy()
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "test-provider",
 						FeatureProvider: provider,
 					},
-				})
-				result := strategy(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+				}
+
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataStrategyUsed)
 				assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
@@ -114,18 +118,21 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
 
-				strategy := newFirstSuccessStrategy([]NamedProvider{
-					&namedProvider{
+				strategy := newFirstSuccessStrategy()
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "success-provider",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
-				})
+				}
 
-				result := strategy(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -138,19 +145,21 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				configureFirstSuccessProvider(provider1, tt.successVal, true, TestErrorNone)
 				provider2 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider2, tt.defaultVal, false, TestErrorError)
-
-				strategy := newFirstSuccessStrategy([]NamedProvider{
-					&namedProvider{
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "success-provider",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "failure-provider",
 						FeatureProvider: provider2,
 					},
-				})
+				}
+				strategy := newFirstSuccessStrategy()
 
-				result := strategy(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
@@ -166,22 +175,25 @@ func Test_FirstSuccessStrategyEvaluation(t *testing.T) {
 				provider3 := of.NewMockFeatureProvider(ctrl)
 				configureFirstSuccessProvider(provider3, tt.defaultVal, false, TestErrorError)
 
-				strategy := newFirstSuccessStrategy([]NamedProvider{
-					&namedProvider{
+				strategy := newFirstSuccessStrategy()
+				providers := []namedProvider{
+					&registeredProvider{
 						name:            "provider1",
 						FeatureProvider: provider1,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "provider2",
 						FeatureProvider: provider2,
 					},
-					&namedProvider{
+					&registeredProvider{
 						name:            "provider3",
 						FeatureProvider: provider3,
 					},
-				})
+				}
 
-				result := strategy(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), testFlag, tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.defaultVal, result.Value)
 				assert.Equal(t, StrategyFirstSuccess, result.FlagMetadata[MetadataStrategyUsed])
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)

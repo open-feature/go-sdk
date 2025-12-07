@@ -28,15 +28,18 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 			t.Run("Single Provider Match", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 1)
 				configureFirstMatchProviderMock(mocks[0], tt.successVal, TestErrorNone, "mock provider")
-				providers := make([]NamedProvider, 0, 5)
+				providers := make([]namedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &namedProvider{
+					providers = append(providers, &registeredProvider{
 						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
-				strategy := newFirstMatchStrategy(providers)
-				result := strategy(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
+
+				strategy := newFirstMatchStrategy()
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 				assert.Equal(t, providers[0].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -45,15 +48,18 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 			t.Run("Default Resolution", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 1)
 				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider")
-				providers := make([]NamedProvider, 0, 5)
+				providers := make([]namedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &namedProvider{
+					providers = append(providers, &registeredProvider{
 						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
-				strategy := newFirstMatchStrategy(providers)
-				result := strategy(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
+
+				strategy := newFirstMatchStrategy()
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.defaultVal, result.Value)
 				assert.Equal(t, of.DefaultReason, result.Reason)
 				assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
@@ -65,16 +71,18 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				mocks := createMockProviders(ctrl, 5)
 				configureFirstMatchProviderMock(mocks[0], tt.defaultVal, TestErrorNotFound, "mock provider 1")
 				configureFirstMatchProviderMock(mocks[1], tt.successVal, TestErrorNone, "mock provider 2")
-				providers := make([]NamedProvider, 0, 5)
+				providers := make([]namedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &namedProvider{
+					providers = append(providers, &registeredProvider{
 						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
 				}
 
-				strategy := newFirstMatchStrategy(providers)
-				result := strategy(t.Context(), "test-flag", tt.defaultVal, of.FlattenedContext{})
+				strategy := newFirstMatchStrategy()
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Contains(t, result.FlagMetadata, MetadataSuccessfulProviderName)
 				assert.Equal(t, providers[1].Name(), result.FlagMetadata[MetadataSuccessfulProviderName])
@@ -83,9 +91,9 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 			t.Run("Evaluation stops after first error that is not a FLAG_NOT_FOUND error", func(t *testing.T) {
 				mocks := createMockProviders(ctrl, 5)
 				expectedErr := of.NewGeneralResolutionError("test error")
-				providers := make([]NamedProvider, 0, 5)
+				providers := make([]namedProvider, 0, 5)
 				for i, m := range mocks {
-					providers = append(providers, &namedProvider{
+					providers = append(providers, &registeredProvider{
 						name:            strconv.Itoa(i),
 						FeatureProvider: m,
 					})
@@ -97,8 +105,11 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 					}
 
 				}
-				strategy := newFirstMatchStrategy(providers)
-				result := strategy(t.Context(), "test-string", tt.successVal, of.FlattenedContext{})
+				strategy := newFirstMatchStrategy()
+
+				fn := newEvaluationFunc(providers, runModeSequential, strategy)
+				result := fn(t.Context(), "test-string", tt.successVal, of.FlattenedContext{})
+
 				assert.Equal(t, tt.successVal, result.Value)
 				assert.Equal(t, of.ErrorReason, result.Reason)
 				assert.Equal(t, expectedErr.Error(), result.ResolutionError.Error())
