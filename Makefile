@@ -13,7 +13,7 @@ test:
 	go test --short -tags testtools -cover -timeout 1m ./...
 
 .PHONY: e2e-test
-e2e-test:
+e2e-test: workspace-init
 	git submodule update --init --recursive && go test -tags testtools -race -cover -timeout 1m ./e2e/...
 
 .PHONY: lint
@@ -27,3 +27,11 @@ fix:
 .PHONY: docs
 docs:
 	go run golang.org/x/pkgsite/cmd/pkgsite@latest -open .
+
+
+.PHONY: workspace-init
+
+workspace-init:
+	@test -f go.work || go work init
+	@go work use .
+	@go work use e2e

@@ -1,4 +1,7 @@
 .idea
 .cursor
 
+go.work
+go.work.sum
+
 dist/

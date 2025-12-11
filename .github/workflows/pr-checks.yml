@@ -53,6 +53,8 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
+      - name: go work
+        run: make workspace-init
       - name: Run unit tests
         run: go test -tags testtools -timeout 1m -race -short -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./...
       - name: Run e2e tests
