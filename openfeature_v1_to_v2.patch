@@ -1,0 +1,426 @@
+# Gopatch file for migrating OpenFeature Go SDK from v1 to v2
+# Usage: gopatch -p openfeature_v1_to_v2.patch ./...
+# StringValue
+@@
+var value, err, client identifier
+@@
+-value, err := client.StringValue(...)
++value := client.String(...)
+@@
+var value, err, client identifier
+@@
+-value, err = client.StringValue(...)
++value = client.String(...)
+#BooleanValue
+@@
+var value, err, client identifier
+@@
+-value, err := client.BooleanValue(...)
++value := client.Boolean(...)
+@@
+var value, err, client identifier
+@@
+-value, err = client.BooleanValue(...)
++value = client.Boolean(...)
+#IntValue
+@@
+var value, err, client identifier
+@@
+-value, err := client.IntValue(...)
++value := client.Int(...)
+@@
+var value, err, client identifier
+@@
+-value, err = client.IntValue(...)
++value = client.Int(...)
+# FloatValue
+@@
+var value, err, client identifier
+@@
+-value, err := client.FloatValue(...)
++value := client.Float(...)
+@@
+var value, err, client identifier
+@@
+-value, err = client.FloatValue(...)
++value = client.Float(...)
+# ObjectValue
+@@
+var value, err, client identifier
+@@
+-value, err := client.ObjectValue(...)
++value := client.Object(...)
+@@
+var value, err, client identifier
+@@
+-value, err = client.ObjectValue(...)
++value = client.Object(...)
+
+@@
+var client identifier
+@@
+-client.Metadata().Name
++client.Metadata().Domain()
+
+# set provider
+@@
+var openfeature identifier
+var provider expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetProvider(provider)
++openfeature.SetProvider(context.TODO(), provider) 
+
+@@
+var openfeature identifier
+var ctx, provider expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetProviderWithContext(ctx, provider)
++openfeature.SetProvider(ctx, provider)
+
+@@
+var openfeature identifier
+var provider expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetProviderAndWait(provider)
++openfeature.SetProviderAndWait(context.TODO(), provider) 
+
+@@
+var openfeature identifier
+var ctx, provider expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetProviderWithContextAndWait(ctx, provider)
++openfeature.SetProviderAndWait(ctx, provider)
+
+@@
+var openfeature identifier
+var provider, domain expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetNamedProvider(domain, provider) 
++openfeature.SetProvider(context.TODO(), provider, openfeature.WithDomain(domain))
+
+@@
+var openfeature identifier
+var provider, domain expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetNamedProviderAndWait(domain, provider)
++openfeature.SetProviderAndWait(context.TODO(), provider, openfeature.WithDomain(domain))
+
+@@
+var openfeature identifier
+var ctx, provider, domain expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetNamedProviderWithContext(ctx, domain, provider)
++openfeature.SetProvider(ctx, provider, openfeature.WithDomain(domain))
+
+@@
+var openfeature identifier
+var ctx, provider, domain expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.SetNamedProviderWithContextAndWait(ctx, domain, provider)
++openfeature.SetProviderAndWait(ctx, provider, openfeature.WithDomain(domain))
+
+@@
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.Shutdown()
++openfeature.Shutdown(context.TODO())
+
+@@
+var openfeature identifier
+var ctx expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.ShutdownWithContext(ctx)
++openfeature.Shutdown(ctx)
+
+# some renames
+@@
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.WithTransactionContext(...)
++openfeature.ContextWithEvaluationContext(...)
+
+@@
+var openfeature identifier
+@@
+ import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.TransactionContext(...)
++openfeature.EvaluationContextFromContext(...)
+
+@@
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.InterfaceEvaluationDetails
++openfeature.ObjectEvaluationDetails
+
+# change imports
+
+# change contrib aws-ssm import
+@@
+var x, awsssm identifier
+@@
+-import awsssm "github.com/open-feature/go-sdk-contrib/providers/aws-ssm"
++import awsssm "go.openfeature.dev/contrib/providers/aws-ssm/v2"
+
+awsssm.x
+
+# change contrib configcat import
+@@
+var x, configcat identifier
+@@
+-import configcat "github.com/open-feature/go-sdk-contrib/providers/configcat/pkg"
++import configcat "go.openfeature.dev/contrib/providers/configcat/v2/pkg"
+
+configcat.x
+
+# change contrib flagd import
+@@
+var x, flagd identifier
+@@
+-import flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
++import flagd "go.openfeature.dev/contrib/providers/flagd/v2/pkg"
+
+flagd.x
+
+# change contrib flagsmith import
+@@
+var x, flagsmith identifier
+@@
+-import flagsmith "github.com/open-feature/go-sdk-contrib/providers/flagsmith/pkg"
++import flagsmith "go.openfeature.dev/contrib/providers/flagsmith/v2/pkg"
+
+flagsmith.x
+
+# change contrib flipt import
+@@
+var x, flipt identifier
+@@
+-import flipt "github.com/open-feature/go-sdk-contrib/providers/flipt/pkg"
++import flipt "go.openfeature.dev/contrib/providers/flipt/v2/pkg"
+
+flipt.x
+
+# change contrib envvar import
+@@
+var x, envvar identifier
+@@
+-import envvar "github.com/open-feature/go-sdk-contrib/providers/from-env/pkg"
++import envvar "go.openfeature.dev/contrib/providers/envvar/v2"
+
+envvar.x
+
+@@
+var envvar identifier
+@@
+import envvar "go.openfeature.dev/contrib/providers/envvar/v2"
+
+-envvar.FromEnvProvider
++envvar.EnvVarProvider
+
+# change contrib go-feature-flag-in-process import
+@@
+var x, gofeatureflaginprocess identifier
+@@
+-import gofeatureflaginprocess "github.com/open-feature/go-sdk-contrib/providers/go-feature-flag-in-process/pkg"
++import gofeatureflaginprocess "go.openfeature.dev/contrib/providers/go-feature-flag-in-process/v2/pkg"
+
+gofeatureflaginprocess.x
+
+# change contrib go-feature-flag import
+@@
+var x, gofeatureflag identifier
+@@
+-import gofeatureflag "github.com/open-feature/go-sdk-contrib/providers/go-feature-flag/pkg"
++import gofeatureflag "go.openfeature.dev/contrib/providers/go-feature-flag/v2/pkg"
+
+gofeatureflag.x
+
+# change contrib harness import
+@@
+var x, harness identifier
+@@
+-import harness "github.com/open-feature/go-sdk-contrib/providers/harness/pkg"
++import harness "go.openfeature.dev/contrib/providers/harness/v2/pkg"
+
+harness.x
+
+# change contrib launchdarkly import
+@@
+var x, launchdarkly identifier
+@@
+-import launchdarkly "github.com/open-feature/go-sdk-contrib/providers/launchdarkly/pkg"
++import launchdarkly "go.openfeature.dev/contrib/providers/launchdarkly/v2/pkg"
+
+launchdarkly.x
+
+# change contrib ofrep import
+@@
+var ofrep identifier
+var uri expression
+@@
+import ofrep "github.com/open-feature/go-sdk-contrib/providers/ofrep"
+
+-ofrep.NewProvider(uri,...)
++ofrep.NewProvider(ofrep.WithBaseURI(uri),...)
+
+@@
+var x, ofrep identifier
+@@
+
+-import ofrep "github.com/open-feature/go-sdk-contrib/providers/ofrep"
++import ofrep "go.openfeature.dev/contrib/providers/ofrep/v2"
+
+ofrep.x
+
+# change contrib prefab import
+@@
+var x, prefab identifier
+@@
+-import prefab "github.com/open-feature/go-sdk-contrib/providers/prefab/pkg"
++import prefab "go.openfeature.dev/contrib/providers/prefab/v2/pkg"
+
+prefab.x
+
+# change contrib rocketflag import
+@@
+var x, rocketflag identifier
+@@
+-import rocketflag "github.com/open-feature/go-sdk-contrib/providers/rocketflag"
++import rocketflag "go.openfeature.dev/contrib/providers/rocketflag/v2"
+
+rocketflag.x
+
+# change contrib statsig import
+@@
+var x, statsig identifier
+@@
+-import statsig "github.com/open-feature/go-sdk-contrib/providers/statsig/pkg"
++import statsig "go.openfeature.dev/contrib/providers/statsig/v2/pkg"
+
+statsig.x
+
+# change contrib unleash import
+@@
+var x, unleash identifier
+@@
+-import unleash "github.com/open-feature/go-sdk-contrib/providers/unleash/pkg"
++import unleash "go.openfeature.dev/contrib/providers/unleash/v2/pkg"
+
+unleash.x
+
+# change contrib otel hooks 
+@@
+var x, otel identifier
+@@
+- import otel "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
++ import otel "go.openfeature.dev/contrib/hooks/open-telemetry/v2"
+
+otel.x
+
+# change named openfeature import
+@@
+var memprovider identifier
+@@
+import memprovider "github.com/open-feature/go-sdk/openfeature/memprovider"
+
+-memprovider.NewInMemoryProvider(...)
++memprovider.NewProvider(...)
+
+@@
+var x, memprovider identifier
+@@
+-import memprovider "github.com/open-feature/go-sdk/openfeature/memprovider"
++import memprovider "go.openfeature.dev/openfeature/v2/providers/inmemory"
+
+memprovider.x
+
+@@
+var testing identifier
+@@
+import testing "github.com/open-feature/go-sdk/openfeature/testing"
+
+-testing.NewTestProvider(...)
++testing.NewProvider(...)
+
+@@
+var x, testing identifier
+@@
+-import testing "github.com/open-feature/go-sdk/openfeature/testing"
++import testing "go.openfeature.dev/openfeature/v2/providers/testing"
+
+testing.x
+
+@@
+var x, multi identifier
+@@
+-import multi "github.com/open-feature/go-sdk/openfeature/multi"
++import multi "go.openfeature.dev/openfeature/v2/providers/multi"
+
+multi.x
+
+@@
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.NewClient("")
++openfeature.NewClient()
+
+@@
+var openfeature identifier
+var domain expression
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.NewClient(domain)
++openfeature.NewClient(openfeature.WithDomain(domain))
+
+@@
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.NewDefaultClient()
++openfeature.NewClient()
+
+@@
+var domain expression
+var openfeature identifier
+@@
+import openfeature "github.com/open-feature/go-sdk/openfeature"
+
+-openfeature.NamedProviderMetadata(domain)
++openfeature.ProviderMetadata(openfeature.WithDomain(domain))
+
+@@
+var x, openfeature identifier
+@@
+-import openfeature "github.com/open-feature/go-sdk/openfeature"
++import openfeature "go.openfeature.dev/openfeature/v2"
+
+openfeature.x
+
