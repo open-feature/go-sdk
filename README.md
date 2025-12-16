@@ -39,11 +39,12 @@
 [OpenFeature](https://openfeature.dev) is an open specification that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
 
 <!-- x-hide-in-docs-end -->
+
 ## 🚀 Quick start
 
 ### Requirements
 
-Go language version: [1.24](https://go.dev/doc/devel/release#go1.24.0)
+Go language version: [1.25](https://go.dev/doc/devel/release#go1.25.0)
 
 > [!NOTE]
 > The OpenFeature Go SDK only supports currently maintained Go language versions.
@@ -51,7 +52,7 @@ Go language version: [1.24](https://go.dev/doc/devel/release#go1.24.0)
 ### Install
 
 ```shell
-go get github.com/open-feature/go-sdk
+go get go.openfeature.dev/openfeature/v2
 ```
 
 ### Usage
@@ -62,14 +63,14 @@ package main
 import (
     "fmt"
     "context"
-    "github.com/open-feature/go-sdk/openfeature"
+    "go.openfeature.dev/openfeature/v2"
 )
 
 func main() {
     // Register your feature flag provider
-    openfeature.SetProviderAndWait(openfeature.NoopProvider{})
+    openfeature.SetProviderAndWait(context.TODO(), openfeature.NoopProvider{})
     // Create a new client
-    client := openfeature.NewClient("app")
+    client := openfeature.NewDefaultClient()
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
         context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
@@ -90,17 +91,17 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature) for th
 ## 🌟 Features
 
 | Status | Features                                                            | Description                                                                                                                                                  |
-| ------ |---------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ✅      | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
-| ✅      | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
-| ✅      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
-| ✅      | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations.                                                                                                        |
-| ✅      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
-| ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
-| ✅      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
-| ✅      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
-| ✅      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
-| ✅      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
+| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ✅     | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
+| ✅     | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
+| ✅     | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
+| ✅     | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations.                                                                                                        |
+| ✅     | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
+| ✅     | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
+| ✅     | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
+| ✅     | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
+| ✅     | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
+| ✅     | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -113,7 +114,7 @@ If the provider you're looking for hasn't been created yet, see the [develop a p
 Once you've added a provider as a dependency, it can be registered with OpenFeature like this:
 
 ```go
-openfeature.SetProviderAndWait(MyProvider{})
+openfeature.SetProviderAndWait(context.TODO(), MyProvider{})
 ```
 
 In some situations, it may be beneficial to register multiple providers in the same application.
@@ -135,7 +136,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 ))
 
 // set a value to the client context
-client := openfeature.NewClient("my-app")
+client := openfeature.NewDefaultClient()
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]any{
         "version":  "1.4.6",
@@ -149,9 +150,8 @@ evalCtx := openfeature.NewEvaluationContext(
         "company": "Initech",
     },
 )
-boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
+boolValue := client.Boolean(context.TODO(), "boolFlag", false, evalCtx)
 ```
-
 
 ### Hooks
 
@@ -166,11 +166,11 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 openfeature.AddHooks(ExampleGlobalHook{})
 
 // add a hook on this client, to run on all evaluations made by this client
-client := openfeature.NewClient("my-app")
+client := openfeature.NewDefaultClient()
 client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
-value, err := client.BooleanValue(
+value := client.Boolean(
     context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
 )
 ```
@@ -183,7 +183,7 @@ For example, a flag enhancing the appearance of a UI component might drive user 
 
 ```go
 // initialize a client
-client := openfeature.NewClient('my-app')
+client := openfeature.NewDefaultClient()
 
 // trigger tracking event action
 client.Track(
@@ -215,14 +215,15 @@ import (
     "log/slog"
     "os"
 
-    "github.com/open-feature/go-sdk/openfeature"
-    "github.com/open-feature/go-sdk/openfeature/hooks"
-    "github.com/open-feature/go-sdk/openfeature/memprovider"
+    "go.openfeature.dev/openfeature/v2"
+    "go.openfeature.dev/openfeature/v2/hooks"
+    "go.openfeature.dev/openfeature/v2/providers/inmemory"
 )
 
 func main() {
+    ctx := context.TODO()
     // Register an in-memory provider with no flags
-    openfeature.SetNamedProviderAndWait("example", memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{}))
+    openfeature.SetNamedProviderAndWait(ctx, "example", inmemory.NewProvider(map[string]inmemory.InMemoryFlag{}))
 
     // Configure slog
     handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
@@ -236,7 +237,7 @@ func main() {
     client := openfeature.NewClient("example")
 
     // Attempt to evaluate a flag that doesn't exist
-    _ = client.Boolean(context.TODO(), "not-exist", true, openfeature.EvaluationContext{})
+    _ = client.Boolean(ctx, "not-exist", true, openfeature.EvaluationContext{})
 }
 ```
 
@@ -254,12 +255,12 @@ See [hooks](#hooks) for more information on configuring hooks.
 Clients can be assigned to a domain. A domain is a logical identifier that can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
+import "go.openfeature.dev/openfeature/v2"
 
 // Registering the default provider
-openfeature.SetProviderAndWait(NewLocalProvider())
+openfeature.SetProviderAndWait(ctx, NewLocalProvider())
 // Registering a named provider
-openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
+openfeature.SetNamedProvider(ctx, "clientForCache", NewCachedProvider())
 
 // A Client backed by default provider
 clientWithDefault := openfeature.NewDefaultClient()
@@ -276,7 +277,7 @@ Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGE
 Please refer to the documentation of the provider you're using to see what events are supported.
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
+import "go.openfeature.dev/openfeature/v2"
 
 ...
 var readyHandlerCallback = func(details openfeature.EventDetails) {
@@ -284,7 +285,7 @@ var readyHandlerCallback = func(details openfeature.EventDetails) {
 }
 
 // Global event handler
-openfeature.AddHandler(openfeature.ProviderReady, &readyHandlerCallback)
+openfeature.AddHandler(openfeature.ProviderReady, readyHandlerCallback)
 
 ...
 
@@ -295,7 +296,7 @@ var providerErrorCallback = func(details openfeature.EventDetails) {
 client := openfeature.NewDefaultClient()
 
 // Client event handler
-client.AddHandler(openfeature.ProviderError, &providerErrorCallback)
+client.AddHandler(openfeature.ProviderError, providerErrorCallback)
 ```
 
 ### Shutdown
@@ -304,11 +305,10 @@ The OpenFeature API provides a close function to perform a cleanup of all regist
 This should only be called when your application is in the process of shutting down.
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
+import "go.openfeature.dev/openfeature/v2"
 
-openfeature.Shutdown()
+err := openfeature.Shutdown(ctx)
 ```
-
 
 ### Transaction Context Propagation
 
@@ -316,7 +316,7 @@ Transaction context is a container for transaction-specific evaluation context (
 Transaction context can be set where specific data is available (e.g. an auth service or request handler), and by using the transaction context propagator, it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread).
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
+import "go.openfeature.dev/openfeature/v2"
 
 // set the TransactionContext
 ctx := openfeature.WithTransactionContext(context.TODO(), openfeature.EvaluationContext{})
@@ -329,7 +329,7 @@ ec := openfeature.TransactionContext(ctx)
 tCtx := openfeature.MergeTransactionContext(ctx, openfeature.EvaluationContext{})
 
 // use TransactionContext in a flag evaluation
-client.BooleanValue(tCtx, ....)
+client.Boolean(tCtx, ....)
 ```
 
 ### Multi-Provider Implementation
@@ -350,7 +350,7 @@ package myfeatureprovider
 
 import (
   "context"
-  "github.com/open-feature/go-sdk/openfeature"
+  "go.openfeature.dev/openfeature/v2"
 )
 
 // MyFeatureProvider implements the FeatureProvider interface and provides functions for evaluating flags
@@ -391,7 +391,7 @@ func (i MyFeatureProvider) IntEvaluation(ctx context.Context, flag string, defau
 }
 
 // ObjectEvaluation returns an object flag
-func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.ObjectResolutionDetail {
   // code to evaluate object
 }
 
@@ -399,12 +399,13 @@ func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, de
 // Providers can opt-in for initialization & shutdown behavior by implementing this interface
 
 // Init holds initialization logic of the provider
-func (i MyFeatureProvider) Init(evaluationContext openfeature.EvaluationContext) error {
+func (i MyFeatureProvider) Init(ctx context.Context) error {
   // code to initialize your provider
+  // evaluationContext := openfeature.TransactionContext(ctx)
 }
 
 // Shutdown define the shutdown operation of the provider
-func (i MyFeatureProvider) Shutdown() {
+func (i MyFeatureProvider) Shutdown(ctx context.Context) error {
   // code to shutdown your provider
 }
 
@@ -430,7 +431,7 @@ To avoid defining empty functions make use of the `UnimplementedHook` struct (wh
 ```go
 import (
   "context"
-  "github.com/open-feature/go-sdk/openfeature"
+  "go.openfeature.dev/openfeature/v2"
 )
 
 type MyHook struct {
@@ -454,25 +455,26 @@ Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean t
 
 ```go
 import (
-  "github.com/open-feature/go-sdk/openfeature"
-  "github.com/open-feature/go-sdk/openfeature/testing"
+  "go.openfeature.dev/openfeature/v2"
+  "go.openfeature.dev/openfeature/v2/providers/inmemory"
+  "go.openfeature.dev/openfeature/v2/providers/testing"
 )
 
-testProvider := NewTestProvider()
-err := openfeature.SetProviderAndWait(testProvider)
+testProvider := testing.NewProvider()
+err := openfeature.SetProviderAndWait(t.Context(), testProvider)
 if err != nil {
   t.Errorf("unable to set provider")
 }
 
 // configure flags for this test suite
 tests := map[string]struct {
-  flags map[string]memprovider.InMemoryFlag
+  flags map[string]inmemory.InMemoryFlag
   want  bool
 }{
   "test when flag is true": {
-    flags: map[string]memprovider.InMemoryFlag{
+    flags: map[string]inmemory.InMemoryFlag{
       "my_flag": {
-        State:          memprovider.Enabled,
+        State:          inmemory.Enabled,
         DefaultVariant: "on",
         Variants: map[string]any{
           "on": true,
@@ -482,9 +484,9 @@ tests := map[string]struct {
     want: true,
   },
   "test when flag is false": {
-    flags: map[string]memprovider.InMemoryFlag{
+    flags: map[string]inmemory.InMemoryFlag{
       "my_flag": {
-        State:          memprovider.Enabled,
+        State:          inmemory.Enabled,
         DefaultVariant: "off",
         Variants: map[string]any{
           "off": false,
@@ -516,12 +518,13 @@ for name, tt := range tests {
 
 ### Mocks
 
-Mocks are also available for testing purposes for all interfaces within the OpenFeature SDK. These are primarily
+Mocks are also available for testing purposes for some public interfaces within the OpenFeature SDK. These are primarily
 intended for internal use for testing the SDK, but have been exported to ease the testing burden for any extensions
-or custom components (e.g. hooks & providers). These mocks are not include in builds by default. The build tag 
+or custom components (e.g. hooks & providers). These mocks are not include in builds by default. The build tag
 `testtools` must be used to have the mocks included in builds.
 
 <!-- x-hide-in-docs-start -->
+
 ## ⭐️ Support the project
 
 - Give this repo a ⭐️!
@@ -542,4 +545,5 @@ Interested in contributing? Great, we'd love your help! To get started, take a l
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
+
 <!-- x-hide-in-docs-end -->

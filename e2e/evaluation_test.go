@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/open-feature/go-sdk/openfeature"
-	"github.com/open-feature/go-sdk/openfeature/memprovider"
+	"go.openfeature.dev/openfeature/v2"
+	memprovider "go.openfeature.dev/openfeature/v2/providers/inmemory"
 )
 
 // ctxStorageKey is the key used to pass test data across context.Context
@@ -91,9 +91,9 @@ func initializeEvaluationScenario(ctx *godog.ScenarioContext) {
 }
 
 func aProviderIsRegisteredWithCacheDisabled(ctx context.Context) error {
-	memoryProvider := memprovider.NewInMemoryProvider(memoryFlags)
+	memoryProvider := memprovider.NewProvider(memoryFlags)
 
-	err := openfeature.SetNamedProvider("evaluation-test", memoryProvider)
+	err := openfeature.SetNamedProvider(ctx, "evaluation-test", memoryProvider)
 	if err != nil {
 		return err
 	}
@@ -109,10 +109,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
-	got, err := openfeature.NewClient("evaluation-test").BooleanValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").Boolean(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -138,10 +135,7 @@ func theResolvedBooleanValueShouldBe(ctx context.Context, expectedValueStr strin
 func aStringFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").String(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -162,10 +156,7 @@ func theResolvedStringValueShouldBe(ctx context.Context, expectedValue string) e
 func anIntegerFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").IntValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").Int(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -186,10 +177,7 @@ func theResolvedIntegerValueShouldBe(ctx context.Context, expectedValue int64) e
 func aFloatFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").FloatValue(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").Float(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -208,10 +196,7 @@ func theResolvedFloatValueShouldBe(ctx context.Context, expectedValue float64) e
 }
 
 func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, flagKey string) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").ObjectValue(ctx, flagKey, nil, openfeature.EvaluationContext{})
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").Object(ctx, flagKey, nil, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -436,9 +421,9 @@ func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
 
-	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.InterfaceEvaluationDetails)
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.ObjectEvaluationDetails)
 	if !ok {
-		store = make(map[string]openfeature.InterfaceEvaluationDetails)
+		store = make(map[string]openfeature.ObjectEvaluationDetails)
 	}
 
 	store[flagKey] = got
@@ -538,10 +523,8 @@ func aFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("no contextAwareEvaluationData found")
 	}
 
-	got, err := openfeature.NewClient("evaluation-test").StringValue(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
-	if err != nil {
-		return ctx, fmt.Errorf("openfeature client: %w", err)
-	}
+	got := openfeature.NewClient("evaluation-test").String(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
+
 	ctxAwareEvalData.flagKey = flagKey
 	ctxAwareEvalData.defaultValue = defaultValue
 	ctxAwareEvalData.response = got
@@ -568,12 +551,9 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 		return errors.New("no contextAwareEvaluationData found")
 	}
 
-	got, err := openfeature.NewClient("evaluation-test").StringValue(
+	got := openfeature.NewClient("evaluation-test").String(
 		ctx, ctxAwareEvalData.flagKey, ctxAwareEvalData.defaultValue, openfeature.EvaluationContext{},
 	)
-	if err != nil {
-		return fmt.Errorf("openfeature client: %w", err)
-	}
 
 	if got != expectedResponse {
 		return fmt.Errorf("expected response of '%s', got '%s'", expectedResponse, got)
@@ -765,17 +745,17 @@ func getFirstFloatEvaluationDetails(ctx context.Context) (openfeature.FloatEvalu
 	return openfeature.FloatEvaluationDetails{}, errors.New("no evaluation detail found in context")
 }
 
-func getFirstInterfaceEvaluationDetails(ctx context.Context) (openfeature.InterfaceEvaluationDetails, error) {
-	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.InterfaceEvaluationDetails)
+func getFirstInterfaceEvaluationDetails(ctx context.Context) (openfeature.ObjectEvaluationDetails, error) {
+	store, ok := ctx.Value(ctxStorageKey{}).(map[string]openfeature.ObjectEvaluationDetails)
 	if !ok {
-		return openfeature.InterfaceEvaluationDetails{}, errors.New("no flag resolution result")
+		return openfeature.ObjectEvaluationDetails{}, errors.New("no flag resolution result")
 	}
 
 	for _, evalDetails := range store {
 		return evalDetails, nil
 	}
 
-	return openfeature.InterfaceEvaluationDetails{}, errors.New("no evaluation detail found in context")
+	return openfeature.ObjectEvaluationDetails{}, errors.New("no evaluation detail found in context")
 }
 
 func boolOrString(str string) any {

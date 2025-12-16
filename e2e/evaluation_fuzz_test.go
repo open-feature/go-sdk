@@ -4,15 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-feature/go-sdk/openfeature"
-	"github.com/open-feature/go-sdk/openfeature/memprovider"
+	"go.openfeature.dev/openfeature/v2"
+	memprovider "go.openfeature.dev/openfeature/v2/providers/inmemory"
 )
 
 func setupFuzzClient(f *testing.F) *openfeature.Client {
 	f.Helper()
 
-	memoryProvider := memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{})
-	err := openfeature.SetNamedProviderAndWait(f.Name(), memoryProvider)
+	memoryProvider := memprovider.NewProvider(map[string]memprovider.InMemoryFlag{})
+	err := openfeature.SetNamedProviderAndWait(f.Context(), f.Name(), memoryProvider)
 	if err != nil {
 		f.Errorf("error setting up provider %v", err)
 	}
