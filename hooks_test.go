@@ -229,7 +229,7 @@ func TestRequirement_4_3_3(t *testing.T) {
 		evaluationContext: evalCtx,
 	}
 	hook1EvalCtxResult := EvaluationContext{targetingKey: "mockHook1"}
-	tctx := WithTransactionContext(t.Context(), hook1EvalCtxResult)
+	tctx := ContextWithEvaluationContext(t.Context(), hook1EvalCtxResult)
 	mockHook1.EXPECT().Before(gomock.Any(), hook1Ctx, gomock.Any()).Return(tctx, nil)
 	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, map[string]any{
 		"is":         "a test",
@@ -305,7 +305,7 @@ func TestRequirement_4_3_4(t *testing.T) {
 			"multiplier": 3,
 		},
 	}
-	tctx := WithTransactionContext(t.Context(), hookEvalCtxResult)
+	tctx := ContextWithEvaluationContext(t.Context(), hookEvalCtxResult)
 	mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(tctx, nil)
 
 	// assert that the EvaluationContext returned by Before hooks is merged with the invocation EvaluationContext

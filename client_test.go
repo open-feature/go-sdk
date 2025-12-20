@@ -877,7 +877,7 @@ func TestTrack(t *testing.T) {
 				return provider, nil, test.inCtx.api
 			})
 			client.evaluationContext = test.inCtx.client
-			ctx := WithTransactionContext(t.Context(), test.inCtx.txn)
+			ctx := ContextWithEvaluationContext(t.Context(), test.inCtx.txn)
 
 			// action
 			client.Track(ctx, test.eventName, test.inCtx.invocation, TrackingEventDetails{})

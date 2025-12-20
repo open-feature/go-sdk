@@ -166,7 +166,7 @@ func TestMultiProvider_Init(t *testing.T) {
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+	err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 	require.NoError(t, err)
 	assert.Equal(t, of.ReadyState, mp.Status())
 	err = mp.Shutdown(t.Context())
@@ -205,7 +205,7 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 		"foo": "bar",
 	}
 	evalCtx := of.NewTargetlessEvaluationContext(attributes)
-	err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+	err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 	require.Errorf(t, err, "Provider provider3: test error")
 	assert.Equal(t, of.ErrorState, mp.overallStatus)
 }
@@ -274,7 +274,7 @@ func TestMultiProvider_Shutdown_WithInit(t *testing.T) {
 			return
 		}
 	}()
-	err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+	err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 	require.NoError(t, err)
 	assert.Equal(t, of.ReadyState, mp.Status())
 	cancel()
@@ -334,7 +334,7 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 
 	// Initialize the provider
 	evalCtx := of.NewEvaluationContext("test", nil)
-	if err := mp.Init(of.WithTransactionContext(t.Context(), evalCtx)); err != nil {
+	if err := mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx)); err != nil {
 		t.Fatalf("failed to initialize multi-provider: %v", err)
 	}
 
@@ -390,7 +390,7 @@ func TestMultiProvider_Track(t *testing.T) {
 		require.NoError(t, err)
 
 		evalCtx := of.NewEvaluationContext("user-123", map[string]any{"plan": "premium"})
-		err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+		err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 		require.NoError(t, err)
 
 		trackingEventName := "button-clicked"
@@ -449,7 +449,7 @@ func TestMultiProvider_Track(t *testing.T) {
 		require.NoError(t, err)
 
 		evalCtx := of.NewEvaluationContext("user-456", map[string]any{})
-		err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+		err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 		require.NoError(t, err)
 
 		// Simulate error state for one provider
@@ -492,7 +492,7 @@ func TestMultiProvider_Track(t *testing.T) {
 		require.NoError(t, err)
 
 		evalCtx := of.NewEvaluationContext("user-789", map[string]any{})
-		err = mp.Init(of.WithTransactionContext(t.Context(), evalCtx))
+		err = mp.Init(of.ContextWithEvaluationContext(t.Context(), evalCtx))
 		require.NoError(t, err)
 
 		trackingEventName := "conversion"

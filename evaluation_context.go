@@ -67,11 +67,11 @@ func NewTargetlessEvaluationContext(attributes map[string]any) EvaluationContext
 	return NewEvaluationContext("", attributes)
 }
 
-// WithTransactionContext constructs a TransactionContext.
+// ContextWithEvaluationContext constructs a TransactionContext.
 //
 // ctx - the context to embed the EvaluationContext in
 // ec - the EvaluationContext to embed into the context
-func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
+func ContextWithEvaluationContext(ctx context.Context, ec EvaluationContext) context.Context {
 	return context.WithValue(ctx, transactionContext, ec)
 }
 
@@ -80,17 +80,17 @@ func WithTransactionContext(ctx context.Context, ec EvaluationContext) context.C
 // ctx - the context to pull existing TransactionContext from
 // ec - the EvaluationContext to merge with the existing TransactionContext
 func MergeTransactionContext(ctx context.Context, ec EvaluationContext) context.Context {
-	oldTc := TransactionContext(ctx)
+	oldTc := EvaluationContextFromContext(ctx)
 	mergedTc := mergeContexts(ec, oldTc)
-	return WithTransactionContext(ctx, mergedTc)
+	return ContextWithEvaluationContext(ctx, mergedTc)
 }
 
-// TransactionContext extracts a EvaluationContext from the current
-// golang.org/x/net/context. if no EvaluationContext exist, it will construct
-// an empty EvaluationContext
+// EvaluationContextFromContext extracts a EvaluationContext from the current
+// context. if no EvaluationContext exist, it will construct
+// an empty EvaluationContext.
 //
-// ctx - the context to pull EvaluationContext from
-func TransactionContext(ctx context.Context) EvaluationContext {
+// ctx - the context to pull EvaluationContext from TransactionContext
+func EvaluationContextFromContext(ctx context.Context) EvaluationContext {
 	ec, ok := extractEvaluationContextFromContext(ctx)
 	if !ok {
 		return EvaluationContext{}
@@ -99,6 +99,10 @@ func TransactionContext(ctx context.Context) EvaluationContext {
 	return ec
 }
 
+// extractEvaluationContextFromContext extracts an EvaluationContext from the context.
+// It returns the EvaluationContext and a boolean indicating whether one was found.
+//
+// ctx - the context to extract the EvaluationContext from
 func extractEvaluationContextFromContext(ctx context.Context) (EvaluationContext, bool) {
 	ec, ok := ctx.Value(transactionContext).(EvaluationContext)
 	return ec, ok

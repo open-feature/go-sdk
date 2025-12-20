@@ -319,10 +319,10 @@ Transaction context can be set where specific data is available (e.g. an auth se
 import "go.openfeature.dev/openfeature/v2"
 
 // set the TransactionContext
-ctx := openfeature.WithTransactionContext(context.TODO(), openfeature.EvaluationContext{})
+ctx := openfeature.ContextWithEvaluationContext(context.TODO(), openfeature.EvaluationContext{})
 
 // get the TransactionContext from a context
-ec := openfeature.TransactionContext(ctx)
+ec := openfeature.EvaluationContextFromContext(ctx)
 
 // merge an EvaluationContext with the existing TransactionContext, preferring
 // the context that is passed to MergeTransactionContext
@@ -401,7 +401,7 @@ func (i MyFeatureProvider) ObjectEvaluation(ctx context.Context, flag string, de
 // Init holds initialization logic of the provider
 func (i MyFeatureProvider) Init(ctx context.Context) error {
   // code to initialize your provider
-  // evaluationContext := openfeature.TransactionContext(ctx)
+  // evaluationContext := openfeature.EvaluationContextFromContext(ctx)
 }
 
 // Shutdown define the shutdown operation of the provider

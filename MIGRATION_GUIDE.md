@@ -9,8 +9,6 @@ This guide helps you upgrade from OpenFeature Go SDK v1.x to v2.0. The v2 releas
 1. [Summary of Changes](#summary-of-changes)
 2. [Breaking Changes](#breaking-changes)
 3. [Migration Steps](#migration-steps)
-4. [Code Examples](#code-examples)
-5. [FAQ](#faq)
 
 ---
 
@@ -63,10 +61,14 @@ type IClient interface {
 **Migration Path:**
 
 ```go
-// v1: Using *Value methods
+// v1: Using *Value methods (returns value with error)
 value, err := client.StringValue(ctx, "flag-key", "default", evalCtx)
 
-// v2: Use *ValueDetails instead - details contain both value and metadata
+// v2: Use non-error variants - String, Boolean, Int, Float, Object
+// These return only the value (with default on error)
+value := client.String(ctx, "flag-key", "default", evalCtx)
+
+// Or use *ValueDetails for evaluation metadata
 details, err := client.StringValueDetails(ctx, "flag-key", "default", evalCtx)
 if err != nil {
     return "default"
@@ -120,11 +122,10 @@ func (p *MyProvider) Shutdown() {
 
 // v2: Updated implementation
 type MyProvider struct {
-    connection *sql.DB
 }
 
 func (p *MyProvider) Init(ctx context.Context) error {
-    evalCtx := openfeature.TransactionContext(ctx)
+    evalCtx := openfeature.EvaluationContextFromContext(ctx)
     //...
     return p.c.Ping(ctx)
 }
@@ -249,7 +250,7 @@ type Hook interface {
 **Key Differences:**
 
 - `Before` hook now returns `(context.Context, error)` instead of `(*EvaluationContext, error)`
-  - EvaluationContext is now passed through context using `WithTransactionContext()` and retrieved via `TransactionContext()`
+  - EvaluationContext is now passed through context using `ContextWithEvaluationContext()` and retrieved via `EvaluationContextFromContext()`
   - This allows hooks to modify both context and evaluation context transparently
 - `InterfaceEvaluationDetails` renamed to `HookEvaluationDetails` in `After` and `Finally` methods
 - Hooks can now influence the evaluation context by modifying the context passed to subsequent hooks
@@ -271,7 +272,7 @@ func (h *MyHook) Before(ctx context.Context, hookContext HookContext, hookHints 
     evalCtx.SetString("user_id", "123")
 
     // Attach evaluation context to the context for downstream use
-    return WithTransactionContext(ctx, evalCtx), nil
+    return ContextWithEvaluationContext(ctx, evalCtx), nil
 }
 
 ```
@@ -328,10 +329,10 @@ metadata.Domain()
 client.WithLogger(logger)
 
 // v2: Use LoggingHook from openfeature/hooks package
-import "github.com/open-feature/go-sdk/openfeature/hooks"
+import "go.openfeature.dev/openfeature/v2/hooks"
 
 loggingHook := hooks.NewLoggingHook() // or implement your own
-openfeature.GetApi().AddHooks(loggingHook)
+openfeature.AddHooks(loggingHook)
 ```
 
 ---
@@ -423,6 +424,48 @@ Internal interfaces are now private. Use the provided public interfaces instead.
 
 ## Migration Steps
 
+### Automated Migration with gopatch (Optional)
+
+To help automate the migration, you can use the [uber-go/gopatch](https://github.com/uber-go/gopatch) tool to apply common transformations across your codebase.
+
+#### Install gopatch
+
+```sh
+go install github.com/uber-go/gopatch@latest
+```
+
+#### Apply the patch file
+
+The `openfeature_v1_to_v2.patch` file in this repository contains transformations for the most common breaking changes. Apply it to your codebase:
+
+```sh
+gopatch -p openfeature_v1_to_v2.patch ./...
+```
+
+#### What the patch covers
+
+The patch file automatically handles:
+
+- **Evaluation methods**: Converts `StringValue()`, `BooleanValue()`, `IntValue()`, `FloatValue()`, and `ObjectValue()` to their non-error counterparts `String()`, `Boolean()`, `Int()`, `Float()`, and `Object()`
+- **Provider setup**: Updates all provider setup calls to require explicit context:
+  - `SetProvider(provider)` → `SetProvider(ctx, provider)`
+  - `SetProviderAndWait(provider)` → `SetProviderAndWait(ctx, provider)`
+  - `SetNamedProvider()` and related methods
+- **Shutdown calls**: Migrates `Shutdown()` and `ShutdownWithContext()` to context-aware `Shutdown(ctx)`
+- **Package imports**: Updates provider imports from `memprovider` to `providers/inmemory`
+- **Type names**: Renames `InterfaceEvaluationDetails` to `ObjectEvaluationDetails`
+
+#### After running gopatch
+
+After running the patch, review the changes and manually update:
+
+- **Hook implementations** - The patch cannot fully automate hook migrations. See Step 2 below for manual updates needed to `Before` method signatures.
+- **Custom provider implementations** - Update `StateHandler` implementations as shown in Step 1 below.
+- **Error handling** - Review error handling logic for `*Value()` methods which may need adjustment.
+- Do `go mod tidy` and install missing dependencies
+
+---
+
 ### Step 0: Install
 
 ```sh
@@ -475,7 +518,7 @@ func (h *MyHook) Before(ctx context.Context, hookContext HookContext, hookHints 
 func (h *MyHook) Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (context.Context, error) {
     evalCtx := hookContext.EvaluationContext()
     // Attach evaluation context to context for downstream use
-    return WithTransactionContext(ctx, evalCtx), nil
+    return ContextWithEvaluationContext(ctx, evalCtx), nil
 }
 ```
 
@@ -511,7 +554,7 @@ api.Shutdown(ctx)
 
 ### Step 5: Update Evaluation Calls
 
-Remove usage of `*Value` methods; use `*ValueDetails` instead:
+Replace usage of `*Value` methods with non-error variants (`Boolean`, `String`, `Int`, `Float`, `Object`) for simple cases, or use `*ValueDetails` for detailed evaluation metadata:
 
 ```go
 // OLD
@@ -521,12 +564,16 @@ if err != nil {
 }
 // use value
 
-// NEW
+// NEW: Simple case - use non-error variant
+value := client.Boolean(ctx, "flag", false, evalCtx)
+// use value
+
+// NEW: Need evaluation metadata - use *ValueDetails
 details, err := client.BooleanValueDetails(ctx, "flag", false, evalCtx)
 if err != nil {
     // handle error
 }
-// use details.Value
+// use details.Value, details.Reason, details.Variant, etc.
 ```
 
 ### Step 6: Update Imports

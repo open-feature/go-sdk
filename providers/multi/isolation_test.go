@@ -32,7 +32,7 @@ func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	ctx, err := isolator.Before(t.Context(), hookCtx, hookHints)
 	require.NoError(t, err)
 	assert.NotNil(t, ctx)
-	evalCtx := of.TransactionContext(ctx)
+	evalCtx := of.EvaluationContextFromContext(ctx)
 	assert.NotNil(t, evalCtx)
 	assert.Equal(t, hookCtx, isolator.capturedContext)
 	assert.Equal(t, hookHints, isolator.capturedHints)

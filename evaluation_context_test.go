@@ -105,7 +105,7 @@ func TestRequirement_3_2_2(t *testing.T) {
 			"user":               2,
 		},
 	}
-	transactionCtx := WithTransactionContext(t.Context(), transactionEvalCtx)
+	transactionCtx := ContextWithEvaluationContext(t.Context(), transactionEvalCtx)
 
 	mockProvider := NewMockProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
@@ -168,7 +168,7 @@ func TestEvaluationContext_AttributesNotPassedByReference(t *testing.T) {
 func TestRequirement_3_3_1(t *testing.T) {
 	t.Run("The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction.", func(t *testing.T) {
 		ctx := t.Context()
-		ctx = WithTransactionContext(ctx, EvaluationContext{})
+		ctx = ContextWithEvaluationContext(ctx, EvaluationContext{})
 		val, ok := ctx.Value(transactionContext).(EvaluationContext)
 
 		if !ok {
@@ -214,7 +214,7 @@ func TestMergeTransactionContext(t *testing.T) {
 		"overwrite": "new",
 	})
 
-	ctx := WithTransactionContext(t.Context(), oldEvalCtx)
+	ctx := ContextWithEvaluationContext(t.Context(), oldEvalCtx)
 	ctx = MergeTransactionContext(ctx, newEvalCtx)
 
 	expectedMergedEvalCtx := EvaluationContext{
@@ -226,7 +226,7 @@ func TestMergeTransactionContext(t *testing.T) {
 		},
 	}
 
-	finalTransactionContext := TransactionContext(ctx)
+	finalTransactionContext := EvaluationContextFromContext(ctx)
 
 	if finalTransactionContext.targetingKey != expectedMergedEvalCtx.targetingKey {
 		t.Errorf(

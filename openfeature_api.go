@@ -281,7 +281,7 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 	var err error
 
 	if contextHandler, ok := provider.(StateHandler); ok {
-		err = contextHandler.Init(WithTransactionContext(ctx, evalCtx))
+		err = contextHandler.Init(ContextWithEvaluationContext(ctx, evalCtx))
 		if err != nil {
 			event.EventType = ProviderError
 

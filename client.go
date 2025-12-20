@@ -478,7 +478,7 @@ func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx Ev
 //   - invocation (highest precedence)
 func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tracker, EvaluationContext) {
 	provider, _, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, EvaluationContextFromContext(ctx), globalEvalCtx)
 	trackingProvider, ok := provider.(Tracker)
 	if !ok {
 		trackingProvider = NoopProvider{}
@@ -502,7 +502,7 @@ func evaluate[T FlagTypes](
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
 
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)            // API (global) -> transaction -> client -> invocation
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, EvaluationContextFromContext(ctx), globalEvalCtx)  // API (global) -> transaction -> client -> invocation
 	apiClientInvocationProviderHooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks()) // API, Client, Invocation, Provider
 	providerInvocationClientAPIHooks := slices.Concat(provider.Hooks(), options.hooks, c.hooks, globalHooks) // Provider, Invocation, Client, API
 

@@ -70,7 +70,7 @@ func (h *hookIsolator) Before(ctx context.Context, hookContext of.HookContext, h
 	h.capturedHints = hookHints
 	// Return copy of original evaluation context so any changes are isolated to each provider's hooks
 	evalCtx := h.capturedContext.EvaluationContext()
-	return of.WithTransactionContext(ctx, evalCtx), nil
+	return of.ContextWithEvaluationContext(ctx, evalCtx), nil
 }
 
 func (h *hookIsolator) Metadata() of.Metadata {
@@ -245,7 +245,7 @@ func (h *hookIsolator) beforeHooks(ctx context.Context) (context.Context, of.Eva
 		if tctx != nil {
 			ctx = tctx
 			// FIXME: any good way to do this in public and not to add empty or duplication?
-			resultEvalCtx := of.TransactionContext(ctx)
+			resultEvalCtx := of.EvaluationContextFromContext(ctx)
 			contexts = append(contexts, resultEvalCtx)
 		}
 		if err != nil {
