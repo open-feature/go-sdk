@@ -82,11 +82,11 @@ func main() {
 }
 ```
 
-Try this example in the [Go Playground](https://go.dev/play/p/fSSK8s42hA2).
+Try this example in the [Go Playground](https://go.dev/play/p/BUrOs3VWNHu).
 
 ### API Reference
 
-See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature) for the complete API documentation.
+See [here](https://pkg.go.dev/go.openfeature.dev/openfeature/v2) for the complete API documentation.
 
 ## 🌟 Features
 
