@@ -1287,6 +1287,7 @@ func TestRequirement_1_7_6(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ErrProviderNotReady, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
@@ -1347,6 +1348,7 @@ func TestRequirement_1_7_7(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
+	mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ErrProviderFatal, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 

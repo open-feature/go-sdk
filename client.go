@@ -502,9 +502,8 @@ func evaluate[T FlagTypes](
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
 
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, EvaluationContextFromContext(ctx), globalEvalCtx)  // API (global) -> transaction -> client -> invocation
-	apiClientInvocationProviderHooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks()) // API, Client, Invocation, Provider
-	providerInvocationClientAPIHooks := slices.Concat(provider.Hooks(), options.hooks, c.hooks, globalHooks) // Provider, Invocation, Client, API
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, EvaluationContextFromContext(ctx), globalEvalCtx) // API (global) -> transaction -> client -> invocation
+	hooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks())                           // API, Client, Invocation, Provider
 
 	var err error
 	hookCtx := HookContext{
@@ -517,30 +516,30 @@ func evaluate[T FlagTypes](
 	}
 
 	defer func() {
-		finallyHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options)
+		finallyHooks(ctx, hookCtx, hooks, evalDetails, options)
 	}()
+
+	ctx, evalCtx, err = beforeHooks(ctx, hookCtx, hooks, evalCtx, options)
+	hookCtx.evaluationContext = evalCtx
+	if err != nil {
+		err = fmt.Errorf("before hook: %w", err)
+		errorHooks(ctx, hookCtx, hooks, err, options)
+		return evalDetails, err
+	}
 
 	// bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
-			errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ErrProviderNotReady, options)
+			errorHooks(ctx, hookCtx, hooks, ErrProviderNotReady, options)
 			return evalDetails, ErrProviderNotReady
 		}
 
 		// short circuit if provider is in FATAL state
 		if c.State() == FatalState {
-			errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ErrProviderFatal, options)
+			errorHooks(ctx, hookCtx, hooks, ErrProviderFatal, options)
 			return evalDetails, ErrProviderFatal
 		}
-	}
-
-	ctx, evalCtx, err = beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
-	hookCtx.evaluationContext = evalCtx
-	if err != nil {
-		err = fmt.Errorf("before hook: %w", err)
-		errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
-		return evalDetails, err
 	}
 
 	flatCtx := evalCtx.Flattened()
@@ -569,7 +568,7 @@ func evaluate[T FlagTypes](
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("error code: %w", err)
-		errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+		errorHooks(ctx, hookCtx, hooks, err, options)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = ErrorReason
 		return evalDetails, err
@@ -580,7 +579,7 @@ func evaluate[T FlagTypes](
 		evalDetails.Value, ok = resolution.Value.(T)
 		if !ok {
 			err := fmt.Errorf("evaluated value is not a %s", flagType)
-			errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+			errorHooks(ctx, hookCtx, hooks, err, options)
 			evalDetails.Value = defaultValue
 			evalDetails.ErrorCode = TypeMismatchCode
 			evalDetails.ErrorMessage = err.Error()
@@ -590,9 +589,9 @@ func evaluate[T FlagTypes](
 
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
-	if err := afterHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options); err != nil {
+	if err := afterHooks(ctx, hookCtx, hooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
-		errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+		errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
 
@@ -628,8 +627,9 @@ func afterHooks[T FlagTypes](
 		Value:            evalDetails.Value,
 		ResolutionDetail: evalDetails.ResolutionDetail,
 	}
-	for _, hook := range hooks {
-		if err := hook.After(ctx, hookCtx, e, options.hookHints); err != nil {
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		if err := hooks[i].After(ctx, hookCtx, e, options.hookHints); err != nil {
 			return err
 		}
 	}
@@ -638,8 +638,9 @@ func afterHooks[T FlagTypes](
 }
 
 func errorHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
-	for _, hook := range hooks {
-		hook.Error(ctx, hookCtx, err, options.hookHints)
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		hooks[i].Error(ctx, hookCtx, err, options.hookHints)
 	}
 }
 
@@ -650,8 +651,9 @@ func finallyHooks[T FlagTypes](ctx context.Context, hookCtx HookContext, hooks [
 		Value:            evalDetails.Value,
 		ResolutionDetail: evalDetails.ResolutionDetail,
 	}
-	for _, hook := range hooks {
-		hook.Finally(ctx, hookCtx, e, options.hookHints)
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		hooks[i].Finally(ctx, hookCtx, e, options.hookHints)
 	}
 }
 

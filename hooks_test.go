@@ -639,8 +639,9 @@ func TestRequirement_4_4_2(t *testing.T) {
 	t.Run("before, after & finally hooks MUST be evaluated in the following order", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
-		mockAPIHook := NewMockHook(ctrl)
-		AddHooks(mockAPIHook)
+		mockAPIHook1 := NewMockHook(ctrl)
+		mockAPIHook2 := NewMockHook(ctrl)
+		AddHooks(mockAPIHook1, mockAPIHook2)
 		mockClientHook := NewMockHook(ctrl)
 
 		mockInvocationHook := NewMockHook(ctrl)
@@ -654,7 +655,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
+		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(1)
 
 		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
@@ -663,16 +664,19 @@ func TestRequirement_4_4_2(t *testing.T) {
 		mockProviderHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).
 			After(mockInvocationHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockClientHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())).
-			After(mockAPIHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()))
+			After(mockAPIHook1.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())).
+			After(mockAPIHook2.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()))
 
 		// after: Invocation, Client, API
-		mockAPIHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockAPIHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			After(mockAPIHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockClientHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockInvocationHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockProviderHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()))
 
 		// finally: Invocation, Client, API
-		mockAPIHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		mockAPIHook1.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			After(mockAPIHook2.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockClientHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockInvocationHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())).
 			After(mockProviderHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()))
@@ -706,7 +710,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
 
-		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
+		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(1)
 
 		mockAPIHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(t.Context(), errors.New("forced"))
 
@@ -810,7 +814,7 @@ func TestRequirement_4_4_6(t *testing.T) {
 
 			mockHook1.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
-			mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced"))
+			mockHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced"))
 			// the lack of mockHook2.EXPECT().After() asserts that remaining hooks aren't invoked after an error
 			mockHook1.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook1.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
