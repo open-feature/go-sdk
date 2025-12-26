@@ -420,6 +420,49 @@ type DetailEvaluator interface { ...} // Public, focused interface
 
 Internal interfaces are now private. Use the provided public interfaces instead.
 
+### 11. **Simplified Multi-Domain API (SetNamedProvider/SetNamedProviderAndWait Consolidation)**
+
+**v1:**
+
+```go
+// Named provider functions (separate API)
+api.SetNamedProvider(ctx, "domain-name", provider)
+api.SetNamedProviderAndWait(ctx, "domain-name", provider)
+api.NamedProviderMetadata("domain-name")
+
+// Client creation with domain
+client := openfeature.NewClient("domain-name")
+client := openfeature.NewDefaultClient()  // Default domain client
+```
+
+**v2:**
+
+```go
+// Unified API with WithDomain option
+api.SetProvider(ctx, provider, openfeature.WithDomain("domain-name"))
+api.SetProviderAndWait(ctx, provider, openfeature.WithDomain("domain-name"))
+api.ProviderMetadata(openfeature.WithDomain("domain-name"))
+
+// Client creation unified
+client := openfeature.NewClient(openfeature.WithDomain("domain-name"))
+client := openfeature.NewClient()  // Default domain client (no argument needed)
+```
+
+**Key Differences:**
+
+- `SetNamedProvider()`, `SetNamedProviderAndWait()`, and `NamedProviderMetadata()` are removed
+- All provider registration now uses `SetProvider()` and `SetProviderAndWait()` with the `WithDomain()` option
+- `NewDefaultClient()` is replaced with `NewClient()` (no arguments returns default domain)
+- `NewClient(domainName)` is replaced with `NewClient(WithDomain(domainName))`
+- Domain is now specified as a `CallOption` rather than a positional string argument
+
+**Benefits:**
+
+- Simpler, more consistent API surface
+- Uses functional options pattern for extensibility
+- Single set of functions for both default and named providers
+- Clearer intent with explicit `WithDomain()` calls
+
 ---
 
 ## Migration Steps
@@ -597,4 +640,24 @@ client.WithLogger(myLogger)
 import "go.openfeature.dev/openfeature/v2/hooks"
 loggingHook := hooks.NewLoggingHook()
 api.AddHooks(loggingHook)
+```
+
+### Step 8: Update new client and set provider calls
+
+```go
+// OLD
+api.SetNamedProvider(ctx, "user-service", userProvider)
+api.SetNamedProviderAndWait(ctx, "billing-service", billingProvider)
+userClient := openfeature.NewClient("user-service")
+billingClient := openfeature.NewClient("billing-service")
+defaultClient := openfeature.NewDefaultClient()
+metadata := api.NamedProviderMetadata("user-service")
+
+// NEW
+api.SetProvider(ctx, userProvider, openfeature.WithDomain("user-service"))
+api.SetProviderAndWait(ctx, billingProvider, openfeature.WithDomain("billing-service"))
+userClient := openfeature.NewClient(openfeature.WithDomain("user-service"))
+billingClient := openfeature.NewClient(openfeature.WithDomain("billing-service"))
+defaultClient := openfeature.NewClient()
+metadata := api.ProviderMetadata(openfeature.WithDomain("user-service"))
 ```

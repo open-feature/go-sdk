@@ -86,7 +86,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		client := "client"
 
-		err := SetNamedProvider(t.Context(), client, provider)
+		err := SetProvider(t.Context(), provider, WithDomain(client))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
@@ -149,7 +149,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 		client := "client"
 
-		err := SetNamedProvider(t.Context(), client, provider)
+		err := SetProvider(t.Context(), provider, WithDomain(client))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
@@ -164,7 +164,7 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 		providerOverride, _, _ := setupProviderWithSemaphores()
 
-		err = SetNamedProvider(t.Context(), client, providerOverride)
+		err = SetProvider(t.Context(), providerOverride, WithDomain(client))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
@@ -192,14 +192,14 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 		clientName := "clientA"
 
-		err = SetNamedProvider(t.Context(), clientName, provider)
+		err = SetProvider(t.Context(), provider, WithDomain(clientName))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
 		providerOverride, _, _ := setupProviderWithSemaphores()
 
-		err = SetNamedProvider(t.Context(), clientName, providerOverride)
+		err = SetProvider(t.Context(), providerOverride, WithDomain(clientName))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
@@ -225,19 +225,19 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 		clientA := "clientA"
 		clientB := "clientB"
 
-		err := SetNamedProvider(t.Context(), clientA, providerA)
+		err := SetProvider(t.Context(), providerA, WithDomain(clientA))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		err = SetNamedProvider(t.Context(), clientB, providerA)
+		err = SetProvider(t.Context(), providerA, WithDomain(clientB))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
 		providerOverride, _, _ := setupProviderWithSemaphores()
 
-		err = SetNamedProvider(t.Context(), clientA, providerOverride)
+		err = SetProvider(t.Context(), providerOverride, WithDomain(clientA))
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
@@ -306,7 +306,7 @@ func TestRequirement_1_1_2_4(t *testing.T) {
 		}
 
 		// when - registered
-		err := SetNamedProviderAndWait(t.Context(), "someName", provider)
+		err := SetProviderAndWait(t.Context(), provider, WithDomain("someName"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -408,12 +408,12 @@ func TestRequirement_1_1_3(t *testing.T) {
 	providerB := NewMockProvider(ctrl)
 	providerB.EXPECT().Metadata().Return(Metadata{Name: "providerB"}).AnyTimes()
 
-	err := SetNamedProvider(t.Context(), "clientA", providerA)
+	err := SetProvider(t.Context(), providerA, WithDomain("clientA"))
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	err = SetNamedProvider(t.Context(), "clientB", providerB)
+	err = SetProvider(t.Context(), providerB, WithDomain("clientB"))
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -451,7 +451,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 	providerB2 := NewMockProvider(ctrl)
 	providerB2.EXPECT().Metadata().Return(Metadata{Name: "providerB2"}).AnyTimes()
 
-	err = SetNamedProvider(t.Context(), "clientB", providerB2)
+	err = SetProvider(t.Context(), providerB2, WithDomain("clientB"))
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
@@ -505,11 +505,11 @@ func TestRequirement_1_1_5(t *testing.T) {
 		defaultProvider := NoopProvider{}
 		name := "test-provider"
 
-		err := SetNamedProvider(t.Context(), name, defaultProvider)
+		err := SetProvider(t.Context(), defaultProvider, WithDomain(name))
 		if err != nil {
 			t.Errorf("provider registration failed %v", err)
 		}
-		if NamedProviderMetadata(name) != defaultProvider.Metadata() {
+		if ProviderMetadata(WithDomain(name)) != defaultProvider.Metadata() {
 			t.Error("default global provider's metadata isn't NoopProvider's metadata")
 		}
 	})
@@ -521,7 +521,7 @@ func TestRequirement_1_1_6(t *testing.T) {
 	t.Cleanup(initSingleton)
 
 	t.Run("client from direct invocation", func(t *testing.T) {
-		client := NewClient("test-client")
+		client := NewClient(WithDomain("test-client"))
 		if client == nil {
 			t.Errorf("expected an Client instance, but got invalid")
 		}
@@ -545,7 +545,7 @@ func TestRequirement_1_1_6(t *testing.T) {
 // The client creation function MUST NOT throw, or otherwise abnormally terminate.
 func TestRequirement_1_1_7(t *testing.T) {
 	t.Cleanup(initSingleton)
-	type clientCreationFunc func(name string) *Client
+	type clientCreationFunc func(...CallOption) *Client
 
 	// asserting that our NewClient method matches this signature is enough to deduce that no error is returned
 	var f clientCreationFunc = NewClient
@@ -654,7 +654,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 
 		clientName := "OFClient"
 
-		client := NewClient(clientName)
+		client := NewClient(WithDomain(clientName))
 
 		// adding handlers
 		client.AddHandler(ProviderReady, h1)
@@ -792,7 +792,7 @@ func TestLateBindingOfDefaultProvider(t *testing.T) {
 	defaultProvider.EXPECT().Hooks().AnyTimes().Return([]Hook{})
 	defaultProvider.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(StringResolutionDetail{Value: expectedResultFromLateDefaultProvider})
 
-	client := NewClient("app")
+	client := NewClient(WithDomain("app"))
 	strResult := client.String(t.Context(), "flag", expectedResultUnboundProvider, EvaluationContext{})
 
 	if strResult != expectedResultUnboundProvider {
@@ -820,7 +820,7 @@ func TestForNilProviders(t *testing.T) {
 		t.Errorf("setting nil provider must result in an error")
 	}
 
-	err = SetNamedProvider(t.Context(), "client", nil)
+	err = SetProvider(t.Context(), nil, WithDomain("client"))
 	if err == nil {
 		t.Errorf("setting nil named provider must result in an error")
 	}

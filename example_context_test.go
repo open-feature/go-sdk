@@ -47,8 +47,8 @@ func ExampleSetProviderAndWait() {
 	// Output: Provider is ready
 }
 
-// ExampleSetNamedProvider demonstrates multi-tenant provider setup.
-func ExampleSetNamedProvider() {
+// ExampleSetProvider_withDomain multi-tenant provider setup.
+func ExampleSetProvider_withDomain() {
 	// Create test providers for different services
 	userProvider := &openfeature.NoopProvider{}
 	billingProvider := &openfeature.NoopProvider{}
@@ -56,21 +56,21 @@ func ExampleSetNamedProvider() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	err := openfeature.SetNamedProvider(ctx, "user-service", userProvider)
+	err := openfeature.SetProvider(ctx, userProvider, openfeature.WithDomain("user-service"))
 	if err != nil {
 		log.Printf("Failed to setup user service provider: %v", err)
 		return
 	}
 
-	err = openfeature.SetNamedProvider(ctx, "billing-service", billingProvider)
+	err = openfeature.SetProvider(ctx, billingProvider, openfeature.WithDomain("billing-service"))
 	if err != nil {
 		log.Printf("Failed to setup billing service provider: %v", err)
 		return
 	}
 
 	// Create clients for different domains
-	userClient := openfeature.NewClient("user-service")
-	billingClient := openfeature.NewClient("billing-service")
+	userClient := openfeature.NewClient(openfeature.WithDomain("user-service"))
+	billingClient := openfeature.NewClient(openfeature.WithDomain("billing-service"))
 
 	fmt.Printf("User client domain: %s\n", userClient.Metadata().Domain())
 	fmt.Printf("Billing client domain: %s\n", billingClient.Metadata().Domain())
@@ -78,8 +78,8 @@ func ExampleSetNamedProvider() {
 	// Billing client domain: billing-service
 }
 
-// ExampleSetNamedProviderAndWait demonstrates critical service provider setup.
-func ExampleSetNamedProviderAndWait() {
+// ExampleSetProviderAndWait_withDomain critical service provider setup.
+func ExampleSetProviderAndWait_withDomain() {
 	// Create a test provider for demonstration
 	criticalProvider := &openfeature.NoopProvider{}
 
@@ -87,14 +87,14 @@ func ExampleSetNamedProviderAndWait() {
 	defer cancel()
 
 	// Wait for critical providers to be ready
-	err := openfeature.SetNamedProviderAndWait(ctx, "critical-service", criticalProvider)
+	err := openfeature.SetProviderAndWait(ctx, criticalProvider, openfeature.WithDomain("critical-service"))
 	if err != nil {
 		log.Printf("Critical provider failed to initialize: %v", err)
 		return
 	}
 
 	// Now safe to use the client
-	client := openfeature.NewClient("critical-service")
+	client := openfeature.NewClient(openfeature.WithDomain("critical-service"))
 	enabled := client.Boolean(context.Background(), "feature-x", false, openfeature.EvaluationContext{})
 
 	fmt.Printf("Critical service ready, feature-x enabled: %v\n", enabled)
@@ -144,7 +144,7 @@ func ExampleShutdown() {
 		return
 	}
 
-	err = openfeature.SetNamedProviderAndWait(ctx, "service-a", provider2)
+	err = openfeature.SetProviderAndWait(ctx, provider2, openfeature.WithDomain("service-a"))
 	if err != nil {
 		log.Printf("Named provider setup failed: %v", err)
 		return

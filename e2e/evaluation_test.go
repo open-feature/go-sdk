@@ -93,7 +93,7 @@ func initializeEvaluationScenario(ctx *godog.ScenarioContext) {
 func aProviderIsRegisteredWithCacheDisabled(ctx context.Context) error {
 	memoryProvider := memprovider.NewProvider(memoryFlags)
 
-	err := openfeature.SetNamedProvider(ctx, "evaluation-test", memoryProvider)
+	err := openfeature.SetProvider(ctx, memoryProvider, openfeature.WithDomain("evaluation-test"))
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
-	got := openfeature.NewClient("evaluation-test").Boolean(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).Boolean(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -135,7 +135,7 @@ func theResolvedBooleanValueShouldBe(ctx context.Context, expectedValueStr strin
 func aStringFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got := openfeature.NewClient("evaluation-test").String(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).String(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -156,7 +156,7 @@ func theResolvedStringValueShouldBe(ctx context.Context, expectedValue string) e
 func anIntegerFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got := openfeature.NewClient("evaluation-test").Int(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).Int(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -177,7 +177,7 @@ func theResolvedIntegerValueShouldBe(ctx context.Context, expectedValue int64) e
 func aFloatFlagWithKeyIsEvaluatedWithDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
-	got := openfeature.NewClient("evaluation-test").Float(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).Float(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -196,7 +196,7 @@ func theResolvedFloatValueShouldBe(ctx context.Context, expectedValue float64) e
 }
 
 func anObjectFlagWithKeyIsEvaluatedWithANullDefaultValue(ctx context.Context, flagKey string) (context.Context, error) {
-	got := openfeature.NewClient("evaluation-test").Object(ctx, flagKey, nil, openfeature.EvaluationContext{})
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).Object(ctx, flagKey, nil, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, got), nil
 }
@@ -255,7 +255,7 @@ func aBooleanFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 		return ctx, errors.New("default value must be of type bool")
 	}
 
-	got, err := openfeature.NewClient("evaluation-test").BooleanValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).BooleanValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -299,7 +299,7 @@ func theResolvedBooleanDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aStringFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -338,7 +338,7 @@ func theResolvedStringDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe
 func anIntegerFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -377,7 +377,7 @@ func theResolvedIntegerDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldB
 func aFloatFlagWithKeyIsEvaluatedWithDetailsAndDefaultValue(
 	ctx context.Context, flagKey string, defaultValue float64,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").FloatValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).FloatValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -416,7 +416,7 @@ func theResolvedFloatDetailsValueShouldBeTheVariantShouldBeAndTheReasonShouldBe(
 func anObjectFlagWithKeyIsEvaluatedWithDetailsAndANullDefaultValue(
 	ctx context.Context, flagKey string,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").ObjectValueDetails(ctx, flagKey, nil, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).ObjectValueDetails(ctx, flagKey, nil, openfeature.EvaluationContext{})
 	if err != nil {
 		return ctx, fmt.Errorf("openfeature client: %w", err)
 	}
@@ -523,7 +523,7 @@ func aFlagWithKeyIsEvaluatedWithDefaultValue(
 		return ctx, errors.New("no contextAwareEvaluationData found")
 	}
 
-	got := openfeature.NewClient("evaluation-test").String(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).String(ctx, flagKey, defaultValue, ctxAwareEvalData.evaluationContext)
 
 	ctxAwareEvalData.flagKey = flagKey
 	ctxAwareEvalData.defaultValue = defaultValue
@@ -551,7 +551,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 		return errors.New("no contextAwareEvaluationData found")
 	}
 
-	got := openfeature.NewClient("evaluation-test").String(
+	got := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).String(
 		ctx, ctxAwareEvalData.flagKey, ctxAwareEvalData.defaultValue, openfeature.EvaluationContext{},
 	)
 
@@ -565,7 +565,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, stringFlagNotFoundData{
 		evalDetails:  got,
@@ -622,7 +622,7 @@ func theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateAMissingFlagWith
 func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
-	got, err := openfeature.NewClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
+	got, err := openfeature.NewClient(openfeature.WithDomain("evaluation-test")).IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
 
 	return context.WithValue(ctx, ctxStorageKey{}, typeErrorData{
 		evalDetails:  got,

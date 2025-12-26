@@ -83,12 +83,12 @@ func testLoggingHookLogsMessagesAsExpected(hook LoggingHook, logger *slog.Logger
 		},
 	})
 
-	err := openfeature.SetNamedProviderAndWait(t.Context(), "test-app", memoryProvider)
+	err := openfeature.SetProviderAndWait(t.Context(), memoryProvider, openfeature.WithDomain("test-app"))
 	if err != nil {
 		t.Error("error setting provider", err)
 	}
 	openfeature.AddHooks(&hook)
-	client := openfeature.NewClient("test-app")
+	client := openfeature.NewClient(openfeature.WithDomain("test-app"))
 
 	t.Run("test boolean success", func(t *testing.T) {
 		res := client.Boolean(

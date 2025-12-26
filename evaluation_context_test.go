@@ -46,7 +46,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 	})
 
 	t.Run("client MUST have a method for supplying `evaluation context`", func(t *testing.T) {
-		client := NewClient("test")
+		client := NewClient(WithDomain("test"))
 
 		type requirement interface {
 			SetEvaluationContext(evalCtx EvaluationContext)
@@ -59,7 +59,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 	})
 
 	t.Run("invocation MUST have a method for supplying `evaluation context`", func(t *testing.T) {
-		client := NewClient("test")
+		client := NewClient(WithDomain("test"))
 
 		type requirement interface {
 			Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool
@@ -110,12 +110,12 @@ func TestRequirement_3_2_2(t *testing.T) {
 	mockProvider := NewMockProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
-	err := SetNamedProviderAndWait(t.Context(), t.Name(), mockProvider)
+	err := SetProviderAndWait(t.Context(), mockProvider, WithDomain(t.Name()))
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	client := NewClient(t.Name())
+	client := NewClient(WithDomain(t.Name()))
 	clientEvalCtx := EvaluationContext{
 		targetingKey: "Client",
 		attributes: map[string]any{

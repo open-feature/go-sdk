@@ -157,7 +157,7 @@ func Test_TestAwareProviderPanics(t *testing.T) {
 
 func functionUnderTest(tb testing.TB) bool {
 	tb.Helper()
-	got := openfeature.NewDefaultClient().
+	got := openfeature.NewClient().
 		Boolean(tb.Context(), "my_flag", false, openfeature.EvaluationContext{})
 	return got
 }

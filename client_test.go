@@ -47,7 +47,7 @@ func TestRequirement_1_2_1(t *testing.T) {
 
 	mockHook := NewMockHook(ctrl)
 
-	client := NewClient("test-client")
+	client := NewClient(WithDomain("test-client"))
 	client.AddHooks(mockHook)
 	client.AddHooks(mockHook, mockHook)
 
@@ -63,7 +63,7 @@ func TestRequirement_1_2_2(t *testing.T) {
 	t.Cleanup(initSingleton)
 	clientName := "test-client"
 
-	client := NewClient(clientName)
+	client := NewClient(WithDomain(clientName))
 
 	if client.Metadata().Domain() != clientName {
 		t.Errorf("client domain not initiated as expected, got %s, want %s", client.Metadata().Domain(), clientName)
@@ -87,7 +87,7 @@ func TestRequirement_1_2_2(t *testing.T) {
 // it's to be considered abnormal execution, and the supplied `default value` should be returned.
 func TestRequirements_1_3(t *testing.T) {
 	t.Cleanup(initSingleton)
-	client := NewClient("test-client")
+	client := NewClient(WithDomain("test-client"))
 
 	type requirements interface {
 		Boolean(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) bool
@@ -108,7 +108,7 @@ func TestRequirements_1_3(t *testing.T) {
 // and `evaluation options` (optional), which returns an `evaluation details` structure.
 func TestRequirement_1_4_1(t *testing.T) {
 	t.Cleanup(initSingleton)
-	client := NewClient("test-client")
+	client := NewClient(WithDomain("test-client"))
 
 	type requirements interface {
 		BooleanValueDetails(ctx context.Context, flag string, defaultValue bool, evalCtx EvaluationContext, options ...Option) (BooleanEvaluationDetails, error)
@@ -761,7 +761,7 @@ func TestRequirement_1_4_13(t *testing.T) {
 // The `client` MUST define a function for tracking the occurrence of a particular action or application state,
 // with parameters `tracking event name` (string, required) and `tracking event details` (optional), which returns nothing.
 func TestRequirement_6_1(t *testing.T) {
-	client := NewClient("test-client")
+	client := NewClient(WithDomain("test-client"))
 
 	type requirements interface {
 		Track(ctx context.Context, trackingEventName string, evalCtx EvaluationContext, details TrackingEventDetails)
@@ -1164,7 +1164,7 @@ func TestFlagMetadataAccessors(t *testing.T) {
 // The client MUST define a provider status accessor which indicates the readiness of the associated provider.
 // with possible values NOT_READY, READY, STALE, ERROR, or FATAL.
 func TestRequirement_1_7_1(t *testing.T) {
-	client := NewClient("test-client")
+	client := NewClient(WithDomain("test-client"))
 
 	type requirements interface {
 		State() State
@@ -1183,7 +1183,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 func TestRequirement_1_7_2(t *testing.T) {
 	t.Cleanup(initSingleton)
 
-	if NewClient(t.Name()).State() != NotReadyState {
+	if NewClient(WithDomain(t.Name())).State() != NotReadyState {
 		t.Fatalf("expected client to report NOT READY state")
 	}
 
@@ -1197,11 +1197,11 @@ func TestRequirement_1_7_2(t *testing.T) {
 		},
 	}
 
-	if err := SetNamedProviderAndWait(t.Context(), t.Name(), provider); err != nil {
+	if err := SetProviderAndWait(t.Context(), provider, WithDomain(t.Name())); err != nil {
 		t.Fatalf("failed to set up provider: %v", err)
 	}
 
-	if NewClient(t.Name()).State() != ReadyState {
+	if NewClient(WithDomain(t.Name())).State() != ReadyState {
 		t.Fatalf("expected client to report READY state")
 	}
 }
@@ -1224,8 +1224,8 @@ func TestRequirement_1_7_3(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetNamedProviderAndWait(t.Context(), t.Name(), provider)
-	if NewClient(t.Name()).State() != ErrorState {
+	_ = SetProviderAndWait(t.Context(), provider, WithDomain(t.Name()))
+	if NewClient(WithDomain(t.Name())).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1248,9 +1248,9 @@ func TestRequirement_1_7_4(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetNamedProviderAndWait(t.Context(), t.Name(), provider)
+	_ = SetProviderAndWait(t.Context(), provider, WithDomain(t.Name()))
 
-	if NewClient(t.Name()).State() != ErrorState {
+	if NewClient(WithDomain(t.Name())).State() != ErrorState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1273,9 +1273,9 @@ func TestRequirement_1_7_5(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	_ = SetNamedProviderAndWait(t.Context(), t.Name(), provider)
+	_ = SetProviderAndWait(t.Context(), provider, WithDomain(t.Name()))
 
-	if NewClient(t.Name()).State() != FatalState {
+	if NewClient(WithDomain(t.Name())).State() != FatalState {
 		t.Fatalf("expected client to report ERROR state")
 	}
 }
@@ -1308,7 +1308,7 @@ func TestRequirement_1_7_6(t *testing.T) {
 
 	_ = SetProvider(t.Context(), notReadyEventingProvider)
 
-	client := NewClient("somOtherClient")
+	client := NewClient(WithDomain("somOtherClient"))
 	client.AddHooks(mockHook)
 
 	if client.State() != NotReadyState {
@@ -1341,7 +1341,7 @@ func TestRequirement_1_7_7(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	err := SetNamedProviderAndWait(t.Context(), t.Name(), provider)
+	err := SetProviderAndWait(t.Context(), provider, WithDomain(t.Name()))
 	if err == nil {
 		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
 	}
@@ -1352,7 +1352,7 @@ func TestRequirement_1_7_7(t *testing.T) {
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ErrProviderFatal, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-	client := NewClient(t.Name())
+	client := NewClient(WithDomain(t.Name()))
 	client.AddHooks(mockHook)
 
 	if client.State() != FatalState {
@@ -1382,7 +1382,7 @@ func TestRequirement_5_3_5(t *testing.T) {
 	t.Cleanup(initSingleton)
 
 	eventually(t, func() bool {
-		return NewDefaultClient().State() == NotReadyState
+		return NewClient().State() == NotReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report NOT READY state")
 
 	eventing := &ProviderEventing{
@@ -1397,31 +1397,31 @@ func TestRequirement_5_3_5(t *testing.T) {
 		eventing,
 	}
 
-	if err := SetNamedProviderAndWait(t.Context(), t.Name(), provider); err != nil {
+	if err := SetProviderAndWait(t.Context(), provider, WithDomain(t.Name())); err != nil {
 		t.Fatalf("failed to set up provider: %v", err)
 	}
 
 	eventually(t, func() bool {
-		return NewClient(t.Name()).State() == ReadyState
+		return NewClient(WithDomain(t.Name())).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderStale})
 	eventually(t, func() bool {
-		return NewClient(t.Name()).State() == StaleState
+		return NewClient(WithDomain(t.Name())).State() == StaleState
 	}, time.Second, 100*time.Millisecond, "expected client to report STALE state")
 
 	eventing.Invoke(Event{EventType: ProviderError})
 	eventually(t, func() bool {
-		return NewClient(t.Name()).State() == ErrorState
+		return NewClient(WithDomain(t.Name())).State() == ErrorState
 	}, time.Second, 100*time.Millisecond, "expected client to report ERROR state")
 
 	eventing.Invoke(Event{EventType: ProviderReady})
 	eventually(t, func() bool {
-		return NewClient(t.Name()).State() == ReadyState
+		return NewClient(WithDomain(t.Name())).State() == ReadyState
 	}, time.Second, 100*time.Millisecond, "expected client to report READY state")
 
 	eventing.Invoke(Event{EventType: ProviderError, ProviderEventDetails: ProviderEventDetails{ErrorCode: ProviderFatalCode}})
 	eventually(t, func() bool {
-		return NewClient(t.Name()).State() == FatalState
+		return NewClient(WithDomain(t.Name())).State() == FatalState
 	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
 }

@@ -131,7 +131,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 		// associated to client domain
 		associatedName := "providerForClient"
 
-		err := SetNamedProviderAndWait(t.Context(), associatedName, eventingProvider)
+		err := SetProviderAndWait(t.Context(), eventingProvider, WithDomain(associatedName))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,7 +141,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 			rsp <- details
 		}
 
-		client := NewClient(associatedName)
+		client := NewClient(WithDomain(associatedName))
 		client.AddHandler(ProviderError, callBack)
 
 		fCh := []string{"flagA"}
@@ -212,15 +212,10 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	// named provider(associated to domain someClient)
-	err = SetNamedProviderAndWait(t.Context(), "someClient", struct {
+	err = SetProviderAndWait(t.Context(), struct {
 		FeatureProvider
 		EventHandler
-	}{
-		NoopProvider{},
-		&ProviderEventing{
-			c: make(chan Event, 1),
-		},
-	})
+	}{NoopProvider{}, &ProviderEventing{c: make(chan Event, 1)}}, WithDomain("someClient"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +226,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 	}
 
 	event := ProviderError
-	client := NewClient("someClient")
+	client := NewClient(WithDomain("someClient"))
 	client.AddHandler(event, callBack)
 
 	// invoke default provider
@@ -293,7 +288,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	// provider association
 	providerName := "providerA"
 
-	client := NewClient(providerName)
+	client := NewClient(WithDomain(providerName))
 
 	// client level handlers
 	client.AddHandler(ProviderConfigChange, failingCallback)
@@ -381,7 +376,7 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("clientWithNoProviderAssociation")
+		client := NewClient(WithDomain("clientWithNoProviderAssociation"))
 		client.AddHandler(ProviderReady, callback)
 		err := SetProvider(t.Context(), provider)
 		if err != nil {
@@ -417,10 +412,10 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderReady, callback)
 
-		err := SetNamedProvider(t.Context(), "someClient", provider)
+		err := SetProvider(t.Context(), provider, WithDomain("someClient"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -455,10 +450,10 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderReady, callback)
 
-		err := SetNamedProvider(t.Context(), "providerWithoutClient", provider)
+		err := SetProvider(t.Context(), provider, WithDomain("providerWithoutClient"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -532,7 +527,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("clientWithNoProviderAssociation")
+		client := NewClient(WithDomain("clientWithNoProviderAssociation"))
 		client.AddHandler(ProviderError, callback)
 
 		err := SetProvider(t.Context(), provider)
@@ -570,10 +565,10 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderError, callback)
 
-		err := SetNamedProvider(t.Context(), "someClient", provider)
+		err := SetProvider(t.Context(), provider, WithDomain("someClient"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -608,10 +603,10 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("provider")
+		client := NewClient(WithDomain("provider"))
 		client.AddHandler(ProviderError, callback)
 
-		err := SetNamedProvider(t.Context(), "someClient", provider)
+		err := SetProvider(t.Context(), provider, WithDomain("someClient"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -678,7 +673,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 		}
 
 		clientAssociation := "clientA"
-		err := SetNamedProviderAndWait(t.Context(), clientAssociation, readyEventingProvider)
+		err := SetProviderAndWait(t.Context(), readyEventingProvider, WithDomain(clientAssociation))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -800,7 +795,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := NewClient("someClient")
+		client := NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderError, callback)
 
 		select {
@@ -987,7 +982,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 
 		// assert client transitioned to ERROR
 		eventually(t, func() bool {
-			return NewDefaultClient().State() == ErrorState
+			return NewClient().State() == ErrorState
 		}, time.Second, time.Millisecond*100, "")
 
 		select {
@@ -1030,7 +1025,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 
 		// assert client transitioned to STALE
 		eventually(t, func() bool {
-			return NewDefaultClient().State() == StaleState
+			return NewClient().State() == StaleState
 		}, time.Second, time.Millisecond*100, "")
 
 		select {
@@ -1077,12 +1072,12 @@ func TestEventHandler_multiSubs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = SetNamedProvider(t.Context(), "clientA", eventingProvideOther)
+	err = SetProvider(t.Context(), eventingProvideOther, WithDomain("clientA"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = SetNamedProvider(t.Context(), "clientB", eventingProvideOther)
+	err = SetProvider(t.Context(), eventingProvideOther, WithDomain("clientB"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1100,7 +1095,7 @@ func TestEventHandler_multiSubs(t *testing.T) {
 		rspClientA <- e
 	}
 
-	clientA := NewClient("clientA")
+	clientA := NewClient(WithDomain("clientA"))
 	clientA.AddHandler(ProviderStale, callbackA)
 
 	rspClientB := make(chan EventDetails, 1)
@@ -1108,7 +1103,7 @@ func TestEventHandler_multiSubs(t *testing.T) {
 		rspClientB <- e
 	}
 
-	clientB := NewClient("clientB")
+	clientB := NewClient(WithDomain("clientB"))
 	clientB.AddHandler(ProviderStale, callbackB)
 
 	emitDone := make(chan any)

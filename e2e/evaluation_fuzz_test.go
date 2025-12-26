@@ -12,12 +12,12 @@ func setupFuzzClient(f *testing.F) *openfeature.Client {
 	f.Helper()
 
 	memoryProvider := memprovider.NewProvider(map[string]memprovider.InMemoryFlag{})
-	err := openfeature.SetNamedProviderAndWait(f.Context(), f.Name(), memoryProvider)
+	err := openfeature.SetProviderAndWait(f.Context(), memoryProvider, openfeature.WithDomain(f.Name()))
 	if err != nil {
 		f.Errorf("error setting up provider %v", err)
 	}
 
-	return openfeature.NewClient(f.Name())
+	return openfeature.NewClient(openfeature.WithDomain(f.Name()))
 }
 
 func FuzzBooleanEvaluation(f *testing.F) {

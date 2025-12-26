@@ -143,7 +143,7 @@ func TestContextAwareInitialization(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 
-		err := SetNamedProviderAndWait(ctx, "test-domain", namedProvider)
+		err := SetProviderAndWait(ctx, namedProvider, WithDomain("test-domain"))
 		if err != nil {
 			t.Errorf("Named provider should succeed: %v", err)
 		}
@@ -306,7 +306,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		}
 
 		// Set named provider
-		err = SetNamedProviderAndWait(ctx, "test-service", namedProvider)
+		err = SetProviderAndWait(ctx, namedProvider, WithDomain("test-service"))
 		if err != nil {
 			t.Errorf("Named provider setup should succeed: %v", err)
 		}
@@ -383,7 +383,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 			t.Errorf("Default provider setup should succeed: %v", err)
 		}
 
-		err = SetNamedProviderAndWait(ctx, "test-service", namedProvider)
+		err = SetProviderAndWait(ctx, namedProvider, WithDomain("test-service"))
 		if err != nil {
 			t.Errorf("Named provider setup should succeed: %v", err)
 		}
@@ -776,7 +776,7 @@ func TestEdgeCases(t *testing.T) {
 			defer cancel()
 
 			provider := &testContextAwareProvider{initDelay: 30 * time.Millisecond}
-			err := SetNamedProviderAndWait(ctx, "concurrent-test", provider)
+			err := SetProviderAndWait(ctx, provider, WithDomain("concurrent-test"))
 			done <- err
 		}()
 

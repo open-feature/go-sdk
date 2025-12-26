@@ -70,7 +70,7 @@ func main() {
     // Register your feature flag provider
     openfeature.SetProviderAndWait(context.TODO(), openfeature.NoopProvider{})
     // Create a new client
-    client := openfeature.NewDefaultClient()
+    client := openfeature.NewClient()
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
         context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
@@ -136,7 +136,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 ))
 
 // set a value to the client context
-client := openfeature.NewDefaultClient()
+client := openfeature.NewClient()
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]any{
         "version":  "1.4.6",
@@ -166,7 +166,7 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 openfeature.AddHooks(ExampleGlobalHook{})
 
 // add a hook on this client, to run on all evaluations made by this client
-client := openfeature.NewDefaultClient()
+client := openfeature.NewClient()
 client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
@@ -183,7 +183,7 @@ For example, a flag enhancing the appearance of a UI component might drive user 
 
 ```go
 // initialize a client
-client := openfeature.NewDefaultClient()
+client := openfeature.NewClient()
 
 // trigger tracking event action
 client.Track(
@@ -223,7 +223,7 @@ import (
 func main() {
     ctx := context.TODO()
     // Register an in-memory provider with no flags
-    openfeature.SetNamedProviderAndWait(ctx, "example", inmemory.NewProvider(map[string]inmemory.InMemoryFlag{}))
+    openfeature.SetProviderAndWait(ctx, inmemory.NewProvider(map[string]inmemory.InMemoryFlag{}), openfeature.WithDomain("example"))
 
     // Configure slog
     handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
@@ -234,7 +234,7 @@ func main() {
     openfeature.AddHooks(loggingHook)
 
     // Create a new client
-    client := openfeature.NewClient("example")
+    client := openfeature.NewClient(openfeature.WithDomain("example"))
 
     // Attempt to evaluate a flag that doesn't exist
     _ = client.Boolean(ctx, "not-exist", true, openfeature.EvaluationContext{})
@@ -260,12 +260,12 @@ import "go.openfeature.dev/openfeature/v2"
 // Registering the default provider
 openfeature.SetProviderAndWait(ctx, NewLocalProvider())
 // Registering a named provider
-openfeature.SetNamedProvider(ctx, "clientForCache", NewCachedProvider())
+openfeature.SetProvider(ctx, NewCachedProvider(), openfeature.WithDomain("clientForCache"))
 
 // A Client backed by default provider
-clientWithDefault := openfeature.NewDefaultClient()
+clientWithDefault := openfeature.NewClient()
 // A Client backed by NewCachedProvider
-clientForCache := openfeature.NewClient("clientForCache")
+clientForCache := openfeature.NewClient(openfeature.WithDomain("clientForCache"))
 ```
 
 ### Eventing
@@ -293,7 +293,7 @@ var providerErrorCallback = func(details openfeature.EventDetails) {
     // callback implementation
 }
 
-client := openfeature.NewDefaultClient()
+client := openfeature.NewClient()
 
 // Client event handler
 client.AddHandler(openfeature.ProviderError, providerErrorCallback)
@@ -448,7 +448,7 @@ func (h MyHook) Error(context context.Context, hookContext openfeature.HookConte
 
 ## Testing
 
-The SDK provides a `NewTestProvider` which allows you to set flags for the scope of a test.
+The SDK provides a `testing.NewProvider` which allows you to set flags for the scope of a test.
 The `TestProvider` is thread-safe and can be used in tests that run in parallel.
 
 Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean them up with `testProvider.Cleanup()`
