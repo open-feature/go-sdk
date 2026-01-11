@@ -692,9 +692,8 @@ func (c *Client) evaluate(
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
 	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
 
-	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)            // API (global) -> transaction -> client -> invocation
-	apiClientInvocationProviderHooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks()) // API, Client, Invocation, Provider
-	providerInvocationClientAPIHooks := slices.Concat(provider.Hooks(), options.hooks, c.hooks, globalHooks) // Provider, Invocation, Client, API
+	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx) // API (global) -> transaction -> client -> invocation
+	hooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks())                 // API, Client, Invocation, Provider
 
 	var err error
 	hookCtx := HookContext{
@@ -707,29 +706,29 @@ func (c *Client) evaluate(
 	}
 
 	defer func() {
-		c.finallyHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options)
+		c.finallyHooks(ctx, hookCtx, hooks, evalDetails, options)
 	}()
 
 	// bypass short-circuit logic for the Noop provider; it is essentially stateless and a "special case"
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
-			c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ProviderNotReadyError, options)
+			c.errorHooks(ctx, hookCtx, hooks, ProviderNotReadyError, options)
 			return evalDetails, ProviderNotReadyError
 		}
 
 		// short circuit if provider is in FATAL state
 		if c.State() == FatalState {
-			c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, ProviderFatalError, options)
+			c.errorHooks(ctx, hookCtx, hooks, ProviderFatalError, options)
 			return evalDetails, ProviderFatalError
 		}
 	}
 
-	evalCtx, err = c.beforeHooks(ctx, hookCtx, apiClientInvocationProviderHooks, evalCtx, options)
+	evalCtx, err = c.beforeHooks(ctx, hookCtx, hooks, evalCtx, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("before hook: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
 
@@ -763,7 +762,7 @@ func (c *Client) evaluate(
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("error code: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = ErrorReason
 		return evalDetails, err
@@ -771,9 +770,9 @@ func (c *Client) evaluate(
 	evalDetails.Value = resolution.Value
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
-	if err := c.afterHooks(ctx, hookCtx, providerInvocationClientAPIHooks, evalDetails, options); err != nil {
+	if err := c.afterHooks(ctx, hookCtx, hooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
-		c.errorHooks(ctx, hookCtx, providerInvocationClientAPIHooks, err, options)
+		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
 
@@ -791,6 +790,8 @@ func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 	return flatCtx
 }
 
+// beforeHooks executes the Before hook for each hook in the collection.
+// Hooks are executed in forward order: API → Client → Invocation → Provider.
 func (c *Client) beforeHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
 ) (EvaluationContext, error) {
@@ -807,11 +808,14 @@ func (c *Client) beforeHooks(
 	return mergeContexts(hookCtx.evaluationContext, evalCtx), nil
 }
 
+// afterHooks executes the After hook for each hook in the collection.
+// Hooks are executed in reverse order: Provider → Invocation → Client → API.
 func (c *Client) afterHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
-	for _, hook := range hooks {
-		if err := hook.After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		if err := hooks[i].After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
 			return err
 		}
 	}
@@ -819,15 +823,21 @@ func (c *Client) afterHooks(
 	return nil
 }
 
+// errorHooks executes the Error hook for each hook in the collection.
+// Hooks are executed in reverse order: Provider → Invocation → Client → API.
 func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
-	for _, hook := range hooks {
-		hook.Error(ctx, hookCtx, err, options.hookHints)
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		hooks[i].Error(ctx, hookCtx, err, options.hookHints)
 	}
 }
 
+// finallyHooks executes the Finally hook for each hook in the collection.
+// Hooks are executed in reverse order: Provider → Invocation → Client → API.
 func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions) {
-	for _, hook := range hooks {
-		hook.Finally(ctx, hookCtx, evalDetails, options.hookHints)
+	// reverse order
+	for i := len(hooks) - 1; i >= 0; i-- {
+		hooks[i].Finally(ctx, hookCtx, evalDetails, options.hookHints)
 	}
 }
 
