@@ -814,8 +814,8 @@ func (c *Client) afterHooks(
 	ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions,
 ) error {
 	// reverse order
-	for i := len(hooks) - 1; i >= 0; i-- {
-		if err := hooks[i].After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
+	for _, hook := range slices.Backward(hooks) {
+		if err := hook.After(ctx, hookCtx, evalDetails, options.hookHints); err != nil {
 			return err
 		}
 	}
@@ -827,8 +827,8 @@ func (c *Client) afterHooks(
 // Hooks are executed in reverse order: Provider → Invocation → Client → API.
 func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, err error, options EvaluationOptions) {
 	// reverse order
-	for i := len(hooks) - 1; i >= 0; i-- {
-		hooks[i].Error(ctx, hookCtx, err, options.hookHints)
+	for _, hook := range slices.Backward(hooks) {
+		hook.Error(ctx, hookCtx, err, options.hookHints)
 	}
 }
 
@@ -836,8 +836,8 @@ func (c *Client) errorHooks(ctx context.Context, hookCtx HookContext, hooks []Ho
 // Hooks are executed in reverse order: Provider → Invocation → Client → API.
 func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []Hook, evalDetails InterfaceEvaluationDetails, options EvaluationOptions) {
 	// reverse order
-	for i := len(hooks) - 1; i >= 0; i-- {
-		hooks[i].Finally(ctx, hookCtx, evalDetails, options.hookHints)
+	for _, hook := range slices.Backward(hooks) {
+		hook.Finally(ctx, hookCtx, evalDetails, options.hookHints)
 	}
 }
 
