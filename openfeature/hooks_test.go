@@ -652,7 +652,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
+		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(1)
 
 		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
@@ -704,7 +704,7 @@ func TestRequirement_4_4_2(t *testing.T) {
 		client := NewClient(t.Name())
 		client.AddHooks(mockClientHook)
 
-		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(2)
+		mockProvider.EXPECT().Hooks().Return([]Hook{mockProviderHook}).Times(1)
 
 		mockAPIHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced"))
 
@@ -808,8 +808,8 @@ func TestRequirement_4_4_6(t *testing.T) {
 
 			mockHook1.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
-			mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced"))
-			// the lack of mockHook2.EXPECT().After() asserts that remaining hooks aren't invoked after an error
+			mockHook2.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("forced"))
+			// the lack of mockHook1.EXPECT().After() asserts that remaining hooks aren't invoked after an error
 			mockHook1.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook1.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			mockHook2.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
