@@ -190,6 +190,84 @@ func (mr *MockStateHandlerMockRecorder) Shutdown() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockStateHandler)(nil).Shutdown))
 }
 
+// MockContextAwareStateHandler is a mock of ContextAwareStateHandler interface.
+type MockContextAwareStateHandler struct {
+	ctrl     *gomock.Controller
+	recorder *MockContextAwareStateHandlerMockRecorder
+	isgomock struct{}
+}
+
+// MockContextAwareStateHandlerMockRecorder is the mock recorder for MockContextAwareStateHandler.
+type MockContextAwareStateHandlerMockRecorder struct {
+	mock *MockContextAwareStateHandler
+}
+
+// NewMockContextAwareStateHandler creates a new mock instance.
+func NewMockContextAwareStateHandler(ctrl *gomock.Controller) *MockContextAwareStateHandler {
+	mock := &MockContextAwareStateHandler{ctrl: ctrl}
+	mock.recorder = &MockContextAwareStateHandlerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockContextAwareStateHandler) EXPECT() *MockContextAwareStateHandlerMockRecorder {
+	return m.recorder
+}
+
+// Init mocks base method.
+func (m *MockContextAwareStateHandler) Init(evaluationContext EvaluationContext) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Init", evaluationContext)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Init indicates an expected call of Init.
+func (mr *MockContextAwareStateHandlerMockRecorder) Init(evaluationContext any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockContextAwareStateHandler)(nil).Init), evaluationContext)
+}
+
+// InitWithContext mocks base method.
+func (m *MockContextAwareStateHandler) InitWithContext(ctx context.Context, evaluationContext EvaluationContext) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InitWithContext", ctx, evaluationContext)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InitWithContext indicates an expected call of InitWithContext.
+func (mr *MockContextAwareStateHandlerMockRecorder) InitWithContext(ctx, evaluationContext any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitWithContext", reflect.TypeOf((*MockContextAwareStateHandler)(nil).InitWithContext), ctx, evaluationContext)
+}
+
+// Shutdown mocks base method.
+func (m *MockContextAwareStateHandler) Shutdown() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Shutdown")
+}
+
+// Shutdown indicates an expected call of Shutdown.
+func (mr *MockContextAwareStateHandlerMockRecorder) Shutdown() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockContextAwareStateHandler)(nil).Shutdown))
+}
+
+// ShutdownWithContext mocks base method.
+func (m *MockContextAwareStateHandler) ShutdownWithContext(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShutdownWithContext", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ShutdownWithContext indicates an expected call of ShutdownWithContext.
+func (mr *MockContextAwareStateHandlerMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockContextAwareStateHandler)(nil).ShutdownWithContext), ctx)
+}
+
 // MockTracker is a mock of Tracker interface.
 type MockTracker struct {
 	ctrl     *gomock.Controller

@@ -908,6 +908,34 @@ func (mr *MockevaluationImplMockRecorder) SetNamedProvider(clientName, provider,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProvider", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProvider), clientName, provider, async)
 }
 
+// SetNamedProviderWithContext mocks base method.
+func (m *MockevaluationImpl) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContext", ctx, clientName, provider, async)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContext indicates an expected call of SetNamedProviderWithContext.
+func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContext(ctx, clientName, provider, async any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContext), ctx, clientName, provider, async)
+}
+
+// SetNamedProviderWithContextAndWait mocks base method.
+func (m *MockevaluationImpl) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContextAndWait", ctx, clientName, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContextAndWait indicates an expected call of SetNamedProviderWithContextAndWait.
+func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContextAndWait(ctx, clientName, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContextAndWait", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContextAndWait), ctx, clientName, provider)
+}
+
 // SetProvider mocks base method.
 func (m *MockevaluationImpl) SetProvider(provider FeatureProvider) error {
 	m.ctrl.T.Helper()
@@ -934,32 +962,6 @@ func (m *MockevaluationImpl) SetProviderAndWait(provider FeatureProvider) error 
 func (mr *MockevaluationImplMockRecorder) SetProviderAndWait(provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderAndWait", reflect.TypeOf((*MockevaluationImpl)(nil).SetProviderAndWait), provider)
-}
-
-// Shutdown mocks base method.
-func (m *MockevaluationImpl) Shutdown() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Shutdown")
-}
-
-// Shutdown indicates an expected call of Shutdown.
-func (mr *MockevaluationImplMockRecorder) Shutdown() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockevaluationImpl)(nil).Shutdown))
-}
-
-// ShutdownWithContext mocks base method.
-func (m *MockevaluationImpl) ShutdownWithContext(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ShutdownWithContext", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ShutdownWithContext indicates an expected call of ShutdownWithContext.
-func (mr *MockevaluationImplMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).ShutdownWithContext), ctx)
 }
 
 // SetProviderWithContext mocks base method.
@@ -990,32 +992,30 @@ func (mr *MockevaluationImplMockRecorder) SetProviderWithContextAndWait(ctx, pro
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderWithContextAndWait", reflect.TypeOf((*MockevaluationImpl)(nil).SetProviderWithContextAndWait), ctx, provider)
 }
 
-// SetNamedProviderWithContext mocks base method.
-func (m *MockevaluationImpl) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+// Shutdown mocks base method.
+func (m *MockevaluationImpl) Shutdown() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetNamedProviderWithContext", ctx, clientName, provider, async)
+	m.ctrl.Call(m, "Shutdown")
+}
+
+// Shutdown indicates an expected call of Shutdown.
+func (mr *MockevaluationImplMockRecorder) Shutdown() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockevaluationImpl)(nil).Shutdown))
+}
+
+// ShutdownWithContext mocks base method.
+func (m *MockevaluationImpl) ShutdownWithContext(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShutdownWithContext", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetNamedProviderWithContext indicates an expected call of SetNamedProviderWithContext.
-func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContext(ctx, clientName, provider, async any) *gomock.Call {
+// ShutdownWithContext indicates an expected call of ShutdownWithContext.
+func (mr *MockevaluationImplMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContext), ctx, clientName, provider, async)
-}
-
-// SetNamedProviderWithContextAndWait mocks base method.
-func (m *MockevaluationImpl) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetNamedProviderWithContextAndWait", ctx, clientName, provider)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetNamedProviderWithContextAndWait indicates an expected call of SetNamedProviderWithContextAndWait.
-func (mr *MockevaluationImplMockRecorder) SetNamedProviderWithContextAndWait(ctx, clientName, provider any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContextAndWait", reflect.TypeOf((*MockevaluationImpl)(nil).SetNamedProviderWithContextAndWait), ctx, clientName, provider)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).ShutdownWithContext), ctx)
 }
 
 // MockeventingImpl is a mock of eventingImpl interface.
