@@ -231,7 +231,10 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 			// event handling of the new feature provider
 			for {
 				select {
-				case event := <-v.EventChannel():
+				case event, ok := <-v.EventChannel():
+					if !ok {
+						return
+					}
 					e.eventChan <- eventPayload{
 						event:   event,
 						handler: newProvider.featureProvider,
