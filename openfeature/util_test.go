@@ -65,6 +65,10 @@ func (s ProviderEventing) EventChannel() <-chan Event {
 	return s.c
 }
 
+func (s ProviderEventing) Close() {
+	close(s.c)
+}
+
 func eventually(t *testing.T, condition func() bool, timeout, interval time.Duration, errMsg string) {
 	t.Helper()
 
