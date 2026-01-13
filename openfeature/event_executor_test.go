@@ -1564,9 +1564,9 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, executor.activeSubscriptions, 1)
 
-	var eventCount int64
+	var eventCount atomic.Int64
 	callBack := func(e EventDetails) {
-		atomic.AddInt64(&eventCount, 1)
+		eventCount.Add(1)
 	}
 	executor.AddHandler(ProviderReady, &callBack)
 	// watch for empty events
@@ -1574,13 +1574,14 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	eventingImpl.Invoke(Event{EventType: ProviderReady})
 
 	require.Eventually(t, func() bool {
-		return eventCount >= 1
+		return eventCount.Load() >= 1
 	}, 100*time.Millisecond, 10*time.Millisecond, "event not received")
 
-	initialCount := eventCount
+	initialCount := eventCount.Load()
 	eventingImpl.Close()
 
 	<-time.After(100 * time.Millisecond)
 
-	require.Equal(t, initialCount, eventCount, "goroutine processed events after channel closed - indicates channel closure not detected")
+	afterCount := eventCount.Load()
+	require.Equal(t, initialCount, afterCount, "goroutine processed events after channel closed - indicates channel closure not detected")
 }
