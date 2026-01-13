@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.17.1](https://github.com/open-feature/go-sdk/compare/v1.17.0...v1.17.1) (2026-01-13)
+
+
+### 🐛 Bug Fixes
+
+* ⚠️ correct execution order for the same level hooks  ([#458](https://github.com/open-feature/go-sdk/issues/458)) ([4ee43eb](https://github.com/open-feature/go-sdk/commit/4ee43eb182910694d9d018bed79f0a7e9509f154))
+* Handle closed EventChannel from multiprovider ([#461](https://github.com/open-feature/go-sdk/issues/461)) ([e07a5e4](https://github.com/open-feature/go-sdk/commit/e07a5e4941113032ffc83274d0c0166cf377e493))
+
+
+### 🧹 Chore
+
+* add additional linters and fix findings ([#451](https://github.com/open-feature/go-sdk/issues/451)) ([4b3d6d9](https://github.com/open-feature/go-sdk/commit/4b3d6d953076f3056d78c512b31c9fc2ec29ab89))
+* remove year from copyright ([#450](https://github.com/open-feature/go-sdk/issues/450)) ([e1a25e6](https://github.com/open-feature/go-sdk/commit/e1a25e6b7e819f67c516c203eed1d8246cd6997a))
+* update golangci-lint to v2.8.0 and mockgen to v0.6.0 ([#459](https://github.com/open-feature/go-sdk/issues/459)) ([0c9d36c](https://github.com/open-feature/go-sdk/commit/0c9d36c2f4a6597c0c1bd7dd89f86a4032595d3d))
+* update LICENSE and .gitignore ([#448](https://github.com/open-feature/go-sdk/issues/448)) ([1e080b2](https://github.com/open-feature/go-sdk/commit/1e080b2148f6268ca29b218cc9318c88c384209e))
+
 ## [1.17.0](https://github.com/open-feature/go-sdk/compare/v1.16.0...v1.17.0) (2025-11-05)
 
 
