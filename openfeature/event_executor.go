@@ -222,25 +222,25 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	if !isRunning(newProvider, e.activeSubscriptions) {
 		e.activeSubscriptions = append(e.activeSubscriptions, newProvider)
 
-		go func() {
-			v, ok := newProvider.featureProvider.(EventHandler)
-			if !ok {
-				return
-			}
-
-			// event handling of the new feature provider
-			for {
-				select {
-				case event := <-v.EventChannel():
-					e.eventChan <- eventPayload{
-						event:   event,
-						handler: newProvider.featureProvider,
+		if v, ok := newProvider.featureProvider.(EventHandler); ok {
+			go func() {
+				// event handling of the new feature provider
+				for {
+					select {
+					case event, ok := <-v.EventChannel():
+						if !ok {
+							return
+						}
+						e.eventChan <- eventPayload{
+							event:   event,
+							handler: newProvider.featureProvider,
+						}
+					case <-newProvider.shutdownSemaphore:
+						return
 					}
-				case <-newProvider.shutdownSemaphore:
-					return
 				}
-			}
-		}()
+			}()
+		}
 	}
 
 	// shutdown old provider handling

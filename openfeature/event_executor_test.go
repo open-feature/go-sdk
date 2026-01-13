@@ -4,8 +4,11 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -1540,4 +1543,45 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 		executor.RemoveHandler(ProviderReady, &h1)
 		executor.RemoveClientHandler("a", ProviderReady, &h1)
 	})
+}
+
+func TestEventHandler_ChannelClosure(t *testing.T) {
+	eventingImpl := &ProviderEventing{
+		c: make(chan Event, 1),
+	}
+
+	eventingProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		eventingImpl,
+	}
+
+	executor := newEventExecutor()
+
+	err := executor.registerDefaultProvider(eventingProvider)
+	require.NoError(t, err)
+	require.Len(t, executor.activeSubscriptions, 1)
+
+	var eventCount atomic.Int64
+	callBack := func(e EventDetails) {
+		eventCount.Add(1)
+	}
+	executor.AddHandler(ProviderReady, &callBack)
+	// watch for empty events
+	executor.AddHandler("", &callBack)
+	eventingImpl.Invoke(Event{EventType: ProviderReady})
+
+	require.Eventually(t, func() bool {
+		return eventCount.Load() >= 1
+	}, 100*time.Millisecond, 10*time.Millisecond, "event not received")
+
+	initialCount := eventCount.Load()
+	eventingImpl.Close()
+
+	<-time.After(100 * time.Millisecond)
+
+	afterCount := eventCount.Load()
+	require.Equal(t, initialCount, afterCount, "goroutine processed events after channel closed - indicates channel closure not detected")
 }
