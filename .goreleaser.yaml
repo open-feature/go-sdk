@@ -13,9 +13,11 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+release:
+  use_existing_draft: true
 sboms:
   - documents:
       - bom.json
     artifacts: any
     cmd: cyclonedx-gomod
-    args: [ "mod", "-licenses", "-std", "-json", "-output", "$document", "../" ]
+    args: ["mod", "-licenses", "-std", "-json", "-output", "$document", "../"]
