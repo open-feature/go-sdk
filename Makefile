@@ -4,9 +4,7 @@ MOCKGEN_VERSION:=v0.6.0
 .PHONY: mockgen
 mockgen:
 	go install go.uber.org/mock/mockgen@${MOCKGEN_VERSION}
-	mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature -build_constraint=testtools
-	mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock.go -package=openfeature -build_constraint=testtools
-	mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock.go -package=openfeature -build_constraint=testtools
+	mockgen -destination=interfaces_mock.go -package=openfeature -build_constraint=testtools -mock_names=FeatureProvider=MockProvider go.openfeature.dev/openfeature/v2 clientEvent,evaluationImpl,Hook,FeatureProvider,StateHandler,Tracker
 
 .PHONY: test
 test:
@@ -26,4 +24,4 @@ fix:
 
 .PHONY: docs
 docs:
-	go run golang.org/x/pkgsite/cmd/pkgsite@latest -open .
+	go doc -http 
