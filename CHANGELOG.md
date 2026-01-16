@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/open-feature/go-sdk/compare/v1.17.1...v1.17.2) (2026-01-16)
+
+
+### 🧹 Chore
+
+* add govulncheck ([#462](https://github.com/open-feature/go-sdk/issues/462)) ([0a2fb41](https://github.com/open-feature/go-sdk/commit/0a2fb4110a078c3502bc5904d223917020c93a82))
+
 ## [1.17.1](https://github.com/open-feature/go-sdk/compare/v1.17.0...v1.17.1) (2026-01-13)
 
 
