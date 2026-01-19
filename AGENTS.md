@@ -134,13 +134,6 @@ Excluded rules:
 - G101 (hardcoded credentials detection - too noisy)
 - G404 (weak random number generation - used in tests)
 
-### Naming Conventions
-
-- **Variables**: camelCase (e.g., `clientMetadata`, `evalCtx`)
-- **Exported Types/Functions**: PascalCase (e.g., `Client`, `NewClient`)
-- **Interfaces**: PascalCase, typically I-prefixed (e.g., `IClient`, `IFeatureProvider`) or role-based (e.g., `FeatureProvider`)
-- **Constants**: PascalCase
-
 ### Error Handling
 
 - Use `fmt.Errorf` with `%w` for error wrapping
