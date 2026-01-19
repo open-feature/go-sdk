@@ -1,4 +1,4 @@
-package memprovider
+package inmemory
 
 import (
 	"math"

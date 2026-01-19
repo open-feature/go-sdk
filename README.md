@@ -335,7 +335,7 @@ client.Boolean(tCtx, ....)
 ### Multi-Provider Implementation
 
 Included with this SDK is an _experimental_ multi-provider that can be used to query multiple feature flag providers simultaneously.
-More information can be found in the [multi package's README](openfeature/multi/README.md).
+More information can be found in the [multi package's README](providers/multi/README.md).
 
 ## Extending
 
@@ -449,72 +449,8 @@ func (h MyHook) Error(context context.Context, hookContext openfeature.HookConte
 ## Testing
 
 The SDK provides a `testing.NewProvider` which allows you to set flags for the scope of a test.
-The `TestProvider` is thread-safe and can be used in tests that run in parallel.
-
-Call `testProvider.UsingFlags(t, tt.flags)` to set flags for a test, and clean them up with `testProvider.Cleanup()`
-
-```go
-import (
-  "go.openfeature.dev/openfeature/v2"
-  "go.openfeature.dev/openfeature/v2/providers/inmemory"
-  "go.openfeature.dev/openfeature/v2/providers/testing"
-)
-
-testProvider := testing.NewProvider()
-err := openfeature.SetProviderAndWait(t.Context(), testProvider)
-if err != nil {
-  t.Errorf("unable to set provider")
-}
-
-// configure flags for this test suite
-tests := map[string]struct {
-  flags map[string]inmemory.InMemoryFlag
-  want  bool
-}{
-  "test when flag is true": {
-    flags: map[string]inmemory.InMemoryFlag{
-      "my_flag": {
-        State:          inmemory.Enabled,
-        DefaultVariant: "on",
-        Variants: map[string]any{
-          "on": true,
-        },
-      },
-    },
-    want: true,
-  },
-  "test when flag is false": {
-    flags: map[string]inmemory.InMemoryFlag{
-      "my_flag": {
-        State:          inmemory.Enabled,
-        DefaultVariant: "off",
-        Variants: map[string]any{
-          "off": false,
-        },
-      },
-    },
-    want: false,
-  },
-}
-
-for name, tt := range tests {
-  tt := tt
-  name := name
-  t.Run(name, func(t *testing.T) {
-
-    // be sure to clean up your flags
-    defer testProvider.Cleanup()
-    testProvider.UsingFlags(t, tt.flags)
-
-    // your code under test
-    got := functionUnderTest()
-
-    if got != tt.want {
-      t.Fatalf("uh oh, value is not as expected: got %v, want %v", got, tt.want)
-    }
-  })
-}
-```
+The `TestProvider` has proper isolation and can be used in tests that run in parallel.
+More information can be found in the [testing package's README](providers/testing/README.md).
 
 ### Mocks
 

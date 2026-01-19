@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"testing"
 
 	"go.openfeature.dev/openfeature/v2"
 	memprovider "go.openfeature.dev/openfeature/v2/providers/inmemory"
@@ -43,6 +44,14 @@ func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovid
 	if ctx == nil {
 		ctx = context.Background()
 	}
+
+	// if test is testing.TB add the auto Cleanup
+	if t, ok := test.(testing.TB); ok {
+		t.Cleanup(func() {
+			tp.Cleanup(ctx)
+		})
+	}
+
 	return context.WithValue(ctx, testNameKey, test.Name())
 }
 
