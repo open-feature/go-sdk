@@ -160,26 +160,42 @@ func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provide
 // It coerces smaller numeric types to their canonical forms (int* -> int64, float32 -> float64)
 // to provide a more forgiving API for test flag configuration.
 func genericResolve[T comparable](value any, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
-	// Coerce smaller numeric types to canonical forms
-	switch v := value.(type) {
-	case int:
-		value = int64(v)
-	case int8:
-		value = int64(v)
-	case int16:
-		value = int64(v)
-	case int32:
-		value = int64(v)
-	case float32:
-		value = float64(v)
-	}
-
-	v, ok := value.(T)
-
-	if ok {
+	// Try direct type assertion first
+	if v, ok := value.(T); ok {
 		return v
 	}
 
+	// Handle type conversions based on target type
+	switch any(defaultValue).(type) {
+	case int64:
+		// Convert various int types to int64
+		switch v := value.(type) {
+		case int8:
+			return any(int64(v)).(T)
+		case int16:
+			return any(int64(v)).(T)
+		case int32:
+			return any(int64(v)).(T)
+		case int:
+			return any(int64(v)).(T)
+		}
+	case float64:
+		// Convert float32 to float64 and int types to float64
+		switch v := value.(type) {
+		case float32:
+			return any(float64(v)).(T)
+		case int8:
+			return any(float64(v)).(T)
+		case int16:
+			return any(float64(v)).(T)
+		case int32:
+			return any(float64(v)).(T)
+		case int:
+			return any(float64(v)).(T)
+		}
+	}
+
+	// If no conversion worked, return error
 	detail.Reason = openfeature.ErrorReason
 	detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	return defaultValue
