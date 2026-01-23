@@ -1,6 +1,7 @@
 package memprovider
 
 import (
+	"math"
 	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
@@ -89,8 +90,8 @@ func TestInMemoryProvider_Int(t *testing.T) {
 			DefaultVariant: "max",
 			Variants: map[string]any{
 				// Values must be explicitly typed as int64 to match the IntEvaluation API
-				"min": int64(-9223372036854775808),
-				"max": int64(9223372036854775807),
+				"min": int64(math.MinInt64),
+				"max": int64(math.MaxInt64),
 			},
 			ContextEvaluator: nil,
 		},
@@ -101,8 +102,8 @@ func TestInMemoryProvider_Int(t *testing.T) {
 	t.Run("test integer success", func(t *testing.T) {
 		evaluation := memoryProvider.IntEvaluation(ctx, "intFlag", 1, nil)
 
-		if evaluation.Value != 9223372036854775807 {
-			t.Errorf("incorrect evaluation, expected %d, got %d", int64(9223372036854775807), evaluation.Value)
+		if evaluation.Value != math.MaxInt64 {
+			t.Errorf("incorrect evaluation, expected %d, got %d", int64(math.MaxInt64), evaluation.Value)
 		}
 	})
 }
