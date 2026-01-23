@@ -156,8 +156,24 @@ func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provide
 
 // helpers
 
-// genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail
+// genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail.
+// It coerces smaller numeric types to their canonical forms (int* -> int64, float32 -> float64)
+// to provide a more forgiving API for test flag configuration.
 func genericResolve[T comparable](value any, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
+	// Coerce smaller numeric types to canonical forms
+	switch v := value.(type) {
+	case int:
+		value = int64(v)
+	case int8:
+		value = int64(v)
+	case int16:
+		value = int64(v)
+	case int32:
+		value = int64(v)
+	case float32:
+		value = float64(v)
+	}
+
 	v, ok := value.(T)
 
 	if ok {
