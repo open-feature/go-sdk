@@ -85,46 +85,67 @@ func TestInMemoryProvider_Float(t *testing.T) {
 func TestInMemoryProvider_Int(t *testing.T) {
 	// Test that both int and int64 variants work correctly.
 	// The provider coerces int to int64 internally to match the API contract.
-	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
-		"intFlag": {
-			Key:            "intFlag",
-			State:          Enabled,
-			DefaultVariant: "max",
-			Variants: map[string]any{
-				"min": int64(math.MinInt64),
-				"max": int64(math.MaxInt64),
-			},
-			ContextEvaluator: nil,
+	tests := []struct {
+		name         string
+		variant      any
+		defaultValue int64
+		expected     int64
+	}{
+		{
+			name:         "int64 max value",
+			variant:      int64(math.MaxInt64),
+			defaultValue: 1,
+			expected:     math.MaxInt64,
 		},
-		"intFlagPlain": {
-			Key:            "intFlagPlain",
-			State:          Enabled,
-			DefaultVariant: "value",
-			Variants: map[string]any{
-				// Plain int (no explicit int64 cast) - should be coerced to int64
-				"value": 42,
-			},
-			ContextEvaluator: nil,
+		{
+			name:         "int64 min value",
+			variant:      int64(math.MinInt64),
+			defaultValue: 1,
+			expected:     math.MinInt64,
 		},
-	})
+		{
+			name:         "plain int coerced to int64",
+			variant:      42,
+			defaultValue: 0,
+			expected:     42,
+		},
+		{
+			name:         "int8 coerced to int64",
+			variant:      int8(8),
+			defaultValue: 0,
+			expected:     8,
+		},
+		{
+			name:         "int16 coerced to int64",
+			variant:      int16(16),
+			defaultValue: 0,
+			expected:     16,
+		},
+		{
+			name:         "int32 coerced to int64",
+			variant:      int32(32),
+			defaultValue: 0,
+			expected:     32,
+		},
+	}
 
-	ctx := t.Context()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+				"intFlag": {
+					State:          Enabled,
+					DefaultVariant: "value",
+					Variants:       map[string]any{"value": tt.variant},
+				},
+			})
 
-	t.Run("test int64 variant", func(t *testing.T) {
-		evaluation := memoryProvider.IntEvaluation(ctx, "intFlag", 1, nil)
+			evaluation := memoryProvider.IntEvaluation(t.Context(), "intFlag", tt.defaultValue, nil)
 
-		if evaluation.Value != math.MaxInt64 {
-			t.Errorf("incorrect evaluation, expected %d, got %d", int64(math.MaxInt64), evaluation.Value)
-		}
-	})
-
-	t.Run("test plain int variant coerced to int64", func(t *testing.T) {
-		evaluation := memoryProvider.IntEvaluation(ctx, "intFlagPlain", 0, nil)
-
-		if evaluation.Value != 42 {
-			t.Errorf("incorrect evaluation, expected %d, got %d", 42, evaluation.Value)
-		}
-	})
+			if evaluation.Value != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, evaluation.Value)
+			}
+		})
+	}
 }
 
 func TestInMemoryProvider_Object(t *testing.T) {
