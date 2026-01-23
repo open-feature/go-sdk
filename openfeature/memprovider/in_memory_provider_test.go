@@ -1,6 +1,7 @@
 package memprovider
 
 import (
+	"math"
 	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
@@ -68,6 +69,16 @@ func TestInMemoryProvider_Float(t *testing.T) {
 			},
 			ContextEvaluator: nil,
 		},
+		"float32Flag": {
+			Key:            "float32Flag",
+			State:          Enabled,
+			DefaultVariant: "fOne",
+			Variants: map[string]any{
+				"fOne": float32(3.5),
+				"fTwo": float32(4.5),
+			},
+			ContextEvaluator: nil,
+		},
 	})
 
 	ctx := t.Context()
@@ -79,31 +90,80 @@ func TestInMemoryProvider_Float(t *testing.T) {
 			t.Errorf("incorrect evaluation, expected %f, got %f", 1.1, evaluation.Value)
 		}
 	})
+
+	t.Run("test float32 conversion success", func(t *testing.T) {
+		evaluation := memoryProvider.FloatEvaluation(ctx, "float32Flag", 1.0, nil)
+		expected := 3.5
+		if evaluation.Value != expected {
+			t.Errorf("incorrect evaluation, expected %f, got %f", expected, evaluation.Value)
+		}
+	})
 }
 
 func TestInMemoryProvider_Int(t *testing.T) {
-	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
-		"intFlag": {
-			Key:            "intFlag",
-			State:          Enabled,
-			DefaultVariant: "max",
-			Variants: map[string]any{
-				"min": -9223372036854775808,
-				"max": 9223372036854775807,
-			},
-			ContextEvaluator: nil,
+	// Test that both int and int64 variants work correctly.
+	// The provider coerces int to int64 internally to match the API contract.
+	tests := []struct {
+		name         string
+		variant      any
+		defaultValue int64
+		expected     int64
+	}{
+		{
+			name:         "int64 max value",
+			variant:      int64(math.MaxInt64),
+			defaultValue: 1,
+			expected:     math.MaxInt64,
 		},
-	})
+		{
+			name:         "int64 min value",
+			variant:      int64(math.MinInt64),
+			defaultValue: 1,
+			expected:     math.MinInt64,
+		},
+		{
+			name:         "plain int coerced to int64",
+			variant:      42,
+			defaultValue: 0,
+			expected:     42,
+		},
+		{
+			name:         "int8 coerced to int64",
+			variant:      int8(8),
+			defaultValue: 0,
+			expected:     8,
+		},
+		{
+			name:         "int16 coerced to int64",
+			variant:      int16(16),
+			defaultValue: 0,
+			expected:     16,
+		},
+		{
+			name:         "int32 coerced to int64",
+			variant:      int32(32),
+			defaultValue: 0,
+			expected:     32,
+		},
+	}
 
-	ctx := t.Context()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+				"intFlag": {
+					State:          Enabled,
+					DefaultVariant: "value",
+					Variants:       map[string]any{"value": tt.variant},
+				},
+			})
 
-	t.Run("test integer success", func(t *testing.T) {
-		evaluation := memoryProvider.IntEvaluation(ctx, "intFlag", 1, nil)
+			evaluation := memoryProvider.IntEvaluation(t.Context(), "intFlag", tt.defaultValue, nil)
 
-		if evaluation.Value != 9223372036854775807 {
-			t.Errorf("incorrect evaluation, expected %d, got %d", 1, evaluation.Value)
-		}
-	})
+			if evaluation.Value != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, evaluation.Value)
+			}
+		})
+	}
 }
 
 func TestInMemoryProvider_Object(t *testing.T) {

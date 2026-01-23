@@ -95,10 +95,10 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	}
 
 	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
-	result := genericResolve[int](resolveFlag, int(defaultValue), &detail)
+	result := genericResolve[int64](resolveFlag, defaultValue, &detail)
 
 	return openfeature.IntResolutionDetail{
-		Value:                    int64(result),
+		Value:                    result,
 		ProviderResolutionDetail: detail,
 	}
 }
@@ -156,14 +156,41 @@ func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provide
 
 // helpers
 
-// genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail
+// genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail.
+// It coerces smaller numeric types to their canonical forms (int* -> int64, float32 -> float64)
+// to provide a more forgiving API for test flag configuration.
+//
+// Note: Only signed integer types are supported for conversion. Unsigned integer types
+// (uint, uint8, uint16, uint32, uint64) will result in type mismatch errors.
 func genericResolve[T comparable](value any, defaultValue T, detail *openfeature.ProviderResolutionDetail) T {
-	v, ok := value.(T)
-
-	if ok {
+	// Try direct type assertion first
+	if v, ok := value.(T); ok {
 		return v
 	}
 
+	// Handle type conversions based on target type
+	switch any(defaultValue).(type) {
+	case int64:
+		// Convert various int types to int64
+		switch v := value.(type) {
+		case int8:
+			return any(int64(v)).(T)
+		case int16:
+			return any(int64(v)).(T)
+		case int32:
+			return any(int64(v)).(T)
+		case int:
+			return any(int64(v)).(T)
+		}
+	case float64:
+		// Convert float32 to float64 and int types to float64
+		switch v := value.(type) {
+		case float32:
+			return any(float64(v)).(T)
+		}
+	}
+
+	// If no conversion worked, return error
 	detail.Reason = openfeature.ErrorReason
 	detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	return defaultValue
