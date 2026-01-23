@@ -95,10 +95,10 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	}
 
 	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
-	result := genericResolve[int](resolveFlag, int(defaultValue), &detail)
+	result := genericResolve[int64](resolveFlag, defaultValue, &detail)
 
 	return openfeature.IntResolutionDetail{
-		Value:                    int64(result),
+		Value:                    result,
 		ProviderResolutionDetail: detail,
 	}
 }

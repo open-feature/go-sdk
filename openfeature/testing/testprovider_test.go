@@ -84,7 +84,7 @@ func TestTestAwareProvider(t *testing.T) {
 			State:          memprovider.Enabled,
 			DefaultVariant: "variant_1",
 			Variants: map[string]any{
-				"variant_1": 1,
+				"variant_1": int64(1),
 			},
 		},
 		"ff-float": {
