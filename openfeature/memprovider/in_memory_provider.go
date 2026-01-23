@@ -184,14 +184,6 @@ func genericResolve[T comparable](value any, defaultValue T, detail *openfeature
 		switch v := value.(type) {
 		case float32:
 			return any(float64(v)).(T)
-		case int8:
-			return any(float64(v)).(T)
-		case int16:
-			return any(float64(v)).(T)
-		case int32:
-			return any(float64(v)).(T)
-		case int:
-			return any(float64(v)).(T)
 		}
 	}
 
