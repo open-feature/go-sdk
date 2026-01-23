@@ -69,6 +69,16 @@ func TestInMemoryProvider_Float(t *testing.T) {
 			},
 			ContextEvaluator: nil,
 		},
+		"float32Flag": {
+			Key:            "float32Flag",
+			State:          Enabled,
+			DefaultVariant: "fOne",
+			Variants: map[string]any{
+				"fOne": float32(3.5),
+				"fTwo": float32(4.5),
+			},
+			ContextEvaluator: nil,
+		},
 	})
 
 	ctx := t.Context()
@@ -78,6 +88,14 @@ func TestInMemoryProvider_Float(t *testing.T) {
 
 		if evaluation.Value != 1.1 {
 			t.Errorf("incorrect evaluation, expected %f, got %f", 1.1, evaluation.Value)
+		}
+	})
+
+	t.Run("test float32 conversion success", func(t *testing.T) {
+		evaluation := memoryProvider.FloatEvaluation(ctx, "float32Flag", 1.0, nil)
+		expected := 3.5
+		if evaluation.Value != expected {
+			t.Errorf("incorrect evaluation, expected %f, got %f", expected, evaluation.Value)
 		}
 	})
 }
