@@ -31,8 +31,7 @@ func runModeParallel[T of.FlagTypes](ctx context.Context, providers []namedProvi
 					select {
 					case <-ctx.Done():
 						return
-					default:
-						resolutions <- &namedResult{name: provider.Name(), resolution: resolution}
+					case resolutions <- &namedResult{name: provider.Name(), resolution: resolution}:
 					}
 				})
 			}
