@@ -149,7 +149,7 @@ evalCtx := openfeature.NewEvaluationContext(
         "company": "Initech",
     },
 )
-boolValue, err := client.BooleanValue("boolFlag", false, evalCtx)
+boolValue, err := client.BooleanValue(context.TODO(), "boolFlag", false, evalCtx)
 ```
 
 
