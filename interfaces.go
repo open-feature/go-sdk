@@ -9,7 +9,7 @@ type iClient interface {
 	Metadata() ClientMetadata
 	Evaluator
 	DetailEvaluator
-	IEventing
+	Eventing
 	Tracker
 }
 
@@ -31,8 +31,8 @@ type DetailEvaluator interface {
 	ObjectValueDetails(ctx context.Context, flag string, defaultValue any, evalCtx EvaluationContext, options ...Option) (ObjectEvaluationDetails, error)
 }
 
-// IEventing defines the OpenFeature eventing contract
-type IEventing interface {
+// Eventing defines the OpenFeature eventing contract
+type Eventing interface {
 	AddHandler(eventType EventType, callback EventCallback)
 	RemoveHandler(eventType EventType, callback EventCallback)
 }
@@ -50,7 +50,7 @@ type evaluationImpl interface {
 	SetEvaluationContext(evalCtx EvaluationContext)
 	AddHooks(hooks ...Hook)
 	Shutdown(ctx context.Context) error
-	IEventing
+	Eventing
 	GetProvider() FeatureProvider
 	GetNamedProviders() map[string]FeatureProvider
 	GetHooks() []Hook
@@ -58,9 +58,9 @@ type evaluationImpl interface {
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
 }
 
-// eventingImpl is an internal reference interface extending IEventing
+// eventingImpl is an internal reference interface extending Eventing
 type eventingImpl interface {
-	IEventing
+	Eventing
 	GetAPIRegistry() map[EventType][]EventCallback
 	GetClientRegistry(client string) scopedCallback
 

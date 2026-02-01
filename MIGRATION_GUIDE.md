@@ -56,7 +56,7 @@ type IClient interface {
 
 - `IClient` is now private (`iClient`) and split into composable interfaces
 - Value methods that return `(value, error)` (e.g., `BooleanValue`, `StringValue`) **removed**. Use `Boolean`, `String`, etc. (non-error) or `BooleanValueDetails`, `StringValueDetails`, etc. (with metadata) instead
-- `State()` method removed; use `IEventing` methods directly
+- `State()` method removed; use `Eventing` methods directly
 
 **Migration Path:**
 
