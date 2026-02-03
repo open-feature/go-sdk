@@ -2,10 +2,16 @@ package testing
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParallelSingletonUsage(t *testing.T) {
@@ -153,6 +159,83 @@ func Test_TestAwareProviderPanics(t *testing.T) {
 
 		taw := NewTestProvider()
 		taw.BooleanEvaluation(t.Context(), "my-flag", true, openfeature.FlattenedContext{})
+	})
+}
+
+func TestServeWithAnotherGoroutine(t *testing.T) {
+	t.Run("sample 1", func(t *testing.T) {
+		testProvider := NewTestProvider()
+		ctx := testProvider.UsingFlags(t, map[string]memprovider.InMemoryFlag{
+			"myflag": {
+				DefaultVariant: "defaultVariant",
+				Variants:       map[string]any{"defaultVariant": true},
+			},
+		})
+
+		err := openfeature.SetProviderAndWait(testProvider)
+		require.NoError(t, err)
+
+		handlerDone := make(chan struct{})
+		handler := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			_ = openfeature.NewDefaultClient().Boolean(ctx, "myflag", false, openfeature.TransactionContext(ctx))
+
+			select {
+			case <-r.Context().Done():
+				w.WriteHeader(http.StatusServiceUnavailable)
+			default:
+				w.WriteHeader(http.StatusOK)
+			}
+			close(handlerDone)
+		}
+
+		req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/drain", nil)
+		w := httptest.NewRecorder()
+
+		// Start the handler in a goroutine for _reasons_
+		// This is what triggers the TestProvider bug
+		go func() {
+			handler(w, req)
+		}()
+
+		// Wait for handler to complete
+		require.Eventually(t, func() bool {
+			select {
+			case <-handlerDone:
+				return true
+			default:
+				return false
+			}
+		}, time.Second, 50*time.Millisecond, "expected request was not process within timeout")
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("sample 2", func(t *testing.T) {
+		provider := NewTestProvider()
+		ctx := provider.UsingFlags(t, map[string]memprovider.InMemoryFlag{
+			"foo": {
+				State:          memprovider.Enabled,
+				DefaultVariant: "true",
+				Variants: map[string]any{
+					"true": true,
+				},
+			},
+		})
+		err := openfeature.SetProvider(provider)
+		require.NoError(t, err)
+
+		var wg sync.WaitGroup
+
+		for i := range 2 {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				client := openfeature.NewDefaultClient()
+				client.Boolean(ctx, "foo", false, openfeature.EvaluationContext{})
+			}(i)
+		}
+		wg.Wait()
 	})
 }
 
