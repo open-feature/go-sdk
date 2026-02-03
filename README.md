@@ -39,6 +39,7 @@
 [OpenFeature](https://openfeature.dev) is an open specification that provides a vendor-agnostic, community-driven API for feature flagging that works with your favorite feature flag management tool.
 
 <!-- x-hide-in-docs-end -->
+
 ## 🚀 Quick start
 
 ### Requirements
@@ -90,17 +91,17 @@ See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature) for th
 ## 🌟 Features
 
 | Status | Features                                                            | Description                                                                                                                                                  |
-| ------ |---------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ✅      | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
-| ✅      | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
-| ✅      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
-| ✅      | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations.                                                                                                        |
-| ✅      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
-| ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
-| ✅      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
-| ✅      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
-| ✅      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
-| ✅      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
+| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ✅     | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
+| ✅     | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
+| ✅     | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
+| ✅     | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations.                                                                                                        |
+| ✅     | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
+| ✅     | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
+| ✅     | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
+| ✅     | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
+| ✅     | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
+| ✅     | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -151,7 +152,6 @@ evalCtx := openfeature.NewEvaluationContext(
 )
 boolValue, err := client.BooleanValue(context.TODO(), "boolFlag", false, evalCtx)
 ```
-
 
 ### Hooks
 
@@ -308,7 +308,6 @@ import "github.com/open-feature/go-sdk/openfeature"
 
 openfeature.Shutdown()
 ```
-
 
 ### Transaction Context Propagation
 
@@ -514,14 +513,33 @@ for name, tt := range tests {
 }
 ```
 
+If your test code runs in a different goroutine, `TestProvider.UsingFlags` returns a context that should be used for evaluations.
+
+```go
+type contextAwareTest struct {
+ *testing.T
+}
+
+func (t contextAwareTest) Name() string { return t.T.Name() }
+func (t contextAwareTest) Context() context.Context { return t.T.Context()}
+
+ctx = testProvider.UsingFlags(contextAwareTest{T: t}/*or just use testing.T*/, tt.flags)
+
+go func() {
+ // flag evaluations here will use the same context returned by UsingFlags
+ _ = openfeature.NewDefaultClient().Boolean(ctx, "my_flag", false, openfeature.EvaluationContext{})
+}()
+```
+
 ### Mocks
 
 Mocks are also available for testing purposes for all interfaces within the OpenFeature SDK. These are primarily
 intended for internal use for testing the SDK, but have been exported to ease the testing burden for any extensions
-or custom components (e.g. hooks & providers). These mocks are not include in builds by default. The build tag 
+or custom components (e.g. hooks & providers). These mocks are not include in builds by default. The build tag
 `testtools` must be used to have the mocks included in builds.
 
 <!-- x-hide-in-docs-start -->
+
 ## ⭐️ Support the project
 
 - Give this repo a ⭐️!
@@ -542,4 +560,5 @@ Interested in contributing? Great, we'd love your help! To get started, take a l
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
+
 <!-- x-hide-in-docs-end -->
