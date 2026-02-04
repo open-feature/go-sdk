@@ -48,7 +48,7 @@ func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovid
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
 	ctx := context.Background()
 
-// allow to pass the context without breaking changes
+	// allow to pass the context without breaking changes
 	if t, ok := test.(testFrameworkWithContext); ok {
 		if tctx := t.Context(); tctx != nil {
 			ctx = tctx
