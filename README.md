@@ -514,22 +514,17 @@ for name, tt := range tests {
 ```
 
 If your test code runs in a different goroutine, `TestProvider.UsingFlags` returns a context that should be used for evaluations.
+You can pass `*testing.T` directly.
 
 ```go
-type contextAwareTest struct {
- *testing.T
-}
-
-func (t contextAwareTest) Name() string { return t.T.Name() }
-func (t contextAwareTest) Context() context.Context { return t.T.Context()}
-
-ctx = testProvider.UsingFlags(contextAwareTest{T: t}/*or just use testing.T*/, tt.flags)
+// In your test, 't' is a *testing.T
+ctx := testProvider.UsingFlags(t, tt.flags)
 
 go func() {
- // flag evaluations here will use the same context returned by UsingFlags
- _ = openfeature.NewDefaultClient().Boolean(ctx, "my_flag", false, openfeature.EvaluationContext{})
+    // Make sure to use the context returned by UsingFlags in the new goroutine.
+    // The context carries the necessary information for the TestProvider.
+    _ = openfeature.NewDefaultClient().Boolean(ctx, "my_flag", false, openfeature.EvaluationContext{})
 }()
-```
 
 ### Mocks
 
