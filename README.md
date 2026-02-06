@@ -458,7 +458,7 @@ import (
   "github.com/open-feature/go-sdk/openfeature/testing"
 )
 
-testProvider := NewTestProvider()
+testProvider := testing.NewTestProvider()
 err := openfeature.SetProviderAndWait(testProvider)
 if err != nil {
   t.Errorf("unable to set provider")
