@@ -22,7 +22,7 @@ type providerReference struct {
 }
 
 func (pr providerReference) equals(other providerReference) bool {
-	if pr.kind == reflect.Ptr && other.kind == reflect.Ptr {
+	if pr.kind == reflect.Pointer && other.kind == reflect.Pointer {
 		return pr.featureProvider == other.featureProvider
 	}
 	return reflect.DeepEqual(pr.featureProvider, other.featureProvider)
