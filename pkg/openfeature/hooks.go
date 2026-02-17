@@ -6,7 +6,7 @@ import (
 
 // Hook allows application developers to add arbitrary behavior to the flag evaluation lifecycle.
 // They operate similarly to middleware in many web frameworks.
-// https://github.com/open-feature/spec/blob/main/specification/hooks.md
+// https://github.com/open-feature/spec/blob/main/specification/sections/04-hooks.md
 //
 // Deprecated: use github.com/open-feature/go-sdk/openfeature.Hook, instead.
 type Hook = openfeature.Hook
