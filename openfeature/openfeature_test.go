@@ -1,11 +1,13 @@
 package openfeature
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
 	"time"
 
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 )
 
@@ -65,13 +67,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("initialization not invoked with provider registration")
-		case <-initSem:
-			break
-		}
+		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
 		if !reflect.DeepEqual(provider, api.GetProvider()) {
 			t.Errorf("provider not updated to the one set")
@@ -90,13 +86,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("initialization not invoked with provider registration")
-		case <-initSem:
-			break
-		}
+		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
 		if !reflect.DeepEqual(provider, api.GetNamedProviders()[client]) {
 			t.Errorf("provider not updated to the one set")
@@ -117,28 +107,18 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("initialization not invoked with provider registration")
-		case <-initSem:
-			break
-		}
+		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		providerOverride, _, _ := setupProviderWithSemaphores()
+		providerOverride, overrideInitSem, _ := setupProviderWithSemaphores()
 
 		err = SetProvider(providerOverride)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("shutdown not invoked for old default provider when registering new provider")
-		case <-shutdownSem:
-			break
-		}
+		// Consume the override provider's initialization semaphore to prevent goroutine leak
+		expectChannelReceive(t, overrideInitSem, "override provider initialization not invoked")
+		expectChannelReceive(t, shutdownSem, "shutdown not invoked for old default provider when registering new provider")
 	})
 
 	t.Run("named provider", func(t *testing.T) {
@@ -153,41 +133,34 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("initialization not invoked with provider registration")
-		case <-initSem:
-			break
-		}
+		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		providerOverride, _, _ := setupProviderWithSemaphores()
+		providerOverride, overrideInitSem, _ := setupProviderWithSemaphores()
 
 		err = SetNamedProvider(client, providerOverride)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			t.Errorf("shutdown not invoked for old named provider when registering new provider")
-		case <-shutdownSem:
-			break
-		}
+		// Consume the override provider's initialization semaphore to prevent goroutine leak
+		expectChannelReceive(t, overrideInitSem, "override provider initialization not invoked")
+		expectChannelReceive(t, shutdownSem, "shutdown not invoked for old named provider when registering new provider")
 	})
 
 	t.Run("ignore shutdown for multiple references - default bound", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
 		// setup
-		provider, _, shutdownSem := setupProviderWithSemaphores()
+		provider, initSem, shutdownSem := setupProviderWithSemaphores()
 
 		// register provider multiple times
 		err := SetProvider(provider)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
+
+		// Consume the initialization semaphore
+		expectChannelReceive(t, initSem, "provider initialization not invoked")
 
 		clientName := "clientA"
 
@@ -196,28 +169,25 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		providerOverride, _, _ := setupProviderWithSemaphores()
+		providerOverride, overrideInitSem, _ := setupProviderWithSemaphores()
 
 		err = SetNamedProvider(clientName, providerOverride)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
+		// Consume the override provider's initialization semaphore to prevent goroutine leak
+		expectChannelReceive(t, overrideInitSem, "override provider initialization not invoked")
+
 		// validate
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			break
-		case <-shutdownSem:
-			t.Errorf("shutdown called on the provider with multiple references")
-		}
+		expectTimeout(t, shutdownSem, "shutdown called on the provider with multiple references")
 	})
 
 	t.Run("ignore shutdown for multiple references - domain client bound", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
 		// setup
-		providerA, _, shutdownSemA := setupProviderWithSemaphores()
+		providerA, initSemA, shutdownSemA := setupProviderWithSemaphores()
 
 		// register provider multiple times
 
@@ -229,26 +199,26 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 			t.Errorf("error setting up provider %v", err)
 		}
 
+		// Consume the initialization semaphore for providerA
+		expectChannelReceive(t, initSemA, "providerA initialization not invoked")
+
 		err = SetNamedProvider(clientB, providerA)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
-		providerOverride, _, _ := setupProviderWithSemaphores()
+		providerOverride, overrideInitSem, _ := setupProviderWithSemaphores()
 
 		err = SetNamedProvider(clientA, providerOverride)
 		if err != nil {
 			t.Errorf("error setting up provider %v", err)
 		}
 
+		// Consume the override provider's initialization semaphore to prevent goroutine leak
+		expectChannelReceive(t, overrideInitSem, "override provider initialization not invoked")
+
 		// validate
-		select {
-		// short enough wait time, but not too long
-		case <-time.After(100 * time.Millisecond):
-			break
-		case <-shutdownSemA:
-			t.Errorf("shutdown called on the provider with multiple references")
-		}
+		expectTimeout(t, shutdownSemA, "shutdown called on the provider with multiple references")
 	})
 }
 
@@ -564,23 +534,11 @@ func TestRequirement_1_6_1(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	select {
-	// short enough wait time, but not too long
-	case <-time.After(100 * time.Millisecond):
-		t.Errorf("intialization timeout")
-	case <-initSem:
-		break
-	}
+	expectChannelReceive(t, initSem, "intialization timeout")
 
 	Shutdown()
 
-	select {
-	// short enough wait time, but not too long
-	case <-time.After(100 * time.Millisecond):
-		t.Errorf("shutdown not invoked")
-	case <-shutdownSem:
-		break
-	}
+	expectChannelReceive(t, shutdownSem, "shutdown not invoked")
 }
 
 // The API's `shutdown` function MUST reset all state of the API, removing all
@@ -628,12 +586,7 @@ func TestRequirement_1_6_2(t *testing.T) {
 		t.Fatalf("shutdown not invoked")
 	}
 
-	select {
-	case <-shutdownSem1:
-		t.Fatalf("provider1 should not have been shut down again, since it is unregistered")
-	case <-time.After(100 * time.Millisecond):
-		break
-	}
+	expectTimeout(t, shutdownSem1, "provider1 should not have been shut down again, since it is unregistered")
 }
 
 func TestRequirement_EventCompliance(t *testing.T) {
@@ -865,4 +818,125 @@ func setupProviderWithSemaphores() (struct {
 	}
 
 	return provider, intiSem, shutdownSem
+}
+
+// expectChannelReceive waits for a channel to receive a value within the timeout.
+// It fails the test with the provided message if the timeout occurs first.
+func expectChannelReceive(t *testing.T, ch <-chan any, timeoutMsg string) {
+	t.Helper()
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error(timeoutMsg)
+	case <-ch:
+	}
+}
+
+// expectTimeout waits for a timeout to occur, expecting no value from the channel.
+// It fails the test with the provided message if the channel receives a value.
+func expectTimeout(t *testing.T, ch <-chan any, receiveMsg string) {
+	t.Helper()
+	select {
+	case <-time.After(100 * time.Millisecond):
+		// Expected timeout
+	case <-ch:
+		t.Error(receiveMsg)
+	}
+}
+
+// TestNoGoroutineLeak verifies that the event executor's goroutine is properly
+// cleaned up after shutdown, preventing goroutine leaks.
+func TestNoGoroutineLeak(t *testing.T) {
+	// Setup: shut down any existing goroutines from previous tests first
+	if eventing != nil {
+		eventing.(*eventExecutor).shutdown()
+	}
+	initSingleton()
+
+	// Setup: capture initial goroutines after cleanup
+	defer goleak.VerifyNone(t,
+		// Ignore the new event executor's goroutines created by Shutdown() -> initSingleton()
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
+	)
+
+	// Ensure we clean up the event executor at the end, including any reinitialized instance
+	defer func() {
+		if eventing != nil {
+			eventing.(*eventExecutor).shutdown()
+		}
+	}()
+
+	// Create a new provider and trigger some events
+	eventingImpl := &ProviderEventing{
+		c: make(chan Event, 1),
+	}
+
+	eventingProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{
+		NoopProvider{},
+		eventingImpl,
+	}
+
+	err := SetProvider(eventingProvider)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Add a handler to ensure the event system is active
+	callbackInvoked := false
+	callback := func(details EventDetails) {
+		callbackInvoked = true
+	}
+	AddHandler(ProviderReady, &callback)
+
+	// Trigger an event
+	eventingImpl.Invoke(Event{
+		EventType: ProviderReady,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: "Ready",
+		},
+	})
+
+	// Give the event system time to process
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify the callback was invoked
+	if !callbackInvoked {
+		t.Error("callback should have been invoked")
+	}
+
+	// Perform shutdown - this cleans up goroutines but reinitializes the singleton
+	Shutdown()
+
+	// The deferred cleanup will shut down the reinitialized instance
+}
+
+// TestNoGoroutineLeakWithShutdownWithContext verifies that ShutdownWithContext
+// also properly cleans up goroutines.
+func TestNoGoroutineLeakWithShutdownWithContext(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		// Ignore provider goroutines from the new event executor
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
+		// Ignore the new event executor's goroutine created by ShutdownWithContext() -> initSingleton()
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
+	)
+
+	eventingImpl := &ProviderEventing{c: make(chan Event, 1)}
+	err := SetProvider(struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, eventingImpl})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Use ShutdownWithContext instead of Shutdown
+	err = ShutdownWithContext(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// goleak will verify no goroutines are leaked (except the new event executor)
 }

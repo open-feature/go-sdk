@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 func init() {
@@ -1142,31 +1143,49 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 	// make sure events are received and count them
 	globalEvents := make(chan string, 10)
+	done := make(chan struct{})
+	t.Cleanup(func() {
+		close(done)
+	})
+
 	go func() {
-		for rsp := range rspGlobal {
-			globalEvents <- rsp.ProviderName
+		for {
+			select {
+			case rsp := <-rspGlobal:
+				globalEvents <- rsp.ProviderName
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	clientAEvents := make(chan string, 10)
 	go func() {
-		for rsp := range rspClientA {
-			if rsp.ProviderName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+		for {
+			select {
+			case rsp := <-rspClientA:
+				if rsp.ProviderName != "providerOther" {
+					t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+				}
+				clientAEvents <- rsp.ProviderName
+			case <-done:
+				return
 			}
-
-			clientAEvents <- rsp.ProviderName
 		}
 	}()
 
 	clientBEvents := make(chan string, 10)
 	go func() {
-		for rsp := range rspClientB {
-			if rsp.ProviderName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+		for {
+			select {
+			case rsp := <-rspClientB:
+				if rsp.ProviderName != "providerOther" {
+					t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+				}
+				clientBEvents <- rsp.ProviderName
+			case <-done:
+				return
 			}
-
-			clientBEvents <- rsp.ProviderName
 		}
 	}()
 
@@ -1568,6 +1587,7 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	callBack := func(e EventDetails) {
 		eventCount.Add(1)
 	}
+
 	executor.AddHandler(ProviderReady, &callBack)
 	// watch for empty events
 	executor.AddHandler("", &callBack)
@@ -1584,4 +1604,92 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 
 	afterCount := eventCount.Load()
 	require.Equal(t, initialCount, afterCount, "goroutine processed events after channel closed - indicates channel closure not detected")
+}
+
+// TestBasicShutdown verifies that the shutdown method stops goroutines
+func TestBasicShutdown(t *testing.T) {
+	// Create a new event executor
+	exec := newEventExecutor()
+
+	// Give it a moment to start
+	time.Sleep(10 * time.Millisecond)
+
+	// Shutdown should complete without hanging
+	done := make(chan struct{})
+	go func() {
+		exec.shutdown()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Success - shutdown completed
+	case <-time.After(2 * time.Second):
+		t.Fatal("shutdown() hung and did not complete within 2 seconds")
+	}
+}
+
+// TestNoGoroutineLeakWithMultipleProviders verifies that goroutine cleanup
+// works correctly even when multiple providers are registered.
+func TestNoGoroutineLeakWithMultipleProviders(t *testing.T) {
+	// Setup: shut down any existing goroutines from previous tests first
+	if eventing != nil {
+		eventing.(*eventExecutor).shutdown()
+	}
+	initSingleton()
+
+	defer goleak.VerifyNone(t,
+		// Ignore the new event executor's goroutines created by Shutdown() -> initSingleton()
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
+		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
+	)
+
+	// Ensure we clean up the event executor at the end, including any reinitialized instance
+	defer func() {
+		if eventing != nil {
+			eventing.(*eventExecutor).shutdown()
+		}
+	}()
+
+	// Set default provider
+	defaultProvider := &ProviderEventing{c: make(chan Event, 1)}
+	err := SetProvider(struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, defaultProvider})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set named provider
+	namedProvider := &ProviderEventing{c: make(chan Event, 1)}
+	err = SetNamedProvider("test-domain", struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, namedProvider})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Trigger events
+	defaultProvider.Invoke(Event{
+		EventType: ProviderReady,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: "Default ready",
+		},
+	})
+
+	namedProvider.Invoke(Event{
+		EventType: ProviderReady,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: "Named ready",
+		},
+	})
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Shutdown cleans up all goroutines and reinitializes
+	Shutdown()
+
+	// goleak will verify no goroutines are leaked (except the new event executor)
 }
