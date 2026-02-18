@@ -64,15 +64,13 @@ type multiErrGroup struct {
 
 // Go starts a function in a goroutine.
 func (g *multiErrGroup) Go(fn func() error) {
-	g.wg.Add(1)
-	go func() {
-		defer g.wg.Done()
+	g.wg.Go(func() {
 		if err := fn(); err != nil {
 			g.mu.Lock()
 			g.errors = append(g.errors, err)
 			g.mu.Unlock()
 		}
-	}()
+	})
 }
 
 // Wait waits for all goroutines to complete.
