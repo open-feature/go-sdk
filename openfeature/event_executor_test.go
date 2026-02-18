@@ -438,7 +438,6 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
-		eventingImpl.Invoke(Event{EventType: ProviderConfigChange})
 
 		provider := struct {
 			FeatureProvider
@@ -457,10 +456,12 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 		client := NewClient("someClient")
 		client.AddHandler(ProviderReady, &callback)
 
-		err := SetNamedProvider("providerWithoutClient", provider)
+		err := SetNamedProviderAndWait("providerWithoutClient", provider)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		eventingImpl.Invoke(Event{EventType: ProviderConfigChange})
 
 		select {
 		case <-rsp:
@@ -476,17 +477,18 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for default provider in global scope", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
-		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
-		}
-		eventingImpl.Invoke(Event{EventType: ProviderError})
-
-		provider := struct {
+		initFailingProvider := struct {
 			FeatureProvider
+			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			eventingImpl,
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					return errors.New("init failed")
+				},
+			},
+			&ProviderEventing{c: make(chan Event, 1)},
 		}
 
 		// callback
@@ -496,10 +498,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 		}
 
 		AddHandler(ProviderError, &callback)
-		err := SetProvider(provider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		_ = SetProviderAndWait(initFailingProvider) // init fails; we only care that ProviderError handler runs
 
 		select {
 		case <-rsp:
@@ -512,17 +511,18 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for default provider with unassociated client handler", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
-		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
-		}
-		eventingImpl.Invoke(Event{EventType: ProviderError})
-
-		provider := struct {
+		initFailingProvider := struct {
 			FeatureProvider
+			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			eventingImpl,
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					return errors.New("init failed")
+				},
+			},
+			&ProviderEventing{c: make(chan Event, 1)},
 		}
 
 		// callback
@@ -534,10 +534,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 		client := NewClient("clientWithNoProviderAssociation")
 		client.AddHandler(ProviderError, &callback)
 
-		err := SetProvider(provider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		_ = SetProviderAndWait(initFailingProvider) // init fails; we only care that ProviderError handler runs
 
 		select {
 		case <-rsp:
@@ -550,17 +547,18 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for named provider in client scope", func(t *testing.T) {
 		t.Cleanup(initSingleton)
 
-		eventingImpl := &ProviderEventing{
-			c: make(chan Event, 1),
-		}
-		eventingImpl.Invoke(Event{EventType: ProviderError})
-
-		provider := struct {
+		initFailingProvider := struct {
 			FeatureProvider
+			StateHandler
 			EventHandler
 		}{
 			NoopProvider{},
-			eventingImpl,
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					return errors.New("init failed")
+				},
+			},
+			&ProviderEventing{c: make(chan Event, 1)},
 		}
 
 		// callback
@@ -572,10 +570,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 		client := NewClient("someClient")
 		client.AddHandler(ProviderError, &callback)
 
-		err := SetNamedProvider("someClient", provider)
-		if err != nil {
-			t.Fatal(err)
-		}
+		_ = SetNamedProviderAndWait("someClient", initFailingProvider) // init fails; we only care that ProviderError handler runs
 
 		select {
 		case <-rsp:
@@ -591,7 +586,6 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
-		eventingImpl.Invoke(Event{EventType: ProviderError})
 
 		provider := struct {
 			FeatureProvider
@@ -610,10 +604,12 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 		client := NewClient("provider")
 		client.AddHandler(ProviderError, &callback)
 
-		err := SetNamedProvider("someClient", provider)
+		err := SetNamedProviderAndWait("someClient", provider)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		eventingImpl.Invoke(Event{EventType: ProviderError})
 
 		select {
 		case <-rsp:
@@ -854,7 +850,6 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
-		eventingImpl.Invoke(Event{EventType: ProviderError})
 
 		provider := struct {
 			FeatureProvider
@@ -864,7 +859,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			eventingImpl,
 		}
 
-		if err := SetProvider(provider); err != nil {
+		if err := SetProviderAndWait(provider); err != nil {
 			t.Fatal(err)
 		}
 
@@ -874,6 +869,8 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 
 		AddHandler(ProviderError, &callback)
+
+		eventingImpl.Invoke(Event{EventType: ProviderError})
 
 		select {
 		case <-rsp:
@@ -889,7 +886,6 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
 		}
-		eventingImpl.Invoke(Event{EventType: ProviderStale})
 
 		provider := struct {
 			FeatureProvider
@@ -899,9 +895,11 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			eventingImpl,
 		}
 
-		if err := SetProvider(provider); err != nil {
+		if err := SetProviderAndWait(provider); err != nil {
 			t.Fatal(err)
 		}
+
+		eventingImpl.Invoke(Event{EventType: ProviderStale})
 
 		rsp := make(chan EventDetails, 1)
 		callback := func(e EventDetails) {
