@@ -4,7 +4,7 @@ import "context"
 
 // Hook allows application developers to add arbitrary behavior to the flag evaluation lifecycle.
 // They operate similarly to middleware in many web frameworks.
-// https://github.com/open-feature/spec/blob/main/specification/hooks.md
+// https://github.com/open-feature/spec/blob/main/specification/sections/04-hooks.md
 type Hook interface {
 	Before(ctx context.Context, hookContext HookContext, hookHints HookHints) (*EvaluationContext, error)
 	After(ctx context.Context, hookContext HookContext, flagEvaluationDetails InterfaceEvaluationDetails, hookHints HookHints) error
