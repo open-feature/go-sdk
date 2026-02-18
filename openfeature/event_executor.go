@@ -1,12 +1,10 @@
 package openfeature
 
 import (
-	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 	"sync"
-	"time"
 )
 
 const defaultDomain = ""
@@ -192,7 +190,7 @@ func (e *eventExecutor) State(domain string) State {
 }
 
 // registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
-func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error {
+func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -200,11 +198,11 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) error 
 	oldProvider := e.defaultProviderReference
 	e.defaultProviderReference = newProvider
 
-	return e.startListeningAndShutdownOld(newProvider, oldProvider)
+	e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
 
 // registerNamedEventingProvider registers a named FeatureProvider and remove event listener for old named provider
-func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) error {
+func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	newProvider := newProviderRef(provider)
@@ -212,12 +210,12 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 	oldProvider := e.namedProviderReference[associatedClient]
 	e.namedProviderReference[associatedClient] = newProvider
 
-	return e.startListeningAndShutdownOld(newProvider, oldProvider)
+	e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
 
 // startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke shutdown
 // hook of the old provider if it's not bound by another subscription
-func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) error {
+func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReference, oldReference providerReference) {
 	// check if this provider already actively handled - 1:N binding capability
 	if !isRunning(newProvider, e.activeSubscriptions) {
 		e.activeSubscriptions = append(e.activeSubscriptions, newProvider)
@@ -247,7 +245,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	// check if this provider is still bound - 1:N binding capability
 	if isBound(oldReference, e.defaultProviderReference, slices.Collect(maps.Values(e.namedProviderReference))) {
-		return nil
+		return
 	}
 
 	// drop from active references
@@ -258,16 +256,28 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	_, ok := oldReference.featureProvider.(EventHandler)
 	if !ok {
 		// no shutdown for non event handling provider
-		return nil
+		return
 	}
 
 	// avoid shutdown lockouts
 	select {
 	case oldReference.shutdownSemaphore <- "":
-		return nil
-	case <-time.After(200 * time.Millisecond):
-		return fmt.Errorf("old event handler %s timeout waiting for handler shutdown",
-			oldReference.featureProvider.Metadata().Name)
+	default:
+		// This should never happen:
+		//
+		// providerReference.shutdownSemaphore is created with
+		// a buffer size of 1, so it should allow sending at
+		// least one shutdown signal without blocking. Locking
+		// should prevent us from sending more than one
+		// signal.
+		//
+		// In the unlikely case that it does not, this
+		// shouldn't be a big deal: we have already swapped
+		// references in eventExecutor and openfeatureAPI, and
+		// the handler should be able to receive at least one
+		// shutdown signal later.
+		slog.Info("OF BUG: failed to send shutdown to old event handler",
+			"provider", oldReference.featureProvider.Metadata().Name)
 	}
 }
 

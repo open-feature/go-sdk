@@ -9,7 +9,7 @@ func newProviderRef(provider FeatureProvider) providerReference {
 	return providerReference{
 		featureProvider:   provider,
 		kind:              reflect.TypeOf(provider).Kind(),
-		shutdownSemaphore: make(chan any),
+		shutdownSemaphore: make(chan any, 1),
 	}
 }
 
