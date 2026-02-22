@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/open-feature/go-sdk/openfeature/memprovider"
 )
 
-const testNameKey = "testName"
+type contextKey string
+
+const testNameKey contextKey = "testName"
 
 // NewTestProvider creates a new `TestAwareProvider`
 func NewTestProvider() TestProvider {
@@ -28,12 +31,38 @@ type TestProvider struct {
 	providers *sync.Map
 }
 
-type TestFramework = interface{ Name() string }
+type TestFramework = interface {
+	Name() string
+}
+
+// testFrameworkWithContext is an optional interface for tests that can provide
+// a context, enabling context-aware evaluation when flags are used across goroutines.
+type testFrameworkWithContext interface {
+	TestFramework
+	Context() context.Context
+}
 
 // UsingFlags sets flags for the scope of a test.
-func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovider.InMemoryFlag) {
+func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovider.InMemoryFlag) context.Context {
 	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
+	ctx := context.Background()
+
+	// allow to pass the context without breaking changes
+	if t, ok := test.(testFrameworkWithContext); ok {
+		if tctx := t.Context(); tctx != nil {
+			ctx = tctx
+		}
+	}
+
+	// if test is testing.TB add the auto Cleanup
+	if t, ok := test.(testing.TB); ok {
+		t.Cleanup(func() {
+			tp.Cleanup()
+		})
+	}
+
+	return context.WithValue(ctx, testNameKey, test.Name())
 }
 
 // Cleanup deletes the flags provider bound to the current test and should be executed after each test execution
@@ -44,23 +73,23 @@ func (tp TestProvider) Cleanup() {
 }
 
 func (tp TestProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
-	return tp.getProvider().BooleanEvaluation(ctx, flag, defaultValue, flatCtx)
+	return tp.getProvider(ctx).BooleanEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
-	return tp.getProvider().StringEvaluation(ctx, flag, defaultValue, flatCtx)
+	return tp.getProvider(ctx).StringEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
-	return tp.getProvider().FloatEvaluation(ctx, flag, defaultValue, flatCtx)
+	return tp.getProvider(ctx).FloatEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
-	return tp.getProvider().IntEvaluation(ctx, flag, defaultValue, flatCtx)
+	return tp.getProvider(ctx).IntEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
-	return tp.getProvider().ObjectEvaluation(ctx, flag, defaultValue, flatCtx)
+	return tp.getProvider(ctx).ObjectEvaluation(ctx, flag, defaultValue, flatCtx)
 }
 
 func (tp TestProvider) Hooks() []openfeature.Hook {
@@ -71,11 +100,18 @@ func (tp TestProvider) Metadata() openfeature.Metadata {
 	return tp.NoopProvider.Metadata()
 }
 
-func (tp TestProvider) getProvider() openfeature.FeatureProvider {
+func (tp TestProvider) getProvider(ctx context.Context) openfeature.FeatureProvider {
 	// Retrieve the test name from the goroutine-local storage.
-	testName, ok := getGoroutineLocal().(string)
+	//
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	testName, ok := ctx.Value(testNameKey).(string)
 	if !ok {
-		panic("unable to detect test name; be sure to call `UsingFlags`	in the scope of a test (in T.run)!")
+		testName, ok = getGoroutineLocal().(string)
+		if !ok {
+			panic("unable to detect test name; be sure to call `UsingFlags`	in the scope of a test (in T.run)!")
+		}
 	}
 
 	// Load the feature provider corresponding to the test name.
