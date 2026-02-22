@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.17.2](https://github.com/open-feature/go-sdk/compare/v1.17.1...v1.17.2) (2026-02-22)
+
+
+### 🐛 Bug Fixes
+
+* broken link in hooks.go comment ([#476](https://github.com/open-feature/go-sdk/issues/476)) ([efd720a](https://github.com/open-feature/go-sdk/commit/efd720ab3356d930b6dbeae7dec3b5a0582ddaa4))
+* **memprovider:** use int64 type in IntEvaluation to match API ([#464](https://github.com/open-feature/go-sdk/issues/464)) ([6085165](https://github.com/open-feature/go-sdk/commit/60851652f52051f901af3d4e0aa3ce7e0b7978c5))
+
+
+### 🧹 Chore
+
+* add govulncheck ([#462](https://github.com/open-feature/go-sdk/issues/462)) ([0a2fb41](https://github.com/open-feature/go-sdk/commit/0a2fb4110a078c3502bc5904d223917020c93a82))
+* bump go to 1.25 ([3bfdb3e](https://github.com/open-feature/go-sdk/commit/3bfdb3e5b3e00715e5e254f8d37d3d96026795be))
+* bump go to 1.25.0 ([#473](https://github.com/open-feature/go-sdk/issues/473)) ([3bfdb3e](https://github.com/open-feature/go-sdk/commit/3bfdb3e5b3e00715e5e254f8d37d3d96026795be))
+* **deps:** update module golang.org/x/text to v0.33.0 ([#469](https://github.com/open-feature/go-sdk/issues/469)) ([f6d6d76](https://github.com/open-feature/go-sdk/commit/f6d6d7656c8340b1ded609a3be8ea830dcebe26d))
+* **deps:** update module golang.org/x/text to v0.34.0 ([#478](https://github.com/open-feature/go-sdk/issues/478)) ([6567d33](https://github.com/open-feature/go-sdk/commit/6567d33e8cd1e78b6cbdabfe1b78286ae951f48f))
+* **deps:** update test-harness digest to ecb3d09 ([#477](https://github.com/open-feature/go-sdk/issues/477)) ([0a2825b](https://github.com/open-feature/go-sdk/commit/0a2825b8f0d61f55bd7adaf68366c8466a23f9ee))
+
+
+### 📚 Documentation
+
+* BooleanValue requires a context ([#466](https://github.com/open-feature/go-sdk/issues/466)) ([dfea225](https://github.com/open-feature/go-sdk/commit/dfea22532ce621854b1d280c442a3f8c7835bb32))
+* correct NewTestProvider example ([#467](https://github.com/open-feature/go-sdk/issues/467)) ([5b45d60](https://github.com/open-feature/go-sdk/commit/5b45d609a9b911dcbc28b9b4a0aa4862935004f6))
+
 ## [1.17.1](https://github.com/open-feature/go-sdk/compare/v1.17.0...v1.17.1) (2026-01-13)
 
 
