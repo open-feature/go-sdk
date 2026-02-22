@@ -3,7 +3,6 @@ package openfeature
 import (
 	"context"
 	"errors"
-	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -1302,12 +1301,21 @@ func TestRequirement_1_7_5(t *testing.T) {
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
 // is in NOT_READY.
 func TestRequirement_1_7_6(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(func() {
+		eventing.(*eventExecutor).shutdown()
+		initSingleton()
+	})
 
 	ctrl := gomock.NewController(t)
 	mockHook := NewMockHook(ctrl)
 	mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), ProviderNotReadyError, gomock.Any())
 	mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	// Use a channel that blocks until test cleanup to keep provider in NOT_READY state
+	blockChan := make(chan struct{})
+	t.Cleanup(func() {
+		close(blockChan)
+	})
 
 	notReadyEventingProvider := struct {
 		FeatureProvider
@@ -1317,7 +1325,7 @@ func TestRequirement_1_7_6(t *testing.T) {
 		NoopProvider{},
 		&stateHandlerForTests{
 			initF: func(e EvaluationContext) error {
-				<-time.After(math.MaxInt)
+				<-blockChan
 				return nil
 			},
 		},
