@@ -368,27 +368,9 @@ var statesMap = map[EventType]func(ProviderEventDetails) State{
 	},
 }
 
-func stateFromEventOrError(event Event, err error) State {
-	if err != nil {
-		return stateFromError(err)
-	}
-	return stateFromEvent(event)
-}
-
 func stateFromEvent(event Event) State {
 	if stateFn, ok := statesMap[event.EventType]; ok {
 		return stateFn(event.ProviderEventDetails)
 	}
 	return NotReadyState // default
-}
-
-func stateFromError(err error) State {
-	var e *ProviderInitError
-	switch {
-	case errors.As(err, &e):
-		if e.ErrorCode == ProviderFatalCode {
-			return FatalState
-		}
-	}
-	return ErrorState // default
 }
