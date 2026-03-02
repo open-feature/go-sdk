@@ -863,14 +863,19 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Emit error event and wait for state transition before registering handler,
+		// so that AddHandler fires via emitOnRegistration (spec 5.3.3).
+		eventingImpl.Invoke(Event{EventType: ProviderError})
+		eventually(t, func() bool {
+			return NewDefaultClient().State() == ErrorState
+		}, time.Second, time.Millisecond*100, "provider did not transition to ERROR state")
+
 		rsp := make(chan EventDetails, 1)
 		callback := func(e EventDetails) {
 			rsp <- e
 		}
 
 		AddHandler(ProviderError, &callback)
-
-		eventingImpl.Invoke(Event{EventType: ProviderError})
 
 		select {
 		case <-rsp:
@@ -899,7 +904,12 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Emit stale event and wait for state transition before registering handler,
+		// so that AddHandler fires via emitOnRegistration (spec 5.3.3).
 		eventingImpl.Invoke(Event{EventType: ProviderStale})
+		eventually(t, func() bool {
+			return NewDefaultClient().State() == StaleState
+		}, time.Second, time.Millisecond*100, "provider did not transition to STALE state")
 
 		rsp := make(chan EventDetails, 1)
 		callback := func(e EventDetails) {
