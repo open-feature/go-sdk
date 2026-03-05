@@ -118,7 +118,6 @@ var (
 func init() {
 	// used for mapping provider event types & provider states to comparable values for evaluation
 	stateValues = map[of.State]int{
-		"":            -1, // Not a real state, but used for handling provider config changes
 		of.ReadyState: 0,
 		of.StaleState: 1,
 		of.ErrorState: 2,
@@ -130,10 +129,9 @@ func init() {
 		of.ErrorState, // 2
 	}
 	eventTypeToState = map[of.EventType]of.State{
-		of.ProviderConfigChange: "",
-		of.ProviderReady:        of.ReadyState,
-		of.ProviderStale:        of.StaleState,
-		of.ProviderError:        of.ErrorState,
+		of.ProviderReady: of.ReadyState,
+		of.ProviderStale: of.StaleState,
+		of.ProviderError: of.ErrorState,
 	}
 }
 
@@ -483,6 +481,16 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 			slog.String(MetadataProviderType, e.ProviderName),
 		)
 		l.LogAttrs(workerCtx, slog.LevelDebug, "received event from provider", slog.String("event-type", string(e.EventType)))
+
+		// ConfigurationChanged events are always forwarded directly without affecting provider state tracking.
+		// This matches the JS SDK reference behavior where ConfigurationChanged is re-emitted as a direct
+		// pass-through, independent of status change logic.
+		if e.EventType == of.ProviderConfigChange {
+			p.outboundEvents <- e.Event
+			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
+			continue
+		}
+
 		if p.updateProviderStateFromEvent(e) {
 			p.outboundEvents <- e.Event
 			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
@@ -509,10 +517,8 @@ func (p *Provider) updateProviderState(name string, state of.State) bool {
 
 // updateProviderStateFromEvent updates the state of an internal provider from an event emitted from it, and then
 // re-evaluates the overall state of the multiprovider. If this method returns true the overall state changed.
+// Note: ProviderConfigChange events are handled separately in forwardProviderEvents and never reach this method.
 func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
-	if e.EventType == of.ProviderConfigChange {
-		p.logger.LogAttrs(context.Background(), slog.LevelDebug, "ProviderConfigChange event", slog.String("event-message", e.Message))
-	}
 	p.providerStatusLock.Lock()
 	previousState := p.providerStatus[e.providerName]
 	p.providerStatusLock.Unlock()
