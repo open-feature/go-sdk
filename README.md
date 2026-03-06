@@ -525,6 +525,7 @@ go func() {
     // The context carries the necessary information for the TestProvider.
     _ = openfeature.NewDefaultClient().Boolean(ctx, "my_flag", false, openfeature.EvaluationContext{})
 }()
+```
 
 ### Mocks
 
