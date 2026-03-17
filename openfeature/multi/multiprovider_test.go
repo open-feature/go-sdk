@@ -371,6 +371,93 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 	}
 }
 
+func TestMultiProvider_ConfigurationChangedEventForwarding(t *testing.T) {
+	// awaitEvent drains the outbound channel until an event of the given type is found.
+	awaitEvent := func(t *testing.T, ch <-chan of.Event, eventType of.EventType) of.Event {
+		t.Helper()
+		var found of.Event
+		require.Eventually(t, func() bool {
+			for {
+				select {
+				case e, ok := <-ch:
+					if !ok {
+						return false
+					}
+					if e.EventType == eventType {
+						found = e
+						return true
+					}
+				default:
+					return false
+				}
+			}
+		}, time.Second, 10*time.Millisecond, "expected %s event was not received", eventType)
+		return found
+	}
+
+	// setup creates a two-provider multi-provider, initializes it, and waits for READY.
+	setup := func(t *testing.T) (*Provider, *mockProviderWithEvents, *mockProviderWithEvents) {
+		t.Helper()
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+
+		p1 := newMockProviderWithEvents(ctrl, "provider1")
+		p2 := newMockProviderWithEvents(ctrl, "provider2")
+
+		mp, err := NewProvider(
+			StrategyFirstMatch,
+			WithProvider("provider1", p1),
+			WithProvider("provider2", p2),
+		)
+		require.NoError(t, err)
+		t.Cleanup(mp.Shutdown)
+
+		require.NoError(t, mp.Init(of.NewEvaluationContext("test", nil)))
+		require.Eventually(t, func() bool {
+			return mp.Status() == of.ReadyState
+		}, time.Second, 10*time.Millisecond)
+
+		return mp, p1, p2
+	}
+
+	t.Run("event is forwarded with correct payload and does not corrupt provider state", func(t *testing.T) {
+		mp, provider1, _ := setup(t)
+
+		provider1.EmitEvent(of.ProviderConfigChange, "flags updated")
+		e := awaitEvent(t, mp.outboundEvents, of.ProviderConfigChange)
+
+		assert.Equal(t, "flags updated", e.Message)
+		assert.Equal(t, "provider1", e.EventMetadata[MetadataProviderName])
+
+		// Provider state should remain READY (not corrupted to empty string)
+		mp.providerStatusLock.Lock()
+		assert.Equal(t, of.ReadyState, mp.providerStatus["provider1"])
+		assert.Equal(t, of.ReadyState, mp.providerStatus["provider2"])
+		mp.providerStatusLock.Unlock()
+
+		assert.Equal(t, of.ReadyState, mp.Status())
+	})
+
+	t.Run("does not affect aggregate state when another provider is degraded", func(t *testing.T) {
+		mp, provider1, provider2 := setup(t)
+
+		// Put provider2 into STALE state
+		provider2.EmitEvent(of.ProviderStale, "stale")
+		awaitEvent(t, mp.outboundEvents, of.ProviderStale)
+		require.Equal(t, of.StaleState, mp.Status())
+
+		// ConfigurationChanged from provider1 should not affect aggregate
+		provider1.EmitEvent(of.ProviderConfigChange, "flags updated")
+		awaitEvent(t, mp.outboundEvents, of.ProviderConfigChange)
+
+		assert.Equal(t, of.StaleState, mp.Status())
+
+		mp.providerStatusLock.Lock()
+		assert.Equal(t, of.ReadyState, mp.providerStatus["provider1"])
+		mp.providerStatusLock.Unlock()
+	})
+}
+
 func TestMultiProvider_Track(t *testing.T) {
 	t.Run("forwards tracking to all ready providers that implement Tracker", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
