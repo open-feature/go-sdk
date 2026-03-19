@@ -103,9 +103,6 @@ func (tp TestProvider) Metadata() openfeature.Metadata {
 func (tp TestProvider) getProvider(ctx context.Context) openfeature.FeatureProvider {
 	// Retrieve the test name from the goroutine-local storage.
 	//
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	testName, ok := ctx.Value(testNameKey).(string)
 	if !ok {
 		testName, ok = getGoroutineLocal().(string)
