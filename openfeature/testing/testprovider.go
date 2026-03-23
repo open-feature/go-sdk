@@ -31,14 +31,10 @@ type TestProvider struct {
 	providers *sync.Map
 }
 
+// TestFramework defines an interface for test frameworks
+// to enable test-scoped feature flag definitions.
 type TestFramework = interface {
 	Name() string
-}
-
-// testFrameworkWithContext is an optional interface for tests that can provide
-// a context, enabling context-aware evaluation when flags are used across goroutines.
-type testFrameworkWithContext interface {
-	TestFramework
 	Context() context.Context
 }
 
@@ -46,14 +42,8 @@ type testFrameworkWithContext interface {
 func (tp TestProvider) UsingFlags(test TestFramework, flags map[string]memprovider.InMemoryFlag) context.Context {
 	storeGoroutineLocal(test.Name())
 	tp.providers.Store(test.Name(), memprovider.NewInMemoryProvider(flags))
-	ctx := context.Background()
 
-	// allow to pass the context without breaking changes
-	if t, ok := test.(testFrameworkWithContext); ok {
-		if tctx := t.Context(); tctx != nil {
-			ctx = tctx
-		}
-	}
+	ctx := test.Context()
 
 	// if test is testing.TB add the auto Cleanup
 	if t, ok := test.(testing.TB); ok {
