@@ -11,6 +11,8 @@ const (
 	DefaultReason Reason = "DEFAULT"
 	// TargetingMatchReason - the resolved value was the result of a dynamic evaluation, such as a rule or specific user-targeting.
 	TargetingMatchReason Reason = "TARGETING_MATCH"
+	// TargetingMatchSplitReason - the resolved value was the result of a dynamic evaluation that resolves to a percentage split.
+	TargetingMatchSplitReason Reason = "TARGETING_MATCH_SPLIT"
 	// SplitReason - the resolved value was the result of pseudorandom assignment.
 	SplitReason Reason = "SPLIT"
 	// DisabledReason - the resolved value was the result of the flag being disabled in the management system.
