@@ -514,6 +514,21 @@ for name, tt := range tests {
 }
 ```
 
+If your test code runs in a different goroutine, `TestProvider.UsingFlags` returns a context that should be used for evaluations.
+
+You can pass `*testing.T` directly.
+
+```go
+// In your test, 't' is a *testing.T
+ctx := testProvider.UsingFlags(t, tt.flags)
+
+go func() {
+    // Make sure to use the context returned by UsingFlags in the new goroutine.
+    // The context carries the necessary information for the TestProvider.
+    _ = openfeature.NewDefaultClient().Boolean(ctx, "my_flag", false, openfeature.EvaluationContext{})
+}()
+```
+
 ### Mocks
 
 Mocks are also available for testing purposes for all interfaces within the OpenFeature SDK. These are primarily
