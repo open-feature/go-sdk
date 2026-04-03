@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.17.2](https://github.com/open-feature/go-sdk/compare/v1.17.1...v1.17.2) (2026-04-03)
+
+
+### 🐛 Bug Fixes
+
+* broken link in hooks.go comment ([#476](https://github.com/open-feature/go-sdk/issues/476)) ([efd720a](https://github.com/open-feature/go-sdk/commit/efd720ab3356d930b6dbeae7dec3b5a0582ddaa4))
+* consistent SetProviderAndWait init flow ([#474](https://github.com/open-feature/go-sdk/issues/474)) ([e6452ea](https://github.com/open-feature/go-sdk/commit/e6452ea7d9b383c54e6bd0adff2a7646033fbce5))
+* **memprovider:** use int64 type in IntEvaluation to match API ([#464](https://github.com/open-feature/go-sdk/issues/464)) ([6085165](https://github.com/open-feature/go-sdk/commit/60851652f52051f901af3d4e0aa3ce7e0b7978c5))
+* **multi:** forward ConfigurationChanged events from child providers ([#480](https://github.com/open-feature/go-sdk/issues/480)) ([20c5cb9](https://github.com/open-feature/go-sdk/commit/20c5cb9204bf2b77cbe094471dbc1885bef66dcf))
+* **testing:** make test provider context-aware for goroutine ([#470](https://github.com/open-feature/go-sdk/issues/470)) ([b4e2cdf](https://github.com/open-feature/go-sdk/commit/b4e2cdfd2579ce40287630229f4612e5d10087c9))
+
+
+### 🧹 Chore
+
+* add govulncheck ([#462](https://github.com/open-feature/go-sdk/issues/462)) ([0a2fb41](https://github.com/open-feature/go-sdk/commit/0a2fb4110a078c3502bc5904d223917020c93a82))
+* bump go to 1.25 ([3bfdb3e](https://github.com/open-feature/go-sdk/commit/3bfdb3e5b3e00715e5e254f8d37d3d96026795be))
+* bump go to 1.25.0 ([#473](https://github.com/open-feature/go-sdk/issues/473)) ([3bfdb3e](https://github.com/open-feature/go-sdk/commit/3bfdb3e5b3e00715e5e254f8d37d3d96026795be))
+* **deps:** update module golang.org/x/sync to v0.20.0 ([#484](https://github.com/open-feature/go-sdk/issues/484)) ([0dbfca4](https://github.com/open-feature/go-sdk/commit/0dbfca40f684cc032beaf309a46ddbbf91168f47))
+* **deps:** update module golang.org/x/text to v0.33.0 ([#469](https://github.com/open-feature/go-sdk/issues/469)) ([f6d6d76](https://github.com/open-feature/go-sdk/commit/f6d6d7656c8340b1ded609a3be8ea830dcebe26d))
+* **deps:** update module golang.org/x/text to v0.34.0 ([#478](https://github.com/open-feature/go-sdk/issues/478)) ([6567d33](https://github.com/open-feature/go-sdk/commit/6567d33e8cd1e78b6cbdabfe1b78286ae951f48f))
+* **deps:** update module golang.org/x/text to v0.35.0 ([#485](https://github.com/open-feature/go-sdk/issues/485)) ([6980c98](https://github.com/open-feature/go-sdk/commit/6980c98d500e55cb617b3fa66170fb250ab1ca23))
+* **deps:** update test-harness digest to ecb3d09 ([#477](https://github.com/open-feature/go-sdk/issues/477)) ([0a2825b](https://github.com/open-feature/go-sdk/commit/0a2825b8f0d61f55bd7adaf68366c8466a23f9ee))
+
+
+### 📚 Documentation
+
+* BooleanValue requires a context ([#466](https://github.com/open-feature/go-sdk/issues/466)) ([dfea225](https://github.com/open-feature/go-sdk/commit/dfea22532ce621854b1d280c442a3f8c7835bb32))
+* correct NewTestProvider example ([#467](https://github.com/open-feature/go-sdk/issues/467)) ([5b45d60](https://github.com/open-feature/go-sdk/commit/5b45d609a9b911dcbc28b9b4a0aa4862935004f6))
+
 ## [1.17.1](https://github.com/open-feature/go-sdk/compare/v1.17.0...v1.17.1) (2026-01-13)
 
 
