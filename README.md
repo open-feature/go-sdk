@@ -22,7 +22,7 @@
   <!-- x-release-please-end -->
   <br/>
   <a href="https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature">
-    <img alt="API Reference" src="https://pkg.go.dev/badge/github.com/open-feature/go-sdk/pkg/openfeature.svg" />
+    <img alt="API Reference" src="https://pkg.go.dev/badge/github.com/open-feature/go-sdk/openfeature.svg" />
   </a>
   <a href="https://goreportcard.com/report/github.com/open-feature/go-sdk">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-feature/go-sdk" />
@@ -171,7 +171,7 @@ client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
 value, err := client.BooleanValue(
-    context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, WithHooks(ExampleInvocationHook{}),
+    context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, openfeature.WithHooks(ExampleInvocationHook{}),
 )
 ```
 
@@ -183,12 +183,12 @@ For example, a flag enhancing the appearance of a UI component might drive user 
 
 ```go
 // initialize a client
-client := openfeature.NewClient('my-app')
+client := openfeature.NewClient("my-app")
 
 // trigger tracking event action
 client.Track(
     context.TODO(),
-    'visited-promo-page',
+    "visited-promo-page",
     openfeature.EvaluationContext{},
     openfeature.NewTrackingEventDetails(99.77).Add("currencyCode", "USD"),
     )
@@ -254,12 +254,15 @@ See [hooks](#hooks) for more information on configuring hooks.
 Clients can be assigned to a domain. A domain is a logical identifier that can be used to associate clients with a particular provider. If a domain has no associated provider, the default provider is used.
 
 ```go
-import "github.com/open-feature/go-sdk/openfeature"
+import (
+    "github.com/open-feature/go-sdk/openfeature"
+    "github.com/open-feature/go-sdk/openfeature/memprovider"
+)
 
 // Registering the default provider
-openfeature.SetProviderAndWait(NewLocalProvider())
+openfeature.SetProviderAndWait(openfeature.NoopProvider{})
 // Registering a named provider
-openfeature.SetNamedProvider("clientForCache", NewCachedProvider())
+openfeature.SetNamedProvider("clientForCache", memprovider.NewInMemoryProvider(map[string]memprovider.InMemoryFlag{}))
 
 // A Client backed by default provider
 clientWithDefault := openfeature.NewDefaultClient()
@@ -423,7 +426,7 @@ func (i MyFeatureProvider) EventChannel() <-chan openfeature.Event {
 
 To develop a hook, you need to create a new project and include the OpenFeature SDK as a dependency.
 This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/go-sdk-contrib) available under the OpenFeature organization.
-Implement your own hook by conforming to the [Hook interface](./pkg/openfeature/hooks.go).
+Implement your own hook by conforming to the [Hook interface](./openfeature/hooks.go).
 To satisfy the interface, all methods (`Before`/`After`/`Finally`/`Error`) need to be defined.
 To avoid defining empty functions make use of the `UnimplementedHook` struct (which already implements all the empty functions).
 
