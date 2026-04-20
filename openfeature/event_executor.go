@@ -150,9 +150,16 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 // emitOnRegistration fulfils the spec requirement to fire events if the
 // event type and the state of the associated provider are compatible.
 func (e *eventExecutor) emitOnRegistration(domain string, providerReference providerReference, eventType EventType, callback EventCallback) {
-	state, ok := e.loadState(domain)
-	if !ok {
-		return
+	var state State
+	// state-managing providers own their state; read directly
+	if smp, ok := providerReference.featureProvider.(StateManagingProvider); ok {
+		state = smp.State()
+	} else {
+		var ok bool
+		state, ok = e.loadState(domain)
+		if !ok {
+			return
+		}
 	}
 
 	var message string
@@ -185,6 +192,20 @@ func (e *eventExecutor) loadState(domain string) (State, bool) {
 }
 
 func (e *eventExecutor) State(domain string) State {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// find the provider reference for this domain
+	ref, ok := e.namedProviderReference[domain]
+	if !ok {
+		ref = e.defaultProviderReference
+	}
+
+	// state-managing providers own their state; read directly
+	if smp, ok := ref.featureProvider.(StateManagingProvider); ok {
+		return smp.State()
+	}
+
 	state, _ := e.loadState(domain)
 	return state
 }
@@ -297,6 +318,8 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	_, delegateManagesState := handler.(StateManagingProvider)
+
 	// first run API handlers
 	for _, c := range e.apiRegistry[event.EventType] {
 		e.executeHandler(*c, event)
@@ -308,7 +331,10 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 			continue
 		}
 
-		e.states.Store(domain, stateFromEvent(event))
+		// state-managing providers own their state; skip SDK-side writes
+		if !delegateManagesState {
+			e.states.Store(domain, stateFromEvent(event))
+		}
 		for _, c := range e.scopedRegistry[domain].callbacks[event.EventType] {
 			e.executeHandler(*c, event)
 		}
@@ -319,7 +345,10 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	}
 
 	// handling the default provider
-	e.states.Store(defaultDomain, stateFromEvent(event))
+	// state-managing providers own their state; skip SDK-side writes
+	if !delegateManagesState {
+		e.states.Store(defaultDomain, stateFromEvent(event))
+	}
 	// invoke default provider bound (no provider associated) handlers by filtering
 	for domain, registry := range e.scopedRegistry {
 		if _, ok := e.namedProviderReference[domain]; ok {

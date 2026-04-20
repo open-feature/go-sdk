@@ -117,10 +117,16 @@ func (api *evaluationAPI) setNamedProviderWithContext(ctx context.Context, clien
 func (api *evaluationAPI) initNew(ctx context.Context, clientName string, newProvider FeatureProvider) <-chan error {
 	errCh := make(chan error, 1)
 
+	_, delegateManagesState := newProvider.(StateManagingProvider)
+
 	// Initialize new provider async. The caller may wait on the channel.
 	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, clientName string) {
 		event, err := initializerWithContext(ctx, provider, evalCtx)
-		executor.triggerEvent(event, provider)
+
+		// State-managing providers emit their own events; skip SDK-side emission.
+		if !delegateManagesState {
+			executor.triggerEvent(event, provider)
+		}
 
 		if err != nil {
 			if clientName == "" {

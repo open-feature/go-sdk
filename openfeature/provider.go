@@ -105,6 +105,28 @@ func (s *NoopStateHandler) Shutdown() {
 	// NOOP
 }
 
+// StateManagingProvider is a provider that manages its own state. The SDK reads
+// state from the provider rather than maintaining shadow state. Implementations
+// MUST ensure that State() is safe for concurrent access and that state
+// transitions and associated event emissions are atomic from the perspective of
+// external observers.
+//
+// Legacy providers that do not implement this interface continue to have their
+// state managed by the SDK (deprecated behavior; to be removed in the next
+// major version).
+type StateManagingProvider interface {
+	FeatureProvider
+	StateHandler
+	EventHandler
+
+	// State returns the current provider state. Must reflect NotReadyState
+	// before Init is called and after Shutdown completes. Must reflect
+	// ReadyState if Init returns nil.
+	//
+	// This method must be safe for concurrent access.
+	State() State
+}
+
 // Eventing
 
 // EventHandler is the eventing contract enforced for FeatureProvider

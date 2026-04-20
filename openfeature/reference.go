@@ -6,10 +6,12 @@ import (
 
 // newProviderRef creates a new providerReference instance that wraps around a FeatureProvider implementation
 func newProviderRef(provider FeatureProvider) providerReference {
+	_, managesState := provider.(StateManagingProvider)
 	return providerReference{
-		featureProvider:   provider,
-		kind:              reflect.TypeOf(provider).Kind(),
-		shutdownSemaphore: make(chan any, 1),
+		featureProvider:      provider,
+		kind:                 reflect.TypeOf(provider).Kind(),
+		shutdownSemaphore:    make(chan any, 1),
+		delegateManagesState: managesState,
 	}
 }
 
@@ -19,6 +21,8 @@ type providerReference struct {
 	featureProvider   FeatureProvider
 	kind              reflect.Kind
 	shutdownSemaphore chan any
+	// delegateManagesState is true when the provider implements StateManagingProvider
+	delegateManagesState bool
 }
 
 func (pr providerReference) equals(other providerReference) bool {
