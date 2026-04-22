@@ -17,7 +17,7 @@ func TestRequirement_1_8_1(t *testing.T) {
 // Requirement 1.8.2: Isolated instances MUST conform to the same API contract as the singleton (IEvaluation).
 func TestRequirement_1_8_2(t *testing.T) {
 	// compile-time check: NewAPI() must return IEvaluation
-	var _ IEvaluation = NewAPI()
+	_ = NewAPI()
 }
 
 // Requirement 1.8.1 (independence): State set on an isolated instance MUST NOT affect the singleton.
