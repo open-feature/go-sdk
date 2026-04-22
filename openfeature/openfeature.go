@@ -18,10 +18,28 @@ func init() {
 }
 
 func initSingleton() {
+	if api != nil {
+		if evalAPI, ok := api.(*evaluationAPI); ok {
+			evalAPI.unbindAllProviders()
+		}
+	}
 	exec := newEventExecutor()
 	eventing = exec
 
 	api = newEvaluationAPI(exec)
+}
+
+// NewAPI creates a new, independent OpenFeature API instance with its own state:
+// providers, evaluation context, hooks, and events. This satisfies spec requirement 1.8.1.
+//
+// Each instance conforms to the same [IEvaluation] contract as the global singleton (spec 1.8.2).
+// Per spec 1.8.4, a provider instance SHOULD NOT be bound to more than one API instance at a time;
+// attempting to do so will return an error from [IEvaluation.SetProvider] or [IEvaluation.SetNamedProvider].
+//
+// Use [IEvaluation.GetClient] or [IEvaluation.GetNamedClient] to create clients bound to this instance.
+func NewAPI() IEvaluation {
+	exec := newEventExecutor()
+	return newEvaluationAPI(exec)
 }
 
 // GetApiInstance returns the current singleton IEvaluation instance.
