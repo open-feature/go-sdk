@@ -36,6 +36,9 @@ func initSingleton() {
 // Per spec 1.8.4, a provider instance SHOULD NOT be bound to more than one API instance at a time;
 // attempting to do so will return an error from [IEvaluation.SetProvider] or [IEvaluation.SetNamedProvider].
 //
+// Callers MUST invoke [IEvaluation.Shutdown] when the instance is no longer needed to release
+// provider resources and free the provider bindings held by the global registry.
+//
 // Use [IEvaluation.GetClient] or [IEvaluation.GetNamedClient] to create clients bound to this instance.
 func NewAPI() IEvaluation {
 	exec := newEventExecutor()

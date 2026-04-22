@@ -410,16 +410,23 @@ func (api *evaluationAPI) unbindAllProviders() {
 }
 
 // unbindAllProvidersLocked releases all provider bindings. Must be called with api.mu held (any level).
+// Acquires providerBindingsMu once for the entire operation to avoid repeated lock acquisitions
+// and to prevent panics from using unhashable FeatureProvider values as map keys.
 func (api *evaluationAPI) unbindAllProvidersLocked() {
-	seen := make(map[FeatureProvider]bool)
-	if api.defaultProvider != nil {
-		seen[api.defaultProvider] = true
+	providerBindingsMu.Lock()
+	defer providerBindingsMu.Unlock()
+
+	deleteIfOwned := func(p FeatureProvider) {
+		if k, ok := providerBindingKey(p); ok {
+			if entry, exists := providerBindings[k]; exists && entry.api == api {
+				delete(providerBindings, k)
+			}
+		}
 	}
+
+	deleteIfOwned(api.defaultProvider)
 	for _, p := range api.namedProviders {
-		seen[p] = true
-	}
-	for p := range seen {
-		unbindProvider(p, api)
+		deleteIfOwned(p)
 	}
 }
 
