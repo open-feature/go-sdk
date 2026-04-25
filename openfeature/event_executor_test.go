@@ -1557,3 +1557,123 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	afterCount := eventCount.Load()
 	require.Equal(t, initialCount, afterCount, "goroutine processed events after channel closed - indicates channel closure not detected")
 }
+
+// Requirement 5.3.5: API and client handlers MUST observe the updated provider
+// status when they fire. Regression test for the ordering bug where API-level
+// handlers ran before e.states was written, so a handler that queried the
+// client's State during a ProviderReady callback would still see NotReadyState
+// (or, on a stale -> ready transition, the previous state).
+func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
+	t.Run("API handler observes new state for default provider", func(t *testing.T) {
+		executor := newEventExecutor()
+
+		provider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			&ProviderEventing{c: make(chan Event, 1)},
+		}
+		executor.registerDefaultProvider(provider)
+
+		observed := make(chan State, 1)
+		callback := func(EventDetails) {
+			observed <- executor.State(defaultDomain)
+		}
+		executor.AddHandler(ProviderReady, &callback)
+
+		executor.triggerEvent(Event{
+			ProviderName: provider.Metadata().Name,
+			EventType:    ProviderReady,
+		}, provider)
+
+		select {
+		case got := <-observed:
+			require.Equal(t, ReadyState, got,
+				"API handler must see ReadyState (state must be written before handlers run)")
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("API handler did not run")
+		}
+	})
+
+	t.Run("client handler observes new state for named provider", func(t *testing.T) {
+		executor := newEventExecutor()
+
+		defaultProvider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			&ProviderEventing{c: make(chan Event, 1)},
+		}
+		executor.registerDefaultProvider(defaultProvider)
+
+		namedProvider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			&ProviderEventing{c: make(chan Event, 1)},
+		}
+		const domain = "domainA"
+		executor.registerNamedEventingProvider(domain, namedProvider)
+
+		observed := make(chan State, 1)
+		callback := func(EventDetails) {
+			observed <- executor.State(domain)
+		}
+		executor.AddClientHandler(domain, ProviderError, &callback)
+
+		executor.triggerEvent(Event{
+			ProviderName: namedProvider.Metadata().Name,
+			EventType:    ProviderError,
+		}, namedProvider)
+
+		select {
+		case got := <-observed:
+			require.Equal(t, ErrorState, got,
+				"client handler must see ErrorState (state must be written before handlers run)")
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("client handler did not run")
+		}
+	})
+
+	t.Run("transition from stale to ready: handler observes ready, not stale", func(t *testing.T) {
+		executor := newEventExecutor()
+
+		provider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			&ProviderEventing{c: make(chan Event, 1)},
+		}
+		executor.registerDefaultProvider(provider)
+
+		// Drive into stale first.
+		executor.triggerEvent(Event{
+			ProviderName: provider.Metadata().Name,
+			EventType:    ProviderStale,
+		}, provider)
+		require.Equal(t, StaleState, executor.State(defaultDomain))
+
+		observed := make(chan State, 1)
+		callback := func(EventDetails) {
+			observed <- executor.State(defaultDomain)
+		}
+		executor.AddHandler(ProviderReady, &callback)
+
+		executor.triggerEvent(Event{
+			ProviderName: provider.Metadata().Name,
+			EventType:    ProviderReady,
+		}, provider)
+
+		select {
+		case got := <-observed:
+			require.Equal(t, ReadyState, got,
+				"handler must see ReadyState after stale->ready transition, not the previous StaleState")
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("ready handler did not run")
+		}
+	})
+}
