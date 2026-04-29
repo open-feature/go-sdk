@@ -19,7 +19,7 @@ func init() {
 
 func initSingleton() {
 	if api != nil {
-		if evalAPI, ok := api.(*evaluationAPI); ok {
+		if evalAPI, ok := api.(*EvaluationAPI); ok {
 			evalAPI.unbindAllProviders()
 		}
 	}
@@ -34,13 +34,13 @@ func initSingleton() {
 //
 // Each instance conforms to the same [IEvaluation] contract as the global singleton (spec 1.8.2).
 // Per spec 1.8.4, a provider instance SHOULD NOT be bound to more than one API instance at a time;
-// attempting to do so will return an error from [IEvaluation.SetProvider] or [IEvaluation.SetNamedProvider].
+// attempting to do so will return an error from [EvaluationAPI.SetProvider] or [EvaluationAPI.SetNamedProvider].
 //
-// Callers MUST invoke [IEvaluation.Shutdown] when the instance is no longer needed to release
+// Callers MUST invoke [EvaluationAPI.Shutdown] when the instance is no longer needed to release
 // provider resources and free the provider bindings held by the global registry.
 //
-// Use [IEvaluation.GetClient] or [IEvaluation.GetNamedClient] to create clients bound to this instance.
-func NewAPI() IEvaluation {
+// Use [EvaluationAPI.GetClient] or [EvaluationAPI.GetNamedClient] to create clients bound to this instance.
+func NewAPI() *EvaluationAPI {
 	exec := newEventExecutor()
 	return newEvaluationAPI(exec)
 }
