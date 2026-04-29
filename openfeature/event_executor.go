@@ -297,22 +297,20 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// Per OpenFeature spec requirement 5.3.5, the client's provider
-	// status MUST be updated BEFORE any event handlers (API-level or
-	// client-scoped) fire, so every handler — including API-level
-	// handlers that query client state — observes the new status.
-	// Write the state for every domain affected by this handler's
-	// provider reference first, then dispatch handlers.
-	isDefault := e.defaultProviderReference.equals(newProviderRef(handler))
-	namedDomains := make([]string, 0)
+	// Per spec 5.3.5, write provider status BEFORE handlers run so every
+	// handler — including API-level — sees the new state.
+	handlerRef := newProviderRef(handler)
+	newState := stateFromEvent(event)
+	isDefault := e.defaultProviderReference.equals(handlerRef)
+	var namedDomains []string
 	for domain, reference := range e.namedProviderReference {
-		if reference.equals(newProviderRef(handler)) {
+		if reference.equals(handlerRef) {
 			namedDomains = append(namedDomains, domain)
-			e.states.Store(domain, stateFromEvent(event))
+			e.states.Store(domain, newState)
 		}
 	}
 	if isDefault {
-		e.states.Store(defaultDomain, stateFromEvent(event))
+		e.states.Store(defaultDomain, newState)
 	}
 
 	// first run API handlers (after state has been written above)
