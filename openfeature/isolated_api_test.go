@@ -282,7 +282,7 @@ func TestIsolatedAPI_EventsIndependence(t *testing.T) {
 	}
 
 	// Give a short window for any erroneous event propagation.
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
 	defer cancel()
 	<-ctx.Done()
 
