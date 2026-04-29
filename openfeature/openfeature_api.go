@@ -165,11 +165,11 @@ func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context
 	return api.SetNamedProviderWithContext(ctx, clientName, provider, false)
 }
 
-// maybeUnbindOldProvider removes oldProvider from the global binding registry if it is no longer
-// referenced by this API instance. Must be called with api.mu held.
+// unbindIfUnreferenced removes oldProvider from the global binding registry if it is no longer
+// referenced (as default or named provider) by this API instance. Must be called with api.mu held.
 // All comparisons use pointer identity (via providerBindingKey) to avoid panics from unhashable
 // FeatureProvider implementations that contain maps or slices.
-func (api *evaluationAPI) maybeUnbindOldProvider(oldProvider FeatureProvider) {
+func (api *evaluationAPI) unbindIfUnreferenced(oldProvider FeatureProvider) {
 	oldKey, tracked := providerBindingKey(oldProvider)
 	if !tracked {
 		return
@@ -206,7 +206,7 @@ func (api *evaluationAPI) setProviderWithContext(ctx context.Context, provider F
 
 	// Unbind the old provider if it is no longer referenced by this API instance.
 	if oldProvider != nil {
-		api.maybeUnbindOldProvider(oldProvider)
+		api.unbindIfUnreferenced(oldProvider)
 	}
 
 	return api.initNew(ctx, "", provider), nil
@@ -230,7 +230,7 @@ func (api *evaluationAPI) setNamedProviderWithContext(ctx context.Context, clien
 
 	// Unbind the old provider if it is no longer referenced by this API instance.
 	if oldProvider != nil {
-		api.maybeUnbindOldProvider(oldProvider)
+		api.unbindIfUnreferenced(oldProvider)
 	}
 
 	return api.initNew(ctx, clientName, provider), nil

@@ -40,7 +40,7 @@ func TestIsolatedAPI_IndependentFromSingleton(t *testing.T) {
 }
 
 // Requirement 1.8.1 (independence): State set on the singleton MUST NOT affect isolated instances.
-func TestIsolatedAPI_SingetonDoesNotAffectInstance(t *testing.T) {
+func TestIsolatedAPI_SingletonDoesNotAffectInstance(t *testing.T) {
 	t.Cleanup(initSingleton)
 
 	ctrl := gomock.NewController(t)
