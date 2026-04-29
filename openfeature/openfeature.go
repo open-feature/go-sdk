@@ -29,7 +29,7 @@ func initSingleton() {
 	api = newEvaluationAPI(exec)
 }
 
-// NewAPI creates a new, independent OpenFeature API instance with its own state:
+// Experimental: NewAPI creates a new, independent OpenFeature API instance with its own state:
 // providers, evaluation context, hooks, and events. This satisfies spec requirement 1.8.1.
 //
 // Each instance conforms to the same [IEvaluation] contract as the global singleton (spec 1.8.2).
