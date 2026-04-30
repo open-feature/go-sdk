@@ -165,6 +165,34 @@ func (mr *MockIEvaluationMockRecorder) SetNamedProvider(clientName, provider, as
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProvider", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProvider), clientName, provider, async)
 }
 
+// SetNamedProviderWithContext mocks base method.
+func (m *MockIEvaluation) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContext", ctx, clientName, provider, async)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContext indicates an expected call of SetNamedProviderWithContext.
+func (mr *MockIEvaluationMockRecorder) SetNamedProviderWithContext(ctx, clientName, provider, async any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContext", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProviderWithContext), ctx, clientName, provider, async)
+}
+
+// SetNamedProviderWithContextAndWait mocks base method.
+func (m *MockIEvaluation) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContextAndWait", ctx, clientName, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContextAndWait indicates an expected call of SetNamedProviderWithContextAndWait.
+func (mr *MockIEvaluationMockRecorder) SetNamedProviderWithContextAndWait(ctx, clientName, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContextAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProviderWithContextAndWait), ctx, clientName, provider)
+}
+
 // SetProvider mocks base method.
 func (m *MockIEvaluation) SetProvider(provider FeatureProvider) error {
 	m.ctrl.T.Helper()
@@ -191,6 +219,34 @@ func (m *MockIEvaluation) SetProviderAndWait(provider FeatureProvider) error {
 func (mr *MockIEvaluationMockRecorder) SetProviderAndWait(provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderAndWait), provider)
+}
+
+// SetProviderWithContext mocks base method.
+func (m *MockIEvaluation) SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProviderWithContext", ctx, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProviderWithContext indicates an expected call of SetProviderWithContext.
+func (mr *MockIEvaluationMockRecorder) SetProviderWithContext(ctx, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderWithContext", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderWithContext), ctx, provider)
+}
+
+// SetProviderWithContextAndWait mocks base method.
+func (m *MockIEvaluation) SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProviderWithContextAndWait", ctx, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProviderWithContextAndWait indicates an expected call of SetProviderWithContextAndWait.
+func (mr *MockIEvaluationMockRecorder) SetProviderWithContextAndWait(ctx, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderWithContextAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderWithContextAndWait), ctx, provider)
 }
 
 // Shutdown mocks base method.

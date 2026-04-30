@@ -10,8 +10,12 @@ import (
 type IEvaluation interface {
 	SetProvider(provider FeatureProvider) error
 	SetProviderAndWait(provider FeatureProvider) error
+	SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
+	SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error
 	GetProviderMetadata() Metadata
 	SetNamedProvider(clientName string, provider FeatureProvider, async bool) error
+	SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error
+	SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error
 	GetNamedProviderMetadata(name string) Metadata
 	GetClient() IClient
 	GetNamedClient(clientName string) IClient
@@ -68,12 +72,6 @@ type evaluationImpl interface {
 	SetLogger(l logr.Logger)
 
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
-
-	// Context-aware provider setup methods
-	SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
-	SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error
-	SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error
-	SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error
 }
 
 // eventingImpl is an internal reference interface extending IEventing
