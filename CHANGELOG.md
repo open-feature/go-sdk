@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.17.3](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.17.3) (2026-04-30)
+
+
+### 🐛 Bug Fixes
+
+* **event_executor:** update provider status before invoking API-level handlers ([#494](https://github.com/open-feature/go-sdk/issues/494)) ([42d65a5](https://github.com/open-feature/go-sdk/commit/42d65a5132de56e60533df1eb20786a8becac8ac))
+
+
+### 🧹 Chore
+
+* make govulncheck non-blocking ([#491](https://github.com/open-feature/go-sdk/issues/491)) ([16f2012](https://github.com/open-feature/go-sdk/commit/16f20122e28ba5d34df7ab48854253aab1854d2f))
+
+
+### 📚 Documentation
+
+* fix inaccuracies in README code examples ([#489](https://github.com/open-feature/go-sdk/issues/489)) ([96240cd](https://github.com/open-feature/go-sdk/commit/96240cd58e84d0debe5c7a083d77ccf6a1d6d137))
+
 ## [1.17.2](https://github.com/open-feature/go-sdk/compare/v1.17.1...v1.17.2) (2026-04-03)
 
 
