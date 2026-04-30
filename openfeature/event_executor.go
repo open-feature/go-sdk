@@ -297,29 +297,38 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// first run API handlers
+	// Per spec 5.3.5, write provider status BEFORE handlers run so every
+	// handler — including API-level — sees the new state.
+	handlerRef := newProviderRef(handler)
+	newState := stateFromEvent(event)
+	isDefault := e.defaultProviderReference.equals(handlerRef)
+	var namedDomains []string
+	for domain, reference := range e.namedProviderReference {
+		if reference.equals(handlerRef) {
+			namedDomains = append(namedDomains, domain)
+			e.states.Store(domain, newState)
+		}
+	}
+	if isDefault {
+		e.states.Store(defaultDomain, newState)
+	}
+
+	// first run API handlers (after state has been written above)
 	for _, c := range e.apiRegistry[event.EventType] {
 		e.executeHandler(*c, event)
 	}
 
-	// then run client handlers
-	for domain, reference := range e.namedProviderReference {
-		if !reference.equals(newProviderRef(handler)) {
-			continue
-		}
-
-		e.states.Store(domain, stateFromEvent(event))
+	// then run client handlers bound to a named domain matching this provider
+	for _, domain := range namedDomains {
 		for _, c := range e.scopedRegistry[domain].callbacks[event.EventType] {
 			e.executeHandler(*c, event)
 		}
 	}
 
-	if !e.defaultProviderReference.equals(newProviderRef(handler)) {
+	if !isDefault {
 		return
 	}
 
-	// handling the default provider
-	e.states.Store(defaultDomain, stateFromEvent(event))
 	// invoke default provider bound (no provider associated) handlers by filtering
 	for domain, registry := range e.scopedRegistry {
 		if _, ok := e.namedProviderReference[domain]; ok {
