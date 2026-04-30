@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func init() {
@@ -1564,16 +1565,13 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 // client's State during a ProviderReady callback would still see NotReadyState
 // (or, on a stale -> ready transition, the previous state).
 func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
 	t.Run("API handler observes new state for default provider", func(t *testing.T) {
 		executor := newEventExecutor()
 
-		provider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			&ProviderEventing{c: make(chan Event, 1)},
-		}
+		provider := NewMockFeatureProvider(ctrl)
 		executor.registerDefaultProvider(provider)
 
 		observed := make(chan State, 1)
@@ -1583,7 +1581,7 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 		executor.AddHandler(ProviderReady, &callback)
 
 		executor.triggerEvent(Event{
-			ProviderName: provider.Metadata().Name,
+			ProviderName: defaultDomain,
 			EventType:    ProviderReady,
 		}, provider)
 
@@ -1599,23 +1597,11 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 	t.Run("client handler observes new state for named provider", func(t *testing.T) {
 		executor := newEventExecutor()
 
-		defaultProvider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			&ProviderEventing{c: make(chan Event, 1)},
-		}
+		defaultProvider := NewMockFeatureProvider(ctrl)
+		namedProvider := NewMockFeatureProvider(ctrl)
 		executor.registerDefaultProvider(defaultProvider)
-
-		namedProvider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			&ProviderEventing{c: make(chan Event, 1)},
-		}
 		const domain = "domainA"
+
 		executor.registerNamedEventingProvider(domain, namedProvider)
 
 		observed := make(chan State, 1)
@@ -1625,7 +1611,7 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 		executor.AddClientHandler(domain, ProviderError, &callback)
 
 		executor.triggerEvent(Event{
-			ProviderName: namedProvider.Metadata().Name,
+			ProviderName: domain,
 			EventType:    ProviderError,
 		}, namedProvider)
 
@@ -1641,18 +1627,12 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 	t.Run("transition from stale to ready: handler observes ready, not stale", func(t *testing.T) {
 		executor := newEventExecutor()
 
-		provider := struct {
-			FeatureProvider
-			EventHandler
-		}{
-			NoopProvider{},
-			&ProviderEventing{c: make(chan Event, 1)},
-		}
+		provider := NewMockFeatureProvider(ctrl)
 		executor.registerDefaultProvider(provider)
 
 		// Drive into stale first.
 		executor.triggerEvent(Event{
-			ProviderName: provider.Metadata().Name,
+			ProviderName: defaultDomain,
 			EventType:    ProviderStale,
 		}, provider)
 		require.Equal(t, StaleState, executor.State(defaultDomain))
@@ -1664,7 +1644,7 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 		executor.AddHandler(ProviderReady, &callback)
 
 		executor.triggerEvent(Event{
-			ProviderName: provider.Metadata().Name,
+			ProviderName: defaultDomain,
 			EventType:    ProviderReady,
 		}, provider)
 
