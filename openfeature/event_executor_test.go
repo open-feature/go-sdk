@@ -31,6 +31,7 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
 			t.Fatal(err)
@@ -1216,6 +1217,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
@@ -1254,6 +1256,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		err := executor.registerDefaultProvider(eventingProvider)
 		if err != nil {
@@ -1297,6 +1300,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		err := executor.registerNamedEventingProvider("clientA", eventingProvider)
 		if err != nil {
@@ -1340,6 +1344,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		err := executor.registerNamedEventingProvider("clientA", eventingProvider)
 		if err != nil {
@@ -1372,6 +1377,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1410,6 +1416,7 @@ func TestEventHandler_Registration(t *testing.T) {
 
 	t.Run("Client handlers", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1447,6 +1454,7 @@ func TestEventHandler_Registration(t *testing.T) {
 func TestEventHandler_APIRemoval(t *testing.T) {
 	t.Run("API level removal", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1500,6 +1508,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 
 	t.Run("Client level removal", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1557,6 +1566,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 
 	t.Run("remove handlers that were not added", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// removal of non-added handlers shall not panic
 		executor.RemoveHandler(ProviderReady, &h1)
@@ -1578,6 +1588,7 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	}
 
 	executor := newEventExecutor()
+	defer executor.shutdown()
 
 	err := executor.registerDefaultProvider(eventingProvider)
 	require.NoError(t, err)
@@ -1632,24 +1643,14 @@ func TestBasicShutdown(t *testing.T) {
 // TestNoGoroutineLeakWithMultipleProviders verifies that goroutine cleanup
 // works correctly even when multiple providers are registered.
 func TestNoGoroutineLeakWithMultipleProviders(t *testing.T) {
-	// Setup: shut down any existing goroutines from previous tests first
-	if eventing != nil {
-		eventing.(*eventExecutor).shutdown()
-	}
-	initSingleton()
+	// Start from a clean goroutine baseline and restore a working singleton
+	// afterwards (see startLeakTest).
+	startLeakTest(t)
 
-	defer goleak.VerifyNone(t,
-		// Ignore the new event executor's goroutines created by Shutdown() -> initSingleton()
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
-	)
-
-	// Ensure we clean up the event executor at the end, including any reinitialized instance
-	defer func() {
-		if eventing != nil {
-			eventing.(*eventExecutor).shutdown()
-		}
-	}()
+	// Verify no goroutines leak. The shutdown below is registered after this so
+	// it runs first (defers are LIFO), stopping the executor before we verify.
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
 
 	// Set default provider
 	defaultProvider := &ProviderEventing{c: make(chan Event, 1)}
@@ -1691,5 +1692,5 @@ func TestNoGoroutineLeakWithMultipleProviders(t *testing.T) {
 	// Shutdown cleans up all goroutines and reinitializes
 	Shutdown()
 
-	// goleak will verify no goroutines are leaked (except the new event executor)
+	// goleak will verify no goroutines are leaked
 }

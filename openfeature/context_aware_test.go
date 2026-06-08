@@ -97,6 +97,7 @@ func TestContextAwareInitialization(t *testing.T) {
 
 	// Create fresh API for isolated testing
 	exec := newEventExecutor()
+	defer exec.shutdown()
 	testAPI := newEvaluationAPI(exec)
 	api = testAPI
 	eventing = exec
@@ -235,6 +236,7 @@ func TestContextAwareShutdown(t *testing.T) {
 
 	// Create fresh API for isolated testing
 	exec := newEventExecutor()
+	defer exec.shutdown()
 	testAPI := newEvaluationAPI(exec)
 	api = testAPI
 	eventing = exec
@@ -297,6 +299,10 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 	t.Run("shutdown with context affects all providers", func(t *testing.T) {
 		// Create fresh API for isolated testing
 		exec := newEventExecutor()
+		defer exec.shutdown()
+		// ShutdownWithContext below reinitializes the global event executor via
+		// initSingleton; shut that replacement down too so it doesn't leak.
+		defer func() { eventing.(*eventExecutor).shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -333,6 +339,10 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 	t.Run("shutdown timeout handling", func(t *testing.T) {
 		// Create fresh API for isolated testing
 		exec := newEventExecutor()
+		defer exec.shutdown()
+		// ShutdownWithContext below reinitializes the global event executor via
+		// initSingleton; shut that replacement down too so it doesn't leak.
+		defer func() { eventing.(*eventExecutor).shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -375,6 +385,10 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 	t.Run("backward compatibility with regular providers", func(t *testing.T) {
 		// Create fresh API for isolated testing
 		exec := newEventExecutor()
+		defer exec.shutdown()
+		// ShutdownWithContext below reinitializes the global event executor via
+		// initSingleton; shut that replacement down too so it doesn't leak.
+		defer func() { eventing.(*eventExecutor).shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -494,6 +508,7 @@ func TestContextPropagationFixes(t *testing.T) {
 
 	// Create fresh API for isolated testing
 	exec := newEventExecutor()
+	defer exec.shutdown()
 	testAPI := newEvaluationAPI(exec)
 	api = testAPI
 	eventing = exec
@@ -542,6 +557,7 @@ func TestContextPropagationFixes(t *testing.T) {
 	t.Run("shutdown respects context cancellation", func(t *testing.T) {
 		// Reset API
 		exec = newEventExecutor()
+		defer exec.shutdown()
 		testAPI = newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -731,6 +747,7 @@ func TestEdgeCases(t *testing.T) {
 
 	// Create fresh API for isolated testing
 	exec := newEventExecutor()
+	defer exec.shutdown()
 	testAPI := newEvaluationAPI(exec)
 	api = testAPI
 	eventing = exec
@@ -738,6 +755,7 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("rapid provider switching", func(t *testing.T) {
 		// Reset API
 		exec = newEventExecutor()
+		defer exec.shutdown()
 		testAPI = newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -766,6 +784,7 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("concurrent operations with different contexts", func(t *testing.T) {
 		// Reset API
 		exec = newEventExecutor()
+		defer exec.shutdown()
 		testAPI = newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
