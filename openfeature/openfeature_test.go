@@ -1,9 +1,9 @@
 package openfeature
 
 import (
-	"context"
 	"errors"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -846,25 +846,14 @@ func expectTimeout(t *testing.T, ch <-chan any, receiveMsg string) {
 // TestNoGoroutineLeak verifies that the event executor's goroutine is properly
 // cleaned up after shutdown, preventing goroutine leaks.
 func TestNoGoroutineLeak(t *testing.T) {
-	// Setup: shut down any existing goroutines from previous tests first
-	if eventing != nil {
-		eventing.(*eventExecutor).shutdown()
-	}
-	initSingleton()
+	// Start from a clean goroutine baseline and restore a working singleton
+	// afterwards (see startLeakTest).
+	startLeakTest(t)
 
-	// Setup: capture initial goroutines after cleanup
-	defer goleak.VerifyNone(t,
-		// Ignore the new event executor's goroutines created by Shutdown() -> initSingleton()
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
-	)
-
-	// Ensure we clean up the event executor at the end, including any reinitialized instance
-	defer func() {
-		if eventing != nil {
-			eventing.(*eventExecutor).shutdown()
-		}
-	}()
+	// Verify no goroutines leak. The shutdown below is registered after this so
+	// it runs first (defers are LIFO), stopping the executor before we verify.
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
 
 	// Create a new provider and trigger some events
 	eventingImpl := &ProviderEventing{
@@ -884,10 +873,12 @@ func TestNoGoroutineLeak(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Add a handler to ensure the event system is active
-	callbackInvoked := false
+	// Add a handler to ensure the event system is active. The callback may run
+	// concurrently from multiple goroutines (executeHandler dispatches each
+	// handler in its own goroutine), so guard the flag against data races.
+	var callbackInvoked atomic.Bool
 	callback := func(details EventDetails) {
-		callbackInvoked = true
+		callbackInvoked.Store(true)
 	}
 	AddHandler(ProviderReady, &callback)
 
@@ -903,7 +894,7 @@ func TestNoGoroutineLeak(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify the callback was invoked
-	if !callbackInvoked {
+	if !callbackInvoked.Load() {
 		t.Error("callback should have been invoked")
 	}
 
@@ -916,12 +907,15 @@ func TestNoGoroutineLeak(t *testing.T) {
 // TestNoGoroutineLeakWithShutdownWithContext verifies that ShutdownWithContext
 // also properly cleans up goroutines.
 func TestNoGoroutineLeakWithShutdownWithContext(t *testing.T) {
-	defer goleak.VerifyNone(t,
-		// Ignore provider goroutines from the new event executor
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startListeningAndShutdownOld.func1"),
-		// Ignore the new event executor's goroutine created by ShutdownWithContext() -> initSingleton()
-		goleak.IgnoreTopFunction("github.com/open-feature/go-sdk/openfeature.(*eventExecutor).startEventListener.func1.1"),
-	)
+	// Start from a clean goroutine baseline and restore a working singleton
+	// afterwards (see startLeakTest).
+	startLeakTest(t)
+
+	// ShutdownWithContext reinitializes the global event executor via
+	// initSingleton; shutdownEventing (registered after VerifyNone, so it runs
+	// first) stops that replacement before goleak verifies.
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
 
 	eventingImpl := &ProviderEventing{c: make(chan Event, 1)}
 	err := SetProvider(struct {
@@ -933,10 +927,10 @@ func TestNoGoroutineLeakWithShutdownWithContext(t *testing.T) {
 	}
 
 	// Use ShutdownWithContext instead of Shutdown
-	err = ShutdownWithContext(context.Background())
+	err = ShutdownWithContext(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// goleak will verify no goroutines are leaked (except the new event executor)
+	// goleak will verify no goroutines are leaked
 }

@@ -41,7 +41,11 @@ func newEventExecutor() *eventExecutor {
 		done:                   make(chan struct{}),
 	}
 
-	executor.startEventListener()
+	// The event listener goroutine is started lazily (see startEventListener),
+	// when the first event-emitting provider is registered. This avoids leaving
+	// a background goroutine running for consumers that merely import the SDK
+	// without registering an eventing provider.
+	// See https://github.com/open-feature/go-sdk/issues/471.
 	return &executor
 }
 
@@ -225,6 +229,10 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		e.activeSubscriptions = append(e.activeSubscriptions, newProvider)
 
 		if v, ok := newProvider.featureProvider.(EventHandler); ok {
+			// Ensure the event listener is running now that an event-emitting
+			// provider produces events on eventChan (started once, lazily).
+			e.startEventListener()
+
 			e.wg.Add(1)
 			go func() {
 				defer e.wg.Done()
@@ -292,7 +300,11 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	}
 }
 
-// startEventListener trigger the event listening of this executor
+// startEventListener triggers the event listening of this executor. It is
+// invoked lazily, the first time an event-emitting provider is registered, so
+// that importing the SDK without using eventing leaves no background goroutine
+// running (see https://github.com/open-feature/go-sdk/issues/471). The sync.Once
+// guard makes repeated calls safe and ensures a single listener per executor.
 func (e *eventExecutor) startEventListener() {
 	e.once.Do(func() {
 		e.wg.Add(1)
@@ -418,4 +430,3 @@ func (e *eventExecutor) shutdown() {
 		}
 	})
 }
-
