@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Run govulncheck
         continue-on-error: true
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1
@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           submodules: recursive
       - name: Install Go
@@ -61,7 +61,7 @@ jobs:
       - name: Run e2e tests
         run: go test -tags testtools -timeout 1m -race -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/...
       - name: Upload coverage to Codecov (unit)
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           name: Code Coverage for GO SDK (unit)
           files: ./coverage-unit.out
@@ -70,7 +70,7 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
       - name: Upload coverage to Codecov (e2e)
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           name: Code Coverage for GO SDK (e2e)
           files: ./coverage-e2e.out
