@@ -41,11 +41,7 @@ func newEventExecutor() *eventExecutor {
 		done:                   make(chan struct{}),
 	}
 
-	// The event listener goroutine is started lazily (see startEventListener),
-	// when the first event-emitting provider is registered. This avoids leaving
-	// a background goroutine running for consumers that merely import the SDK
-	// without registering an eventing provider.
-	// See https://github.com/open-feature/go-sdk/issues/471.
+	// The event listener goroutine is started lazily (see startEventListener)
 	return &executor
 }
 
@@ -233,9 +229,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 			// provider produces events on eventChan (started once, lazily).
 			e.startEventListener()
 
-			e.wg.Add(1)
-			go func() {
-				defer e.wg.Done()
+			e.wg.Go(func() {
 				// event handling of the new feature provider
 				for {
 					select {
@@ -243,7 +237,6 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 						if !ok {
 							return
 						}
-						// Try to send the event, but also watch for shutdown signal
 						select {
 						case e.eventChan <- eventPayload{
 							event:   event,
@@ -256,7 +249,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 						return
 					}
 				}
-			}()
+			})
 		}
 	}
 
@@ -300,16 +293,10 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	}
 }
 
-// startEventListener triggers the event listening of this executor. It is
-// invoked lazily, the first time an event-emitting provider is registered, so
-// that importing the SDK without using eventing leaves no background goroutine
-// running (see https://github.com/open-feature/go-sdk/issues/471). The sync.Once
-// guard makes repeated calls safe and ensures a single listener per executor.
+// startEventListener triggers the event listening of this executor.
 func (e *eventExecutor) startEventListener() {
 	e.once.Do(func() {
-		e.wg.Add(1)
-		go func() {
-			defer e.wg.Done()
+		e.wg.Go(func() {
 			for {
 				select {
 				case payload, ok := <-e.eventChan:
@@ -321,7 +308,7 @@ func (e *eventExecutor) startEventListener() {
 					return
 				}
 			}
-		}()
+		})
 	})
 }
 
