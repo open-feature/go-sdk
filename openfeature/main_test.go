@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 		// Shut down the global event executor so its background goroutine is
 		// stopped before we verify that nothing was leaked.
 		if eventing != nil {
-			eventing.(*eventExecutor).shutdown()
+			eventing.shutdown()
 		}
 
 		if err := goleak.Find(); err != nil {
@@ -41,6 +41,6 @@ func startLeakTest(t *testing.T) {
 // shutdownEventing shuts down the global event executor if one is set.
 func shutdownEventing() {
 	if eventing != nil {
-		eventing.(*eventExecutor).shutdown()
+		eventing.shutdown()
 	}
 }
