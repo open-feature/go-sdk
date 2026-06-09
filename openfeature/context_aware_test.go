@@ -302,7 +302,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		defer exec.shutdown()
 		// ShutdownWithContext below reinitializes the global event executor via
 		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.(*eventExecutor).shutdown() }()
+		defer func() { eventing.shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -342,7 +342,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		defer exec.shutdown()
 		// ShutdownWithContext below reinitializes the global event executor via
 		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.(*eventExecutor).shutdown() }()
+		defer func() { eventing.shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec
@@ -388,7 +388,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 		defer exec.shutdown()
 		// ShutdownWithContext below reinitializes the global event executor via
 		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.(*eventExecutor).shutdown() }()
+		defer func() { eventing.shutdown() }()
 		testAPI := newEvaluationAPI(exec)
 		api = testAPI
 		eventing = exec

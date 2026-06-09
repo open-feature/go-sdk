@@ -1302,7 +1302,7 @@ func TestRequirement_1_7_5(t *testing.T) {
 // is in NOT_READY.
 func TestRequirement_1_7_6(t *testing.T) {
 	t.Cleanup(func() {
-		eventing.(*eventExecutor).shutdown()
+		eventing.shutdown()
 		initSingleton()
 	})
 

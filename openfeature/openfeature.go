@@ -20,7 +20,7 @@ func init() {
 func initSingleton() {
 	// Shutdown existing event executor to prevent goroutine leaks
 	if eventing != nil {
-		eventing.(*eventExecutor).shutdown()
+		eventing.shutdown()
 	}
 
 	exec := newEventExecutor()
@@ -154,7 +154,7 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 // hooks, event handlers, and providers.
 func Shutdown() {
 	api.Shutdown()
-	eventing.(*eventExecutor).shutdown()
+	eventing.shutdown()
 	initSingleton()
 }
 
@@ -165,7 +165,7 @@ func Shutdown() {
 // Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
 func ShutdownWithContext(ctx context.Context) error {
 	err := api.ShutdownWithContext(ctx)
-	eventing.(*eventExecutor).shutdown()
+	eventing.shutdown()
 	initSingleton()
 	return err
 }
