@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 )
 
 // api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
@@ -15,6 +16,13 @@ var (
 // init initializes the OpenFeature evaluation API
 func init() {
 	resetSingleton()
+	// register the isolated-instance constructor with the internal factory
+	// bridge so openfeature/isolated.NewAPI can produce instances without
+	// requiring an exported NewAPI on this package.
+	factory.NewAPI = func() any {
+		exec := newEventExecutor()
+		return newEvaluationAPI(exec)
+	}
 }
 
 // resetSingleton stops (if running) the event executor and starts a new one.
@@ -34,24 +42,6 @@ func resetSingleton() {
 	eventing = exec
 
 	api = newEvaluationAPI(exec)
-}
-
-// NewAPI creates a new, independent OpenFeature API instance with its own state:
-// providers, evaluation context, hooks, and events.
-//
-// Experimental: this API is part of spec section 1.8 which is experimental.
-//
-// Each instance conforms to the same [IEvaluation] contract as the global singleton (spec 1.8.2).
-// Per spec 1.8.4, a provider instance SHOULD NOT be bound to more than one API instance at a time;
-// attempting to do so will return an error from [EvaluationAPI.SetProvider] or [EvaluationAPI.SetNamedProvider].
-//
-// Callers MUST invoke [EvaluationAPI.Shutdown] when the instance is no longer needed to release
-// provider resources and free the provider bindings held by the global registry.
-//
-// Use [EvaluationAPI.GetClient] or [EvaluationAPI.GetNamedClient] to create clients bound to this instance.
-func NewAPI() *EvaluationAPI {
-	exec := newEventExecutor()
-	return newEvaluationAPI(exec)
 }
 
 // GetApiInstance returns the current singleton IEvaluation instance.

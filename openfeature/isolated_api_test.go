@@ -9,18 +9,26 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// newAPIForTest constructs a fresh *EvaluationAPI directly via the
+// package-private helpers so tests don't depend on the public factory in
+// openfeature/isolated (which would create an import cycle for tests in this
+// package).
+func newAPIForTest() *EvaluationAPI {
+	return newEvaluationAPI(newEventExecutor())
+}
+
 // Requirement 1.8.1: The API MUST provide a factory function that creates new, independent API instances.
 func TestRequirement_1_8_1(t *testing.T) {
-	instance := NewAPI()
+	instance := newAPIForTest()
 	if instance == nil {
-		t.Fatal("NewAPI() returned nil")
+		t.Fatal("newAPIForTest() returned nil")
 	}
 }
 
 // Requirement 1.8.2: Isolated instances MUST conform to the same API contract as the singleton (IEvaluation).
 func TestRequirement_1_8_2(t *testing.T) {
 	// compile-time check: *EvaluationAPI must satisfy IEvaluation
-	var _ IEvaluation = NewAPI()
+	var _ IEvaluation = newAPIForTest()
 }
 
 // Requirement 1.8.1 (independence): State set on an isolated instance MUST NOT affect the singleton.
@@ -31,7 +39,7 @@ func TestIsolatedAPI_IndependentFromSingleton(t *testing.T) {
 	instanceProvider := NewMockFeatureProvider(ctrl)
 	instanceProvider.EXPECT().Metadata().Return(Metadata{Name: "instance-provider"}).AnyTimes()
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	if err := instance.SetProviderAndWait(instanceProvider); err != nil {
 		t.Fatalf("SetProviderAndWait on isolated instance: %v", err)
 	}
@@ -54,7 +62,7 @@ func TestIsolatedAPI_SingletonDoesNotAffectInstance(t *testing.T) {
 		t.Fatalf("SetProviderAndWait on singleton: %v", err)
 	}
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	if instance.GetProviderMetadata().Name == "singleton-provider" {
 		t.Error("singleton provider leaked into newly created isolated instance")
 	}
@@ -72,8 +80,8 @@ func TestRequirement_1_8_4_CrossInstanceBinding(t *testing.T) {
 	sharedProvider := NewMockFeatureProvider(ctrl)
 	sharedProvider.EXPECT().Metadata().Return(Metadata{Name: "shared-provider"}).AnyTimes()
 
-	instance1 := NewAPI()
-	instance2 := NewAPI()
+	instance1 := newAPIForTest()
+	instance2 := newAPIForTest()
 
 	if err := instance1.SetProvider(sharedProvider); err != nil {
 		t.Fatalf("SetProvider on instance1: %v", err)
@@ -100,8 +108,8 @@ func TestRequirement_1_8_4_ProviderReleasedAfterReplacement(t *testing.T) {
 	replacementProvider := NewMockFeatureProvider(ctrl)
 	replacementProvider.EXPECT().Metadata().Return(Metadata{Name: "replacement-provider"}).AnyTimes()
 
-	instance1 := NewAPI()
-	instance2 := NewAPI()
+	instance1 := newAPIForTest()
+	instance2 := newAPIForTest()
 
 	if err := instance1.SetProvider(sharedProvider); err != nil {
 		t.Fatalf("SetProvider on instance1: %v", err)
@@ -130,7 +138,7 @@ func TestRequirement_1_8_4_SameInstanceMultipleDomains(t *testing.T) {
 	provider := NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Metadata().Return(Metadata{Name: "multi-domain-provider"}).AnyTimes()
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 
 	if err := instance.SetProvider(provider); err != nil {
 		t.Fatalf("SetProvider: %v", err)
@@ -153,8 +161,8 @@ func TestRequirement_1_8_4_ReleasedOnShutdown(t *testing.T) {
 	provider := NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Metadata().Return(Metadata{Name: "shutdown-provider"}).AnyTimes()
 
-	instance1 := NewAPI()
-	instance2 := NewAPI()
+	instance1 := newAPIForTest()
+	instance2 := newAPIForTest()
 
 	if err := instance1.SetProvider(provider); err != nil {
 		t.Fatalf("SetProvider on instance1: %v", err)
@@ -174,7 +182,7 @@ func TestIsolatedAPI_GetClientBoundToInstance(t *testing.T) {
 	provider := NewMockFeatureProvider(ctrl)
 	provider.EXPECT().Metadata().Return(Metadata{Name: "instance-provider"}).AnyTimes()
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	if err := instance.SetProvider(provider); err != nil {
 		t.Fatalf("SetProvider: %v", err)
 	}
@@ -194,7 +202,7 @@ func TestIsolatedAPI_GetClientBoundToInstance(t *testing.T) {
 func TestIsolatedAPI_HooksIndependence(t *testing.T) {
 	t.Cleanup(initSingleton)
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 
 	hook := UnimplementedHook{}
 	instance.AddHooks(hook)
@@ -215,7 +223,7 @@ func TestIsolatedAPI_SingletonHooksDoNotAffectInstance(t *testing.T) {
 
 	AddHooks(UnimplementedHook{})
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	instance.mu.RLock()
 	instanceHookCount := len(instance.hks)
 	instance.mu.RUnlock()
@@ -229,7 +237,7 @@ func TestIsolatedAPI_SingletonHooksDoNotAffectInstance(t *testing.T) {
 func TestIsolatedAPI_EvalContextIndependence(t *testing.T) {
 	t.Cleanup(initSingleton)
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	instance.SetEvaluationContext(EvaluationContext{
 		attributes: map[string]any{"tenant": "isolated"},
 	})
@@ -252,7 +260,7 @@ func TestIsolatedAPI_SingletonEvalContextDoesNotAffectInstance(t *testing.T) {
 		attributes: map[string]any{"tenant": "singleton"},
 	})
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	instance.mu.RLock()
 	instanceCtx := instance.evalCtx
 	instance.mu.RUnlock()
@@ -276,7 +284,7 @@ func TestIsolatedAPI_EventsIndependence(t *testing.T) {
 	}
 	AddHandler(ProviderReady, &singletonHandler)
 
-	instance := NewAPI()
+	instance := newAPIForTest()
 	if err := instance.SetProviderAndWait(provider); err != nil {
 		t.Fatalf("SetProviderAndWait on isolated instance: %v", err)
 	}
@@ -297,8 +305,8 @@ func TestIsolatedAPI_EventsBetweenInstances(t *testing.T) {
 	provider2 := NewMockFeatureProvider(ctrl)
 	provider2.EXPECT().Metadata().Return(Metadata{Name: "instance2-provider"}).AnyTimes()
 
-	instance1 := NewAPI()
-	instance2 := NewAPI()
+	instance1 := newAPIForTest()
+	instance2 := newAPIForTest()
 
 	var mu sync.Mutex
 	var instance1Events []string
