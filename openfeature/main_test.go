@@ -34,8 +34,8 @@ func TestMain(m *testing.M) {
 func startLeakTest(t *testing.T) {
 	t.Helper()
 	shutdownEventing()
-	initSingleton()
-	t.Cleanup(initSingleton)
+	resetSingleton()
+	t.Cleanup(resetSingleton)
 }
 
 // shutdownEventing shuts down the global event executor if one is set.
@@ -43,4 +43,34 @@ func shutdownEventing() {
 	if eventing != nil {
 		eventing.shutdown()
 	}
+}
+
+// installIsolatedAPI replaces the global evaluation API and event executor with
+// fresh, isolated instances for the duration of the test (or subtest) and
+// returns the new API for further configuration. The previous globals are
+// restored and the executor is shut down via t.Cleanup.
+func installIsolatedAPI(t *testing.T) *evaluationAPI {
+	t.Helper()
+
+	originalAPI := api
+	originalEventing := eventing
+
+	exec := newEventExecutor()
+	testAPI := newEvaluationAPI(exec)
+	api = testAPI
+	eventing = exec
+
+	t.Cleanup(func() {
+		exec.shutdown()
+		// ShutdownWithContext (and similar) can reinitialize the global event
+		// executor via resetSingleton; shut that replacement down too so it
+		// doesn't leak.
+		if eventing != nil && eventing != exec {
+			eventing.shutdown()
+		}
+		api = originalAPI
+		eventing = originalEventing
+	})
+
+	return testAPI
 }

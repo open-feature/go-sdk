@@ -87,20 +87,7 @@ func (p *testContextAwareProvider) Hooks() []Hook {
 }
 
 func TestContextAwareInitialization(t *testing.T) {
-	// Save original state
-	originalAPI := api
-	originalEventing := eventing
-	defer func() {
-		api = originalAPI
-		eventing = originalEventing
-	}()
-
-	// Create fresh API for isolated testing
-	exec := newEventExecutor()
-	defer exec.shutdown()
-	testAPI := newEvaluationAPI(exec)
-	api = testAPI
-	eventing = exec
+	installIsolatedAPI(t)
 
 	t.Run("fast provider succeeds within timeout", func(t *testing.T) {
 		fastProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
@@ -226,20 +213,7 @@ func TestContextAwareStateHandlerDetection(t *testing.T) {
 }
 
 func TestContextAwareShutdown(t *testing.T) {
-	// Save original state
-	originalAPI := api
-	originalEventing := eventing
-	defer func() {
-		api = originalAPI
-		eventing = originalEventing
-	}()
-
-	// Create fresh API for isolated testing
-	exec := newEventExecutor()
-	defer exec.shutdown()
-	testAPI := newEvaluationAPI(exec)
-	api = testAPI
-	eventing = exec
+	installIsolatedAPI(t)
 
 	t.Run("context-aware shutdown with timeout", func(t *testing.T) {
 		provider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
@@ -288,24 +262,8 @@ func TestContextAwareShutdown(t *testing.T) {
 }
 
 func TestGlobalContextAwareShutdown(t *testing.T) {
-	// Save original state
-	originalAPI := api
-	originalEventing := eventing
-	defer func() {
-		api = originalAPI
-		eventing = originalEventing
-	}()
-
 	t.Run("shutdown with context affects all providers", func(t *testing.T) {
-		// Create fresh API for isolated testing
-		exec := newEventExecutor()
-		defer exec.shutdown()
-		// ShutdownWithContext below reinitializes the global event executor via
-		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.shutdown() }()
-		testAPI := newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		installIsolatedAPI(t)
 
 		// Set up multiple providers
 		defaultProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
@@ -337,15 +295,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 	})
 
 	t.Run("shutdown timeout handling", func(t *testing.T) {
-		// Create fresh API for isolated testing
-		exec := newEventExecutor()
-		defer exec.shutdown()
-		// ShutdownWithContext below reinitializes the global event executor via
-		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.shutdown() }()
-		testAPI := newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		testAPI := installIsolatedAPI(t)
 
 		// Set up a provider with fast init but simulates long shutdown delay
 		slowShutdownProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond} // Fast init
@@ -383,15 +333,7 @@ func TestGlobalContextAwareShutdown(t *testing.T) {
 	})
 
 	t.Run("backward compatibility with regular providers", func(t *testing.T) {
-		// Create fresh API for isolated testing
-		exec := newEventExecutor()
-		defer exec.shutdown()
-		// ShutdownWithContext below reinitializes the global event executor via
-		// initSingleton; shut that replacement down too so it doesn't leak.
-		defer func() { eventing.shutdown() }()
-		testAPI := newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		installIsolatedAPI(t)
 
 		// Set up regular (non-context-aware) providers
 		defaultProvider := &NoopProvider{}
@@ -498,20 +440,7 @@ func (p *testContextAwareProviderWithShutdownDelay) Hooks() []Hook {
 }
 
 func TestContextPropagationFixes(t *testing.T) {
-	// Save original state
-	originalAPI := api
-	originalEventing := eventing
-	defer func() {
-		api = originalAPI
-		eventing = originalEventing
-	}()
-
-	// Create fresh API for isolated testing
-	exec := newEventExecutor()
-	defer exec.shutdown()
-	testAPI := newEvaluationAPI(exec)
-	api = testAPI
-	eventing = exec
+	installIsolatedAPI(t)
 
 	t.Run("shutdown uses passed context timeout", func(t *testing.T) {
 		// Create provider with fast init but slow shutdown
@@ -555,12 +484,7 @@ func TestContextPropagationFixes(t *testing.T) {
 	})
 
 	t.Run("shutdown respects context cancellation", func(t *testing.T) {
-		// Reset API
-		exec = newEventExecutor()
-		defer exec.shutdown()
-		testAPI = newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		installIsolatedAPI(t)
 
 		provider := &testContextAwareProviderWithShutdownDelay{
 			initDelay:     10 * time.Millisecond,
@@ -737,28 +661,8 @@ func (p *testProviderInitError) Hooks() []Hook {
 }
 
 func TestEdgeCases(t *testing.T) {
-	// Save original state
-	originalAPI := api
-	originalEventing := eventing
-	defer func() {
-		api = originalAPI
-		eventing = originalEventing
-	}()
-
-	// Create fresh API for isolated testing
-	exec := newEventExecutor()
-	defer exec.shutdown()
-	testAPI := newEvaluationAPI(exec)
-	api = testAPI
-	eventing = exec
-
 	t.Run("rapid provider switching", func(t *testing.T) {
-		// Reset API
-		exec = newEventExecutor()
-		defer exec.shutdown()
-		testAPI = newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		installIsolatedAPI(t)
 
 		providers := []*testContextAwareProvider{
 			{initDelay: 10 * time.Millisecond},
@@ -782,12 +686,7 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("concurrent operations with different contexts", func(t *testing.T) {
-		// Reset API
-		exec = newEventExecutor()
-		defer exec.shutdown()
-		testAPI = newEvaluationAPI(exec)
-		api = testAPI
-		eventing = exec
+		installIsolatedAPI(t)
 
 		// Use channels to coordinate goroutines
 		done := make(chan error, 2)

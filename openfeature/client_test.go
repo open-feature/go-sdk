@@ -41,7 +41,7 @@ func hydratedMocksForClientTests(t *testing.T, expectedEvaluations int) clientMo
 // and appends them to the collection of any previously added hooks.
 // When new hooks are added, previously added hooks are not removed.
 func TestRequirement_1_2_1(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	ctrl := gomock.NewController(t)
 
 	mockHook := NewMockHook(ctrl)
@@ -59,7 +59,7 @@ func TestRequirement_1_2_1(t *testing.T) {
 // containing an immutable `domain` field or accessor of type string,
 // which corresponds to the `domain` value supplied during client creation.
 func TestRequirement_1_2_2(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	clientName := "test-client"
 
 	client := NewClient(clientName)
@@ -85,7 +85,7 @@ func TestRequirement_1_2_2(t *testing.T) {
 // If the value returned by the underlying provider implementation does not match the expected type,
 // it's to be considered abnormal execution, and the supplied `default value` should be returned.
 func TestRequirements_1_3(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	client := NewClient("test-client")
 
 	type requirements interface {
@@ -106,7 +106,7 @@ func TestRequirements_1_3(t *testing.T) {
 // `default value` (boolean | number | string | structure, required), `evaluation context` (optional),
 // and `evaluation options` (optional), which returns an `evaluation details` structure.
 func TestRequirement_1_4_1(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	client := NewClient("test-client")
 
 	type requirements interface {
@@ -157,7 +157,7 @@ var objectValue = map[string]any{"foo": 1, "bar": true, "baz": "buz"}
 // contain the value of the `reason` field in the `flag resolution` structure returned
 // by the configured `provider`, if the field is set.
 func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	flagKey := "foo"
 
@@ -296,7 +296,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 // The `evaluation details` structure's `flag key` field MUST contain the `flag key`
 // argument passed to the detailed flag evaluation method.
 func TestRequirement_1_4_4(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	flagKey := "foo"
 	t.Run("BooleanValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
@@ -417,7 +417,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 // In cases of abnormal execution, the `evaluation details` structure's
 // `error code` field MUST contain an `error code`.
 func TestRequirement_1_4_7(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	mocks := hydratedMocksForClientTests(t, 1)
 	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 
@@ -445,7 +445,7 @@ func TestRequirement_1_4_7(t *testing.T) {
 // In cases of abnormal execution (network failure, unhandled error, etc) the `reason` field
 // in the `evaluation details` SHOULD indicate an error.
 func TestRequirement_1_4_8(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	mocks := hydratedMocksForClientTests(t, 1)
 	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -482,7 +482,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("Boolean", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
@@ -516,7 +516,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	})
 
 	t.Run("String", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
@@ -550,7 +550,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	})
 
 	t.Run("Float", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 
@@ -583,7 +583,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	})
 
 	t.Run("Int", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 		var defaultValue int64 = 3
@@ -615,7 +615,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	})
 
 	t.Run("Object", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
 		type obj struct {
@@ -659,7 +659,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 // In cases of abnormal execution, the `evaluation details` structure's `error message` field MAY contain a
 // string containing additional details about the nature of the error.
 func TestRequirement_1_4_12(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	errMessage := "error forced by test"
 
@@ -697,7 +697,7 @@ func TestRequirement_1_4_13(t *testing.T) {
 	flatCtx := flattenContext(evalCtx)
 
 	t.Run("No Metadata", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 1)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
@@ -723,7 +723,7 @@ func TestRequirement_1_4_13(t *testing.T) {
 	})
 
 	t.Run("Metadata present", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 1)
 		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
@@ -978,7 +978,7 @@ func TestFlattenContext(t *testing.T) {
 // TestBeforeHookNilContext asserts that when a Before hook returns a nil EvaluationContext it doesn't overwrite the
 // existing EvaluationContext
 func TestBeforeHookNilContext(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	hookNilContext := UnimplementedHook{}
 
@@ -998,7 +998,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 }
 
 func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	generalErrorCode := GeneralCode
 
@@ -1028,7 +1028,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 }
 
 func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	variant := "variant1"
 	reason := TargetingMatchReason
@@ -1199,7 +1199,7 @@ func TestRequirement_1_7_1(t *testing.T) {
 // The client's provider status accessor MUST indicate READY if the initialize function of the associated provider
 // terminates normally.
 func TestRequirement_1_7_2(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	if NewClient(t.Name()).State() != NotReadyState {
 		t.Fatalf("expected client to report NOT READY state")
@@ -1227,7 +1227,7 @@ func TestRequirement_1_7_2(t *testing.T) {
 // The client's provider status accessor MUST indicate ERROR if the initialize function of the associated provider
 // terminates abnormally
 func TestRequirement_1_7_3(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	provider := struct {
 		FeatureProvider
 		StateHandler
@@ -1251,7 +1251,7 @@ func TestRequirement_1_7_3(t *testing.T) {
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
 // terminates abnormally and indicates error code PROVIDER_FATAL.
 func TestRequirement_1_7_4(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	provider := struct {
 		FeatureProvider
 		StateHandler
@@ -1276,7 +1276,7 @@ func TestRequirement_1_7_4(t *testing.T) {
 // The client's provider status accessor MUST indicate FATAL if the initialize function of the associated provider
 // terminates abnormally and indicates error code PROVIDER_FATAL.
 func TestRequirement_1_7_5(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	provider := struct {
 		FeatureProvider
 		StateHandler
@@ -1303,7 +1303,7 @@ func TestRequirement_1_7_5(t *testing.T) {
 func TestRequirement_1_7_6(t *testing.T) {
 	t.Cleanup(func() {
 		eventing.shutdown()
-		initSingleton()
+		resetSingleton()
 	})
 
 	ctrl := gomock.NewController(t)
@@ -1355,7 +1355,7 @@ func TestRequirement_1_7_6(t *testing.T) {
 // The client MUST default, run error hooks, and indicate an error if flag resolution is attempted while the provider
 // is in FATAL.
 func TestRequirement_1_7_7(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	provider := struct {
 		FeatureProvider
 		StateHandler
@@ -1410,7 +1410,7 @@ func TestRequirement_5_1_5(t *testing.T) {
 
 // If the provider emits an event, the value of the client's provider status MUST be updated accordingly.
 func TestRequirement_5_3_5(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	eventually(t, func() bool {
 		return NewDefaultClient().State() == NotReadyState
