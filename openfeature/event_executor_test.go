@@ -31,6 +31,7 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 		executor.registerDefaultProvider(eventingProvider)
 
 		if executor.defaultProviderReference.featureProvider != eventingProvider {
@@ -49,7 +50,7 @@ func TestEventHandler_RegisterUnregisterEventProvider(t *testing.T) {
 // the associated client and API event handlers MUST run.
 func TestEventHandler_Eventing(t *testing.T) {
 	t.Run("Simple API level event", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -113,7 +114,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 	})
 
 	t.Run("Simple Client level event", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -190,7 +191,7 @@ func TestEventHandler_Eventing(t *testing.T) {
 // Requirement 5.1.3 When a provider signals the occurrence of a particular event,
 // event handlers on clients which are not associated with that provider MUST NOT run.
 func TestEventHandler_clientAssociation(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	eventingImpl := &ProviderEventing{
 		c: make(chan Event, 1),
@@ -251,7 +252,7 @@ func TestEventHandler_clientAssociation(t *testing.T) {
 
 // Requirement 5.2.5 If a handler function terminates abnormally, other handler functions MUST run.
 func TestEventHandler_ErrorHandling(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	eventing := &ProviderEventing{
 		c: make(chan Event, 1),
@@ -326,7 +327,7 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 // Requirement 5.3.1 If the provider's initialize function terminates normally, PROVIDER_READY handlers MUST run.
 func TestEventHandler_InitOfProvider(t *testing.T) {
 	t.Run("for default provider in global handler scope", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -361,7 +362,7 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	})
 
 	t.Run("for default provider with unassociated client handler", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -397,7 +398,7 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	})
 
 	t.Run("for named provider in client scope", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -434,7 +435,7 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 	})
 
 	t.Run("no callback for named provider with no associations", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -476,7 +477,7 @@ func TestEventHandler_InitOfProvider(t *testing.T) {
 // Requirement 5.3.2 If the provider's initialize function terminates abnormally, PROVIDER_ERROR handlers MUST run.
 func TestEventHandler_InitOfProviderError(t *testing.T) {
 	t.Run("for default provider in global scope", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		initFailingProvider := struct {
 			FeatureProvider
@@ -510,7 +511,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	})
 
 	t.Run("for default provider with unassociated client handler", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		initFailingProvider := struct {
 			FeatureProvider
@@ -546,7 +547,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	})
 
 	t.Run("for named provider in client scope", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		initFailingProvider := struct {
 			FeatureProvider
@@ -582,7 +583,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 	})
 
 	t.Run("no callback for named provider with no associations", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -624,7 +625,7 @@ func TestEventHandler_InitOfProviderError(t *testing.T) {
 // Requirement 5.3.3 PROVIDER_READY handlers attached after the provider is already in a ready state MUST run immediately.
 func TestEventHandler_ProviderReadiness(t *testing.T) {
 	t.Run("for api level under default provider", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event),
@@ -659,7 +660,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("for domain associated handler", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event),
@@ -696,7 +697,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("for unassociated handler from default", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event),
@@ -732,7 +733,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("no event if provider is not ready", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		notReadyEventingProvider := struct {
 			FeatureProvider
@@ -770,7 +771,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 	})
 
 	t.Run("no event if subscribed for some other event", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		readyEventingProvider := struct {
 			FeatureProvider
@@ -812,7 +813,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 // provider is already in the associated state, MUST run immediately
 func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	t.Run("ready handler runs when provider ready", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -846,7 +847,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	})
 
 	t.Run("error handler runs when provider error", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -887,7 +888,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	})
 
 	t.Run("stale handler runs when provider stale", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -928,7 +929,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	})
 
 	t.Run("non-ready handler does not run when provider ready", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -964,7 +965,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	})
 
 	t.Run("non-error handler does not run when provider error", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -1009,7 +1010,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 	})
 
 	t.Run("non-stale handler does not run when provider stale", func(t *testing.T) {
-		t.Cleanup(initSingleton)
+		t.Cleanup(resetSingleton)
 
 		eventingImpl := &ProviderEventing{
 			c: make(chan Event, 1),
@@ -1057,7 +1058,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 // non-spec bound validations
 
 func TestEventHandler_multiSubs(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	eventingImpl := &ProviderEventing{
 		c: make(chan Event, 1),
@@ -1149,31 +1150,49 @@ func TestEventHandler_multiSubs(t *testing.T) {
 
 	// make sure events are received and count them
 	globalEvents := make(chan string, 10)
+	done := make(chan struct{})
+	t.Cleanup(func() {
+		close(done)
+	})
+
 	go func() {
-		for rsp := range rspGlobal {
-			globalEvents <- rsp.ProviderName
+		for {
+			select {
+			case rsp := <-rspGlobal:
+				globalEvents <- rsp.ProviderName
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	clientAEvents := make(chan string, 10)
 	go func() {
-		for rsp := range rspClientA {
-			if rsp.ProviderName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+		for {
+			select {
+			case rsp := <-rspClientA:
+				if rsp.ProviderName != "providerOther" {
+					t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+				}
+				clientAEvents <- rsp.ProviderName
+			case <-done:
+				return
 			}
-
-			clientAEvents <- rsp.ProviderName
 		}
 	}()
 
 	clientBEvents := make(chan string, 10)
 	go func() {
-		for rsp := range rspClientB {
-			if rsp.ProviderName != "providerOther" {
-				t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+		for {
+			select {
+			case rsp := <-rspClientB:
+				if rsp.ProviderName != "providerOther" {
+					t.Errorf("incorrect event provider association, expected %s, got %s", "providerOther", rsp.ProviderName)
+				}
+				clientBEvents <- rsp.ProviderName
+			case <-done:
+				return
 			}
-
-			clientBEvents <- rsp.ProviderName
 		}
 	}()
 
@@ -1204,6 +1223,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		executor.registerDefaultProvider(eventingProvider)
 
@@ -1233,6 +1253,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		executor.registerDefaultProvider(eventingProvider)
 
@@ -1267,6 +1288,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		executor.registerNamedEventingProvider("clientA", eventingProvider)
 
@@ -1301,6 +1323,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 		}
 
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		executor.registerNamedEventingProvider("clientA", eventingProvider)
 
@@ -1327,6 +1350,7 @@ func TestEventHandler_1ToNMapping(t *testing.T) {
 func TestEventHandler_Registration(t *testing.T) {
 	t.Run("API handlers", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1365,6 +1389,7 @@ func TestEventHandler_Registration(t *testing.T) {
 
 	t.Run("Client handlers", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1402,6 +1427,7 @@ func TestEventHandler_Registration(t *testing.T) {
 func TestEventHandler_APIRemoval(t *testing.T) {
 	t.Run("API level removal", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - ProviderReady
 		executor.AddHandler(ProviderReady, &h1)
@@ -1455,6 +1481,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 
 	t.Run("Client level removal", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// Add multiple - client a
 		executor.AddClientHandler("a", ProviderReady, &h1)
@@ -1512,6 +1539,7 @@ func TestEventHandler_APIRemoval(t *testing.T) {
 
 	t.Run("remove handlers that were not added", func(t *testing.T) {
 		executor := newEventExecutor()
+		defer executor.shutdown()
 
 		// removal of non-added handlers shall not panic
 		executor.RemoveHandler(ProviderReady, &h1)
@@ -1533,6 +1561,7 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	}
 
 	executor := newEventExecutor()
+	defer executor.shutdown()
 
 	executor.registerDefaultProvider(eventingProvider)
 	require.Len(t, executor.activeSubscriptions, 1)
@@ -1541,6 +1570,7 @@ func TestEventHandler_ChannelClosure(t *testing.T) {
 	callBack := func(e EventDetails) {
 		eventCount.Add(1)
 	}
+
 	executor.AddHandler(ProviderReady, &callBack)
 	// watch for empty events
 	executor.AddHandler("", &callBack)
@@ -1656,4 +1686,27 @@ func TestEventHandler_StateUpdatedBeforeHandlersRun(t *testing.T) {
 			t.Fatal("ready handler did not run")
 		}
 	})
+}
+
+// TestBasicShutdown verifies that the shutdown method stops goroutines
+func TestBasicShutdown(t *testing.T) {
+	// Create a new event executor
+	exec := newEventExecutor()
+
+	// Give it a moment to start
+	time.Sleep(10 * time.Millisecond)
+
+	// Shutdown should complete without hanging
+	done := make(chan struct{})
+	go func() {
+		exec.shutdown()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Success - shutdown completed
+	case <-time.After(2 * time.Second):
+		t.Fatal("shutdown() hung and did not complete within 2 seconds")
+	}
 }

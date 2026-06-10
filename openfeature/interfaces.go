@@ -81,7 +81,7 @@ type eventingImpl interface {
 	IEventing
 	GetAPIRegistry() map[EventType][]EventCallback
 	GetClientRegistry(client string) scopedCallback
-
+	shutdown()
 	clientEvent
 }
 

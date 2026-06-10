@@ -24,7 +24,10 @@ type eventExecutor struct {
 	scopedRegistry           map[string]scopedCallback
 	eventChan                chan eventPayload
 	once                     sync.Once
+	shutdownOnce             sync.Once
 	mu                       sync.Mutex
+	done                     chan struct{}
+	wg                       sync.WaitGroup
 }
 
 func newEventExecutor() *eventExecutor {
@@ -35,9 +38,10 @@ func newEventExecutor() *eventExecutor {
 		apiRegistry:            map[EventType][]EventCallback{},
 		scopedRegistry:         map[string]scopedCallback{},
 		eventChan:              make(chan eventPayload, 5),
+		done:                   make(chan struct{}),
 	}
 
-	executor.startEventListener()
+	// The event listener goroutine is started lazily (see startEventListener)
 	return &executor
 }
 
@@ -221,7 +225,11 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		e.activeSubscriptions = append(e.activeSubscriptions, newProvider)
 
 		if v, ok := newProvider.featureProvider.(EventHandler); ok {
-			go func() {
+			// Ensure the event listener is running now that an event-emitting
+			// provider produces events on eventChan (started once, lazily).
+			e.startEventListener()
+
+			e.wg.Go(func() {
 				// event handling of the new feature provider
 				for {
 					select {
@@ -229,15 +237,19 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 						if !ok {
 							return
 						}
-						e.eventChan <- eventPayload{
+						select {
+						case e.eventChan <- eventPayload{
 							event:   event,
 							handler: newProvider.featureProvider,
+						}:
+						case <-newProvider.shutdownSemaphore:
+							return
 						}
 					case <-newProvider.shutdownSemaphore:
 						return
 					}
 				}
-			}()
+			})
 		}
 	}
 
@@ -281,14 +293,22 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 	}
 }
 
-// startEventListener trigger the event listening of this executor
+// startEventListener triggers the event listening of this executor.
 func (e *eventExecutor) startEventListener() {
 	e.once.Do(func() {
-		go func() {
-			for payload := range e.eventChan {
-				e.triggerEvent(payload.event, payload.handler)
+		e.wg.Go(func() {
+			for {
+				select {
+				case payload, ok := <-e.eventChan:
+					if !ok {
+						return
+					}
+					e.triggerEvent(payload.event, payload.handler)
+				case <-e.done:
+					return
+				}
 			}
-		}()
+		})
 	})
 }
 
@@ -371,4 +391,29 @@ func isRunning(provider providerReference, activeProviders []providerReference) 
 func isBound(provider providerReference, defaultProvider providerReference, namedProviders []providerReference) bool {
 	return provider.equals(defaultProvider) ||
 		slices.ContainsFunc(namedProviders, provider.equals)
+}
+
+// shutdown stops the event executor's goroutine and waits for it to complete.
+// This should be called when the event executor is no longer needed to prevent goroutine leaks.
+func (e *eventExecutor) shutdown() {
+	e.shutdownOnce.Do(func() {
+		e.mu.Lock()
+		// Close shutdown semaphores to signal all active provider goroutines to stop
+		// Closing (rather than sending) ensures all waiting goroutines receive the signal
+		for _, sub := range e.activeSubscriptions {
+			close(sub.shutdownSemaphore)
+		}
+		e.mu.Unlock()
+
+		// Close the done channel to stop the main event listener
+		close(e.done)
+
+		// Wait for all goroutines to finish
+		e.wg.Wait()
+
+		// Drain any remaining events in the channel
+		for len(e.eventChan) > 0 {
+			<-e.eventChan
+		}
+	})
 }

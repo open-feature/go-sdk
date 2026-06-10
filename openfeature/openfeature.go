@@ -14,10 +14,16 @@ var (
 
 // init initializes the OpenFeature evaluation API
 func init() {
-	initSingleton()
+	resetSingleton()
 }
 
-func initSingleton() {
+// resetSingleton stops (if running) the event executor and starts a new one.
+func resetSingleton() {
+	// Shutdown existing event executor to prevent goroutine leaks
+	if eventing != nil {
+		eventing.shutdown()
+	}
+
 	exec := newEventExecutor()
 	eventing = exec
 
@@ -149,7 +155,7 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 // hooks, event handlers, and providers.
 func Shutdown() {
 	api.Shutdown()
-	initSingleton()
+	resetSingleton()
 }
 
 // ShutdownWithContext calls context-aware shutdown on all registered providers.
@@ -159,6 +165,6 @@ func Shutdown() {
 // Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
 func ShutdownWithContext(ctx context.Context) error {
 	err := api.ShutdownWithContext(ctx)
-	initSingleton()
+	resetSingleton()
 	return err
 }

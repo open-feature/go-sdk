@@ -40,7 +40,7 @@ func TestRequirement_3_1_2(t *testing.T) {
 
 // The API, Client and invocation MUST have a method for supplying `evaluation context`.
 func TestRequirement_3_2_1(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	t.Run("API MUST have a method for supplying `evaluation context`", func(t *testing.T) {
 		SetEvaluationContext(EvaluationContext{})
@@ -85,7 +85,7 @@ func TestRequirement_3_2_1(t *testing.T) {
 // Evaluation context MUST be merged in the order: API (global) - transaction - client - invocation,
 // with duplicate values being overwritten.
 func TestRequirement_3_2_2(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 	ctrl := gomock.NewController(t)
 
 	apiEvalCtx := EvaluationContext{
