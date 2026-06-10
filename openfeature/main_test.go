@@ -49,7 +49,7 @@ func shutdownEventing() {
 // fresh, isolated instances for the duration of the test (or subtest) and
 // returns the new API for further configuration. The previous globals are
 // restored and the executor is shut down via t.Cleanup.
-func installIsolatedAPI(t *testing.T) *evaluationAPI {
+func installIsolatedAPI(t *testing.T) *EvaluationAPI {
 	t.Helper()
 
 	originalAPI := api

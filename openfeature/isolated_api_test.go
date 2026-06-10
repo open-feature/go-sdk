@@ -33,7 +33,7 @@ func TestRequirement_1_8_2(t *testing.T) {
 
 // Requirement 1.8.1 (independence): State set on an isolated instance MUST NOT affect the singleton.
 func TestIsolatedAPI_IndependentFromSingleton(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	ctrl := gomock.NewController(t)
 	instanceProvider := NewMockFeatureProvider(ctrl)
@@ -52,7 +52,7 @@ func TestIsolatedAPI_IndependentFromSingleton(t *testing.T) {
 
 // Requirement 1.8.1 (independence): State set on the singleton MUST NOT affect isolated instances.
 func TestIsolatedAPI_SingletonDoesNotAffectInstance(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	ctrl := gomock.NewController(t)
 	singletonProvider := NewMockFeatureProvider(ctrl)
@@ -200,7 +200,7 @@ func TestIsolatedAPI_GetClientBoundToInstance(t *testing.T) {
 
 // Requirement 1.8.1 (independence): Hooks added to an isolated instance MUST NOT affect the singleton.
 func TestIsolatedAPI_HooksIndependence(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	instance := newAPIForTest()
 
@@ -219,7 +219,7 @@ func TestIsolatedAPI_HooksIndependence(t *testing.T) {
 
 // Requirement 1.8.1 (independence): Hooks added to the singleton MUST NOT affect an isolated instance.
 func TestIsolatedAPI_SingletonHooksDoNotAffectInstance(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	AddHooks(UnimplementedHook{})
 
@@ -235,7 +235,7 @@ func TestIsolatedAPI_SingletonHooksDoNotAffectInstance(t *testing.T) {
 
 // Requirement 1.8.1 (independence): EvaluationContext set on an isolated instance MUST NOT affect the singleton.
 func TestIsolatedAPI_EvalContextIndependence(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	instance := newAPIForTest()
 	instance.SetEvaluationContext(EvaluationContext{
@@ -254,7 +254,7 @@ func TestIsolatedAPI_EvalContextIndependence(t *testing.T) {
 
 // Requirement 1.8.1 (independence): EvaluationContext set on the singleton MUST NOT affect an isolated instance.
 func TestIsolatedAPI_SingletonEvalContextDoesNotAffectInstance(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	SetEvaluationContext(EvaluationContext{
 		attributes: map[string]any{"tenant": "singleton"},
@@ -272,7 +272,7 @@ func TestIsolatedAPI_SingletonEvalContextDoesNotAffectInstance(t *testing.T) {
 
 // Requirement 1.8.1 (independence): Events on an isolated instance MUST NOT fire handlers on the singleton.
 func TestIsolatedAPI_EventsIndependence(t *testing.T) {
-	t.Cleanup(initSingleton)
+	t.Cleanup(resetSingleton)
 
 	ctrl := gomock.NewController(t)
 	provider := NewMockFeatureProvider(ctrl)
