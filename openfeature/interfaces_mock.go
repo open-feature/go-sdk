@@ -1132,6 +1132,18 @@ func (mr *MockeventingImplMockRecorder) State(domain any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "State", reflect.TypeOf((*MockeventingImpl)(nil).State), domain)
 }
 
+// shutdown mocks base method.
+func (m *MockeventingImpl) shutdown() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "shutdown")
+}
+
+// shutdown indicates an expected call of shutdown.
+func (mr *MockeventingImplMockRecorder) shutdown() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "shutdown", reflect.TypeOf((*MockeventingImpl)(nil).shutdown))
+}
+
 // MockclientEvent is a mock of clientEvent interface.
 type MockclientEvent struct {
 	ctrl     *gomock.Controller
