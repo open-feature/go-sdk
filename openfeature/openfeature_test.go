@@ -934,3 +934,58 @@ func TestNoGoroutineLeakWithShutdownWithContext(t *testing.T) {
 
 	// goleak will verify no goroutines are leaked
 }
+
+// TestNoGoroutineLeakWithMultipleProviders verifies that goroutine cleanup
+// works correctly even when multiple providers are registered.
+func TestNoGoroutineLeakWithMultipleProviders(t *testing.T) {
+	// Start from a clean goroutine baseline and restore a working singleton
+	// afterwards (see startLeakTest).
+	startLeakTest(t)
+
+	// Verify no goroutines leak. The shutdown below is registered after this so
+	// it runs first (defers are LIFO), stopping the executor before we verify.
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
+
+	// Set default provider
+	defaultProvider := &ProviderEventing{c: make(chan Event, 1)}
+	err := SetProvider(struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, defaultProvider})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set named provider
+	namedProvider := &ProviderEventing{c: make(chan Event, 1)}
+	err = SetNamedProvider("test-domain", struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, namedProvider})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Trigger events
+	defaultProvider.Invoke(Event{
+		EventType: ProviderReady,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: "Default ready",
+		},
+	})
+
+	namedProvider.Invoke(Event{
+		EventType: ProviderReady,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: "Named ready",
+		},
+	})
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Shutdown cleans up all goroutines and reinitializes
+	Shutdown()
+
+	// goleak will verify no goroutines are leaked
+}
