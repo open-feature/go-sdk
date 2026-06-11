@@ -20,7 +20,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 
-	ofAPI := api
+	ofAPI := api()
 
 	// set through instance level
 	err := ofAPI.SetProvider(mockProvider)
@@ -29,7 +29,7 @@ func TestRequirement_1_1_1(t *testing.T) {
 	}
 
 	// validate through global level
-	if api.GetProvider() != mockProvider {
+	if api().GetProvider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
 	}
 }
@@ -69,7 +69,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		if !reflect.DeepEqual(provider, api.GetProvider()) {
+		if !reflect.DeepEqual(provider, api().GetProvider()) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -88,7 +88,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		if !reflect.DeepEqual(provider, api.GetNamedProviders()[client]) {
+		if !reflect.DeepEqual(provider, api().GetNamedProviders()[client]) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -387,7 +387,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders := api.GetNamedProviders()
+	namedProviders := api().GetNamedProviders()
 
 	// Validate binding
 
@@ -405,12 +405,12 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ := api.ForEvaluation("clientA")
+	provider, _, _ := api().ForEvaluation("clientA")
 	if provider.Metadata().Name != "providerA" {
 		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Name)
 	}
 
-	provider, _, _ = api.ForEvaluation("clientB")
+	provider, _, _ = api().ForEvaluation("clientB")
 	if provider.Metadata().Name != "providerB" {
 		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
 	}
@@ -425,14 +425,14 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders = api.GetNamedProviders()
+	namedProviders = api().GetNamedProviders()
 	if namedProviders["clientB"] != providerB2 {
 		t.Errorf("named provider overriding failed")
 	}
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ = api.ForEvaluation("clientB")
+	provider, _, _ = api().ForEvaluation("clientB")
 	if provider.Metadata().Name != "providerB2" {
 		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
 	}
@@ -450,7 +450,7 @@ func TestRequirement_1_1_4(t *testing.T) {
 	AddHooks(mockHook)
 	AddHooks(mockHook, mockHook)
 
-	if len(api.GetHooks()) != 3 {
+	if len(api().GetHooks()) != 3 {
 		t.Error("func AddHooks didn't append the list of hooks to the existing collection of hooks")
 	}
 }
@@ -497,14 +497,14 @@ func TestRequirement_1_1_6(t *testing.T) {
 	})
 
 	t.Run("client from api level - no domain", func(t *testing.T) {
-		client := api.GetClient()
+		client := api().GetClient()
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")
 		}
 	})
 
 	t.Run("client from api level - with domain", func(t *testing.T) {
-		client := api.GetNamedClient("test-client")
+		client := api().GetNamedClient("test-client")
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")
 		}
@@ -605,7 +605,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		client.AddHandler(ProviderStale, &h1)
 		client.AddHandler(ProviderConfigChange, &h1)
 
-		registry := eventing.GetClientRegistry(clientName)
+		registry := api().eventExecutor.GetClientRegistry(clientName)
 
 		if len(registry.eventCallbacks()[ProviderReady]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
@@ -656,7 +656,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		AddHandler(ProviderStale, &h1)
 		AddHandler(ProviderConfigChange, &h1)
 
-		registry := eventing.GetAPIRegistry()
+		registry := api().eventExecutor.GetAPIRegistry()
 
 		if len(registry[ProviderReady]) < 1 {
 			t.Errorf("expected a registry regiration, but got none")
@@ -680,7 +680,7 @@ func TestRequirement_EventCompliance(t *testing.T) {
 		RemoveHandler(ProviderStale, &h1)
 		RemoveHandler(ProviderConfigChange, &h1)
 
-		registry = eventing.GetAPIRegistry()
+		registry = api().eventExecutor.GetAPIRegistry()
 
 		if len(registry[ProviderReady]) > 0 {
 			t.Errorf("expected empty registrations")
@@ -716,7 +716,7 @@ func TestDefaultClientUsage(t *testing.T) {
 	}
 
 	// Validate provider retrieval by client evaluation
-	provider, _, _ := api.ForEvaluation("ClientName")
+	provider, _, _ := api().ForEvaluation("ClientName")
 
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)
@@ -853,7 +853,6 @@ func TestNoGoroutineLeak(t *testing.T) {
 	// Verify no goroutines leak. The shutdown below is registered after this so
 	// it runs first (defers are LIFO), stopping the executor before we verify.
 	defer goleak.VerifyNone(t)
-	defer shutdownEventing()
 
 	// Create a new provider and trigger some events
 	eventingImpl := &ProviderEventing{
@@ -915,7 +914,6 @@ func TestNoGoroutineLeakWithShutdownWithContext(t *testing.T) {
 	// resetSingleton; shutdownEventing (registered after VerifyNone, so it runs
 	// first) stops that replacement before goleak verifies.
 	defer goleak.VerifyNone(t)
-	defer shutdownEventing()
 
 	eventingImpl := &ProviderEventing{c: make(chan Event, 1)}
 	err := SetProvider(struct {
@@ -945,7 +943,6 @@ func TestNoGoroutineLeakWithMultipleProviders(t *testing.T) {
 	// Verify no goroutines leak. The shutdown below is registered after this so
 	// it runs first (defers are LIFO), stopping the executor before we verify.
 	defer goleak.VerifyNone(t)
-	defer shutdownEventing()
 
 	// Set default provider
 	defaultProvider := &ProviderEventing{c: make(chan Event, 1)}

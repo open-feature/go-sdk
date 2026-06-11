@@ -10,7 +10,7 @@ mockgen:
 
 .PHONY: test
 test:
-	go test --short -tags testtools -cover -timeout 1m ./...
+	go test --short -tags testtools -race -cover -timeout 1m ./...
 
 .PHONY: e2e-test
 e2e-test:
