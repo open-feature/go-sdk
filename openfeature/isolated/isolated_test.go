@@ -32,11 +32,7 @@ func TestNewAPI_NotSameAsSingleton(t *testing.T) {
 	t.Cleanup(func() { a.Shutdown() })
 
 	//nolint:staticcheck // test needs the singleton reference for comparison
-	singleton, ok := openfeature.GetApiInstance().(openfeature.IEvaluation)
-	if !ok {
-		t.Fatal("singleton is not *EvaluationAPI; cannot compare")
-	}
-	if a == singleton {
+	if a == openfeature.GetApiInstance() {
 		t.Error("isolated.NewAPI() returned the global singleton")
 	}
 }

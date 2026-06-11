@@ -74,17 +74,6 @@ type evaluationImpl interface {
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
 }
 
-var _ eventingImpl // TODO: do we need this interface at all?
-
-// eventingImpl is an internal reference interface extending IEventing
-type eventingImpl interface {
-	IEventing
-	GetAPIRegistry() map[EventType][]EventCallback
-	GetClientRegistry(client string) scopedCallback
-	shutdown()
-	clientEvent
-}
-
 // clientEvent is an internal reference for OpenFeature Client events
 type clientEvent interface {
 	AddClientHandler(clientName string, t EventType, c EventCallback)
