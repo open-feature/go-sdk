@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 )
 
@@ -332,5 +333,66 @@ func TestIsolatedAPI_EventsBetweenInstances(t *testing.T) {
 		if name == "instance2-provider" {
 			t.Error("provider event from instance2 fired handler on instance1")
 		}
+	}
+}
+
+func TestIsolatedAPI_ShutdownStopsEventExecutor(t *testing.T) {
+	startLeakTest(t)
+
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
+
+	instance := newAPIForTest()
+
+	defaultProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, &ProviderEventing{c: make(chan Event, 1)}}
+
+	if err := instance.SetProvider(defaultProvider); err != nil {
+		t.Fatalf("SetProvider on isolated instance: %v", err)
+	}
+
+	namedProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, &ProviderEventing{c: make(chan Event, 1)}}
+
+	if err := instance.SetNamedProvider("test-domain", namedProvider, true); err != nil {
+		t.Fatalf("SetNamedProvider on isolated instance: %v", err)
+	}
+
+	// Allow the executor goroutines to start handling events.
+	time.Sleep(50 * time.Millisecond)
+
+	instance.Shutdown()
+
+	// goleak will verify no goroutines leak from the isolated instance's
+	// per-instance event executor.
+}
+
+// Requirement 1.8.1 (lifecycle): ShutdownWithContext on an isolated instance
+// must also stop the per-instance event executor goroutine.
+func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
+	startLeakTest(t)
+
+	defer goleak.VerifyNone(t)
+	defer shutdownEventing()
+
+	instance := newAPIForTest()
+
+	eventingProvider := struct {
+		FeatureProvider
+		EventHandler
+	}{NoopProvider{}, &ProviderEventing{c: make(chan Event, 1)}}
+
+	if err := instance.SetProvider(eventingProvider); err != nil {
+		t.Fatalf("SetProvider on isolated instance: %v", err)
+	}
+
+	time.Sleep(50 * time.Millisecond)
+
+	if err := instance.ShutdownWithContext(t.Context()); err != nil {
+		t.Fatalf("ShutdownWithContext on isolated instance: %v", err)
 	}
 }

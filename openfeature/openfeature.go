@@ -16,9 +16,7 @@ var (
 // init initializes the OpenFeature evaluation API
 func init() {
 	resetSingleton()
-	// register the isolated-instance constructor with the internal factory
-	// bridge so openfeature/isolated.NewAPI can produce instances without
-	// requiring an exported NewAPI on this package.
+	// register the isolated-instance constructor; see openfeature/internal/factory.
 	factory.NewAPI = func() any {
 		exec := newEventExecutor()
 		return newEvaluationAPI(exec)

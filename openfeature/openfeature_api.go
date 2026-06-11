@@ -398,6 +398,9 @@ func (api *EvaluationAPI) ShutdownWithContext(ctx context.Context) error {
 	// Release all provider bindings so providers can be re-registered elsewhere.
 	api.unbindAllProvidersLocked()
 
+	// Stop the per-instance event executor goroutine.
+	api.eventExecutor.shutdown()
+
 	return errors.Join(errs...)
 }
 
