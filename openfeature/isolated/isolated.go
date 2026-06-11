@@ -10,7 +10,7 @@ import (
 	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 )
 
-// NewAPI returns a new, independent [openfeature.EvaluationAPI].
+// NewAPI returns a new, independent [openfeature.IEvaluation].
 //
 // Usage:
 //
@@ -20,6 +20,6 @@ import (
 //	client := api.GetClient()
 //
 // Experimental.
-func NewAPI() *openfeature.EvaluationAPI {
-	return factory.NewAPI().(*openfeature.EvaluationAPI)
+func NewAPI() openfeature.IEvaluation {
+	return factory.NewAPI().(openfeature.IEvaluation)
 }

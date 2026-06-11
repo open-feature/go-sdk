@@ -17,7 +17,7 @@ import (
 // that the uintptr key in providerBindings cannot be reused by a new allocation.
 type providerBindingEntry struct {
 	provider FeatureProvider
-	api      *EvaluationAPI
+	api      *evaluationAPI
 }
 
 // providerBindings is a global registry mapping provider pointer identity (uintptr) to the API
@@ -54,7 +54,7 @@ func providerBindingKey(provider FeatureProvider) (uintptr, bool) {
 
 // bindProvider registers provider as bound to apiInst. Returns an error if the provider is already
 // bound to a different API instance (spec 1.8.4). Must be called with apiInst.mu write-locked.
-func bindProvider(provider FeatureProvider, apiInst *EvaluationAPI) error {
+func bindProvider(provider FeatureProvider, apiInst *evaluationAPI) error {
 	key, ok := providerBindingKey(provider)
 	if !ok {
 		return nil
@@ -72,7 +72,7 @@ func bindProvider(provider FeatureProvider, apiInst *EvaluationAPI) error {
 
 // unbindProvider removes provider from the global binding registry for apiInst.
 // Safe to call with apiInst.mu held (lock order: EvaluationAPI.mu → providerBindingsMu).
-func unbindProvider(provider FeatureProvider, apiInst *EvaluationAPI) {
+func unbindProvider(provider FeatureProvider, apiInst *evaluationAPI) {
 	key, ok := providerBindingKey(provider)
 	if !ok {
 		return
@@ -86,8 +86,8 @@ func unbindProvider(provider FeatureProvider, apiInst *EvaluationAPI) {
 	}
 }
 
-// EvaluationAPI wraps OpenFeature evaluation API functionalities
-type EvaluationAPI struct {
+// evaluationAPI wraps OpenFeature evaluation API functionalities
+type evaluationAPI struct {
 	defaultProvider FeatureProvider
 	namedProviders  map[string]FeatureProvider
 	hks             []Hook
@@ -97,8 +97,8 @@ type EvaluationAPI struct {
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
-func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
-	return &EvaluationAPI{
+func newEvaluationAPI(eventExecutor *eventExecutor) *evaluationAPI {
+	return &evaluationAPI{
 		defaultProvider: NoopProvider{},
 		namedProviders:  map[string]FeatureProvider{},
 		hks:             []Hook{},
@@ -108,16 +108,16 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 	}
 }
 
-func (api *EvaluationAPI) SetProvider(provider FeatureProvider) error {
+func (api *evaluationAPI) SetProvider(provider FeatureProvider) error {
 	return api.SetProviderWithContext(context.Background(), provider)
 }
 
-func (api *EvaluationAPI) SetProviderAndWait(provider FeatureProvider) error {
+func (api *evaluationAPI) SetProviderAndWait(provider FeatureProvider) error {
 	return api.SetProviderWithContextAndWait(context.Background(), provider)
 }
 
 // SetProviderWithContext sets the default FeatureProvider with context-aware initialization.
-func (api *EvaluationAPI) SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+func (api *evaluationAPI) SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
 	if provider == nil {
 		return errors.New("default provider cannot be set to nil")
 	}
@@ -126,7 +126,7 @@ func (api *EvaluationAPI) SetProviderWithContext(ctx context.Context, provider F
 }
 
 // SetProviderWithContextAndWait sets the default FeatureProvider with context-aware initialization and waits for completion.
-func (api *EvaluationAPI) SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+func (api *evaluationAPI) SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
 	if provider == nil {
 		return errors.New("default provider cannot be set to nil")
 	}
@@ -138,12 +138,12 @@ func (api *EvaluationAPI) SetProviderWithContextAndWait(ctx context.Context, pro
 }
 
 // SetNamedProvider sets a provider with client name. Returns an error if FeatureProvider is nil
-func (api *EvaluationAPI) SetNamedProvider(clientName string, provider FeatureProvider, async bool) error {
+func (api *evaluationAPI) SetNamedProvider(clientName string, provider FeatureProvider, async bool) error {
 	return api.SetNamedProviderWithContext(context.Background(), clientName, provider, async)
 }
 
 // SetNamedProviderWithContext sets a provider with client name using context-aware initialization.
-func (api *EvaluationAPI) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+func (api *evaluationAPI) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
 	if provider == nil {
 		return errors.New("provider cannot be set to nil")
 	}
@@ -161,7 +161,7 @@ func (api *EvaluationAPI) SetNamedProviderWithContext(ctx context.Context, clien
 }
 
 // SetNamedProviderWithContextAndWait sets a provider with client name using context-aware initialization and waits for completion.
-func (api *EvaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+func (api *evaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
 	return api.SetNamedProviderWithContext(ctx, clientName, provider, false)
 }
 
@@ -169,7 +169,7 @@ func (api *EvaluationAPI) SetNamedProviderWithContextAndWait(ctx context.Context
 // referenced (as default or named provider) by this API instance. Must be called with api.mu held.
 // All comparisons use pointer identity (via providerBindingKey) to avoid panics from unhashable
 // FeatureProvider implementations that contain maps or slices.
-func (api *EvaluationAPI) unbindIfUnreferenced(oldProvider FeatureProvider) {
+func (api *evaluationAPI) unbindIfUnreferenced(oldProvider FeatureProvider) {
 	oldKey, tracked := providerBindingKey(oldProvider)
 	if !tracked {
 		return
@@ -189,7 +189,7 @@ func (api *EvaluationAPI) unbindIfUnreferenced(oldProvider FeatureProvider) {
 
 // setProviderWithContext sets the default FeatureProvider of the EvaluationAPI with context-aware initialization.
 // Returns an error immediately if the provider is already bound to a different API instance (spec 1.8.4).
-func (api *EvaluationAPI) setProviderWithContext(ctx context.Context, provider FeatureProvider) (<-chan error, error) {
+func (api *evaluationAPI) setProviderWithContext(ctx context.Context, provider FeatureProvider) (<-chan error, error) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
@@ -212,7 +212,7 @@ func (api *EvaluationAPI) setProviderWithContext(ctx context.Context, provider F
 	return api.initNew(ctx, "", provider), nil
 }
 
-func (api *EvaluationAPI) setNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider) (<-chan error, error) {
+func (api *evaluationAPI) setNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider) (<-chan error, error) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
@@ -236,7 +236,7 @@ func (api *EvaluationAPI) setNamedProviderWithContext(ctx context.Context, clien
 	return api.initNew(ctx, clientName, provider), nil
 }
 
-func (api *EvaluationAPI) initNew(ctx context.Context, clientName string, newProvider FeatureProvider) <-chan error {
+func (api *evaluationAPI) initNew(ctx context.Context, clientName string, newProvider FeatureProvider) <-chan error {
 	errCh := make(chan error, 1)
 
 	// Initialize new provider async. The caller may wait on the channel.
@@ -257,7 +257,7 @@ func (api *EvaluationAPI) initNew(ctx context.Context, clientName string, newPro
 	return errCh
 }
 
-func (api *EvaluationAPI) shutdownOld(ctx context.Context, oldProvider FeatureProvider) {
+func (api *evaluationAPI) shutdownOld(ctx context.Context, oldProvider FeatureProvider) {
 	v, ok := oldProvider.(StateHandler)
 
 	// oldProvider can be nil or without state handling capability
@@ -285,7 +285,7 @@ func (api *EvaluationAPI) shutdownOld(ctx context.Context, oldProvider FeaturePr
 }
 
 // GetProviderMetadata returns the default FeatureProvider's metadata
-func (api *EvaluationAPI) GetProviderMetadata() Metadata {
+func (api *evaluationAPI) GetProviderMetadata() Metadata {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
@@ -293,7 +293,7 @@ func (api *EvaluationAPI) GetProviderMetadata() Metadata {
 }
 
 // GetNamedProviderMetadata returns the default FeatureProvider's metadata
-func (api *EvaluationAPI) GetNamedProviderMetadata(name string) Metadata {
+func (api *evaluationAPI) GetNamedProviderMetadata(name string) Metadata {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
@@ -306,7 +306,7 @@ func (api *EvaluationAPI) GetNamedProviderMetadata(name string) Metadata {
 }
 
 // GetNamedProviders returns named providers map.
-func (api *EvaluationAPI) GetNamedProviders() map[string]FeatureProvider {
+func (api *evaluationAPI) GetNamedProviders() map[string]FeatureProvider {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
@@ -314,16 +314,16 @@ func (api *EvaluationAPI) GetNamedProviders() map[string]FeatureProvider {
 }
 
 // GetClient returns a IClient bound to the default provider
-func (api *EvaluationAPI) GetClient() IClient {
+func (api *evaluationAPI) GetClient() IClient {
 	return newClient("", api, api.eventExecutor)
 }
 
 // GetNamedClient returns a IClient bound to the given named provider
-func (api *EvaluationAPI) GetNamedClient(clientName string) IClient {
+func (api *evaluationAPI) GetNamedClient(clientName string) IClient {
 	return newClient(clientName, api, api.eventExecutor)
 }
 
-func (api *EvaluationAPI) SetEvaluationContext(evalCtx EvaluationContext) {
+func (api *evaluationAPI) SetEvaluationContext(evalCtx EvaluationContext) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
@@ -331,17 +331,17 @@ func (api *EvaluationAPI) SetEvaluationContext(evalCtx EvaluationContext) {
 }
 
 // Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
-func (api *EvaluationAPI) SetLogger(l logr.Logger) {
+func (api *evaluationAPI) SetLogger(l logr.Logger) {
 }
 
-func (api *EvaluationAPI) AddHooks(hooks ...Hook) {
+func (api *evaluationAPI) AddHooks(hooks ...Hook) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
 	api.hks = append(api.hks, hooks...)
 }
 
-func (api *EvaluationAPI) GetHooks() []Hook {
+func (api *evaluationAPI) GetHooks() []Hook {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
@@ -349,16 +349,16 @@ func (api *EvaluationAPI) GetHooks() []Hook {
 }
 
 // AddHandler allows to add API level event handler
-func (api *EvaluationAPI) AddHandler(eventType EventType, callback EventCallback) {
+func (api *evaluationAPI) AddHandler(eventType EventType, callback EventCallback) {
 	api.eventExecutor.AddHandler(eventType, callback)
 }
 
 // RemoveHandler allows to remove API level event handler
-func (api *EvaluationAPI) RemoveHandler(eventType EventType, callback EventCallback) {
+func (api *evaluationAPI) RemoveHandler(eventType EventType, callback EventCallback) {
 	api.eventExecutor.RemoveHandler(eventType, callback)
 }
 
-func (api *EvaluationAPI) Shutdown() {
+func (api *evaluationAPI) Shutdown() {
 	// Use the context-aware shutdown with background context and ignore errors
 	// to maintain backward compatibility (Shutdown doesn't return an error)
 	_ = api.ShutdownWithContext(context.Background())
@@ -367,10 +367,9 @@ func (api *EvaluationAPI) Shutdown() {
 // ShutdownWithContext calls context-aware shutdown on all registered providers.
 // If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
 // Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
-func (api *EvaluationAPI) ShutdownWithContext(ctx context.Context) error {
+func (api *evaluationAPI) ShutdownWithContext(ctx context.Context) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
-
 	var errs []error
 
 	// Shutdown default provider
@@ -395,27 +394,17 @@ func (api *EvaluationAPI) ShutdownWithContext(ctx context.Context) error {
 		}
 	}
 
+	api.eventExecutor.shutdown()
 	// Release all provider bindings so providers can be re-registered elsewhere.
 	api.unbindAllProvidersLocked()
 
-	// Stop the per-instance event executor goroutine.
-	api.eventExecutor.shutdown()
-
 	return errors.Join(errs...)
-}
-
-// unbindAllProviders releases all provider bindings for this API instance from the global registry.
-// Must be called without api.mu held.
-func (api *EvaluationAPI) unbindAllProviders() {
-	api.mu.RLock()
-	defer api.mu.RUnlock()
-	api.unbindAllProvidersLocked()
 }
 
 // unbindAllProvidersLocked releases all provider bindings. Must be called with api.mu held (any level).
 // Acquires providerBindingsMu once for the entire operation to avoid repeated lock acquisitions
 // and to prevent panics from using unhashable FeatureProvider values as map keys.
-func (api *EvaluationAPI) unbindAllProvidersLocked() {
+func (api *evaluationAPI) unbindAllProvidersLocked() {
 	providerBindingsMu.Lock()
 	defer providerBindingsMu.Unlock()
 
@@ -435,7 +424,7 @@ func (api *EvaluationAPI) unbindAllProvidersLocked() {
 
 // ForEvaluation is a helper to retrieve transaction scoped operators.
 // Returns the default FeatureProvider if no provider mapping exist for the given client name.
-func (api *EvaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
+func (api *evaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext) {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 
@@ -450,7 +439,7 @@ func (api *EvaluationAPI) ForEvaluation(clientName string) (FeatureProvider, []H
 }
 
 // GetProvider returns the default FeatureProvider
-func (api *EvaluationAPI) GetProvider() FeatureProvider {
+func (api *evaluationAPI) GetProvider() FeatureProvider {
 	api.mu.RLock()
 	defer api.mu.RUnlock()
 

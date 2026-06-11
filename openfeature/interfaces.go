@@ -74,6 +74,8 @@ type evaluationImpl interface {
 	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
 }
 
+var _ eventingImpl // TODO: do we need this interface at all?
+
 // eventingImpl is an internal reference interface extending IEventing
 type eventingImpl interface {
 	IEventing

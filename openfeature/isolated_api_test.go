@@ -10,11 +10,11 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// newAPIForTest constructs a fresh *EvaluationAPI directly via the
+// newAPIForTest constructs a fresh *evaluationAPI directly via the
 // package-private helpers so tests don't depend on the public factory in
 // openfeature/isolated (which would create an import cycle for tests in this
 // package).
-func newAPIForTest() *EvaluationAPI {
+func newAPIForTest() *evaluationAPI {
 	return newEvaluationAPI(newEventExecutor())
 }
 
@@ -46,7 +46,7 @@ func TestIsolatedAPI_IndependentFromSingleton(t *testing.T) {
 	}
 
 	// Singleton should still have the default NoopProvider
-	if api.GetProviderMetadata().Name == "instance-provider" {
+	if api().GetProviderMetadata().Name == "instance-provider" {
 		t.Error("provider set on isolated instance leaked into the singleton")
 	}
 }
@@ -208,7 +208,7 @@ func TestIsolatedAPI_HooksIndependence(t *testing.T) {
 	hook := UnimplementedHook{}
 	instance.AddHooks(hook)
 
-	singletonAPI := api.(*EvaluationAPI)
+	singletonAPI := api()
 	singletonAPI.mu.RLock()
 	singletonHookCount := len(singletonAPI.hks)
 	singletonAPI.mu.RUnlock()
@@ -243,7 +243,7 @@ func TestIsolatedAPI_EvalContextIndependence(t *testing.T) {
 		attributes: map[string]any{"tenant": "isolated"},
 	})
 
-	singletonAPI := api.(*EvaluationAPI)
+	singletonAPI := api()
 	singletonAPI.mu.RLock()
 	singletonCtx := singletonAPI.evalCtx
 	singletonAPI.mu.RUnlock()
@@ -340,7 +340,6 @@ func TestIsolatedAPI_ShutdownStopsEventExecutor(t *testing.T) {
 	startLeakTest(t)
 
 	defer goleak.VerifyNone(t)
-	defer shutdownEventing()
 
 	instance := newAPIForTest()
 
@@ -377,7 +376,6 @@ func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
 	startLeakTest(t)
 
 	defer goleak.VerifyNone(t)
-	defer shutdownEventing()
 
 	instance := newAPIForTest()
 

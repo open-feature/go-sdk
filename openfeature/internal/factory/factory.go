@@ -4,6 +4,6 @@
 package factory
 
 // NewAPI is set by openfeature.init and read by openfeature/isolated.NewAPI.
-// Returns *openfeature.EvaluationAPI as any to avoid an import cycle; callers
-// must type-assert.
+// Returns the openfeature evaluation API as any to avoid an import cycle;
+// callers must type-assert to [openfeature.IEvaluation].
 var NewAPI func() any
