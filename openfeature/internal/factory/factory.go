@@ -1,13 +1,9 @@
-// Package factory is an internal bridge that exposes the openfeature
-// package's isolated-instance constructor to the openfeature/isolated
-// sub-package without making it part of the public API.
-//
-// The openfeature package sets NewAPI in its init function; openfeature/isolated
-// reads it. External callers cannot import this package (Go's internal/ rule
-// restricts imports to paths under openfeature/).
+// Package factory bridges the openfeature package's isolated-instance
+// constructor to the openfeature/isolated sub-package without exposing it
+// publicly. Internal-only.
 package factory
 
-// NewAPI is set by the openfeature package's init. It returns a new
-// *openfeature.EvaluationAPI as any to avoid an import cycle with openfeature.
-// Callers in openfeature/isolated must type-assert.
+// NewAPI is set by openfeature.init and read by openfeature/isolated.NewAPI.
+// Returns the openfeature evaluation API as any to avoid an import cycle;
+// callers must type-assert to [openfeature.IEvaluation].
 var NewAPI func() any
