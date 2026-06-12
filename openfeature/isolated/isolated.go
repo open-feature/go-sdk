@@ -1,0 +1,25 @@
+// Package isolated provides a factory for creating OpenFeature API instances with state independent of the global singleton.
+//
+// Use isolated instances when you need DI, multi-tenancy, or test isolation.
+//
+// Experimental.
+package isolated
+
+import (
+	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/internal/factory"
+)
+
+// NewAPI returns a new, independent [openfeature.IEvaluation].
+//
+// Usage:
+//
+//	api := isolated.NewAPI()
+//	defer api.Shutdown()
+//	api.SetProvider(myProvider)
+//	client := api.GetClient()
+//
+// Experimental.
+func NewAPI() openfeature.IEvaluation {
+	return factory.NewAPI().(openfeature.IEvaluation)
+}

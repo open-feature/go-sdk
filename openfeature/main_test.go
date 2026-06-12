@@ -1,10 +1,12 @@
 package openfeature
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 	"go.uber.org/goleak"
 )
 
@@ -15,12 +17,6 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if code == 0 {
-		// Shut down the global event executor so its background goroutine is
-		// stopped before we verify that nothing was leaked.
-		if eventing != nil {
-			eventing.shutdown()
-		}
-
 		if err := goleak.Find(); err != nil {
 			fmt.Fprintf(os.Stderr, "goroutine leak detected: %v\n", err)
 			code = 1
@@ -33,16 +29,8 @@ func TestMain(m *testing.M) {
 // startLeakTest prepares the global event executor for a goroutine-leak test.
 func startLeakTest(t *testing.T) {
 	t.Helper()
-	shutdownEventing()
 	resetSingleton()
 	t.Cleanup(resetSingleton)
-}
-
-// shutdownEventing shuts down the global event executor if one is set.
-func shutdownEventing() {
-	if eventing != nil {
-		eventing.shutdown()
-	}
 }
 
 // installIsolatedAPI replaces the global evaluation API and event executor with
@@ -52,24 +40,17 @@ func shutdownEventing() {
 func installIsolatedAPI(t *testing.T) *evaluationAPI {
 	t.Helper()
 
-	originalAPI := api
-	originalEventing := eventing
-
-	exec := newEventExecutor()
-	testAPI := newEvaluationAPI(exec)
-	api = testAPI
-	eventing = exec
+	testAPI := factory.NewAPI().(*evaluationAPI)
+	originalAPI := apiInstance.Swap(testAPI)
 
 	t.Cleanup(func() {
-		exec.shutdown()
 		// ShutdownWithContext (and similar) can reinitialize the global event
 		// executor via resetSingleton; shut that replacement down too so it
 		// doesn't leak.
-		if eventing != nil && eventing != exec {
-			eventing.shutdown()
+		_ = testAPI.ShutdownWithContext(context.Background()) //nolint:usetesting
+		if current := apiInstance.Swap(originalAPI); current != testAPI {
+			_ = current.ShutdownWithContext(context.Background()) //nolint:usetesting
 		}
-		api = originalAPI
-		eventing = originalEventing
 	})
 
 	return testAPI

@@ -12,9 +12,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func init() {
-}
-
 // Requirement 5.1.1 The provider MAY define a mechanism for signaling the occurrence of one of a set of events,
 // including PROVIDER_READY, PROVIDER_ERROR, PROVIDER_CONFIGURATION_CHANGED and PROVIDER_STALE,
 // with a provider event details payload.
@@ -685,7 +682,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api.GetNamedClient(clientAssociation)
+		client := api().GetNamedClient(clientAssociation)
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -721,7 +718,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api.GetNamedClient("someClient")
+		client := api().GetNamedClient("someClient")
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -759,7 +756,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api.GetNamedClient("someClient")
+		client := api().GetNamedClient("someClient")
 		client.AddHandler(ProviderReady, &callback)
 
 		select {

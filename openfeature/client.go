@@ -54,7 +54,8 @@ var _ IClient = (*Client)(nil)
 // NewClient returns a new Client. Name is a unique identifier for this client
 // This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
 func NewClient(domain string) *Client {
-	return newClient(domain, api, eventing)
+	apiRef := api()
+	return newClient(domain, apiRef, apiRef.eventExecutor)
 }
 
 func newClient(domain string, apiRef evaluationImpl, eventRef clientEvent) *Client {

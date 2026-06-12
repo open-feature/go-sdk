@@ -165,6 +165,34 @@ func (mr *MockIEvaluationMockRecorder) SetNamedProvider(clientName, provider, as
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProvider", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProvider), clientName, provider, async)
 }
 
+// SetNamedProviderWithContext mocks base method.
+func (m *MockIEvaluation) SetNamedProviderWithContext(ctx context.Context, clientName string, provider FeatureProvider, async bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContext", ctx, clientName, provider, async)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContext indicates an expected call of SetNamedProviderWithContext.
+func (mr *MockIEvaluationMockRecorder) SetNamedProviderWithContext(ctx, clientName, provider, async any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContext", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProviderWithContext), ctx, clientName, provider, async)
+}
+
+// SetNamedProviderWithContextAndWait mocks base method.
+func (m *MockIEvaluation) SetNamedProviderWithContextAndWait(ctx context.Context, clientName string, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNamedProviderWithContextAndWait", ctx, clientName, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetNamedProviderWithContextAndWait indicates an expected call of SetNamedProviderWithContextAndWait.
+func (mr *MockIEvaluationMockRecorder) SetNamedProviderWithContextAndWait(ctx, clientName, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamedProviderWithContextAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetNamedProviderWithContextAndWait), ctx, clientName, provider)
+}
+
 // SetProvider mocks base method.
 func (m *MockIEvaluation) SetProvider(provider FeatureProvider) error {
 	m.ctrl.T.Helper()
@@ -191,6 +219,34 @@ func (m *MockIEvaluation) SetProviderAndWait(provider FeatureProvider) error {
 func (mr *MockIEvaluationMockRecorder) SetProviderAndWait(provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderAndWait), provider)
+}
+
+// SetProviderWithContext mocks base method.
+func (m *MockIEvaluation) SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProviderWithContext", ctx, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProviderWithContext indicates an expected call of SetProviderWithContext.
+func (mr *MockIEvaluationMockRecorder) SetProviderWithContext(ctx, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderWithContext", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderWithContext), ctx, provider)
+}
+
+// SetProviderWithContextAndWait mocks base method.
+func (m *MockIEvaluation) SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProviderWithContextAndWait", ctx, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProviderWithContextAndWait indicates an expected call of SetProviderWithContextAndWait.
+func (mr *MockIEvaluationMockRecorder) SetProviderWithContextAndWait(ctx, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderWithContextAndWait", reflect.TypeOf((*MockIEvaluation)(nil).SetProviderWithContextAndWait), ctx, provider)
 }
 
 // Shutdown mocks base method.
@@ -1016,132 +1072,6 @@ func (m *MockevaluationImpl) ShutdownWithContext(ctx context.Context) error {
 func (mr *MockevaluationImplMockRecorder) ShutdownWithContext(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownWithContext", reflect.TypeOf((*MockevaluationImpl)(nil).ShutdownWithContext), ctx)
-}
-
-// MockeventingImpl is a mock of eventingImpl interface.
-type MockeventingImpl struct {
-	ctrl     *gomock.Controller
-	recorder *MockeventingImplMockRecorder
-	isgomock struct{}
-}
-
-// MockeventingImplMockRecorder is the mock recorder for MockeventingImpl.
-type MockeventingImplMockRecorder struct {
-	mock *MockeventingImpl
-}
-
-// NewMockeventingImpl creates a new mock instance.
-func NewMockeventingImpl(ctrl *gomock.Controller) *MockeventingImpl {
-	mock := &MockeventingImpl{ctrl: ctrl}
-	mock.recorder = &MockeventingImplMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockeventingImpl) EXPECT() *MockeventingImplMockRecorder {
-	return m.recorder
-}
-
-// AddClientHandler mocks base method.
-func (m *MockeventingImpl) AddClientHandler(clientName string, t EventType, c EventCallback) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddClientHandler", clientName, t, c)
-}
-
-// AddClientHandler indicates an expected call of AddClientHandler.
-func (mr *MockeventingImplMockRecorder) AddClientHandler(clientName, t, c any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddClientHandler", reflect.TypeOf((*MockeventingImpl)(nil).AddClientHandler), clientName, t, c)
-}
-
-// AddHandler mocks base method.
-func (m *MockeventingImpl) AddHandler(eventType EventType, callback EventCallback) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddHandler", eventType, callback)
-}
-
-// AddHandler indicates an expected call of AddHandler.
-func (mr *MockeventingImplMockRecorder) AddHandler(eventType, callback any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHandler", reflect.TypeOf((*MockeventingImpl)(nil).AddHandler), eventType, callback)
-}
-
-// GetAPIRegistry mocks base method.
-func (m *MockeventingImpl) GetAPIRegistry() map[EventType][]EventCallback {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAPIRegistry")
-	ret0, _ := ret[0].(map[EventType][]EventCallback)
-	return ret0
-}
-
-// GetAPIRegistry indicates an expected call of GetAPIRegistry.
-func (mr *MockeventingImplMockRecorder) GetAPIRegistry() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIRegistry", reflect.TypeOf((*MockeventingImpl)(nil).GetAPIRegistry))
-}
-
-// GetClientRegistry mocks base method.
-func (m *MockeventingImpl) GetClientRegistry(client string) scopedCallback {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClientRegistry", client)
-	ret0, _ := ret[0].(scopedCallback)
-	return ret0
-}
-
-// GetClientRegistry indicates an expected call of GetClientRegistry.
-func (mr *MockeventingImplMockRecorder) GetClientRegistry(client any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientRegistry", reflect.TypeOf((*MockeventingImpl)(nil).GetClientRegistry), client)
-}
-
-// RemoveClientHandler mocks base method.
-func (m *MockeventingImpl) RemoveClientHandler(name string, t EventType, c EventCallback) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RemoveClientHandler", name, t, c)
-}
-
-// RemoveClientHandler indicates an expected call of RemoveClientHandler.
-func (mr *MockeventingImplMockRecorder) RemoveClientHandler(name, t, c any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveClientHandler", reflect.TypeOf((*MockeventingImpl)(nil).RemoveClientHandler), name, t, c)
-}
-
-// RemoveHandler mocks base method.
-func (m *MockeventingImpl) RemoveHandler(eventType EventType, callback EventCallback) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RemoveHandler", eventType, callback)
-}
-
-// RemoveHandler indicates an expected call of RemoveHandler.
-func (mr *MockeventingImplMockRecorder) RemoveHandler(eventType, callback any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveHandler", reflect.TypeOf((*MockeventingImpl)(nil).RemoveHandler), eventType, callback)
-}
-
-// State mocks base method.
-func (m *MockeventingImpl) State(domain string) State {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "State", domain)
-	ret0, _ := ret[0].(State)
-	return ret0
-}
-
-// State indicates an expected call of State.
-func (mr *MockeventingImplMockRecorder) State(domain any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "State", reflect.TypeOf((*MockeventingImpl)(nil).State), domain)
-}
-
-// shutdown mocks base method.
-func (m *MockeventingImpl) shutdown() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "shutdown")
-}
-
-// shutdown indicates an expected call of shutdown.
-func (mr *MockeventingImplMockRecorder) shutdown() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "shutdown", reflect.TypeOf((*MockeventingImpl)(nil).shutdown))
 }
 
 // MockclientEvent is a mock of clientEvent interface.
