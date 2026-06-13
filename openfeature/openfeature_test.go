@@ -21,13 +21,13 @@ func TestRequirement_1_1_1(t *testing.T) {
 	ofAPI := api()
 
 	// set through instance level
-	err := ofAPI.SetProvider(mockProvider)
+	err := ofAPI.SetProvider(t.Context(), mockProvider)
 	if err != nil {
 		t.Errorf("error setting up provider %v", err)
 	}
 
 	// validate through global level
-	if api().GetProvider() != mockProvider {
+	if api().getProvider() != mockProvider {
 		t.Error("func SetProvider hasn't set the provider to the singleton")
 	}
 }
@@ -67,7 +67,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		if !reflect.DeepEqual(provider, api().GetProvider()) {
+		if !reflect.DeepEqual(provider, api().getProvider()) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -86,7 +86,7 @@ func TestRequirement_1_1_2_2(t *testing.T) {
 
 		expectChannelReceive(t, initSem, "initialization not invoked with provider registration")
 
-		if !reflect.DeepEqual(provider, api().GetNamedProviders()[client]) {
+		if !reflect.DeepEqual(provider, api().getDomainProviders()[client]) {
 			t.Errorf("provider not updated to the one set")
 		}
 	})
@@ -385,7 +385,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders := api().GetNamedProviders()
+	namedProviders := api().getDomainProviders()
 
 	// Validate binding
 
@@ -403,12 +403,12 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ := api().ForEvaluation("clientA")
+	provider, _, _ := api().resolveBinding("clientA")
 	if provider.Metadata().Name != "providerA" {
 		t.Errorf("expected %s, but got %s", "providerA", providerA.Metadata().Name)
 	}
 
-	provider, _, _ = api().ForEvaluation("clientB")
+	provider, _, _ = api().resolveBinding("clientB")
 	if provider.Metadata().Name != "providerB" {
 		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
 	}
@@ -423,14 +423,14 @@ func TestRequirement_1_1_3(t *testing.T) {
 		t.Errorf("error setting up provider %v", err)
 	}
 
-	namedProviders = api().GetNamedProviders()
+	namedProviders = api().getDomainProviders()
 	if namedProviders["clientB"] != providerB2 {
 		t.Errorf("named provider overriding failed")
 	}
 
 	// Validate provider retrieval by client evaluation. This uses forTransaction("clientName")
 
-	provider, _, _ = api().ForEvaluation("clientB")
+	provider, _, _ = api().resolveBinding("clientB")
 	if provider.Metadata().Name != "providerB2" {
 		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
 	}
@@ -448,7 +448,7 @@ func TestRequirement_1_1_4(t *testing.T) {
 	AddHooks(mockHook)
 	AddHooks(mockHook, mockHook)
 
-	if len(api().GetHooks()) != 3 {
+	if len(api().getHooks()) != 3 {
 		t.Error("func AddHooks didn't append the list of hooks to the existing collection of hooks")
 	}
 }
@@ -495,14 +495,14 @@ func TestRequirement_1_1_6(t *testing.T) {
 	})
 
 	t.Run("client from api level - no domain", func(t *testing.T) {
-		client := api().GetClient()
+		client := api().NewClient()
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")
 		}
 	})
 
 	t.Run("client from api level - with domain", func(t *testing.T) {
-		client := api().GetNamedClient("test-client")
+		client := api().NewClient(WithDomain("test-client"))
 		if client == nil {
 			t.Errorf("expected an IClient instance, but got invalid")
 		}
@@ -714,7 +714,7 @@ func TestDefaultClientUsage(t *testing.T) {
 	}
 
 	// Validate provider retrieval by client evaluation
-	provider, _, _ := api().ForEvaluation("ClientName")
+	provider, _, _ := api().resolveBinding("ClientName")
 
 	if provider.Metadata().Name != "defaultClientReplacement" {
 		t.Errorf("expected %s, but got %s", "defaultClientReplacement", provider.Metadata().Name)

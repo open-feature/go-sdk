@@ -7,8 +7,6 @@ import (
 	"slices"
 	"sync"
 	"unicode/utf8"
-
-	"github.com/go-logr/logr"
 )
 
 // ClientMetadata provides a client's metadata
@@ -38,7 +36,7 @@ func (cm ClientMetadata) Domain() string {
 
 // Client implements the behaviour required of an openfeature client
 type Client struct {
-	api               evaluationImpl
+	providerBinding   providerBindingFn
 	clientEventing    clientEvent
 	metadata          ClientMetadata
 	hooks             []Hook
@@ -51,36 +49,14 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
-// NewClient returns a new Client. Name is a unique identifier for this client
-// This helper exists for historical reasons. It is recommended to interact with IEvaluation to derive IClient instances.
+// NewClient returns a new Client. Name is a unique identifier for this client.
 func NewClient(domain string) *Client {
-	apiRef := api()
-	return newClient(domain, apiRef, apiRef.eventExecutor)
-}
-
-func newClient(domain string, apiRef evaluationImpl, eventRef clientEvent) *Client {
-	return &Client{
-		domain:            domain,
-		api:               apiRef,
-		clientEventing:    eventRef,
-		metadata:          ClientMetadata{domain: domain},
-		hooks:             []Hook{},
-		evaluationContext: EvaluationContext{},
-	}
+	return api().NewClient(WithDomain(domain))
 }
 
 // State returns the state of the associated provider
 func (c *Client) State() State {
 	return c.clientEventing.State(c.domain)
-}
-
-// WithLogger sets the logger of the client
-//
-// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
-func (c *Client) WithLogger(l logr.Logger) *Client {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-	return c
 }
 
 // Metadata returns the client's metadata
@@ -666,7 +642,7 @@ func (c *Client) Track(ctx context.Context, trackingEventName string, evalCtx Ev
 //   - client
 //   - invocation (highest precedence)
 func (c *Client) forTracking(ctx context.Context, evalCtx EvaluationContext) (Tracker, EvaluationContext) {
-	provider, _, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
+	provider, _, globalEvalCtx := c.providerBinding(c.metadata.domain)
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx)
 	trackingProvider, ok := provider.(Tracker)
 	if !ok {
@@ -691,7 +667,7 @@ func (c *Client) evaluate(
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
-	provider, globalHooks, globalEvalCtx := c.api.ForEvaluation(c.metadata.domain)
+	provider, globalHooks, globalEvalCtx := c.providerBinding(c.metadata.domain)
 
 	evalCtx = mergeContexts(evalCtx, c.evaluationContext, TransactionContext(ctx), globalEvalCtx) // API (global) -> transaction -> client -> invocation
 	hooks := slices.Concat(globalHooks, c.hooks, options.hooks, provider.Hooks())                 // API, Client, Invocation, Provider

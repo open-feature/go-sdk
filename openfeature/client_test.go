@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,27 +13,34 @@ import (
 
 type clientMocks struct {
 	clientHandlerAPI *MockclientEvent
-	evaluationAPI    *MockevaluationImpl
+	providerBinding  providerBindingFn
 	providerAPI      *MockFeatureProvider
 }
 
 func hydratedMocksForClientTests(t *testing.T, expectedEvaluations int) clientMocks {
 	ctrl := gomock.NewController(t)
 	mockClientAPI := NewMockclientEvent(ctrl)
-	mockEvaluationAPI := NewMockevaluationImpl(ctrl)
 	mockProvider := NewMockFeatureProvider(ctrl)
 
 	mockClientAPI.EXPECT().State(gomock.Any()).AnyTimes().Return(ReadyState)
 
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
-	mockEvaluationAPI.EXPECT().ForEvaluation(gomock.Any()).Times(expectedEvaluations).DoAndReturn(func(_ string) (*MockFeatureProvider, []Hook, EvaluationContext) {
+	var callCount atomic.Int64
+	mockBindFn := func(string) (FeatureProvider, []Hook, EvaluationContext) {
+		callCount.Add(1)
 		return mockProvider, nil, EvaluationContext{}
+	}
+
+	t.Cleanup(func() {
+		if got := callCount.Load(); got != int64(expectedEvaluations) {
+			t.Errorf("expected %d resolver calls, got %d", expectedEvaluations, got)
+		}
 	})
 
 	return clientMocks{
 		clientHandlerAPI: mockClientAPI,
-		evaluationAPI:    mockEvaluationAPI,
+		providerBinding:  mockBindFn,
 		providerAPI:      mockProvider,
 	}
 }
@@ -163,7 +171,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 	t.Run("BooleanValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(BoolResolutionDetail{
 				Value: booleanValue,
@@ -184,7 +192,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 	t.Run("StringValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(StringResolutionDetail{
 				Value: stringValue,
@@ -211,7 +219,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 	t.Run("FloatValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(FloatResolutionDetail{
 				Value: floatValue,
@@ -238,7 +246,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 	t.Run("IntValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(IntResolutionDetail{
 				Value: intValue,
@@ -265,7 +273,7 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 
 	t.Run("ObjectValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(InterfaceResolutionDetail{
 				Value: objectValue,
@@ -300,7 +308,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 	flagKey := "foo"
 	t.Run("BooleanValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(BoolResolutionDetail{
 				Value: booleanValue,
@@ -323,7 +331,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 
 	t.Run("StringValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().StringEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(StringResolutionDetail{
 				Value: stringValue,
@@ -346,7 +354,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 
 	t.Run("FloatValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().FloatEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(FloatResolutionDetail{
 				Value: floatValue,
@@ -369,7 +377,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 
 	t.Run("IntValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().IntEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(IntResolutionDetail{
 				Value: intValue,
@@ -392,7 +400,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 
 	t.Run("ObjectValueDetails", func(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		mocks.providerAPI.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(InterfaceResolutionDetail{
 				Value: objectValue,
@@ -419,7 +427,7 @@ func TestRequirement_1_4_4(t *testing.T) {
 func TestRequirement_1_4_7(t *testing.T) {
 	t.Cleanup(resetSingleton)
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
@@ -447,7 +455,7 @@ func TestRequirement_1_4_7(t *testing.T) {
 func TestRequirement_1_4_8(t *testing.T) {
 	t.Cleanup(resetSingleton)
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
 			Value: false,
@@ -485,7 +493,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 2)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := true
 		mocks.providerAPI.EXPECT().BooleanEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
@@ -519,7 +527,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 2)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := "default"
 		mocks.providerAPI.EXPECT().StringEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
@@ -552,7 +560,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Float", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := 3.14159
 		mocks.providerAPI.EXPECT().FloatEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
@@ -585,7 +593,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Int", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		var defaultValue int64 = 3
 		mocks.providerAPI.EXPECT().IntEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
 			Return(IntResolutionDetail{
@@ -617,7 +625,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 	t.Run("Object", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 		mocks := hydratedMocksForClientTests(t, 2)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		type obj struct {
 			foo string
 		}
@@ -664,7 +672,7 @@ func TestRequirement_1_4_12(t *testing.T) {
 	errMessage := "error forced by test"
 
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
 			Value: true,
@@ -700,7 +708,7 @@ func TestRequirement_1_4_13(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		defaultValue := true
 		mocks.providerAPI.EXPECT().BooleanEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
 			Return(BoolResolutionDetail{
@@ -726,7 +734,7 @@ func TestRequirement_1_4_13(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
 		mocks := hydratedMocksForClientTests(t, 1)
-		client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		defaultValue := true
 		metadata := FlagMetadata{
 			"bing": "bong",
@@ -882,13 +890,11 @@ func TestTrack(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// arrange
 			mocks := hydratedMocksForClientTests(t, 0)
-			client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
-
 			provider := test.provider(test, mocks.providerAPI)
-
-			mocks.evaluationAPI.EXPECT().ForEvaluation("test-client").AnyTimes().DoAndReturn(func(_ string) (FeatureProvider, []Hook, EvaluationContext) {
+			resolver := func(_ string) (FeatureProvider, []Hook, EvaluationContext) {
 				return provider, nil, test.inCtx.api
-			})
+			}
+			client := newClient("test-client", resolver, mocks.clientHandlerAPI)
 			client.evaluationContext = test.inCtx.client
 			ctx := WithTransactionContext(t.Context(), test.inCtx.txn)
 
@@ -983,7 +989,7 @@ func TestBeforeHookNilContext(t *testing.T) {
 	hookNilContext := UnimplementedHook{}
 
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 	attributes := map[string]any{"should": "persist"}
 	evalCtx := EvaluationContext{attributes: attributes}
@@ -1003,7 +1009,7 @@ func TestErrorCodeFromProviderReturnedInEvaluationDetails(t *testing.T) {
 	generalErrorCode := GeneralCode
 
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(BoolResolutionDetail{
 			Value: true,
@@ -1035,7 +1041,7 @@ func TestObjectEvaluationShouldSupportNilValue(t *testing.T) {
 	var value any = nil
 
 	mocks := hydratedMocksForClientTests(t, 1)
-	client := newClient("test-client", mocks.evaluationAPI, mocks.clientHandlerAPI)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(InterfaceResolutionDetail{
 			Value: value,
@@ -1454,4 +1460,15 @@ func TestRequirement_5_3_5(t *testing.T) {
 	eventually(t, func() bool {
 		return NewClient(t.Name()).State() == FatalState
 	}, time.Second, 100*time.Millisecond, "expected client to report FATAL state")
+}
+
+func newClient(domain string, providerBinding providerBindingFn, eventRef clientEvent) *Client {
+	return &Client{
+		domain:            domain,
+		providerBinding:   providerBinding,
+		clientEventing:    eventRef,
+		metadata:          ClientMetadata{domain: domain},
+		hooks:             []Hook{},
+		evaluationContext: EvaluationContext{},
+	}
 }

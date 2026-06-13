@@ -4,21 +4,22 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/go-logr/logr"
 	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 )
 
 // api is the global evaluationImpl implementation. This is a singleton and there can only be one instance.
 var (
-	apiInstance atomic.Pointer[evaluationAPI]
+	apiInstance atomic.Pointer[EvaluationAPI]
 )
 
 // init initializes the OpenFeature evaluation API
 func init() {
 	// register the isolated-instance constructor; see openfeature/internal/factory.
 	factory.NewAPI = func() any {
-		exec := newEventExecutor()
-		return newEvaluationAPI(exec)
+		return newAPI()
+	}
+	factory.CurrentAPI = func() any {
+		return api()
 	}
 	resetSingleton()
 }
@@ -30,44 +31,41 @@ func resetSingleton() {
 
 // resetSingletonWithContext stops (if running) the event executor and starts a new one.
 func resetSingletonWithContext(ctx context.Context) error {
-	nextAPI := factory.NewAPI().(*evaluationAPI)
+	nextAPI := newAPI()
 	oldAPI := apiInstance.Swap(nextAPI)
 	if oldAPI != nil {
-		return oldAPI.ShutdownWithContext(ctx)
+		return oldAPI.Shutdown(ctx)
 	}
 	return nil
 }
 
-// GetApiInstance returns the current singleton IEvaluation instance.
-//
-// Deprecated: use [NewDefaultClient] or [NewClient] directly instead
-//
-//nolint:staticcheck // Renaming this now would be a breaking change.
-func GetApiInstance() IEvaluation {
-	return api()
+// api returns the current singleton [EvaluationAPI].
+func api() *EvaluationAPI {
+	return apiInstance.Load()
 }
 
-func api() *evaluationAPI {
-	return apiInstance.Load()
+// newAPI creates a fresh *EvaluationAPI.
+func newAPI() *EvaluationAPI {
+	exec := newEventExecutor()
+	return newEvaluationAPI(exec)
 }
 
 // NewDefaultClient returns a [Client] for the default domain. The default domain [Client] is the [IClient] instance that
 // wraps around an unnamed [FeatureProvider]
 func NewDefaultClient() *Client {
-	apiRef := api()
-	return newClient("", apiRef, apiRef.eventExecutor)
+	return api().NewClient()
 }
 
 // SetProvider sets the default [FeatureProvider]. Provider initialization is asynchronous and status can be checked from
 // provider status
 func SetProvider(provider FeatureProvider) error {
-	return api().SetProvider(provider)
+	return api().SetProvider(context.Background(), provider)
 }
 
 // SetProviderAndWait sets the default [FeatureProvider] and waits for its initialization.
 // Returns an error if initialization causes an error
 func SetProviderAndWait(provider FeatureProvider) error {
-	return api().SetProviderAndWait(provider)
+	return api().SetProviderAndWait(context.Background(), provider)
 }
 
 // SetProviderWithContext sets the default [FeatureProvider] with context-aware initialization.
@@ -80,7 +78,7 @@ func SetProviderAndWait(provider FeatureProvider) error {
 // For providers that don't implement ContextAwareStateHandler, this behaves
 // identically to SetProvider() but with timeout protection.
 func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error {
-	return api().SetProviderWithContext(ctx, provider)
+	return api().SetProvider(ctx, provider)
 }
 
 // SetProviderWithContextAndWait sets the default [FeatureProvider] with context-aware initialization and waits for completion.
@@ -91,24 +89,24 @@ func SetProviderWithContext(ctx context.Context, provider FeatureProvider) error
 // application startup to wait for the provider before continuing.
 // Recommended timeout values: 1-5s for local providers, 10-30s for network-based providers.
 func SetProviderWithContextAndWait(ctx context.Context, provider FeatureProvider) error {
-	return api().SetProviderWithContextAndWait(ctx, provider)
+	return api().SetProviderAndWait(ctx, provider)
 }
 
 // ProviderMetadata returns the default [FeatureProvider] metadata
 func ProviderMetadata() Metadata {
-	return api().GetProviderMetadata()
+	return api().getProviderMetadata()
 }
 
 // SetNamedProvider sets a [FeatureProvider] mapped to the given [Client] domain. Provider initialization is asynchronous
 // and status can be checked from provider status
 func SetNamedProvider(domain string, provider FeatureProvider) error {
-	return api().SetNamedProvider(domain, provider, true)
+	return api().SetProvider(context.Background(), provider, WithDomain(domain))
 }
 
 // SetNamedProviderAndWait sets a provider mapped to the given [Client] domain and waits for its initialization.
 // Returns an error if initialization cause error
 func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
-	return api().SetNamedProvider(domain, provider, false)
+	return api().SetProviderAndWait(context.Background(), provider, WithDomain(domain))
 }
 
 // SetNamedProviderWithContext sets a [FeatureProvider] mapped to the given [Client] domain with context-aware initialization.
@@ -119,7 +117,7 @@ func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 // Named providers allow different domains to use different feature flag providers,
 // enabling multi-tenant applications or microservice architectures.
 func SetNamedProviderWithContext(ctx context.Context, domain string, provider FeatureProvider) error {
-	return api().SetNamedProviderWithContext(ctx, domain, provider, true)
+	return api().SetProvider(ctx, provider, WithDomain(domain))
 }
 
 // SetNamedProviderWithContextAndWait sets a provider mapped to the given [Client] domain with context-aware initialization and waits for completion.
@@ -129,23 +127,17 @@ func SetNamedProviderWithContext(ctx context.Context, domain string, provider Fe
 // Use this for synchronous named provider setup where you need to ensure
 // the provider is ready before proceeding.
 func SetNamedProviderWithContextAndWait(ctx context.Context, domain string, provider FeatureProvider) error {
-	return api().SetNamedProviderWithContextAndWait(ctx, domain, provider)
+	return api().SetProviderAndWait(ctx, provider, WithDomain(domain))
 }
 
 // NamedProviderMetadata returns the named provider's Metadata
 func NamedProviderMetadata(name string) Metadata {
-	return api().GetNamedProviderMetadata(name)
+	return api().getDomainProviderMetadata(name)
 }
 
 // SetEvaluationContext sets the global [EvaluationContext].
 func SetEvaluationContext(evalCtx EvaluationContext) {
 	api().SetEvaluationContext(evalCtx)
-}
-
-// SetLogger sets the global Logger.
-//
-// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
-func SetLogger(l logr.Logger) {
 }
 
 // AddHooks appends to the collection of any previously added hooks
