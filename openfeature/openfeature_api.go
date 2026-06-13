@@ -28,10 +28,10 @@ type providerBindingEntry struct {
 //
 // Lock ordering: always acquire evaluationAPI.mu before providerBindingsMu to avoid deadlocks.
 var (
-	providerBindings   = make(map[uintptr]*providerBindingEntry)
-	providerBindingsMu sync.Mutex
-	errNilProvider         = errors.New("provider cannot be set to nil")
-	errNilDefaultProvider  = errors.New("default provider cannot be set to nil")
+	providerBindings      = make(map[uintptr]*providerBindingEntry)
+	providerBindingsMu    sync.Mutex
+	errNilProvider        = errors.New("provider cannot be set to nil")
+	errNilDefaultProvider = errors.New("default provider cannot be set to nil")
 )
 
 // providerBindingKey returns a stable, hashable identity for provider suitable for use as a map key,
@@ -43,7 +43,7 @@ var (
 //     same "zerobase" address for all zero-size allocations, making such pointers indistinguishable.
 func providerBindingKey(provider FeatureProvider) (uintptr, bool) {
 	rv := reflect.ValueOf(provider)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return 0, false
 	}
 	if rv.Type().Elem().Size() == 0 {
@@ -125,9 +125,9 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 // SetProvider sets a FeatureProvider with context-aware initialization.
 // If WithDomain is provided, the provider is bound to the given domain.
 func (a *EvaluationAPI) SetProvider(ctx context.Context, provider FeatureProvider, opts ...APIOption) error {
-	o := &apiOptions{}
+	o := apiOptions{}
 	for _, opt := range opts {
-		opt(o)
+		opt(&o)
 	}
 	if o.domain != "" {
 		_, err := a.setDomainProvider(ctx, o.domain, provider)
@@ -140,22 +140,31 @@ func (a *EvaluationAPI) SetProvider(ctx context.Context, provider FeatureProvide
 // SetProviderAndWait sets a FeatureProvider with context-aware initialization and waits for completion.
 // If WithDomain is provided, the provider is bound to the given domain.
 func (a *EvaluationAPI) SetProviderAndWait(ctx context.Context, provider FeatureProvider, opts ...APIOption) error {
-	o := &apiOptions{}
+	o := apiOptions{}
 	for _, opt := range opts {
-		opt(o)
+		opt(&o)
 	}
+
+	var (
+		initCh <-chan error
+		err    error
+	)
+
 	if o.domain != "" {
-		initCh, err := a.setDomainProvider(ctx, o.domain, provider)
-		if err != nil {
-			return err
-		}
-		return <-initCh
+		initCh, err = a.setDomainProvider(ctx, o.domain, provider)
+	} else {
+		initCh, err = a.setProvider(ctx, provider)
 	}
-	initCh, err := a.setProvider(ctx, provider)
+
 	if err != nil {
 		return err
 	}
-	return <-initCh
+	select {
+	case err := <-initCh:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // unbindIfUnreferenced removes oldProvider from the global binding registry if it is no longer
@@ -324,7 +333,7 @@ func (a *EvaluationAPI) NewClient(opts ...APIOption) *Client {
 		domain:            o.domain,
 		providerBinding:   a.resolveBinding,
 		clientEventing:    a.eventExecutor,
-		metadata:          ClientMetadata(o),
+		metadata:          ClientMetadata{domain: o.domain}, //nolint:staticcheck
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
