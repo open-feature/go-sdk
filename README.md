@@ -69,7 +69,7 @@ func main() {
     // Register your feature flag provider
     openfeature.SetProviderAndWait(openfeature.NoopProvider{})
     // Create a new client
-    client := openfeature.NewClient("app")
+    client := openfeature.NewDefaultClient()
     // Evaluate your feature flag
     v2Enabled := client.Boolean(
         context.TODO(), "v2_enabled", true, openfeature.EvaluationContext{},
@@ -135,7 +135,7 @@ openfeature.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
 ))
 
 // set a value to the client context
-client := openfeature.NewClient("my-app")
+client := openfeature.NewDefaultClient()
 client.SetEvaluationContext(openfeature.NewTargetlessEvaluationContext(
     map[string]any{
         "version":  "1.4.6",
@@ -149,7 +149,7 @@ evalCtx := openfeature.NewEvaluationContext(
         "company": "Initech",
     },
 )
-boolValue, err := client.BooleanValue(context.TODO(), "boolFlag", false, evalCtx)
+boolValue := client.Boolean(context.TODO(), "boolFlag", false, evalCtx)
 ```
 
 
@@ -166,11 +166,11 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 openfeature.AddHooks(ExampleGlobalHook{})
 
 // add a hook on this client, to run on all evaluations made by this client
-client := openfeature.NewClient("my-app")
+client := openfeature.NewDefaultClient()
 client.AddHooks(ExampleClientHook{})
 
 // add a hook for this evaluation only
-value, err := client.BooleanValue(
+value := client.Boolean(
     context.TODO(), "boolFlag", false, openfeature.EvaluationContext{}, openfeature.WithHooks(ExampleInvocationHook{}),
 )
 ```
@@ -183,7 +183,7 @@ For example, a flag enhancing the appearance of a UI component might drive user 
 
 ```go
 // initialize a client
-client := openfeature.NewClient("my-app")
+client := openfeature.NewDefaultClient()
 
 // trigger tracking event action
 client.Track(
@@ -332,7 +332,7 @@ ec := openfeature.TransactionContext(ctx)
 tCtx := openfeature.MergeTransactionContext(ctx, openfeature.EvaluationContext{})
 
 // use TransactionContext in a flag evaluation
-client.BooleanValue(tCtx, ....)
+_ = client.Boolean(tCtx, ....)
 ```
 
 ### Multi-Provider Implementation
