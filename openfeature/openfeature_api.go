@@ -102,7 +102,7 @@ func (f apiOptionFunc) apply(o *apiOptions) { f(o) }
 
 // WithDomain returns an APIOption that scopes API-level operations (e.g. SetProvider, NewClient)
 // to the given domain. When used with NewClient, the returned Client is bound to the
-// provider registered for that domain.
+// provider registered for that domain. An empty domain is treated as the default (unscoped).
 func WithDomain(domain string) APIOption {
 	return apiOptionFunc(func(o *apiOptions) { o.domain = domain })
 }
