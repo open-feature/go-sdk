@@ -22,7 +22,9 @@ func TestRequirement_1_8_1(t *testing.T) {
 
 // Requirement 1.8.2: Isolated instances MUST conform to the same API contract as the singleton.
 func TestRequirement_1_8_2(t *testing.T) {
-	a := newAPI()
+  if _, ok := factory.NewAPI().(*EvaluationAPI); !ok {
+      t.Error("factory.NewAPI() did not return *EvaluationAPI")
+  }
 	b := factory.NewAPI()
 
 	if reflect.TypeOf(a) != reflect.TypeOf(b) { //nolint:modernize
