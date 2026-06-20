@@ -410,7 +410,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	provider, _, _ = api().resolveBinding("clientB")
 	if provider.Metadata().Name != "providerB" {
-		t.Errorf("expected %s, but got %s", "providerB", providerA.Metadata().Name)
+		t.Errorf("expected %s, but got %s", "providerB", provider.Metadata().Name)
 	}
 
 	// Validate overriding: If the client-domain already has a bound provider, it is overwritten with the new mapping.
@@ -432,7 +432,7 @@ func TestRequirement_1_1_3(t *testing.T) {
 
 	provider, _, _ = api().resolveBinding("clientB")
 	if provider.Metadata().Name != "providerB2" {
-		t.Errorf("expected %s, but got %s", "providerB2", providerA.Metadata().Name)
+		t.Errorf("expected %s, but got %s", "providerB2", provider.Metadata().Name)
 	}
 }
 
