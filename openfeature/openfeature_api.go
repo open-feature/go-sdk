@@ -87,17 +87,24 @@ func unbindProvider(provider FeatureProvider, apiInst *EvaluationAPI) {
 }
 
 // APIOption configures API-level operations such as domain selection.
-type APIOption func(*apiOptions)
-
-type apiOptions struct {
-	domain string
+type APIOption interface {
+	apply(*apiOptions)
 }
 
-// WithDomain returns an APIOption that scopes the operation to the given domain.
-func WithDomain(domain string) APIOption {
-	return func(o *apiOptions) {
-		o.domain = domain
+type (
+	apiOptionFunc func(*apiOptions)
+	apiOptions    struct {
+		domain string
 	}
+)
+
+func (f apiOptionFunc) apply(o *apiOptions) { f(o) }
+
+// WithDomain returns an APIOption that scopes API-level operations (e.g. SetProvider, NewClient)
+// to the given domain. When used with NewClient, the returned Client is bound to the
+// provider registered for that domain.
+func WithDomain(domain string) APIOption {
+	return apiOptionFunc(func(o *apiOptions) { o.domain = domain })
 }
 
 // EvaluationAPI wraps OpenFeature evaluation API functionalities
@@ -127,7 +134,7 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 func (a *EvaluationAPI) SetProvider(ctx context.Context, provider FeatureProvider, opts ...APIOption) error {
 	o := apiOptions{}
 	for _, opt := range opts {
-		opt(&o)
+		opt.apply(&o)
 	}
 	if o.domain != "" {
 		_, err := a.setDomainProvider(ctx, o.domain, provider)
@@ -142,7 +149,7 @@ func (a *EvaluationAPI) SetProvider(ctx context.Context, provider FeatureProvide
 func (a *EvaluationAPI) SetProviderAndWait(ctx context.Context, provider FeatureProvider, opts ...APIOption) error {
 	o := apiOptions{}
 	for _, opt := range opts {
-		opt(&o)
+		opt.apply(&o)
 	}
 
 	var (
@@ -217,7 +224,7 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	return a.initNew(ctx, "", provider), nil
 }
 
-func (a *EvaluationAPI) setDomainProvider(ctx context.Context, clientName string, provider FeatureProvider) (<-chan error, error) {
+func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, provider FeatureProvider) (<-chan error, error) {
 	if provider == nil {
 		return nil, errNilProvider
 	}
@@ -230,10 +237,10 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, clientName string
 	}
 
 	// Initialize new named provider and Shutdown the old one
-	oldProvider := a.domainProviders[clientName]
-	a.domainProviders[clientName] = provider
+	oldProvider := a.domainProviders[domain]
+	a.domainProviders[domain] = provider
 
-	a.eventExecutor.registerNamedEventingProvider(clientName, provider)
+	a.eventExecutor.registerNamedEventingProvider(domain, provider)
 
 	a.shutdownOld(ctx, oldProvider)
 
@@ -242,26 +249,26 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, clientName string
 		a.unbindIfUnreferenced(oldProvider)
 	}
 
-	return a.initNew(ctx, clientName, provider), nil
+	return a.initNew(ctx, domain, provider), nil
 }
 
-func (a *EvaluationAPI) initNew(ctx context.Context, clientName string, newProvider FeatureProvider) <-chan error {
+func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider FeatureProvider) <-chan error {
 	errCh := make(chan error, 1)
 
 	// Initialize new provider async. The caller may wait on the channel.
-	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, clientName string) {
+	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, domain string) {
 		event, err := initializerWithContext(ctx, provider, evalCtx)
 		executor.triggerEvent(event, provider)
 
 		if err != nil {
-			if clientName == "" {
+			if domain == "" {
 				err = fmt.Errorf("failed to initialize default provider %q: %w", provider.Metadata().Name, err)
 			} else {
-				err = fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, clientName, err)
+				err = fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, domain, err)
 			}
 		}
 		errCh <- err
-	}(a.eventExecutor, a.evalCtx, ctx, newProvider, clientName)
+	}(a.eventExecutor, a.evalCtx, ctx, newProvider, domain)
 
 	return errCh
 }
@@ -302,19 +309,19 @@ func (a *EvaluationAPI) getProviderMetadata() Metadata {
 }
 
 // getDomainProviderMetadata returns the default FeatureProvider's metadata
-func (a *EvaluationAPI) getDomainProviderMetadata(name string) Metadata {
+func (a *EvaluationAPI) getDomainProviderMetadata(domain string) Metadata {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	provider, ok := a.domainProviders[name]
+	provider, ok := a.domainProviders[domain]
 	if !ok {
-		return ProviderMetadata()
+		return a.defaultProvider.Metadata()
 	}
 
 	return provider.Metadata()
 }
 
-// getDomainProviders returns named providers map.
+// getDomainProviders returns a map of domain-scoped providers keyed by domain name.
 func (a *EvaluationAPI) getDomainProviders() map[string]FeatureProvider {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
@@ -322,18 +329,18 @@ func (a *EvaluationAPI) getDomainProviders() map[string]FeatureProvider {
 	return a.domainProviders
 }
 
-// NewClient returns a IClient bound to the default provider, or to a named
-// provider if WithDomain is provided.
+// NewClient returns a [Client] bound to the default provider,
+// or to a domain-scoped provider when [WithDomain] is supplied.
 func (a *EvaluationAPI) NewClient(opts ...APIOption) *Client {
 	o := apiOptions{}
 	for _, opt := range opts {
-		opt(&o)
+		opt.apply(&o)
 	}
 	return &Client{
 		domain:            o.domain,
 		providerBinding:   a.resolveBinding,
 		clientEventing:    a.eventExecutor,
-		metadata:          ClientMetadata{domain: o.domain}, //nolint:staticcheck
+		metadata:          NewClientMetadata(o.domain),
 		hooks:             []Hook{},
 		evaluationContext: EvaluationContext{},
 	}
@@ -347,6 +354,7 @@ func (a *EvaluationAPI) SetEvaluationContext(evalCtx EvaluationContext) {
 	a.evalCtx = evalCtx
 }
 
+// AddHooks appends to the API-level hook collection.
 func (a *EvaluationAPI) AddHooks(hooks ...Hook) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

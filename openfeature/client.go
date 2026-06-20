@@ -49,7 +49,7 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
-// NewClient returns a new Client. Name is a unique identifier for this client.
+// NewClient returns a new [Client] bound to the provider registered for the given domain.
 func NewClient(domain string) *Client {
 	return api().NewClient(WithDomain(domain))
 }

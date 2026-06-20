@@ -50,8 +50,7 @@ func newAPI() *EvaluationAPI {
 	return newEvaluationAPI(exec)
 }
 
-// NewDefaultClient returns a [Client] for the default domain. The default domain [Client] is the [IClient] instance that
-// wraps around an unnamed [FeatureProvider]
+// NewDefaultClient returns a [Client] bound to the default (unnamed) [FeatureProvider].
 func NewDefaultClient() *Client {
 	return api().NewClient()
 }
