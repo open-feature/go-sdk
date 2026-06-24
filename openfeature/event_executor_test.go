@@ -682,7 +682,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api().GetNamedClient(clientAssociation)
+		client := api().NewClient(WithDomain(clientAssociation))
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -718,7 +718,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api().GetNamedClient("someClient")
+		client := api().NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderReady, &callback)
 
 		select {
@@ -756,7 +756,7 @@ func TestEventHandler_ProviderReadiness(t *testing.T) {
 			rsp <- e
 		}
 
-		client := api().GetNamedClient("someClient")
+		client := api().NewClient(WithDomain("someClient"))
 		client.AddHandler(ProviderReady, &callback)
 
 		select {

@@ -2,11 +2,11 @@ package openfeature
 
 import (
 	"context"
-
-	"github.com/go-logr/logr"
 )
 
 // IEvaluation defines the OpenFeature API contract
+//
+// Deprecated: IEvaluation will be removed in later versions. Use [EvaluationAPI] instead.
 type IEvaluation interface {
 	SetProvider(provider FeatureProvider) error
 	SetProviderAndWait(provider FeatureProvider) error
@@ -61,18 +61,7 @@ type IEventing interface {
 	RemoveHandler(eventType EventType, callback EventCallback)
 }
 
-// evaluationImpl is an internal reference interface extending IEvaluation
-type evaluationImpl interface {
-	IEvaluation
-	GetProvider() FeatureProvider
-	GetNamedProviders() map[string]FeatureProvider
-	GetHooks() []Hook
-
-	// Deprecated: use [github.com/open-feature/go-sdk/openfeature/hooks.LoggingHook] instead.
-	SetLogger(l logr.Logger)
-
-	ForEvaluation(clientName string) (FeatureProvider, []Hook, EvaluationContext)
-}
+type providerBindingFn func(domain string) (FeatureProvider, []Hook, EvaluationContext)
 
 // clientEvent is an internal reference for OpenFeature Client events
 type clientEvent interface {

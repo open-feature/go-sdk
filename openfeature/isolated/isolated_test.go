@@ -1,9 +1,10 @@
 package isolated_test
 
 import (
+	"context"
 	"testing"
 
-	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 	"github.com/open-feature/go-sdk/openfeature/isolated"
 )
 
@@ -13,8 +14,9 @@ func TestNewAPI_ReturnsDistinctInstances(t *testing.T) {
 	a := isolated.NewAPI()
 	b := isolated.NewAPI()
 	t.Cleanup(func() {
-		a.Shutdown()
-		b.Shutdown()
+		ctx := context.Background() //nolint:usetesting
+		_ = a.Shutdown(ctx)
+		_ = b.Shutdown(ctx)
 	})
 
 	if a == nil || b == nil {
@@ -29,10 +31,12 @@ func TestNewAPI_ReturnsDistinctInstances(t *testing.T) {
 // return the global singleton.
 func TestNewAPI_NotSameAsSingleton(t *testing.T) {
 	a := isolated.NewAPI()
-	t.Cleanup(func() { a.Shutdown() })
+	t.Cleanup(func() {
+		ctx := context.Background() //nolint:usetesting
+		_ = a.Shutdown(ctx)
+	})
 
-	//nolint:staticcheck // test needs the singleton reference for comparison
-	if a == openfeature.GetApiInstance() {
+	if a == factory.CurrentAPI() {
 		t.Error("isolated.NewAPI() returned the global singleton")
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-feature/go-sdk/openfeature/internal/factory"
 	"go.uber.org/goleak"
 )
 
@@ -37,19 +36,19 @@ func startLeakTest(t *testing.T) {
 // fresh, isolated instances for the duration of the test (or subtest) and
 // returns the new API for further configuration. The previous globals are
 // restored and the executor is shut down via t.Cleanup.
-func installIsolatedAPI(t *testing.T) *evaluationAPI {
+func installIsolatedAPI(t *testing.T) *EvaluationAPI {
 	t.Helper()
 
-	testAPI := factory.NewAPI().(*evaluationAPI)
+	testAPI := newAPI()
 	originalAPI := apiInstance.Swap(testAPI)
 
 	t.Cleanup(func() {
 		// ShutdownWithContext (and similar) can reinitialize the global event
 		// executor via resetSingleton; shut that replacement down too so it
 		// doesn't leak.
-		_ = testAPI.ShutdownWithContext(context.Background()) //nolint:usetesting
+		_ = testAPI.Shutdown(context.Background()) //nolint:usetesting
 		if current := apiInstance.Swap(originalAPI); current != testAPI {
-			_ = current.ShutdownWithContext(context.Background()) //nolint:usetesting
+			_ = current.Shutdown(context.Background()) //nolint:usetesting
 		}
 	})
 
