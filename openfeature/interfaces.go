@@ -6,7 +6,7 @@ import (
 
 // IEvaluation defines the OpenFeature API contract
 //
-// Deprecated: IEvaluation will be removed in v1.20. Use [EvaluationAPI] instead.
+// Deprecated: IEvaluation will be removed in later versions. Use [EvaluationAPI] instead.
 type IEvaluation interface {
 	SetProvider(provider FeatureProvider) error
 	SetProviderAndWait(provider FeatureProvider) error
