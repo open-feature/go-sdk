@@ -70,7 +70,10 @@ func SetProviderAndWait(provider FeatureProvider) error {
 // SetProviderWithContext sets the default [FeatureProvider] with context-aware initialization.
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Provider initialization is asynchronous and status can be checked from provider status.
-// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+// Returns an error immediately if the provider is nil or is already bound to a different
+// API instance. Initialization runs in the background, so a cancelled context does not make
+// this function return an error; the context is passed to that background initialization,
+// whose outcome is reported through provider status.
 //
 // Use this function for non-blocking provider setup with timeout control where you want
 // to continue application startup while the provider initializes in background.
@@ -111,7 +114,10 @@ func SetNamedProviderAndWait(domain string, provider FeatureProvider) error {
 // SetNamedProviderWithContext sets a [FeatureProvider] mapped to the given [Client] domain with context-aware initialization.
 // If the provider implements ContextAwareStateHandler, InitWithContext will be called with the provided context.
 // Provider initialization is asynchronous and status can be checked from provider status.
-// Returns an error immediately if provider is nil, or if context is cancelled during setup.
+// Returns an error immediately if the provider is nil or is already bound to a different
+// API instance. Initialization runs in the background, so a cancelled context does not make
+// this function return an error; the context is passed to that background initialization,
+// whose outcome is reported through provider status.
 //
 // Named providers allow different domains to use different feature flag providers,
 // enabling multi-tenant applications or microservice architectures.
