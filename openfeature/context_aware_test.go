@@ -134,6 +134,20 @@ func TestContextAwareInitialization(t *testing.T) {
 		}
 	})
 
+	t.Run("cancelled context does not fail async setup", func(t *testing.T) {
+		// The non-blocking variants hand the context to the background
+		// initialization; they do not return an error when it is cancelled.
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		if err := SetProviderWithContext(ctx, &testContextAwareProvider{}); err != nil {
+			t.Errorf("SetProviderWithContext with cancelled context: got %v, want nil", err)
+		}
+		if err := SetNamedProviderWithContext(ctx, "cancelled-domain", &testContextAwareProvider{}); err != nil {
+			t.Errorf("SetNamedProviderWithContext with cancelled context: got %v, want nil", err)
+		}
+	})
+
 	t.Run("named provider with context works", func(t *testing.T) {
 		namedProvider := &testContextAwareProvider{initDelay: 50 * time.Millisecond}
 
