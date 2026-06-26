@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.18.0](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.18.0) (2026-06-26)
+
+
+### 🐛 Bug Fixes
+
+* **event_executor:** update provider status before invoking API-level handlers ([#494](https://github.com/open-feature/go-sdk/issues/494)) ([42d65a5](https://github.com/open-feature/go-sdk/commit/42d65a5132de56e60533df1eb20786a8becac8ac))
+* goroutine leaks in event executor shutdown handling ([#508](https://github.com/open-feature/go-sdk/issues/508)) ([703d1f8](https://github.com/open-feature/go-sdk/commit/703d1f8eb09bee960734d4de14e9e2f4ae688791))
+
+
+### ✨ New Features
+
+* export EvaluationAPI and simplify provider/client its surface ([#511](https://github.com/open-feature/go-sdk/issues/511)) ([7d09980](https://github.com/open-feature/go-sdk/commit/7d09980f1530f9c2cc00072957041fd5126f7ee7))
+* implement isolated API instances ([#492](https://github.com/open-feature/go-sdk/issues/492)) ([84afdff](https://github.com/open-feature/go-sdk/commit/84afdff542a41c0346fe6aa165b4d713c82a951d))
+
+
+### 🧹 Chore
+
+* delete deprecated pkg package ([#509](https://github.com/open-feature/go-sdk/issues/509)) ([95d4d71](https://github.com/open-feature/go-sdk/commit/95d4d71d3b20423079b8385e5552f3cda5968703))
+* **deps:** replace google-github-actions/release-please-action action with googleapis/release-please-action v3 ([#496](https://github.com/open-feature/go-sdk/issues/496)) ([981609c](https://github.com/open-feature/go-sdk/commit/981609c013997827bba249eb576d4451d08b04b6))
+* **deps:** update actions/cache action to v5 ([#501](https://github.com/open-feature/go-sdk/issues/501)) ([55795e8](https://github.com/open-feature/go-sdk/commit/55795e843ba7b35082bad50181fe92780dce6e42))
+* **deps:** update actions/cache action to v6 ([#517](https://github.com/open-feature/go-sdk/issues/517)) ([da4da26](https://github.com/open-feature/go-sdk/commit/da4da26e4e1398402830019a3f91649f799de68b))
+* **deps:** update actions/checkout action to v6 ([#497](https://github.com/open-feature/go-sdk/issues/497)) ([0429a24](https://github.com/open-feature/go-sdk/commit/0429a24cf4491fc2318ae4811ba056b086fd0e3e))
+* **deps:** update actions/checkout action to v7 ([#512](https://github.com/open-feature/go-sdk/issues/512)) ([f868dc0](https://github.com/open-feature/go-sdk/commit/f868dc05d48d525ad04f171a51f8931a0e1d5116))
+* **deps:** update actions/checkout digest to df4cb1c ([#504](https://github.com/open-feature/go-sdk/issues/504)) ([ed17a45](https://github.com/open-feature/go-sdk/commit/ed17a45ffa708dad47273e4e8fe7d33b941a6620))
+* **deps:** update actions/setup-go action to v6 ([#498](https://github.com/open-feature/go-sdk/issues/498)) ([d9440cf](https://github.com/open-feature/go-sdk/commit/d9440cf48a7ba382f8c70538b8f297b00c004c4f))
+* **deps:** update actions/setup-go digest to 924ae3a ([#516](https://github.com/open-feature/go-sdk/issues/516)) ([389dd22](https://github.com/open-feature/go-sdk/commit/389dd22bd00572ad71e2e99a521ad70de991a0fa))
+* **deps:** update amannn/action-semantic-pull-request action to v6 ([#513](https://github.com/open-feature/go-sdk/issues/513)) ([1e5f48b](https://github.com/open-feature/go-sdk/commit/1e5f48bb871ad645d6170447f2808dc0482d090c))
+* **deps:** update codecov/codecov-action action to v6 ([#502](https://github.com/open-feature/go-sdk/issues/502)) ([1322453](https://github.com/open-feature/go-sdk/commit/13224532ef1798f223672d2c107126d0e1633e45))
+* **deps:** update codecov/codecov-action action to v7 ([#506](https://github.com/open-feature/go-sdk/issues/506)) ([ec83513](https://github.com/open-feature/go-sdk/commit/ec83513b2ab39115c081d90b3445942a20228be6))
+* **deps:** update googleapis/release-please-action action to v5 ([#499](https://github.com/open-feature/go-sdk/issues/499)) ([a4354fe](https://github.com/open-feature/go-sdk/commit/a4354fe6ea4cb18b4e02e53df8ff06671e9d2f4c))
+* **deps:** update marocchino/sticky-pull-request-comment action to v3 ([#514](https://github.com/open-feature/go-sdk/issues/514)) ([214b32d](https://github.com/open-feature/go-sdk/commit/214b32db5f00656da3bfaa52bec3f03e93732178))
+* **deps:** update module golang.org/x/sync to v0.21.0 ([#505](https://github.com/open-feature/go-sdk/issues/505)) ([949e235](https://github.com/open-feature/go-sdk/commit/949e235c1998ed364c6e1df6846ad136f2184e77))
+* **deps:** update module golang.org/x/text to v0.37.0 ([#500](https://github.com/open-feature/go-sdk/issues/500)) ([73988c5](https://github.com/open-feature/go-sdk/commit/73988c5227769bf8dfdd007b611b096a330831ed))
+* make govulncheck non-blocking ([#491](https://github.com/open-feature/go-sdk/issues/491)) ([16f2012](https://github.com/open-feature/go-sdk/commit/16f20122e28ba5d34df7ab48854253aab1854d2f))
+
+
+### 📚 Documentation
+
+* fix inaccuracies in README code examples ([#489](https://github.com/open-feature/go-sdk/issues/489)) ([96240cd](https://github.com/open-feature/go-sdk/commit/96240cd58e84d0debe5c7a083d77ccf6a1d6d137))
+* simplify usage examples in README.md ([#510](https://github.com/open-feature/go-sdk/issues/510)) ([953d6f1](https://github.com/open-feature/go-sdk/commit/953d6f1b86f2cff8737f6cd1a3459d777d10906d))
+
 ## [1.17.2](https://github.com/open-feature/go-sdk/compare/v1.17.1...v1.17.2) (2026-04-03)
 
 
