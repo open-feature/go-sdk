@@ -226,7 +226,9 @@ func (flag *InMemoryFlag) Resolve(defaultValue any, flatCtx openfeature.Flattene
 	}
 
 	// first resolve from context callback
-	if flag.ContextEvaluator != nil {
+	// ContextEvaluator is a pointer to a func, so guard against both a nil
+	// pointer and a non-nil pointer to a nil func before dereferencing.
+	if flag.ContextEvaluator != nil && *flag.ContextEvaluator != nil {
 		return (*flag.ContextEvaluator)(*flag, flatCtx)
 	}
 

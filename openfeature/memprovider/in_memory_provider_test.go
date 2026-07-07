@@ -225,6 +225,42 @@ func TestInMemoryProvider_WithContext(t *testing.T) {
 	})
 }
 
+func TestInMemoryProvider_NilContextEvaluatorFunc(t *testing.T) {
+	// ContextEvaluator is a non-nil pointer to a nil func. The pointer passes a
+	// plain != nil guard, so a naive dereference would panic. The flag must fall
+	// back to the default variant instead.
+	var nilFn func(callerFlag InMemoryFlag, flatCtx openfeature.FlattenedContext) (any, openfeature.ProviderResolutionDetail)
+
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"nilFnFlag": {
+			Key:            "nilFnFlag",
+			State:          Enabled,
+			DefaultVariant: "true",
+			Variants: map[string]any{
+				"true":  true,
+				"false": false,
+			},
+			ContextEvaluator: &nilFn,
+		},
+	})
+
+	ctx := t.Context()
+
+	t.Run("nil evaluator func falls back to default variant without panic", func(t *testing.T) {
+		evaluation := memoryProvider.BooleanEvaluation(ctx, "nilFnFlag", false, nil)
+
+		if evaluation.Value != true {
+			t.Errorf("incorrect evaluation, expected %v, got %v", true, evaluation.Value)
+		}
+		if evaluation.Variant != "true" {
+			t.Errorf("incorrect variant, expected %q, got %q", "true", evaluation.Variant)
+		}
+		if evaluation.Reason != openfeature.StaticReason {
+			t.Errorf("incorrect reason, expected %q, got %q", openfeature.StaticReason, evaluation.Reason)
+		}
+	})
+}
+
 func TestInMemoryProvider_MissingFlag(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
 
