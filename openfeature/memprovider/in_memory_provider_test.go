@@ -246,19 +246,17 @@ func TestInMemoryProvider_NilContextEvaluatorFunc(t *testing.T) {
 
 	ctx := t.Context()
 
-	t.Run("nil evaluator func falls back to default variant without panic", func(t *testing.T) {
-		evaluation := memoryProvider.BooleanEvaluation(ctx, "nilFnFlag", false, nil)
+	evaluation := memoryProvider.BooleanEvaluation(ctx, "nilFnFlag", false, nil)
 
-		if evaluation.Value != true {
-			t.Errorf("incorrect evaluation, expected %v, got %v", true, evaluation.Value)
-		}
-		if evaluation.Variant != "true" {
-			t.Errorf("incorrect variant, expected %q, got %q", "true", evaluation.Variant)
-		}
-		if evaluation.Reason != openfeature.StaticReason {
-			t.Errorf("incorrect reason, expected %q, got %q", openfeature.StaticReason, evaluation.Reason)
-		}
-	})
+	if evaluation.Value != true {
+		t.Errorf("incorrect evaluation, expected %v, got %v", true, evaluation.Value)
+	}
+	if evaluation.Variant != "true" {
+		t.Errorf("incorrect variant, expected %q, got %q", "true", evaluation.Variant)
+	}
+	if evaluation.Reason != openfeature.StaticReason {
+		t.Errorf("incorrect reason, expected %q, got %q", openfeature.StaticReason, evaluation.Reason)
+	}
 }
 
 func TestInMemoryProvider_MissingFlag(t *testing.T) {
