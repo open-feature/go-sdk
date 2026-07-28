@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -391,4 +392,34 @@ func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
 	if err := instance.Shutdown(t.Context()); err != nil {
 		t.Fatalf("ShutdownWithContext on isolated instance: %v", err)
 	}
+}
+
+func TestIsolatedAPI_SetProviderRejectedAfterShutdown(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := NewMockFeatureProvider(ctrl)
+
+	instance := newAPI()
+	if err := instance.Shutdown(t.Context()); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+
+	t.Run("default", func(t *testing.T) {
+		if err := instance.SetProvider(t.Context(), provider); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProvider: expected errAPIShutdown, got: %v", err)
+		}
+
+		if err := instance.SetProviderAndWait(t.Context(), provider); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProviderAndWait: expected errAPIShutdown, got: %v", err)
+		}
+	})
+
+	t.Run("domain", func(t *testing.T) {
+		if err := instance.SetProvider(t.Context(), provider, WithDomain("d")); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProvider with domain: expected errAPIShutdown, got: %v", err)
+		}
+
+		if err := instance.SetProviderAndWait(t.Context(), provider, WithDomain("d")); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProviderAndWait with domain: expected errAPIShutdown, got: %v", err)
+		}
+	})
 }
