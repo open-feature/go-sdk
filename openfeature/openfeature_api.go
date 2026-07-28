@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"slices"
 	"sync"
-	"sync/atomic"
 )
 
 // providerBindingEntry holds a strong reference to the provider and the API instance it is bound to.
@@ -122,7 +121,7 @@ type EvaluationAPI struct {
 	evalCtx         EvaluationContext
 	eventExecutor   *eventExecutor
 	mu              sync.RWMutex
-	state           atomic.Uint32
+	state           uint32
 	initWg          sync.WaitGroup
 }
 
@@ -135,9 +134,8 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 		evalCtx:         EvaluationContext{},
 		mu:              sync.RWMutex{},
 		eventExecutor:   eventExecutor,
-		state:           atomic.Uint32{},
+		state:           evaluationAPIStateActive,
 	}
-	a.state.Store(evaluationAPIStateActive)
 	return a
 }
 
@@ -217,7 +215,7 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	if a.state.Load() == evaluationAPIStateShutdown {
+	if a.state == evaluationAPIStateShutdown {
 		return nil, errAPIShutdown
 	}
 
@@ -248,7 +246,7 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	if a.state.Load() == evaluationAPIStateShutdown {
+	if a.state == evaluationAPIStateShutdown {
 		return nil, errAPIShutdown
 	}
 
@@ -279,22 +277,17 @@ func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider 
 	a.initWg.Add(1)
 	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, domain string) {
 		defer a.initWg.Done()
-		switch {
-		case a.state.Load() == evaluationAPIStateShutdown:
-			errCh <- errAPIShutdown
-		default:
-			event, err := initializerWithContext(ctx, provider, evalCtx)
-			executor.triggerEvent(event, provider)
+		event, err := initializerWithContext(ctx, provider, evalCtx)
+		executor.triggerEvent(event, provider)
 
-			if err != nil {
-				if domain == "" {
-					err = fmt.Errorf("failed to initialize default provider %q: %w", provider.Metadata().Name, err)
-				} else {
-					err = fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, domain, err)
-				}
+		if err != nil {
+			if domain == "" {
+				err = fmt.Errorf("failed to initialize default provider %q: %w", provider.Metadata().Name, err)
+			} else {
+				err = fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, domain, err)
 			}
-			errCh <- err
 		}
+		errCh <- err
 	}(a.eventExecutor, a.evalCtx, ctx, newProvider, domain)
 
 	return errCh
@@ -412,26 +405,26 @@ func (a *EvaluationAPI) RemoveHandler(eventType EventType, callback EventCallbac
 func (a *EvaluationAPI) Shutdown(ctx context.Context) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if !a.state.CompareAndSwap(evaluationAPIStateActive, evaluationAPIStateShutdown) {
+	if a.state == evaluationAPIStateShutdown {
 		return nil
 	}
+	a.state = evaluationAPIStateShutdown
 
-	// Wait for in-flight provider initializations to finish,
-	// but respect the caller's deadline/cancellation.
-	done := make(chan struct{})
-	go func() {
-		a.initWg.Wait()
-		close(done)
-	}()
+	// Wait for in-flight provider initializations to finish.
+	// sync.WaitGroup requires that if reused, all new Add calls happen
+	// after all previous Wait calls have returned. This ensures we can
+	// safely register new providers if shutdown is cancelled (ctx.Done).
+	a.initWg.Wait()
+
 	select {
-	case <-done:
-		// All in-flight initializations completed.
 	case <-ctx.Done():
-		// Caller cancelled or timed out. Revert state so the API
-		// remains usable and Shutdown can be retried with a longer
-		// deadline. Nothing has been torn down yet.
-		a.state.Store(evaluationAPIStateActive)
+		// Wait for in-flight initializations to finish before restoring state,
+		// preventing later provider registration from calling initWg.Add
+		// during an outstanding Wait.
+		a.state = evaluationAPIStateActive
 		return ctx.Err()
+	default:
+		// All in-flight initializations completed.
 	}
 
 	var errs []error

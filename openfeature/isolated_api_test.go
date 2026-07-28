@@ -394,6 +394,47 @@ func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
 	}
 }
 
+func TestIsolatedAPI_ShutdownContextCancelled(t *testing.T) {
+	instance := newAPI()
+
+	// Set a provider using SetProvider (async) with a slow init,
+	// so the instance has an in-flight count when Shutdown is entered.
+	provider := &testContextAwareProvider{initDelay: 100 * time.Millisecond}
+	err := instance.SetProvider(t.Context(), provider)
+	if err != nil {
+		t.Fatalf("SetProvider: %v", err)
+	}
+
+	// Shutdown with an already-cancelled context.
+	// The instance blocks until the async init finishes, then the
+	// select picks up ctx.Done() and restores the state to active.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	err = instance.Shutdown(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("wanted context.Canceled, got: %v", err)
+		t.Errorf("state after shutdown: %d", instance.state)
+	}
+
+	if instance.state != evaluationAPIStateActive {
+		t.Errorf("wanted state restored to active, got: %d", instance.state)
+	}
+
+	// State was restored, so SetProvider should work again.
+	err = instance.SetProvider(t.Context(), &testContextAwareProvider{initDelay: time.Millisecond})
+	if err != nil {
+		t.Errorf("wanted SetProvider to succeed after cancelled shutdown, got: %v", err)
+	}
+
+	if err = instance.Shutdown(t.Context()); err != nil {
+		t.Errorf("cleanup shutdown: %v", err)
+	}
+	if instance.state != evaluationAPIStateShutdown {
+		t.Errorf("wanted state shutdown after cleanup, got: %d", instance.state)
+	}
+}
+
 func TestIsolatedAPI_SetProviderRejectedAfterShutdown(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := NewMockFeatureProvider(ctrl)
