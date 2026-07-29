@@ -414,7 +414,6 @@ func TestIsolatedAPI_ShutdownContextCancelled(t *testing.T) {
 	err = instance.Shutdown(ctx)
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("wanted context.Canceled, got: %v", err)
-		t.Errorf("state after shutdown: %d", instance.state)
 	}
 
 	if instance.state != evaluationAPIStateActive {

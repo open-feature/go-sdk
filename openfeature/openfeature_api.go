@@ -127,7 +127,7 @@ type EvaluationAPI struct {
 
 // newEvaluationAPI is a helper to generate an API. Used internally
 func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
-	a := &EvaluationAPI{
+	return &EvaluationAPI{
 		defaultProvider: NoopProvider{},
 		domainProviders: map[string]FeatureProvider{},
 		hks:             []Hook{},
@@ -136,7 +136,6 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 		eventExecutor:   eventExecutor,
 		state:           evaluationAPIStateActive,
 	}
-	return a
 }
 
 // SetProvider sets a FeatureProvider with context-aware initialization.
