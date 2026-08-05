@@ -10,6 +10,16 @@ func TestProviderReferenceEquals(t *testing.T) {
 		field string
 	}
 
+	type otherProvider struct {
+		NoopProvider
+		field string
+	}
+
+	type nonComparableProvider struct {
+		NoopProvider
+		data map[string]string
+	}
+
 	p1 := myProvider{}
 	p2 := myProvider{}
 
@@ -53,6 +63,40 @@ func TestProviderReferenceEquals(t *testing.T) {
 			name:     "no pointers, different not equal instances",
 			pr1:      newProviderRef(myProvider{field: "A"}),
 			pr2:      newProviderRef(myProvider{field: "B"}),
+			expected: false,
+		},
+		{
+			name: "nil typeOf",
+			pr1: providerReference{
+				featureProvider:   &p1,
+				typeOf:            nil,
+				shutdownSemaphore: make(chan any, 1),
+			},
+			pr2:      newProviderRef(&p1),
+			expected: false,
+		},
+		{
+			name:     "different provider types",
+			pr1:      newProviderRef(myProvider{field: "A"}),
+			pr2:      newProviderRef(otherProvider{field: "A"}),
+			expected: false,
+		},
+		{
+			name:     "non-comparable, equal instances",
+			pr1:      newProviderRef(nonComparableProvider{data: map[string]string{"k": "v"}}),
+			pr2:      newProviderRef(nonComparableProvider{data: map[string]string{"k": "v"}}),
+			expected: true,
+		},
+		{
+			name:     "non-comparable, different instances",
+			pr1:      newProviderRef(nonComparableProvider{data: map[string]string{"k": "v1"}}),
+			pr2:      newProviderRef(nonComparableProvider{data: map[string]string{"k": "v2"}}),
+			expected: false,
+		},
+		{
+			name:     "non-comparable, nil vs empty map",
+			pr1:      newProviderRef(nonComparableProvider{data: nil}),
+			pr2:      newProviderRef(nonComparableProvider{data: map[string]string{}}),
 			expected: false,
 		},
 	}
