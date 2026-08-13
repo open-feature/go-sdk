@@ -3,6 +3,29 @@
 ## [1.18.0](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.18.0) (2026-07-31)
 
 
+### ⚠ BREAKING CHANGES
+
+* **Removed the long-deprecated `github.com/open-feature/go-sdk/pkg/openfeature` package** (and its subpackage `pkg/openfeature/memprovider`). These were deprecated aliases that forwarded to the canonical packages; they've been marked `Deprecated:` since [#232](https://github.com/open-feature/go-sdk/pull/232), when the code moved from `pkg/openfeature` to the root `openfeature` package.
+
+  **Migration:** update your import paths. The APIs are unchanged, so it's a drop-in replacement with no code changes beyond the imports:
+
+  ```diff
+  - github.com/open-feature/go-sdk/pkg/openfeature
+  + github.com/open-feature/go-sdk/openfeature
+
+  - github.com/open-feature/go-sdk/pkg/openfeature/memprovider
+  + github.com/open-feature/go-sdk/openfeature/memprovider
+  ```
+
+  To migrate a whole module at once (one rule covers both, since the subpackage shares the prefix):
+
+  ```sh
+  grep -rl 'open-feature/go-sdk/pkg/openfeature' --include='*.go' . \
+    | xargs perl -i -pe 's{open-feature/go-sdk/pkg/openfeature}{open-feature/go-sdk/openfeature}g'
+  go mod tidy
+  ```
+
+
 ### 🐛 Bug Fixes
 
 * **event_executor:** update provider status before invoking API-level handlers ([#494](https://github.com/open-feature/go-sdk/issues/494)) ([42d65a5](https://github.com/open-feature/go-sdk/commit/42d65a5132de56e60533df1eb20786a8becac8ac))
