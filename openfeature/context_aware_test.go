@@ -38,6 +38,7 @@ func newTestContextAwareProvider(t testing.TB, initDelay time.Duration, customSh
 					return ctx.Err()
 				}
 			},
+			shutdownErrCh: make(chan error, 2),
 		},
 	}
 }
@@ -207,7 +208,7 @@ func TestContextAwareShutdown(t *testing.T) {
 
 	t.Run("shutdown timeout handling", func(t *testing.T) {
 		// Create a provider with long shutdown delay that would timeout during shutdown (not init)
-		slowShutdownProvider := newTestContextAwareProvider(t, 10*time.Millisecond)
+		slowShutdownProvider := newTestContextAwareProvider(t, 10*time.Millisecond, 5*time.Second)
 
 		// Set the provider first with generous timeout
 		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -392,8 +393,15 @@ func TestContextPropagationFixes(t *testing.T) {
 			t.Errorf("Provider replacement took too long: %v (expected < 100ms)", elapsed)
 		}
 
-		// Wait a bit to let shutdown complete
-		time.Sleep(100 * time.Millisecond)
+		// Wait for shutdown to complete and capture its error
+		select {
+		case shutdownErr := <-provider.shutdownErrCh:
+			if !errors.Is(shutdownErr, context.DeadlineExceeded) {
+				t.Errorf("Expected shutdown to return DeadlineExceeded, got: %v", shutdownErr)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timed out waiting for shutdown to complete")
+		}
 	})
 
 	t.Run("shutdown respects context cancellation", func(t *testing.T) {
@@ -425,6 +433,16 @@ func TestContextPropagationFixes(t *testing.T) {
 		// Should succeed because init is fast, shutdown is async
 		if err != nil {
 			t.Errorf("Provider replacement should succeed even with cancellation: %v", err)
+		}
+
+		// Wait for shutdown to complete and capture its error
+		select {
+		case shutdownErr := <-provider.shutdownErrCh:
+			if !errors.Is(shutdownErr, context.Canceled) {
+				t.Errorf("Expected shutdown to return Canceled, got: %v", shutdownErr)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timed out waiting for shutdown to complete")
 		}
 	})
 }

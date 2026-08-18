@@ -61,8 +61,9 @@ var _ ContextAwareStateHandler = (*stateContextAwareHandlerForTests)(nil)
 
 // stateContextAwareHandlerForTests is a StateHandler with callbacks
 type stateContextAwareHandlerForTests struct {
-	initF     func(context.Context, EvaluationContext) error
-	shutdownF func(context.Context) error
+	initF         func(context.Context, EvaluationContext) error
+	shutdownF     func(context.Context) error
+	shutdownErrCh chan error
 }
 
 func (s *stateContextAwareHandlerForTests) Init(e EvaluationContext) error {
@@ -81,10 +82,14 @@ func (s *stateContextAwareHandlerForTests) Shutdown() {
 }
 
 func (s *stateContextAwareHandlerForTests) ShutdownWithContext(ctx context.Context) error {
+	var err error
 	if s.shutdownF != nil {
-		return s.shutdownF(ctx)
+		err = s.shutdownF(ctx)
 	}
-	return nil
+	if s.shutdownErrCh != nil {
+		s.shutdownErrCh <- err
+	}
+	return err
 }
 
 // ProviderEventing is an eventing implementation with invoke capability
