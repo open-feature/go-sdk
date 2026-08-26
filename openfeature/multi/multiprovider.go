@@ -200,7 +200,7 @@ func buildMetadata(m []NamedProvider) of.Metadata {
 	var metaName strings.Builder
 	metaName.WriteString("MultiProvider {")
 	for _, p := range m {
-		metaName.WriteString(fmt.Sprintf("%s%s: %s", separator, p.Name(), p.Metadata().Name))
+		fmt.Fprintf(&metaName, "%s%s: %s", separator, p.Name(), p.Metadata().Name)
 		if separator == "" {
 			separator = ", "
 		}
