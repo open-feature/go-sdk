@@ -22,7 +22,7 @@ type (
 // Compile-time interface compliance checks
 var (
 	_ error = (*ProviderError)(nil)
-	_ error = (AggregateError)(nil)
+	_ error = AggregateError(nil)
 )
 
 // Error implements the error interface for ProviderError.

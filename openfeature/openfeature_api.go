@@ -480,8 +480,7 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 			event.EventType = ProviderError
 
 			// Check for specific provider initialization errors first
-			var initErr *ProviderInitError
-			if errors.As(err, &initErr) {
+			if initErr, ok := errors.AsType[*ProviderInitError](err); ok {
 				event.ErrorCode = initErr.ErrorCode
 				event.Message = initErr.Message
 			} else if errors.Is(err, context.Canceled) {
@@ -506,8 +505,7 @@ func initializerWithContext(ctx context.Context, provider FeatureProvider, evalC
 	if err != nil {
 		event.EventType = ProviderError
 		event.Message = fmt.Sprintf("Provider initialization failed: %v", err)
-		var initErr *ProviderInitError
-		if errors.As(err, &initErr) {
+		if initErr, ok := errors.AsType[*ProviderInitError](err); ok {
 			event.EventType = ProviderError
 			event.ErrorCode = initErr.ErrorCode
 			event.Message = initErr.Message
