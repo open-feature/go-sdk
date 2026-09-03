@@ -187,20 +187,15 @@ func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provid
 // with an API.
 func (i *InMemoryProvider) UpdateFlags(flags map[string]InMemoryFlag) {
 	i.mu.Lock()
-	changed := make([]string, 0, len(i.flags)+len(flags))
-	for key := range i.flags {
-		changed = append(changed, key)
-	}
-	for key := range flags {
-		if _, ok := i.flags[key]; !ok {
-			changed = append(changed, key)
-		}
-	}
+	changed := slices.AppendSeq(slices.Collect(maps.Keys(i.flags)), maps.Keys(flags))
 	// Readers keep an immutable snapshot; the caller's map is never retained.
 	i.flags = maps.Clone(flags)
 	i.mu.Unlock()
 
+	// Sorting makes the union deterministic and puts any key present in both
+	// the old and the new set next to its duplicate for Compact to drop.
 	slices.Sort(changed)
+	changed = slices.Compact(changed)
 
 	select {
 	case i.events <- openfeature.Event{
