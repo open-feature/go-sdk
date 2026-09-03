@@ -373,15 +373,7 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
-		err := errors.New("evaluated value is not a boolean")
-		boolEvalDetails := BooleanEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		boolEvalDetails.ErrorCode = TypeMismatchCode
-		boolEvalDetails.ErrorMessage = err.Error()
-
-		return boolEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a boolean"))
 	}
 
 	return BooleanEvaluationDetails{
@@ -417,15 +409,7 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 
 	value, ok := evalDetails.Value.(string)
 	if !ok {
-		err := errors.New("evaluated value is not a string")
-		strEvalDetails := StringEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		strEvalDetails.ErrorCode = TypeMismatchCode
-		strEvalDetails.ErrorMessage = err.Error()
-
-		return strEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a string"))
 	}
 
 	return StringEvaluationDetails{
@@ -461,15 +445,7 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
-		err := errors.New("evaluated value is not a float64")
-		floatEvalDetails := FloatEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		floatEvalDetails.ErrorCode = TypeMismatchCode
-		floatEvalDetails.ErrorMessage = err.Error()
-
-		return floatEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a float64"))
 	}
 
 	return FloatEvaluationDetails{
@@ -505,15 +481,7 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
-		err := errors.New("evaluated value is not an int64")
-		intEvalDetails := IntEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		intEvalDetails.ErrorCode = TypeMismatchCode
-		intEvalDetails.ErrorMessage = err.Error()
-
-		return intEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not an int64"))
 	}
 
 	return IntEvaluationDetails{
@@ -540,6 +508,21 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 	}
 
 	return c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+}
+
+// typeMismatchDetails builds the details a typed accessor returns when the resolved value is not of
+// its type. The default value replaces the resolved one, so the reason reports an error rather than
+// the provider's reason for a value that is not being returned.
+func typeMismatchDetails[T any](defaultValue T, resolved EvaluationDetails, err error) (GenericEvaluationDetails[T], error) {
+	details := GenericEvaluationDetails[T]{
+		Value:             defaultValue,
+		EvaluationDetails: resolved,
+	}
+	details.Reason = ErrorReason
+	details.ErrorCode = TypeMismatchCode
+	details.ErrorMessage = err.Error()
+
+	return details, err
 }
 
 // Boolean performs a flag evaluation that returns a boolean. Any error
