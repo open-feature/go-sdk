@@ -2,7 +2,10 @@ package memprovider
 
 import (
 	"math"
+	"slices"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/open-feature/go-sdk/openfeature"
 )
@@ -356,4 +359,209 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 func TestInMemoryProvider_Track(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
 	memoryProvider.Track(t.Context(), "example-event-name", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+}
+
+func boolFlag(key, variant string) InMemoryFlag {
+	return InMemoryFlag{
+		Key:            key,
+		State:          Enabled,
+		DefaultVariant: variant,
+		Variants:       map[string]any{"true": true, "false": false},
+	}
+}
+
+// waitForEvent reads the next event off the provider's channel.
+func waitForEvent(t *testing.T, provider *InMemoryProvider) openfeature.Event {
+	t.Helper()
+
+	select {
+	case event := <-provider.EventChannel():
+		return event
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("timeout - no event emitted")
+		return openfeature.Event{}
+	}
+}
+
+func TestInMemoryProvider_UpdateFlags(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "true"),
+	})
+
+	if got := memoryProvider.BooleanEvaluation(t.Context(), "flagA", false, nil); got.Value != true {
+		t.Errorf("expected flagA to resolve true before the update, got %v", got.Value)
+	}
+
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "false"),
+		"flagB": boolFlag("flagB", "true"),
+	})
+
+	if got := memoryProvider.BooleanEvaluation(t.Context(), "flagA", true, nil); got.Value != false {
+		t.Errorf("expected flagA to resolve false after the update, got %v", got.Value)
+	}
+
+	if got := memoryProvider.BooleanEvaluation(t.Context(), "flagB", false, nil); got.Value != true {
+		t.Errorf("expected flagB to resolve true after the update, got %v", got.Value)
+	}
+}
+
+func TestInMemoryProvider_UpdateFlagsRemovesFlags(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "true"),
+	})
+
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{})
+
+	detail := memoryProvider.BooleanEvaluation(t.Context(), "flagA", false, nil)
+	if detail.Value != false {
+		t.Errorf("expected the default value for a removed flag, got %v", detail.Value)
+	}
+
+	if detail.ResolutionError.Error() == "" {
+		t.Error("expected a resolution error for a removed flag")
+	}
+
+	if detail.Reason != openfeature.ErrorReason {
+		t.Errorf("expected %s, got %s", openfeature.ErrorReason, detail.Reason)
+	}
+}
+
+func TestInMemoryProvider_UpdateFlagsEmitsConfigurationChanged(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"removed": boolFlag("removed", "true"),
+		"kept":    boolFlag("kept", "true"),
+	})
+
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{
+		"kept":  boolFlag("kept", "false"),
+		"added": boolFlag("added", "true"),
+	})
+
+	event := waitForEvent(t, memoryProvider)
+
+	if event.EventType != openfeature.ProviderConfigChange {
+		t.Errorf("expected %s, got %s", openfeature.ProviderConfigChange, event.EventType)
+	}
+
+	if event.ProviderName != "InMemoryProvider" {
+		t.Errorf("expected provider name InMemoryProvider, got %s", event.ProviderName)
+	}
+
+	// The union of all previous and all new flag keys, per Appendix A.
+	want := []string{"added", "kept", "removed"}
+	if !slices.Equal(event.FlagChanges, want) {
+		t.Errorf("expected flag changes %v, got %v", want, event.FlagChanges)
+	}
+}
+
+func TestInMemoryProvider_ConstructorCopiesFlags(t *testing.T) {
+	flags := map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "true"),
+	}
+
+	memoryProvider := NewInMemoryProvider(flags)
+	delete(flags, "flagA")
+	flags["flagB"] = boolFlag("flagB", "true")
+
+	if got := memoryProvider.BooleanEvaluation(t.Context(), "flagA", false, nil); got.Value != true {
+		t.Error("mutating the caller's map must not affect the provider")
+	}
+
+	if got := memoryProvider.BooleanEvaluation(t.Context(), "flagB", false, nil); got.Value != false {
+		t.Error("mutating the caller's map must not affect the provider")
+	}
+}
+
+func TestInMemoryProvider_UpdateFlagsDoesNotBlockWithoutSubscriber(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// Nothing drains the channel here, so this only returns if the send is
+		// non-blocking once the buffer fills.
+		for range eventChannelBuffer * 3 {
+			memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagA": boolFlag("flagA", "true")})
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("UpdateFlags blocked with no subscriber draining the event channel")
+	}
+}
+
+func TestInMemoryProvider_ConcurrentUpdateAndEvaluation(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "true"),
+	})
+
+	// Drain events so the writer is never throttled by a full buffer.
+	stop := make(chan struct{})
+	defer close(stop)
+	go func() {
+		for {
+			select {
+			case <-memoryProvider.EventChannel():
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Go(func() {
+			for range 100 {
+				memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagA": boolFlag("flagA", "false")})
+			}
+		})
+		wg.Go(func() {
+			for range 100 {
+				memoryProvider.BooleanEvaluation(t.Context(), "flagA", false, nil)
+			}
+		})
+		wg.Go(func() {
+			for range 100 {
+				memoryProvider.Track(t.Context(), "event", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+			}
+		})
+	}
+	wg.Wait()
+}
+
+// TestInMemoryProvider_ConfigurationChangedReachesHandler covers the path the
+// issue is about: an update on a registered provider reaching an API handler.
+func TestInMemoryProvider_ConfigurationChangedReachesHandler(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"flagA": boolFlag("flagA", "true"),
+	})
+
+	if err := openfeature.SetProviderAndWait(memoryProvider); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(openfeature.Shutdown)
+
+	received := make(chan openfeature.EventDetails, 1)
+	callback := func(details openfeature.EventDetails) {
+		received <- details
+	}
+	openfeature.AddHandler(openfeature.ProviderConfigChange, &callback)
+	t.Cleanup(func() {
+		openfeature.RemoveHandler(openfeature.ProviderConfigChange, &callback)
+	})
+
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagB": boolFlag("flagB", "true")})
+
+	select {
+	case details := <-received:
+		want := []string{"flagA", "flagB"}
+		if !slices.Equal(details.FlagChanges, want) {
+			t.Errorf("expected flag changes %v, got %v", want, details.FlagChanges)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timeout - PROVIDER_CONFIGURATION_CHANGED did not reach the handler")
+	}
 }
