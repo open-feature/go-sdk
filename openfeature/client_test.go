@@ -1405,14 +1405,9 @@ func TestRequirement_1_7_7(t *testing.T) {
 
 // BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is NOT_READY.
 func TestEvaluationDetails_NotReady(t *testing.T) {
+	api := newAPI()
 	t.Cleanup(func() {
-		resetSingleton()
-	})
-
-	// Use a channel that blocks until test cleanup to keep provider in NOT_READY state
-	blockChan := make(chan struct{})
-	t.Cleanup(func() {
-		close(blockChan)
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
 	})
 
 	notReadyProvider := struct {
@@ -1423,16 +1418,20 @@ func TestEvaluationDetails_NotReady(t *testing.T) {
 		NoopProvider{},
 		&stateHandlerForTests{
 			initF: func(e EvaluationContext) error {
-				<-blockChan
+				// Block until test cleanup to keep provider in NOT_READY state
+				<-t.Context().Done()
 				return nil
 			},
 		},
 		&ProviderEventing{},
 	}
 
-	_ = SetProvider(notReadyProvider)
+	err := api.SetProvider(t.Context(), notReadyProvider)
+	if err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
 
-	client := NewClient("notReadyDetailsClient")
+	client := api.NewClient()
 
 	if client.State() != NotReadyState {
 		t.Fatalf("expected client to report NOT READY state")
