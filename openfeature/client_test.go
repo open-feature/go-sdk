@@ -1462,7 +1462,10 @@ func TestEvaluationDetails_NotReady(t *testing.T) {
 
 // BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is FATAL.
 func TestEvaluationDetails_Fatal(t *testing.T) {
-	t.Cleanup(resetSingleton)
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
 
 	fatalProvider := struct {
 		FeatureProvider
@@ -1478,12 +1481,12 @@ func TestEvaluationDetails_Fatal(t *testing.T) {
 		&ProviderEventing{},
 	}
 
-	err := SetNamedProviderAndWait(t.Name(), fatalProvider)
+	err := api.SetProviderAndWait(t.Context(), fatalProvider, WithDomain(t.Name()))
 	if err == nil {
 		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
 	}
 
-	client := NewClient(t.Name())
+	client := api.NewClient(WithDomain(t.Name()))
 
 	if client.State() != FatalState {
 		t.Fatalf("expected client to report FATAL state")
