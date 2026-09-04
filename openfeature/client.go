@@ -692,7 +692,7 @@ func (c *Client) evaluate(
 		if c.State() == NotReadyState {
 			evalDetails.Reason = ErrorReason
 			evalDetails.ErrorCode = ProviderNotReadyCode
-			evalDetails.ErrorMessage = ProviderNotReadyError.Error()
+			evalDetails.ErrorMessage = ProviderNotReadyError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderNotReadyError, options)
 			return evalDetails, ProviderNotReadyError
 		}
@@ -701,7 +701,7 @@ func (c *Client) evaluate(
 		if c.State() == FatalState {
 			evalDetails.Reason = ErrorReason
 			evalDetails.ErrorCode = ProviderFatalCode
-			evalDetails.ErrorMessage = ProviderFatalError.Error()
+			evalDetails.ErrorMessage = ProviderFatalError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderFatalError, options)
 			return evalDetails, ProviderFatalError
 		}

@@ -1455,8 +1455,8 @@ func TestEvaluationDetails_NotReady(t *testing.T) {
 		t.Errorf("expected ErrorCode %q, got %q", ProviderNotReadyCode, details.ErrorCode)
 	}
 
-	if details.ErrorMessage == "" {
-		t.Error("expected non-empty ErrorMessage")
+	if details.ErrorMessage != ProviderNotReadyError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderNotReadyError.message, details.ErrorMessage)
 	}
 }
 
@@ -1510,8 +1510,8 @@ func TestEvaluationDetails_Fatal(t *testing.T) {
 		t.Errorf("expected ErrorCode %q, got %q", ProviderFatalCode, details.ErrorCode)
 	}
 
-	if details.ErrorMessage == "" {
-		t.Error("expected non-empty ErrorMessage")
+	if details.ErrorMessage != ProviderFatalError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderFatalError.message, details.ErrorMessage)
 	}
 }
 
