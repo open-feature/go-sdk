@@ -124,8 +124,11 @@ func (h *hookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaul
 
 // toProviderResolutionDetail Converts a [of.InterfaceEvaluationDetails] to a [of.ProviderResolutionDetail].
 func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.ProviderResolutionDetail {
-	var resolutionErr of.ResolutionError
-	var reason of.Reason
+	var (
+		resolutionErr of.ResolutionError
+		reason        of.Reason
+	)
+
 	switch evalDetails.ErrorCode {
 	case of.GeneralCode:
 		resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
@@ -145,7 +148,19 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 	case of.InvalidContextCode:
 		resolutionErr = of.NewInvalidContextResolutionError(evalDetails.ErrorMessage)
 		reason = of.ErrorReason
+	case of.ProviderNotReadyCode:
+		resolutionErr = of.NewProviderNotReadyResolutionError(evalDetails.ErrorMessage)
+		reason = of.ErrorReason
+	case of.ProviderFatalCode:
+		resolutionErr = of.NewProviderFatalResolutionError(evalDetails.ErrorMessage)
+		reason = of.ErrorReason
+	default:
+		if evalDetails.ErrorCode != "" {
+			resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
+			reason = of.ErrorReason
+		}
 	}
+
 	return of.ProviderResolutionDetail{
 		ResolutionError: resolutionErr,
 		Reason:          reason,
