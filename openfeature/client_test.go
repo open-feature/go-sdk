@@ -1403,6 +1403,118 @@ func TestRequirement_1_7_7(t *testing.T) {
 	}
 }
 
+// BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is NOT_READY.
+func TestEvaluationDetails_NotReady(t *testing.T) {
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	notReadyProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				// Block until test cleanup to keep provider in NOT_READY state
+				<-t.Context().Done()
+				return nil
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	err := api.SetProvider(t.Context(), notReadyProvider)
+	if err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+
+	client := api.NewClient()
+
+	if client.State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
+
+	defaultVal := true
+	details, err := client.BooleanValueDetails(t.Context(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if details.Value != defaultVal {
+		t.Fatalf("expected default value %t, got %t", defaultVal, details.Value)
+	}
+
+	if details.Reason != ErrorReason {
+		t.Errorf("expected Reason %q, got %q", ErrorReason, details.Reason)
+	}
+
+	if details.ErrorCode != ProviderNotReadyCode {
+		t.Errorf("expected ErrorCode %q, got %q", ProviderNotReadyCode, details.ErrorCode)
+	}
+
+	if details.ErrorMessage != ProviderNotReadyError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderNotReadyError.message, details.ErrorMessage)
+	}
+}
+
+// BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is FATAL.
+func TestEvaluationDetails_Fatal(t *testing.T) {
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	fatalProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	err := api.SetProviderAndWait(t.Context(), fatalProvider, WithDomain(t.Name()))
+	if err == nil {
+		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
+	}
+
+	client := api.NewClient(WithDomain(t.Name()))
+
+	if client.State() != FatalState {
+		t.Fatalf("expected client to report FATAL state")
+	}
+
+	defaultVal := true
+	details, err := client.BooleanValueDetails(t.Context(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if details.Value != defaultVal {
+		t.Fatalf("expected default value %t, got %t", defaultVal, details.Value)
+	}
+
+	if details.Reason != ErrorReason {
+		t.Errorf("expected Reason %q, got %q", ErrorReason, details.Reason)
+	}
+
+	if details.ErrorCode != ProviderFatalCode {
+		t.Errorf("expected ErrorCode %q, got %q", ProviderFatalCode, details.ErrorCode)
+	}
+
+	if details.ErrorMessage != ProviderFatalError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderFatalError.message, details.ErrorMessage)
+	}
+}
+
 // Implementations SHOULD propagate the error code returned from any provider lifecycle methods.
 func TestRequirement_1_7_8(t *testing.T) {
 	t.Skip("Test not yet implemented")

@@ -690,12 +690,18 @@ func (c *Client) evaluate(
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
+			evalDetails.Reason = ErrorReason
+			evalDetails.ErrorCode = ProviderNotReadyCode
+			evalDetails.ErrorMessage = ProviderNotReadyError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderNotReadyError, options)
 			return evalDetails, ProviderNotReadyError
 		}
 
 		// short circuit if provider is in FATAL state
 		if c.State() == FatalState {
+			evalDetails.Reason = ErrorReason
+			evalDetails.ErrorCode = ProviderFatalCode
+			evalDetails.ErrorMessage = ProviderFatalError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderFatalError, options)
 			return evalDetails, ProviderFatalError
 		}
