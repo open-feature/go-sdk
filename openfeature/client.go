@@ -764,6 +764,9 @@ func (c *Client) evaluate(
 	if err := c.afterHooks(ctx, hookCtx, hooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
 		c.errorHooks(ctx, hookCtx, hooks, err, options)
+		evalDetails.Reason = ErrorReason
+		evalDetails.ErrorCode = GeneralCode
+		evalDetails.ErrorMessage = err.Error()
 		return evalDetails, err
 	}
 

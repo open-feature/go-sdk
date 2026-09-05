@@ -688,6 +688,14 @@ func TestRequirement_1_4_9(t *testing.T) {
 		if valueDetails.Value.(obj) != defaultValue {
 			t.Errorf("expected default value from ObjectValueDetails, got %v", valueDetails.Value)
 		}
+
+		if valueDetails.Reason != ErrorReason {
+			t.Errorf("expected reason %s, got %s", ErrorReason, valueDetails.Reason)
+		}
+
+		if valueDetails.ErrorCode != GeneralCode {
+			t.Errorf("expected error code %s, got %s", GeneralCode, valueDetails.ErrorCode)
+		}
 	})
 }
 
