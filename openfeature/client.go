@@ -766,7 +766,7 @@ func (c *Client) evaluate(
 		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		evalDetails.Reason = ErrorReason
 		evalDetails.ErrorCode = GeneralCode
-		evalDetails.ErrorMessage = err.Error()
+		evalDetails.ErrorMessage = "error executing after hooks"
 		return evalDetails, err
 	}
 

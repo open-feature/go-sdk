@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -695,6 +696,15 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 		if valueDetails.ErrorCode != GeneralCode {
 			t.Errorf("expected error code %s, got %s", GeneralCode, valueDetails.ErrorCode)
+		}
+
+		if valueDetails.ErrorMessage != afterHookErrorMessage {
+			t.Errorf("expected error message %q, got %q", afterHookErrorMessage, valueDetails.ErrorMessage)
+		}
+
+		// the hook's own error text must not leak into the public details
+		if strings.Contains(valueDetails.ErrorMessage, "forced") {
+			t.Errorf("hook error text leaked into ErrorMessage: %q", valueDetails.ErrorMessage)
 		}
 	})
 }
