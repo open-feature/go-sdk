@@ -654,6 +654,41 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from ObjectValueDetails, got %v", value)
 		}
 	})
+
+	// A hook error is abnormal execution too. The existing subtests above drive
+	// abnormal execution through a resolution error, which returns before the
+	// resolved value is assigned; a failing after hook returns after it.
+	t.Run("Object with erroring after hook", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 1)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		type obj struct {
+			foo string
+		}
+		defaultValue := obj{foo: "bar"}
+		resolvedValue := obj{foo: "resolved"}
+
+		mocks.providerAPI.EXPECT().ObjectEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+			Return(InterfaceResolutionDetail{Value: resolvedValue})
+
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(errors.New("forced")))
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		valueDetails, err := client.ObjectValueDetails(t.Context(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		if err == nil {
+			t.Error("expected ObjectValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(obj) != defaultValue {
+			t.Errorf("expected default value from ObjectValueDetails, got %v", valueDetails.Value)
+		}
+	})
 }
 
 // TODO Requirement_1_4_10
