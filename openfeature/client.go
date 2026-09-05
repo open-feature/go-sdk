@@ -49,6 +49,14 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
+// errors returned by the typed accessors when the resolved value is not of their type
+var (
+	errNotBoolean = errors.New("evaluated value is not a boolean")
+	errNotString  = errors.New("evaluated value is not a string")
+	errNotFloat64 = errors.New("evaluated value is not a float64")
+	errNotInt64   = errors.New("evaluated value is not an int64")
+)
+
 // NewClient returns a new [Client] bound to the provider registered for the given domain.
 func NewClient(domain string) *Client {
 	return api().NewClient(WithDomain(domain))
@@ -373,7 +381,7 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
-		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a boolean"))
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotBoolean)
 	}
 
 	return BooleanEvaluationDetails{
@@ -409,7 +417,7 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 
 	value, ok := evalDetails.Value.(string)
 	if !ok {
-		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a string"))
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotString)
 	}
 
 	return StringEvaluationDetails{
@@ -445,7 +453,7 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
-		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not a float64"))
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotFloat64)
 	}
 
 	return FloatEvaluationDetails{
@@ -481,7 +489,7 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
-		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errors.New("evaluated value is not an int64"))
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotInt64)
 	}
 
 	return IntEvaluationDetails{
