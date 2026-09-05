@@ -4,6 +4,9 @@ package memprovider
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
+	"sync"
 
 	"github.com/open-feature/go-sdk/openfeature"
 )
@@ -13,25 +16,40 @@ const (
 	Disabled State = "DISABLED"
 )
 
+const providerName = "InMemoryProvider"
+
+// eventChannelBuffer absorbs bursts of events. A registered provider is drained
+// continuously by the SDK's event executor.
+const eventChannelBuffer = 5
+
+var (
+	_ openfeature.FeatureProvider = (*InMemoryProvider)(nil)
+	_ openfeature.EventHandler    = (*InMemoryProvider)(nil)
+	_ openfeature.Tracker         = (*InMemoryProvider)(nil)
+)
+
 type InMemoryProvider struct {
+	mu             sync.RWMutex
 	flags          map[string]InMemoryFlag
 	trackingEvents map[string][]InMemoryEvent
+	events         chan openfeature.Event
 }
 
-func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
-	return InMemoryProvider{
-		flags:          from,
+func NewInMemoryProvider(from map[string]InMemoryFlag) *InMemoryProvider {
+	return &InMemoryProvider{
+		flags:          maps.Clone(from),
 		trackingEvents: map[string][]InMemoryEvent{},
+		events:         make(chan openfeature.Event, eventChannelBuffer),
 	}
 }
 
-func (i InMemoryProvider) Metadata() openfeature.Metadata {
+func (i *InMemoryProvider) Metadata() openfeature.Metadata {
 	return openfeature.Metadata{
-		Name: "InMemoryProvider",
+		Name: providerName,
 	}
 }
 
-func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
+func (i *InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx openfeature.FlattenedContext) openfeature.BoolResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.BoolResolutionDetail{
@@ -49,7 +67,7 @@ func (i InMemoryProvider) BooleanEvaluation(ctx context.Context, flag string, de
 	}
 }
 
-func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
+func (i *InMemoryProvider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx openfeature.FlattenedContext) openfeature.StringResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.StringResolutionDetail{
@@ -67,7 +85,7 @@ func (i InMemoryProvider) StringEvaluation(ctx context.Context, flag string, def
 	}
 }
 
-func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
+func (i *InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx openfeature.FlattenedContext) openfeature.FloatResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.FloatResolutionDetail{
@@ -85,7 +103,7 @@ func (i InMemoryProvider) FloatEvaluation(ctx context.Context, flag string, defa
 	}
 }
 
-func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
+func (i *InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx openfeature.FlattenedContext) openfeature.IntResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.IntResolutionDetail{
@@ -103,7 +121,7 @@ func (i InMemoryProvider) IntEvaluation(ctx context.Context, flag string, defaul
 	}
 }
 
-func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
+func (i *InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx openfeature.FlattenedContext) openfeature.InterfaceResolutionDetail {
 	memoryFlag, details, ok := i.find(flag)
 	if !ok {
 		return openfeature.InterfaceResolutionDetail{
@@ -129,11 +147,14 @@ func (i InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, def
 	}
 }
 
-func (i InMemoryProvider) Hooks() []openfeature.Hook {
+func (i *InMemoryProvider) Hooks() []openfeature.Hook {
 	return []openfeature.Hook{}
 }
 
-func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
+func (i *InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+
 	i.trackingEvents[trackingEventName] = append(i.trackingEvents[trackingEventName], InMemoryEvent{
 		Value:             details.Value(),
 		Data:              details.Attributes(),
@@ -141,8 +162,11 @@ func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, e
 	})
 }
 
-func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.ProviderResolutionDetail, bool) {
+func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.ProviderResolutionDetail, bool) {
+	i.mu.RLock()
 	memoryFlag, ok := i.flags[flag]
+	i.mu.RUnlock()
+
 	if !ok {
 		return nil,
 			&openfeature.ProviderResolutionDetail{
@@ -152,6 +176,45 @@ func (i InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provide
 	}
 
 	return &memoryFlag, nil, true
+}
+
+// UpdateFlags replaces the flag set and emits a PROVIDER_CONFIGURATION_CHANGED
+// event naming the union of the previous and the new flag keys, as required by
+// Appendix A of the OpenFeature specification.
+//
+// The event is dropped rather than blocking the caller when nothing is draining
+// the event channel, which is the case while the provider is not registered
+// with an API.
+func (i *InMemoryProvider) UpdateFlags(flags map[string]InMemoryFlag) {
+	i.mu.Lock()
+	changed := slices.AppendSeq(slices.Collect(maps.Keys(i.flags)), maps.Keys(flags))
+	// Readers keep an immutable snapshot; the caller's map is never retained.
+	i.flags = maps.Clone(flags)
+	i.mu.Unlock()
+
+	// Sorting makes the union deterministic and puts any key present in both
+	// the old and the new set next to its duplicate for Compact to drop.
+	slices.Sort(changed)
+	changed = slices.Compact(changed)
+
+	select {
+	case i.events <- openfeature.Event{
+		ProviderName: providerName,
+		EventType:    openfeature.ProviderConfigChange,
+		ProviderEventDetails: openfeature.ProviderEventDetails{
+			Message:     "flag configuration changed",
+			FlagChanges: changed,
+		},
+	}:
+	default:
+	}
+}
+
+// EventChannel implements openfeature.EventHandler. The channel is never closed:
+// the SDK stops listening via its own shutdown signal, and closing would panic a
+// subsequent UpdateFlags.
+func (i *InMemoryProvider) EventChannel() <-chan openfeature.Event {
+	return i.events
 }
 
 // helpers
