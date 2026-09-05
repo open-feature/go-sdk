@@ -212,6 +212,8 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	oldProvider := a.defaultProvider
 	a.defaultProvider = provider
 
+	tracked := a.eventExecutor.isTracked(provider)
+
 	a.eventExecutor.registerDefaultProvider(provider)
 
 	a.shutdownOld(ctx, oldProvider)
@@ -219,6 +221,14 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	// Unbind the old provider if it is no longer referenced by this API instance.
 	if oldProvider != nil {
 		a.unbindIfUnreferenced(oldProvider)
+	}
+
+	// If the provider is already tracked, it has already been initialized.
+	// Return an already-closed channel so callers can proceed without waiting.
+	if tracked {
+		errCh := make(chan error, 1)
+		close(errCh)
+		return errCh, nil
 	}
 
 	return a.initNew(ctx, "", provider), nil
@@ -240,6 +250,8 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 	oldProvider := a.domainProviders[domain]
 	a.domainProviders[domain] = provider
 
+	tracked := a.eventExecutor.isTracked(provider)
+
 	a.eventExecutor.registerNamedEventingProvider(domain, provider)
 
 	a.shutdownOld(ctx, oldProvider)
@@ -247,6 +259,14 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 	// Unbind the old provider if it is no longer referenced by this API instance.
 	if oldProvider != nil {
 		a.unbindIfUnreferenced(oldProvider)
+	}
+
+	// If the provider is already tracked, it has already been initialized.
+	// Return an already-closed channel so callers can proceed without waiting.
+	if tracked {
+		errCh := make(chan error, 1)
+		close(errCh)
+		return errCh, nil
 	}
 
 	return a.initNew(ctx, domain, provider), nil
@@ -266,8 +286,9 @@ func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider 
 			} else {
 				err = fmt.Errorf("failed to initialize named provider %q for domain %q: %w", provider.Metadata().Name, domain, err)
 			}
+			errCh <- err
 		}
-		errCh <- err
+		close(errCh)
 	}(a.eventExecutor, a.evalCtx, ctx, newProvider, domain)
 
 	return errCh
@@ -387,25 +408,36 @@ func (a *EvaluationAPI) Shutdown(ctx context.Context) error {
 	defer a.mu.Unlock()
 	var errs []error
 
+	var seen []providerReference
 	// Shutdown default provider
 	if a.defaultProvider != nil {
-		if contextHandler, ok := a.defaultProvider.(ContextAwareStateHandler); ok {
-			if err := contextHandler.ShutdownWithContext(ctx); err != nil {
-				errs = append(errs, fmt.Errorf("default provider shutdown failed: %w", err))
+		if stateHandler, ok := a.defaultProvider.(StateHandler); ok {
+			if contextHandler, ok := stateHandler.(ContextAwareStateHandler); ok {
+				if err := contextHandler.ShutdownWithContext(ctx); err != nil {
+					errs = append(errs, fmt.Errorf("default provider shutdown failed: %w", err))
+				}
+			} else {
+				stateHandler.Shutdown()
 			}
-		} else if stateHandler, ok := a.defaultProvider.(StateHandler); ok {
-			stateHandler.Shutdown()
+			seen = append(seen, newProviderRef(a.defaultProvider))
 		}
 	}
 
 	// Shutdown all named providers
 	for name, provider := range a.domainProviders {
-		if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
-			if err := contextHandler.ShutdownWithContext(ctx); err != nil {
-				errs = append(errs, fmt.Errorf("named provider %q shutdown failed: %w", name, err))
+		if stateHandler, ok := provider.(StateHandler); ok {
+			ref := newProviderRef(provider)
+			if slices.ContainsFunc(seen, ref.equals) {
+				continue
 			}
-		} else if stateHandler, ok := provider.(StateHandler); ok {
-			stateHandler.Shutdown()
+			if contextHandler, ok := provider.(ContextAwareStateHandler); ok {
+				if err := contextHandler.ShutdownWithContext(ctx); err != nil {
+					errs = append(errs, fmt.Errorf("named provider %q shutdown failed: %w", name, err))
+				}
+			} else {
+				stateHandler.Shutdown()
+			}
+			seen = append(seen, ref)
 		}
 	}
 

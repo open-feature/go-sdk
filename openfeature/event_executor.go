@@ -382,6 +382,17 @@ func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event
 	}()
 }
 
+// isTracked reports whether p is already tracked in activeSubscriptions.
+func (e *eventExecutor) isTracked(p FeatureProvider) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	ref := newProviderRef(p)
+	if ref.typeOf != nil && ref.typeOf.Comparable() {
+		return isRunning(ref, e.activeSubscriptions)
+	}
+	return false
+}
+
 // isRunning is a helper to check if the given provider is in the given list of providers
 func isRunning(provider providerReference, activeProviders []providerReference) bool {
 	return slices.ContainsFunc(activeProviders, provider.equals)

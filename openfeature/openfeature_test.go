@@ -1,8 +1,11 @@
 package openfeature
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -217,6 +220,66 @@ func TestRequirement_1_1_2_3(t *testing.T) {
 
 		// validate
 		expectTimeout(t, shutdownSemA, "shutdown called on the provider with multiple references")
+	})
+
+	t.Run("multibound", func(t *testing.T) {
+		setup := func(t *testing.T) (*EvaluationAPI, FeatureProvider) {
+			t.Helper()
+			inited := atomic.Bool{}
+			shutdown := atomic.Bool{}
+
+			sh := &stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					if inited.Swap(true) {
+						return fmt.Errorf("already initialized")
+					}
+					return nil
+				},
+				shutdownF: func() {
+					if shutdown.Swap(true) {
+						t.Fatal("already shutdown")
+					}
+				},
+			}
+			provider := struct {
+				FeatureProvider
+				StateHandler
+			}{
+				FeatureProvider: NoopProvider{},
+				StateHandler:    sh,
+			}
+
+			api := newAPI()
+			t.Cleanup(func() {
+				_ = api.Shutdown(context.Background()) //nolint:usetesting
+			})
+			return api, provider
+		}
+		t.Run("default before domain", func(t *testing.T) {
+			api, provider := setup(t)
+
+			err := api.SetProviderAndWait(t.Context(), provider)
+			if err != nil {
+				t.Errorf("can't set default: %v", err)
+			}
+			err = api.SetProviderAndWait(t.Context(), provider, WithDomain("domain"))
+			if err != nil {
+				t.Errorf("can't set domain: %v", err)
+			}
+		})
+		t.Run("default after domain", func(t *testing.T) {
+			api, provider := setup(t)
+
+			err := api.SetProviderAndWait(t.Context(), provider, WithDomain("domain"))
+			if err != nil {
+				t.Errorf("can't set domain: %v", err)
+			}
+
+			err = api.SetProviderAndWait(t.Context(), provider)
+			if err != nil {
+				t.Errorf("can't set default: %v", err)
+			}
+		})
 	})
 }
 
