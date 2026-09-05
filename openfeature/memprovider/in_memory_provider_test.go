@@ -100,6 +100,78 @@ func TestInMemoryProvider_Float(t *testing.T) {
 	})
 }
 
+func TestInMemoryProvider_FloatIntCoercion(t *testing.T) {
+	// Signed integer variants on a float flag should be coerced to float64,
+	// mirroring how the int64 branch of genericResolve accepts int types.
+	tests := []struct {
+		name     string
+		variant  any
+		expected float64
+	}{
+		{
+			name:     "plain int coerced to float64",
+			variant:  42,
+			expected: 42,
+		},
+		{
+			name:     "int8 coerced to float64",
+			variant:  int8(8),
+			expected: 8,
+		},
+		{
+			name:     "int16 coerced to float64",
+			variant:  int16(16),
+			expected: 16,
+		},
+		{
+			name:     "int32 coerced to float64",
+			variant:  int32(32),
+			expected: 32,
+		},
+		{
+			name:     "int64 coerced to float64",
+			variant:  int64(64),
+			expected: 64,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+				"floatFlag": {
+					State:          Enabled,
+					DefaultVariant: "value",
+					Variants:       map[string]any{"value": tt.variant},
+				},
+			})
+
+			evaluation := memoryProvider.FloatEvaluation(t.Context(), "floatFlag", 0, nil)
+
+			if evaluation.Value != tt.expected {
+				t.Errorf("expected %f, got %f", tt.expected, evaluation.Value)
+			}
+		})
+	}
+}
+
+func TestInMemoryProvider_FloatUnsignedIntTypeMismatch(t *testing.T) {
+	// genericResolve intentionally does not coerce unsigned integer types;
+	// keep that limitation visible as a TYPE_MISMATCH.
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"floatFlag": {
+			State:          Enabled,
+			DefaultVariant: "value",
+			Variants:       map[string]any{"value": uint64(7)},
+		},
+	})
+
+	evaluation := memoryProvider.FloatEvaluation(t.Context(), "floatFlag", 0, nil)
+
+	if evaluation.ResolutionDetail().ErrorCode != openfeature.TypeMismatchCode {
+		t.Errorf("expected TYPE_MISMATCH, got %q", evaluation.ResolutionDetail().ErrorCode)
+	}
+}
+
 func TestInMemoryProvider_Int(t *testing.T) {
 	// Test that both int and int64 variants work correctly.
 	// The provider coerces int to int64 internally to match the API contract.
