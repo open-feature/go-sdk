@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -652,6 +653,58 @@ func TestRequirement_1_4_9(t *testing.T) {
 
 		if valueDetails.Value.(obj) != defaultValue {
 			t.Errorf("expected default value from ObjectValueDetails, got %v", value)
+		}
+	})
+
+	// A hook error is abnormal execution too. The existing subtests above drive
+	// abnormal execution through a resolution error, which returns before the
+	// resolved value is assigned; a failing after hook returns after it.
+	t.Run("Object with erroring after hook", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 1)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		type obj struct {
+			foo string
+		}
+		defaultValue := obj{foo: "bar"}
+		resolvedValue := obj{foo: "resolved"}
+
+		mocks.providerAPI.EXPECT().ObjectEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+			Return(InterfaceResolutionDetail{Value: resolvedValue})
+
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(errors.New("forced")))
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		valueDetails, err := client.ObjectValueDetails(t.Context(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		if err == nil {
+			t.Error("expected ObjectValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(obj) != defaultValue {
+			t.Errorf("expected default value from ObjectValueDetails, got %v", valueDetails.Value)
+		}
+
+		if valueDetails.Reason != ErrorReason {
+			t.Errorf("expected reason %s, got %s", ErrorReason, valueDetails.Reason)
+		}
+
+		if valueDetails.ErrorCode != GeneralCode {
+			t.Errorf("expected error code %s, got %s", GeneralCode, valueDetails.ErrorCode)
+		}
+
+		if valueDetails.ErrorMessage != afterHookErrorMessage {
+			t.Errorf("expected error message %q, got %q", afterHookErrorMessage, valueDetails.ErrorMessage)
+		}
+
+		// the hook's own error text must not leak into the public details
+		if strings.Contains(valueDetails.ErrorMessage, "forced") {
+			t.Errorf("hook error text leaked into ErrorMessage: %q", valueDetails.ErrorMessage)
 		}
 	})
 }
