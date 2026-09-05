@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.18.1](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.18.1) (2026-09-05)
+
+
+### 🐛 Bug Fixes
+
+* coerce int types to float64 in memprovider float evaluation ([#565](https://github.com/open-feature/go-sdk/issues/565)) ([a0892c2](https://github.com/open-feature/go-sdk/commit/a0892c296bd8b6d55188687e49dcc7692594f015)), closes [#564](https://github.com/open-feature/go-sdk/issues/564)
+* populate EvaluationDetails on NOT_READY/FATAL short-circuit ([#541](https://github.com/open-feature/go-sdk/issues/541)) ([6b0824c](https://github.com/open-feature/go-sdk/commit/6b0824c6c7b9b69e40f26aedcc4406ad4d3a5cec))
+
+
+### 🧹 Chore
+
+* **deps:** update goreleaser/goreleaser-action action to v7 ([#534](https://github.com/open-feature/go-sdk/issues/534)) ([ffc9895](https://github.com/open-feature/go-sdk/commit/ffc98950d6bb707d02f1f78ea6c633f8a179ee4d))
+* **deps:** update marocchino/sticky-pull-request-comment action to v3.0.5 ([#533](https://github.com/open-feature/go-sdk/issues/533)) ([65c97f1](https://github.com/open-feature/go-sdk/commit/65c97f128fd955e3c33a8fac0185df61bea1aa03))
+* upgrade Go to 1.26 and update dependencies ([#531](https://github.com/open-feature/go-sdk/issues/531)) ([3a6545b](https://github.com/open-feature/go-sdk/commit/3a6545be412dbe6b526a487eca96e692bede888f))
+
 ## [1.18.0](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.18.0) (2026-07-31)
 
 
