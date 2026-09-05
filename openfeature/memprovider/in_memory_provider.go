@@ -18,8 +18,9 @@ const (
 
 const providerName = "InMemoryProvider"
 
-// eventChannelBuffer absorbs bursts of events. A registered provider is drained
-// continuously by the SDK's event executor.
+// eventChannelBuffer absorbs bursts of events, and holds events emitted before
+// the provider is registered. A registered provider is drained continuously by
+// the SDK's event executor. Events emitted once the buffer is full are dropped.
 const eventChannelBuffer = 5
 
 var (
@@ -192,21 +193,24 @@ func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provid
 // ownership of each flag's Variants and ContextEvaluator, which must not be
 // mutated once the flag has been handed over.
 //
-// The event is dropped rather than blocking the caller when nothing is draining
-// the event channel, which is the case while the provider is not registered
-// with an API.
+// Events are buffered, so an update made before the provider is registered is
+// still delivered once the SDK attaches a listener. Once the buffer is full the
+// event is dropped rather than blocking the caller.
 func (i *InMemoryProvider) UpdateFlags(flags map[string]InMemoryFlag) {
 	i.mu.Lock()
+	defer i.mu.Unlock()
+
 	changed := slices.AppendSeq(slices.Collect(maps.Keys(i.flags)), maps.Keys(flags))
 	// Readers keep an immutable snapshot; the caller's map is never retained.
 	i.flags = maps.Clone(flags)
-	i.mu.Unlock()
 
 	// Sorting makes the union deterministic and puts any key present in both
 	// the old and the new set next to its duplicate for Compact to drop.
 	slices.Sort(changed)
 	changed = slices.Compact(changed)
 
+	// Emitting under the lock keeps the event order agreeing with the order the
+	// flag sets were applied; the send cannot block, so it cannot deadlock.
 	select {
 	case i.events <- openfeature.Event{
 		ProviderName: providerName,

@@ -24,8 +24,9 @@ provider.UpdateFlags(map[string]memprovider.InMemoryFlag{
 ```
 
 The provider must be held as `*InMemoryProvider`, which is what
-`NewInMemoryProvider` returns. The event is dropped rather than blocking when the
-provider is not registered with an API, since nothing is listening.
+`NewInMemoryProvider` returns. Events are buffered, so up to five updates made
+before the provider is registered are still delivered once it is; past that,
+events are dropped rather than blocking the caller.
 
 ### Flag ownership
 

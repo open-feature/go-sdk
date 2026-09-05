@@ -473,6 +473,26 @@ func TestInMemoryProvider_ConstructorCopiesFlags(t *testing.T) {
 	}
 }
 
+func TestInMemoryProvider_BuffersEventsUntilSubscriberAttaches(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+
+	// Nothing is draining the channel yet, as is the case before the provider
+	// is registered with an API.
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagA": boolFlag("flagA", "true")})
+	memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagB": boolFlag("flagB", "true")})
+
+	// A listener attaching later still sees both, in the order they were made.
+	first := waitForEvent(t, memoryProvider)
+	if want := []string{"flagA"}; !slices.Equal(first.FlagChanges, want) {
+		t.Errorf("expected flag changes %v, got %v", want, first.FlagChanges)
+	}
+
+	second := waitForEvent(t, memoryProvider)
+	if want := []string{"flagA", "flagB"}; !slices.Equal(second.FlagChanges, want) {
+		t.Errorf("expected flag changes %v, got %v", want, second.FlagChanges)
+	}
+}
+
 func TestInMemoryProvider_UpdateFlagsDoesNotBlockWithoutSubscriber(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
 
