@@ -35,6 +35,12 @@ type InMemoryProvider struct {
 	events         chan openfeature.Event
 }
 
+// NewInMemoryProvider returns a provider serving a copy of the given flag set.
+//
+// The map itself is copied, so mutating it afterwards does not affect the
+// provider. The copy is shallow: the provider takes ownership of each flag's
+// Variants and ContextEvaluator, which must not be mutated once the flag has
+// been handed over. Use [InMemoryProvider.UpdateFlags] to change the flag set.
 func NewInMemoryProvider(from map[string]InMemoryFlag) *InMemoryProvider {
 	return &InMemoryProvider{
 		flags:          maps.Clone(from),
@@ -181,6 +187,10 @@ func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provid
 // UpdateFlags replaces the flag set and emits a PROVIDER_CONFIGURATION_CHANGED
 // event naming the union of the previous and the new flag keys, as required by
 // Appendix A of the OpenFeature specification.
+//
+// As in [NewInMemoryProvider], the map is copied shallowly: the provider takes
+// ownership of each flag's Variants and ContextEvaluator, which must not be
+// mutated once the flag has been handed over.
 //
 // The event is dropped rather than blocking the caller when nothing is draining
 // the event channel, which is the case while the provider is not registered

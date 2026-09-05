@@ -26,3 +26,12 @@ provider.UpdateFlags(map[string]memprovider.InMemoryFlag{
 The provider must be held as `*InMemoryProvider`, which is what
 `NewInMemoryProvider` returns. The event is dropped rather than blocking when the
 provider is not registered with an API, since nothing is listening.
+
+### Flag ownership
+
+Both `NewInMemoryProvider` and `UpdateFlags` copy the map they are given, so
+mutating it afterwards does not affect the provider. The copy is shallow: the
+provider takes ownership of each flag's `Variants` and `ContextEvaluator`, which
+must not be mutated once the flag has been handed over. `UpdateFlags` is the
+only supported way to change the flag set — it is what emits the
+`PROVIDER_CONFIGURATION_CHANGED` event.
