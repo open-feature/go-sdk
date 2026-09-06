@@ -1,6 +1,7 @@
 package memprovider
 
 import (
+	"context"
 	"math"
 	"slices"
 	"sync"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/isolated"
 )
 
 func TestInMemoryProvider_boolean(t *testing.T) {
@@ -519,13 +521,11 @@ func TestInMemoryProvider_ConcurrentUpdateAndEvaluation(t *testing.T) {
 	})
 
 	// Drain events so the writer is never throttled by a full buffer.
-	stop := make(chan struct{})
-	defer close(stop)
 	go func() {
 		for {
 			select {
 			case <-memoryProvider.EventChannel():
-			case <-stop:
+			case <-t.Context().Done():
 				return
 			}
 		}
@@ -559,18 +559,22 @@ func TestInMemoryProvider_ConfigurationChangedReachesHandler(t *testing.T) {
 		"flagA": boolFlag("flagA", "true"),
 	})
 
-	if err := openfeature.SetProviderAndWait(memoryProvider); err != nil {
+	api := isolated.NewAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	if err := api.SetProviderAndWait(t.Context(), memoryProvider); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(openfeature.Shutdown)
 
 	received := make(chan openfeature.EventDetails, 1)
 	callback := func(details openfeature.EventDetails) {
 		received <- details
 	}
-	openfeature.AddHandler(openfeature.ProviderConfigChange, &callback)
+	api.AddHandler(openfeature.ProviderConfigChange, &callback)
 	t.Cleanup(func() {
-		openfeature.RemoveHandler(openfeature.ProviderConfigChange, &callback)
+		api.RemoveHandler(openfeature.ProviderConfigChange, &callback)
 	})
 
 	memoryProvider.UpdateFlags(map[string]InMemoryFlag{"flagB": boolFlag("flagB", "true")})
