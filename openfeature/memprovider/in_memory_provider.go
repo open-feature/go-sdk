@@ -197,12 +197,14 @@ func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.Provid
 // still delivered once the SDK attaches a listener. Once the buffer is full the
 // event is dropped rather than blocking the caller.
 func (i *InMemoryProvider) UpdateFlags(flags map[string]InMemoryFlag) {
+	// Readers keep an immutable snapshot; the caller's map is never retained.
+	flags = maps.Clone(flags)
+
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
 	changed := slices.AppendSeq(slices.Collect(maps.Keys(i.flags)), maps.Keys(flags))
-	// Readers keep an immutable snapshot; the caller's map is never retained.
-	i.flags = maps.Clone(flags)
+	i.flags = flags
 
 	// Sorting makes the union deterministic and puts any key present in both
 	// the old and the new set next to its duplicate for Compact to drop.
