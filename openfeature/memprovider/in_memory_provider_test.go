@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/isolated"
 )
 
 func TestInMemoryProvider_boolean(t *testing.T) {
@@ -406,7 +407,36 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 		}
 
 		if evaluation.Reason != openfeature.DisabledReason {
-			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.DisabledReason, evaluation.Reason)
+		}
+
+		if err := evaluation.Error(); err != nil {
+			t.Errorf("expected no error for a disabled flag, got %v", err)
+		}
+	})
+
+	// The provider-level assertions above cannot observe the reason being
+	// overwritten, because that happens in the client. Drive it through an
+	// isolated API so the global singleton is untouched.
+	t.Run("test disabled flag through the client", func(t *testing.T) {
+		api := isolated.NewAPI()
+		t.Cleanup(func() { _ = api.Shutdown(ctx) })
+
+		if err := api.SetProviderAndWait(ctx, memoryProvider); err != nil {
+			t.Fatalf("failed to set provider: %v", err)
+		}
+
+		details, err := api.NewClient().BooleanValueDetails(ctx, "boolFlag", false, openfeature.EvaluationContext{})
+		if err != nil {
+			t.Errorf("expected no error for a disabled flag, got %v", err)
+		}
+
+		if details.Reason != openfeature.DisabledReason {
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.DisabledReason, details.Reason)
+		}
+
+		if details.Value != false {
+			t.Errorf("incorrect evaluation, expected %v, got %v", false, details.Value)
 		}
 	})
 }

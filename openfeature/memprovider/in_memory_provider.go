@@ -230,8 +230,7 @@ func (flag *InMemoryFlag) Resolve(defaultValue any, flatCtx openfeature.Flattene
 	// check the state
 	if flag.State == Disabled {
 		return defaultValue, openfeature.ProviderResolutionDetail{
-			ResolutionError: openfeature.NewGeneralResolutionError("flag is disabled"),
-			Reason:          openfeature.DisabledReason,
+			Reason: openfeature.DisabledReason,
 		}
 	}
 
