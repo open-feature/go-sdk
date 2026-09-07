@@ -663,7 +663,11 @@ func (c *Client) evaluate(
 	}
 
 	if !utf8.Valid([]byte(flag)) {
-		return evalDetails, NewParseErrorResolutionError("flag key is not a UTF-8 encoded string")
+		err := NewParseErrorResolutionError("flag key is not a UTF-8 encoded string")
+		evalDetails.Reason = ErrorReason
+		evalDetails.ErrorCode = err.code
+		evalDetails.ErrorMessage = err.message
+		return evalDetails, err
 	}
 
 	// ensure that the same provider & hooks are used across this transaction to avoid unexpected behaviour
@@ -711,6 +715,9 @@ func (c *Client) evaluate(
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("before hook: %w", err)
+		evalDetails.Reason = ErrorReason
+		evalDetails.ErrorCode = errorCodeOf(err)
+		evalDetails.ErrorMessage = err.Error()
 		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
@@ -826,6 +833,17 @@ func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []
 
 // merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in case
 // of any conflicts with the (n+1)th EvaluationContext
+// errorCodeOf returns the ErrorCode carried by err, or GeneralCode when err is
+// not a ResolutionError. Hooks are free to return an arbitrary error, so the
+// code is only as specific as the error the hook chose to return.
+func errorCodeOf(err error) ErrorCode {
+	if resolutionErr, ok := errors.AsType[ResolutionError](err); ok {
+		return resolutionErr.code
+	}
+
+	return GeneralCode
+}
+
 func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 	if len(evaluationContexts) == 0 {
 		return EvaluationContext{}
