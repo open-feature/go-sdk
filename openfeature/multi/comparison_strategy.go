@@ -89,8 +89,8 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			case int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint, uintptr, float32, float64, string, bool:
 				break
 			default:
-				t := reflect.TypeOf(defaultValue)
-				if !t.Comparable() {
+				// a nil default has no type to compare, see #546
+				if t := reflect.TypeOf(defaultValue); t == nil || !t.Comparable() {
 					// Impossible to evaluate strategy with expected result type
 					defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, ErrAggregationNotAllowed)
 					defaultResult.FlagMetadata[MetadataFallbackUsed] = false
