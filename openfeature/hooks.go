@@ -1,6 +1,9 @@
 package openfeature
 
-import "context"
+import (
+	"context"
+	"maps"
+)
 
 // Hook allows application developers to add arbitrary behavior to the flag evaluation lifecycle.
 // They operate similarly to middleware in many web frameworks.
@@ -18,12 +21,19 @@ type HookHints struct {
 }
 
 // NewHookHints constructs HookHints
+//
+// mapOfHints - arbitrary data made available to hooks. The map is copied, so
+// changes the caller makes to it afterwards are not reflected in the hints.
+// The copy is shallow: values that are themselves mutable remain shared.
 func NewHookHints(mapOfHints map[string]any) HookHints {
-	return HookHints{mapOfHints: mapOfHints}
+	// copy hints to new map to avoid reference being externally available, thereby enforcing immutability
+	hints := make(map[string]any, len(mapOfHints))
+	maps.Copy(hints, mapOfHints)
+
+	return HookHints{mapOfHints: hints}
 }
 
 // Value returns the value at the given key in the underlying map.
-// Maintains immutability of the map.
 func (h HookHints) Value(key string) any {
 	return h.mapOfHints[key]
 }
