@@ -6,6 +6,7 @@ import (
 	"github.com/open-feature/go-sdk/openfeature"
 )
 
+// TestCreateEvaluationEvent_ContextID verifies context ID precedence, fallback, and omission.
 func TestCreateEvaluationEvent_ContextID(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -40,9 +41,35 @@ func TestCreateEvaluationEvent_ContextID(t *testing.T) {
 			wantAttribute: true,
 		},
 		{
+			name:         "nil metadata context uses targeting key fallback",
+			targetingKey: "targeting-context",
+			flagMetadata: openfeature.FlagMetadata{
+				flagMetaContextIDKey: nil,
+			},
+			wantContextID: "targeting-context",
+			wantAttribute: true,
+		},
+		{
+			name:         "non-string metadata context uses targeting key fallback",
+			targetingKey: "targeting-context",
+			flagMetadata: openfeature.FlagMetadata{
+				flagMetaContextIDKey: true,
+			},
+			wantContextID: "targeting-context",
+			wantAttribute: true,
+		},
+		{
 			name:          "context attribute is omitted when unavailable",
 			targetingKey:  "",
 			flagMetadata:  openfeature.FlagMetadata{},
+			wantAttribute: false,
+		},
+		{
+			name:         "invalid metadata is omitted without targeting key",
+			targetingKey: "",
+			flagMetadata: openfeature.FlagMetadata{
+				flagMetaContextIDKey: nil,
+			},
 			wantAttribute: false,
 		},
 	}
