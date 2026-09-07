@@ -659,6 +659,10 @@ func (c *Client) evaluate(
 		EvaluationDetails: EvaluationDetails{
 			FlagKey:  flag,
 			FlagType: flagType,
+			ResolutionDetail: ResolutionDetail{
+				// empty record rather than nil on the early returns, see #542
+				FlagMetadata: FlagMetadata{},
+			},
 		},
 	}
 

@@ -730,6 +730,112 @@ func TestRequirement_1_4_13(t *testing.T) {
 		}
 	})
 
+	// early returns that never reach a provider resolution, see #542
+	t.Run("No metadata on the invalid UTF-8 flag key return", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 0)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		evDetails, err := client.BooleanValueDetails(t.Context(), "invalid\xf0\x28", true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error for an invalid UTF-8 flag key, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			// %#v: nil and an empty map both print as "map[]"
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata on the before hook error return", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 1)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced"))
+		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		evDetails, err := client.BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{}, WithHooks(mockHook))
+		if err == nil {
+			t.Error("expected an error from the failing before hook, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata when the provider is NOT_READY", func(t *testing.T) {
+		api := newAPI()
+		t.Cleanup(func() {
+			_ = api.Shutdown(context.Background()) //nolint:usetesting
+		})
+
+		notReadyProvider := struct {
+			FeatureProvider
+			StateHandler
+			EventHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					// Block until test cleanup to keep provider in NOT_READY state
+					<-t.Context().Done()
+					return nil
+				},
+			},
+			&ProviderEventing{},
+		}
+
+		if err := api.SetProvider(t.Context(), notReadyProvider); err != nil {
+			t.Fatalf("failed to set up provider: %v", err)
+		}
+
+		evDetails, err := api.NewClient().BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error while the provider is NOT_READY, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata when the provider is FATAL", func(t *testing.T) {
+		api := newAPI()
+		t.Cleanup(func() {
+			_ = api.Shutdown(context.Background()) //nolint:usetesting
+		})
+
+		fatalProvider := struct {
+			FeatureProvider
+			StateHandler
+			EventHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					return &ProviderInitError{ErrorCode: ProviderFatalCode}
+				},
+			},
+			&ProviderEventing{},
+		}
+
+		if err := api.SetProviderAndWait(t.Context(), fatalProvider, WithDomain(t.Name())); err == nil {
+			t.Error("provider registration was expected to fail but succeeded unexpectedly")
+		}
+
+		evDetails, err := api.NewClient(WithDomain(t.Name())).
+			BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error while the provider is FATAL, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
 	t.Run("Metadata present", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
