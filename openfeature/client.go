@@ -781,7 +781,10 @@ func (c *Client) beforeHooks(
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(ctx, hookCtx, options.hookHints)
 		if resultEvalCtx != nil {
-			hookCtx.evaluationContext = *resultEvalCtx
+			// Merge rather than replace, so a hook's contribution is visible to every
+			// subsequent hook instead of being overwritten by it. The newest result takes
+			// precedence over what earlier hooks contributed.
+			hookCtx.evaluationContext = mergeContexts(*resultEvalCtx, hookCtx.evaluationContext)
 		}
 		if err != nil {
 			return mergeContexts(hookCtx.evaluationContext, evalCtx), err

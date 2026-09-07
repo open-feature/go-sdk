@@ -235,9 +235,10 @@ func TestRequirement_4_3_3(t *testing.T) {
 		TargetingKey: "mockHook1",
 	})
 
-	// assert that the evaluation context returned by the first hook is passed into the second hook
+	// assert that the evaluation context returned by the first hook is merged into the context
+	// passed to the second hook, rather than replacing it
 	hook2Ctx := hook1Ctx
-	hook2Ctx.evaluationContext = *hook1EvalCtxResult
+	hook2Ctx.evaluationContext = mergeContexts(*hook1EvalCtxResult, evalCtx)
 	mockHook2.EXPECT().Before(gomock.Any(), hook2Ctx, gomock.Any())
 
 	mockHook1.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -252,6 +253,59 @@ func TestRequirement_4_3_3(t *testing.T) {
 }
 
 // When `before` hooks have finished executing, any resulting `evaluation context` MUST be merged with the existing
+
+// A before hook's evaluation context is merged into the accumulated one rather than replacing it,
+// so each hook observes every prior hook's contribution and the provider receives the union.
+func TestBeforeHooksAccumulateEvaluationContext(t *testing.T) {
+	t.Cleanup(resetSingleton)
+	ctrl := gomock.NewController(t)
+
+	mockProvider := NewMockFeatureProvider(ctrl)
+	mockProvider.EXPECT().Metadata().AnyTimes()
+	mockProvider.EXPECT().Hooks().AnyTimes()
+
+	if err := SetNamedProviderAndWait(t.Name(), mockProvider); err != nil {
+		t.Fatalf("error setting up provider %v", err)
+	}
+
+	flagKey := "foo"
+	defaultValue := "bar"
+
+	mockHookA := NewMockHook(ctrl)
+	mockHookB := NewMockHook(ctrl)
+
+	mockHookA.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&EvaluationContext{attributes: map[string]any{"from-hook-a": "a"}}, nil)
+
+	var seenByHookB map[string]any
+	mockHookB.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, hookCtx HookContext, _ HookHints) (*EvaluationContext, error) {
+			seenByHookB = hookCtx.EvaluationContext().Attributes()
+			return &EvaluationContext{attributes: map[string]any{"from-hook-b": "b"}}, nil
+		})
+
+	mockProvider.EXPECT().StringEvaluation(gomock.Any(), flagKey, defaultValue, map[string]any{
+		"from-hook-a": "a",
+		"from-hook-b": "b",
+	})
+
+	for _, hook := range []*MockHook{mockHookA, mockHookB} {
+		hook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		hook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	}
+
+	_, err := NewClient(t.Name()).StringValueDetails(
+		t.Context(), flagKey, defaultValue, EvaluationContext{}, WithHooks(mockHookA, mockHookB),
+	)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if _, ok := seenByHookB["from-hook-a"]; !ok {
+		t.Errorf("hook B did not see hook A's contribution, got %v", seenByHookB)
+	}
+}
+
 // `evaluation context` in the following order:
 // before-hook (highest precedence), invocation, client, api (lowest precedence).
 func TestRequirement_4_3_4(t *testing.T) {
