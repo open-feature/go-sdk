@@ -109,6 +109,16 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	}
 }
 
+// valueOrDefault returns value when it holds the expected type, and the caller's default
+// otherwise. A strategy may leave Value unset, and a nil has no type to assert, see #546
+func valueOrDefault[T any](value any, defaultValue T) T {
+	if v, ok := value.(T); ok {
+		return v
+	}
+
+	return defaultValue
+}
+
 // BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
 // This method will build a resolution detail with the internal provided error set. This method is exported for those
 // writing their own custom [StrategyFn].
@@ -158,7 +168,7 @@ func Evaluate[T FlagTypes](ctx context.Context, provider NamedProvider, flag str
 	default:
 		res := provider.ObjectEvaluation(ctx, flag, defaultVal, flatCtx)
 		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = res.Value.(T)
+		resolution.Value = valueOrDefault(res.Value, defaultVal)
 	}
 
 	if resolution.FlagMetadata == nil {

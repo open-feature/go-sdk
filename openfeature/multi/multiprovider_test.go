@@ -78,6 +78,44 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 	})
 }
 
+// A custom strategy may return a zero-value result, and the typed accessors asserted on it
+// without checking, so an unset Value took the calling process down.
+func TestMultiProvider_TypedAccessorsWithUnsetStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	assert.True(t, mp.BooleanEvaluation(t.Context(), "flag", true, of.FlattenedContext{}).Value)
+	assert.Equal(t, "fallback", mp.StringEvaluation(t.Context(), "flag", "fallback", of.FlattenedContext{}).Value)
+	assert.InDelta(t, 1.5, mp.FloatEvaluation(t.Context(), "flag", 1.5, of.FlattenedContext{}).Value, 0.001)
+	assert.Equal(t, int64(7), mp.IntEvaluation(t.Context(), "flag", 7, of.FlattenedContext{}).Value)
+}
+
+// An inner provider may resolve an object flag to a nil value, and nil has no type to assert
+// against, so the strategy's object branch panicked rather than resolving.
+func TestMultiProvider_ObjectEvaluationWithNilProviderValue(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: "nil-object"}).AnyTimes()
+	provider.EXPECT().Hooks().Return(nil).AnyTimes()
+	provider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(of.InterfaceResolutionDetail{
+			ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.StaticReason},
+		})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("nil-object", provider))
+	require.NoError(t, err)
+
+	defaultValue := map[string]any{"enabled": true}
+	res := mp.ObjectEvaluation(t.Context(), "flag", defaultValue, of.FlattenedContext{})
+	assert.Equal(t, defaultValue, res.Value)
+}
+
 func TestMultiProvider_MetaData(t *testing.T) {
 	t.Run("two providers", func(t *testing.T) {
 		testProvider1 := imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})

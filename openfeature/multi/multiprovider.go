@@ -309,7 +309,7 @@ func (p *Provider) Hooks() []of.Hook {
 func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.BoolResolutionDetail{
-		Value:                    res.Value.(bool),
+		Value:                    valueOrDefault(res.Value, defaultValue),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
 	}
 }
@@ -318,7 +318,7 @@ func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultVa
 func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.StringResolutionDetail{
-		Value:                    res.Value.(string),
+		Value:                    valueOrDefault(res.Value, defaultValue),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
 	}
 }
@@ -327,7 +327,7 @@ func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultVal
 func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.FloatResolutionDetail{
-		Value:                    res.Value.(float64),
+		Value:                    valueOrDefault(res.Value, defaultValue),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
 	}
 }
@@ -336,7 +336,7 @@ func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValu
 func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
 	return of.IntResolutionDetail{
-		Value:                    res.Value.(int64),
+		Value:                    valueOrDefault(res.Value, defaultValue),
 		ProviderResolutionDetail: res.ProviderResolutionDetail,
 	}
 }
