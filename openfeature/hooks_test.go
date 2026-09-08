@@ -99,6 +99,23 @@ func TestRequirement_4_2_2_1(t *testing.T) {
 	if caser.String(fieldName) == fieldName {
 		t.Errorf("field %s is uppercased and therefore mutable", fieldName)
 	}
+
+	// The unexported field only keeps the reference from being reachable outside
+	// the package. The caller still holds the map it passed in, so the hints are
+	// only immutable if NewHookHints copies it.
+	source := map[string]any{"foo": "bar"}
+	hints := NewHookHints(source)
+
+	source["foo"] = "baz"
+	source["added"] = "after construction"
+
+	if value := hints.Value("foo"); value != "bar" {
+		t.Errorf("expected hint to be unaffected by the caller, got %v", value)
+	}
+
+	if value := hints.Value("added"); value != nil {
+		t.Errorf("expected key added after construction to be absent, got %v", value)
+	}
 }
 
 // Condition: The client `metadata` field in the `hook context` MUST be immutable.
