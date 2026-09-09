@@ -274,14 +274,16 @@ func TestRequirement_4_3_3(t *testing.T) {
 // A before hook's evaluation context is merged into the accumulated one rather than replacing it,
 // so each hook observes every prior hook's contribution and the provider receives the union.
 func TestBeforeHooksAccumulateEvaluationContext(t *testing.T) {
-	t.Cleanup(resetSingleton)
+	api := newAPI()
+	t.Cleanup(func() { _ = api.Shutdown(context.Background()) }) //nolint:usetesting
+
 	ctrl := gomock.NewController(t)
 
 	mockProvider := NewMockFeatureProvider(ctrl)
 	mockProvider.EXPECT().Metadata().AnyTimes()
 	mockProvider.EXPECT().Hooks().AnyTimes()
 
-	if err := SetNamedProviderAndWait(t.Name(), mockProvider); err != nil {
+	if err := api.SetProviderAndWait(t.Context(), mockProvider, WithDomain(t.Name())); err != nil {
 		t.Fatalf("error setting up provider %v", err)
 	}
 
@@ -311,7 +313,7 @@ func TestBeforeHooksAccumulateEvaluationContext(t *testing.T) {
 		hook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	}
 
-	_, err := NewClient(t.Name()).StringValueDetails(
+	_, err := api.NewClient(WithDomain(t.Name())).StringValueDetails(
 		t.Context(), flagKey, defaultValue, EvaluationContext{}, WithHooks(mockHookA, mockHookB),
 	)
 	if err != nil {
