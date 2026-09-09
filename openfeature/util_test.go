@@ -1,6 +1,7 @@
 package openfeature
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -33,6 +34,8 @@ func init() {
 	}
 }
 
+var _ StateHandler = (*stateHandlerForTests)(nil)
+
 // stateHandlerForTests is a StateHandler with callbacks
 type stateHandlerForTests struct {
 	initF     func(e EvaluationContext) error
@@ -50,6 +53,36 @@ func (s *stateHandlerForTests) Shutdown() {
 	if s.shutdownF != nil {
 		s.shutdownF()
 	}
+}
+
+var _ ContextAwareStateHandler = (*stateContextAwareHandlerForTests)(nil)
+
+// stateContextAwareHandlerForTests is a StateHandler with callbacks
+type stateContextAwareHandlerForTests struct {
+	initF     func(context.Context, EvaluationContext) error
+	shutdownF func(context.Context) error
+}
+
+func (s *stateContextAwareHandlerForTests) Init(e EvaluationContext) error {
+	return s.InitWithContext(context.Background(), e)
+}
+
+func (s *stateContextAwareHandlerForTests) InitWithContext(ctx context.Context, e EvaluationContext) error {
+	if s.initF != nil {
+		return s.initF(ctx, e)
+	}
+	return nil
+}
+
+func (s *stateContextAwareHandlerForTests) Shutdown() {
+	_ = s.ShutdownWithContext(context.Background())
+}
+
+func (s *stateContextAwareHandlerForTests) ShutdownWithContext(ctx context.Context) error {
+	if s.shutdownF != nil {
+		return s.shutdownF(ctx)
+	}
+	return nil
 }
 
 // ProviderEventing is an eventing implementation with invoke capability

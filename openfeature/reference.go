@@ -8,7 +8,7 @@ import (
 func newProviderRef(provider FeatureProvider) providerReference {
 	return providerReference{
 		featureProvider:   provider,
-		kind:              reflect.TypeOf(provider).Kind(),
+		typeOf:            reflect.TypeOf(provider),
 		shutdownSemaphore: make(chan any, 1), // Buffered to allow both send and close operations
 	}
 }
@@ -17,12 +17,25 @@ func newProviderRef(provider FeatureProvider) providerReference {
 // shutdown semaphore
 type providerReference struct {
 	featureProvider   FeatureProvider
-	kind              reflect.Kind
+	typeOf            reflect.Type
 	shutdownSemaphore chan any
 }
 
+// equals reports whether pr and other refer to the same provider.
+//
+// For providers whose dynamic type is comparable, equality is determined using
+// Go's == operator. For non-comparable provider types (such as those containing
+// maps or slices), equality falls back to reflect.DeepEqual.
+//
+// The providers must have the same dynamic type to be considered equal.
 func (pr providerReference) equals(other providerReference) bool {
-	if pr.kind == reflect.Pointer && other.kind == reflect.Pointer {
+	if pr.typeOf == nil {
+		return false
+	}
+	if pr.typeOf != reflect.TypeOf(other.featureProvider) {
+		return false
+	}
+	if pr.typeOf.Comparable() {
 		return pr.featureProvider == other.featureProvider
 	}
 	return reflect.DeepEqual(pr.featureProvider, other.featureProvider)
