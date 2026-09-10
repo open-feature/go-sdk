@@ -308,37 +308,25 @@ func (p *Provider) Hooks() []of.Hook {
 // BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
 func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.BoolResolutionDetail{
-		Value:                    valueOrDefault(res.Value, defaultValue),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
 func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.StringResolutionDetail{
-		Value:                    valueOrDefault(res.Value, defaultValue),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
 func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.FloatResolutionDetail{
-		Value:                    valueOrDefault(res.Value, defaultValue),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
 func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.IntResolutionDetail{
-		Value:                    valueOrDefault(res.Value, defaultValue),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // ObjectEvaluation evaluates the flag and returns an [of.InterfaceResolutionDetail]. For the purposes of evaluation
@@ -347,10 +335,7 @@ func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue 
 // is not a comparable type unless the [WithCustomComparator] [Option] is configured.
 func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.InterfaceResolutionDetail{
-		Value:                    res.Value,
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.

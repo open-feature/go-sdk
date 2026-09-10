@@ -2,6 +2,7 @@ package multi
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"regexp"
 	"strings"
@@ -109,14 +110,21 @@ func mergeFlagMeta(tags ...of.FlagMetadata) of.FlagMetadata {
 	}
 }
 
-// valueOrDefault returns value when it holds the expected type, and the caller's default
-// otherwise. A strategy may leave Value unset, and a nil has no type to assert, see #546
-func valueOrDefault[T any](value any, defaultValue T) T {
+// resolveTyped builds the resolution for value, falling back to the caller's default.
+// A nil value means the strategy resolved nothing, so the default stands on its own.
+// A value of the wrong type is a strategy bug and is reported as a type mismatch rather
+// than returned under the provider's success reason.
+func resolveTyped[T any](value any, detail of.ProviderResolutionDetail, defaultValue T) of.GenericResolutionDetail[T] {
+	typed := of.GenericResolutionDetail[T]{Value: defaultValue, ProviderResolutionDetail: detail}
 	if v, ok := value.(T); ok {
-		return v
+		typed.Value = v
+	} else if value != nil {
+		typed.ResolutionError = of.NewTypeMismatchResolutionError(
+			fmt.Sprintf("strategy resolved %T, expected %T", value, defaultValue))
+		typed.Reason = of.ErrorReason
 	}
 
-	return defaultValue
+	return typed
 }
 
 // BuildDefaultResult should be called when a [StrategyFn] is in a failure state and needs to return a default value.
@@ -167,8 +175,7 @@ func Evaluate[T FlagTypes](ctx context.Context, provider NamedProvider, flag str
 		resolution.Value = any(res.Value).(T)
 	default:
 		res := provider.ObjectEvaluation(ctx, flag, defaultVal, flatCtx)
-		resolution.ProviderResolutionDetail = res.ProviderResolutionDetail
-		resolution.Value = valueOrDefault(res.Value, defaultVal)
+		resolution = resolveTyped(res.Value, res.ProviderResolutionDetail, defaultVal)
 	}
 
 	if resolution.FlagMetadata == nil {

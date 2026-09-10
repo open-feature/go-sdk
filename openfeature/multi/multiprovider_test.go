@@ -92,7 +92,7 @@ func TestMultiProvider_TypedAccessorsWithUnsetStrategyValue(t *testing.T) {
 
 	assert.True(t, mp.BooleanEvaluation(t.Context(), "flag", true, of.FlattenedContext{}).Value)
 	assert.Equal(t, "fallback", mp.StringEvaluation(t.Context(), "flag", "fallback", of.FlattenedContext{}).Value)
-	assert.InDelta(t, 1.5, mp.FloatEvaluation(t.Context(), "flag", 1.5, of.FlattenedContext{}).Value, 0.001)
+	assert.Equal(t, 1.5, mp.FloatEvaluation(t.Context(), "flag", 1.5, of.FlattenedContext{}).Value)
 	assert.Equal(t, int64(7), mp.IntEvaluation(t.Context(), "flag", 7, of.FlattenedContext{}).Value)
 }
 
@@ -114,6 +114,45 @@ func TestMultiProvider_ObjectEvaluationWithNilProviderValue(t *testing.T) {
 	defaultValue := map[string]any{"enabled": true}
 	res := mp.ObjectEvaluation(t.Context(), "flag", defaultValue, of.FlattenedContext{})
 	assert.Equal(t, defaultValue, res.Value)
+}
+
+// The object accessor asserted nothing at all, so a strategy that resolved no value
+// returned nil to the caller in place of their default.
+func TestMultiProvider_ObjectEvaluationWithUnsetStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	defaultValue := map[string]any{"enabled": true}
+	assert.Equal(t, defaultValue, mp.ObjectEvaluation(t.Context(), "flag", defaultValue, of.FlattenedContext{}).Value)
+}
+
+// A strategy that resolves the wrong type is a bug in the strategy, and reporting it as a
+// successful resolution of the default leaves the caller nothing to diagnose it with.
+func TestMultiProvider_TypedAccessorsWithWrongTypedStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{
+				Value:                    "not-a-bool",
+				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.StaticReason},
+			}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	res := mp.BooleanEvaluation(t.Context(), "flag", true, of.FlattenedContext{})
+	assert.True(t, res.Value)
+	assert.Equal(t, of.ErrorReason, res.Reason)
+	assert.Equal(t,
+		of.NewTypeMismatchResolutionError("strategy resolved string, expected bool").Error(),
+		res.ResolutionError.Error())
 }
 
 func TestMultiProvider_MetaData(t *testing.T) {
