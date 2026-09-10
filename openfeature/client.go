@@ -515,7 +515,15 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return InterfaceEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return evalDetails, nil
 }
 
 // typeMismatchDetails builds the details a typed accessor returns when the resolved value is not of
