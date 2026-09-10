@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -110,6 +112,63 @@ func TestRequirements_1_3(t *testing.T) {
 	}
 }
 
+// If the value returned by the underlying provider implementation does not match the expected type,
+// it's to be considered abnormal execution, and the supplied `default value` should be returned.
+// Abnormal execution means the `reason` indicates an error (requirement 1.4.9) rather than the
+// reason for the resolution whose value was discarded.
+//
+// The accessors' type assertions can't fail through a FeatureProvider, since evaluate takes its
+// value from the statically typed provider results, so the shared helper is exercised directly.
+func TestRequirement_1_3_4(t *testing.T) {
+	// A successful resolution carrying a value that is not of the accessor's type.
+	resolved := EvaluationDetails{
+		FlagKey:          "foo",
+		ResolutionDetail: ResolutionDetail{Variant: "mismatched", Reason: StaticReason},
+	}
+	mismatchErr := errors.New("evaluated value is of the wrong type")
+
+	tests := map[string]struct {
+		want     any
+		mismatch func() (InterfaceEvaluationDetails, error)
+	}{
+		"boolean": {booleanValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(booleanValue, resolved, mismatchErr))
+		}},
+		"string": {stringValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(stringValue, resolved, mismatchErr))
+		}},
+		"float64": {floatValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(floatValue, resolved, mismatchErr))
+		}},
+		"int64": {int64(intValue), func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(int64(intValue), resolved, mismatchErr))
+		}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			details, err := tt.mismatch()
+
+			require.ErrorIs(t, err, mismatchErr)
+			assert.Equal(t, tt.want, details.Value)
+			assert.Equal(t, EvaluationDetails{
+				FlagKey: resolved.FlagKey,
+				ResolutionDetail: ResolutionDetail{
+					Variant:      resolved.Variant,
+					Reason:       ErrorReason,
+					ErrorCode:    TypeMismatchCode,
+					ErrorMessage: mismatchErr.Error(),
+				},
+			}, details.EvaluationDetails)
+		})
+	}
+}
+
+// anyDetails erases the type parameter so cases for different types can share one table.
+func anyDetails[T any](details GenericEvaluationDetails[T], err error) (InterfaceEvaluationDetails, error) {
+	return InterfaceEvaluationDetails{Value: details.Value, EvaluationDetails: details.EvaluationDetails}, err
+}
+
 // The `client` MUST provide methods for detailed flag value evaluation with parameters `flag key` (string, required),
 // `default value` (boolean | number | string | structure, required), `evaluation context` (optional),
 // and `evaluation options` (optional), which returns an `evaluation details` structure.
@@ -186,7 +245,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if evDetails.Value != booleanValue {
-			t.Error(err)
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != booleanVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
 		}
 	})
 
