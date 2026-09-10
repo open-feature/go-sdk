@@ -183,7 +183,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 			Reason:       of.ErrorReason,
 			ErrorCode:    of.GeneralCode,
 			ErrorMessage: err.Error(),
-			FlagMetadata: nil,
+			FlagMetadata: of.FlagMetadata{},
 		}
 		return evalDetails
 	}

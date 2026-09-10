@@ -90,6 +90,8 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 	}, nil)
 	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
+	// empty record rather than nil, see #542
+	assert.Equal(t, of.FlagMetadata{}, result.FlagMetadata)
 }
 
 func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T) {
