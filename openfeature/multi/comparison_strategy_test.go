@@ -739,4 +739,22 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
 		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
 	})
+
+	t.Run("nil default value returns the default instead of panicking", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		fallback := of.NewMockFeatureProvider(ctrl)
+		provider := of.NewMockFeatureProvider(ctrl)
+		strategy := newComparisonStrategy([]NamedProvider{
+			&namedProvider{
+				name:            "test-provider1",
+				FeatureProvider: provider,
+			},
+		}, fallback, nil)
+
+		result := strategy(t.Context(), testFlag, nil, of.FlattenedContext{})
+		assert.Nil(t, result.Value)
+		assert.Equal(t, of.ErrorReason, result.Reason)
+		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)
+		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+	})
 }
