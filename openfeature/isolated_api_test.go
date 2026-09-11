@@ -2,6 +2,7 @@ package openfeature
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -391,4 +392,74 @@ func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
 	if err := instance.Shutdown(t.Context()); err != nil {
 		t.Fatalf("ShutdownWithContext on isolated instance: %v", err)
 	}
+}
+
+func TestIsolatedAPI_ShutdownContextCancelled(t *testing.T) {
+	instance := newAPI()
+
+	// Set a provider using SetProvider (async) with a slow init,
+	// so the instance has an in-flight count when Shutdown is entered.
+	provider := &testContextAwareProvider{initDelay: 100 * time.Millisecond}
+	err := instance.SetProvider(t.Context(), provider)
+	if err != nil {
+		t.Fatalf("SetProvider: %v", err)
+	}
+
+	// Shutdown with an already-cancelled context.
+	// The instance blocks until the async init finishes, then the
+	// select picks up ctx.Done() and restores the state to active.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	err = instance.Shutdown(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("wanted context.Canceled, got: %v", err)
+	}
+
+	if instance.state != evaluationAPIStateActive {
+		t.Errorf("wanted state restored to active, got: %d", instance.state)
+	}
+
+	// State was restored, so SetProvider should work again.
+	err = instance.SetProvider(t.Context(), &testContextAwareProvider{initDelay: time.Millisecond})
+	if err != nil {
+		t.Errorf("wanted SetProvider to succeed after cancelled shutdown, got: %v", err)
+	}
+
+	if err = instance.Shutdown(t.Context()); err != nil {
+		t.Errorf("cleanup shutdown: %v", err)
+	}
+	if instance.state != evaluationAPIStateShutdown {
+		t.Errorf("wanted state shutdown after cleanup, got: %d", instance.state)
+	}
+}
+
+func TestIsolatedAPI_SetProviderRejectedAfterShutdown(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := NewMockFeatureProvider(ctrl)
+
+	instance := newAPI()
+	if err := instance.Shutdown(t.Context()); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+
+	t.Run("default", func(t *testing.T) {
+		if err := instance.SetProvider(t.Context(), provider); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProvider: expected errAPIShutdown, got: %v", err)
+		}
+
+		if err := instance.SetProviderAndWait(t.Context(), provider); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProviderAndWait: expected errAPIShutdown, got: %v", err)
+		}
+	})
+
+	t.Run("domain", func(t *testing.T) {
+		if err := instance.SetProvider(t.Context(), provider, WithDomain("d")); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProvider with domain: expected errAPIShutdown, got: %v", err)
+		}
+
+		if err := instance.SetProviderAndWait(t.Context(), provider, WithDomain("d")); !errors.Is(err, errAPIShutdown) {
+			t.Errorf("SetProviderAndWait with domain: expected errAPIShutdown, got: %v", err)
+		}
+	})
 }
