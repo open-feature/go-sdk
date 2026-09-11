@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.18.1](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.18.1) (2026-09-11)
+
+
+### 🐛 Bug Fixes
+
+* coerce int types to float64 in memprovider float evaluation ([#565](https://github.com/open-feature/go-sdk/issues/565)) ([a0892c2](https://github.com/open-feature/go-sdk/commit/a0892c296bd8b6d55188687e49dcc7692594f015)), closes [#564](https://github.com/open-feature/go-sdk/issues/564)
+* copy the caller's map in NewHookHints ([#573](https://github.com/open-feature/go-sdk/issues/573)) ([fcc5227](https://github.com/open-feature/go-sdk/commit/fcc52277d7518d375931dc0dfb38d80423861485)), closes [#562](https://github.com/open-feature/go-sdk/issues/562)
+* merge before hook evaluation contexts instead of replacing them ([#569](https://github.com/open-feature/go-sdk/issues/569)) ([0f99e6d](https://github.com/open-feature/go-sdk/commit/0f99e6ddcb1ab341426d45a88b63a6789c5c639e))
+* **multi:** stop unchecked type assertions panicking out of flag evaluation ([#578](https://github.com/open-feature/go-sdk/issues/578)) ([86d35ff](https://github.com/open-feature/go-sdk/commit/86d35ff846b87cfdd63903c9b9494cfc99bf459b))
+* populate EvaluationDetails on NOT_READY/FATAL short-circuit ([#541](https://github.com/open-feature/go-sdk/issues/541)) ([6b0824c](https://github.com/open-feature/go-sdk/commit/6b0824c6c7b9b69e40f26aedcc4406ad4d3a5cec))
+* resolve disabled flags without an error ([#574](https://github.com/open-feature/go-sdk/issues/574)) ([9853ca0](https://github.com/open-feature/go-sdk/commit/9853ca0d646819d29fcf4c98862eb5b7b3fca113)), closes [#552](https://github.com/open-feature/go-sdk/issues/552)
+* return an empty flag metadata record on evaluate's early returns ([#575](https://github.com/open-feature/go-sdk/issues/575)) ([5c9e08b](https://github.com/open-feature/go-sdk/commit/5c9e08b75303e88c1926de4c26dcdf53e699d16d))
+* return default value from ObjectValueDetails on abnormal execution ([#566](https://github.com/open-feature/go-sdk/issues/566)) ([7fbae18](https://github.com/open-feature/go-sdk/commit/7fbae183c958a7ebc09cc0fa02d96e4765f2b1d9))
+* set ErrorReason when typed accessors return TYPE_MISMATCH ([#538](https://github.com/open-feature/go-sdk/issues/538)) ([eef27af](https://github.com/open-feature/go-sdk/commit/eef27aff38ed6fd0ae7d18af005bcf46e80c9eeb))
+
+
+### 🧹 Chore
+
+* **deps:** update goreleaser/goreleaser-action action to v7 ([#534](https://github.com/open-feature/go-sdk/issues/534)) ([ffc9895](https://github.com/open-feature/go-sdk/commit/ffc98950d6bb707d02f1f78ea6c633f8a179ee4d))
+* **deps:** update marocchino/sticky-pull-request-comment action to v3.0.5 ([#533](https://github.com/open-feature/go-sdk/issues/533)) ([65c97f1](https://github.com/open-feature/go-sdk/commit/65c97f128fd955e3c33a8fac0185df61bea1aa03))
+* upgrade Go to 1.26 and update dependencies ([#531](https://github.com/open-feature/go-sdk/issues/531)) ([3a6545b](https://github.com/open-feature/go-sdk/commit/3a6545be412dbe6b526a487eca96e692bede888f))
+
 ## [1.18.0](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.18.0) (2026-07-31)
 
 
