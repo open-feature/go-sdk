@@ -392,3 +392,43 @@ func TestIsolatedAPI_ShutdownWithContextStopsEventExecutor(t *testing.T) {
 		t.Fatalf("ShutdownWithContext on isolated instance: %v", err)
 	}
 }
+
+// A domain whose own provider is still initializing MUST report NOT_READY rather than inheriting
+// the default provider's status, per 1.7.1 / 1.7.3 and the section 1.7 lifecycle diagram.
+func TestDomainStateWhileProviderInitializing(t *testing.T) {
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	if err := api.SetProviderAndWait(t.Context(), NoopProvider{}); err != nil {
+		t.Fatalf("failed to set up default provider: %v", err)
+	}
+	if got := api.eventExecutor.State(defaultDomain); got != ReadyState {
+		t.Fatalf("expected the default provider to be READY, got %q", got)
+	}
+
+	initializing := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(EvaluationContext) error {
+				// Block until test cleanup so the provider never leaves NOT_READY.
+				<-t.Context().Done()
+				return nil
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	if _, err := api.setDomainProvider(t.Context(), "foo", initializing); err != nil {
+		t.Fatalf("failed to set up the domain provider: %v", err)
+	}
+
+	if got := api.eventExecutor.State("foo"); got != NotReadyState {
+		t.Errorf("expected domain \"foo\" to report NOT_READY while its provider initializes, got %q", got)
+	}
+}
