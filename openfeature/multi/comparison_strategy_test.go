@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	"github.com/stretchr/testify/assert"
@@ -761,12 +760,10 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 	})
 }
 
-// configureDelayedNotFoundProvider reports FLAG_NOT_FOUND only after delay, so the
-// provider is still mid-evaluation when another one cancels the group.
-func configureDelayedNotFoundProvider(provider *of.MockFeatureProvider, delay time.Duration) {
+func configureBlockedNotFoundProvider(provider *of.MockFeatureProvider, release <-chan struct{}) {
 	provider.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"}).MaxTimes(1)
 	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(c context.Context, flag string, defaultVal bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
-		time.Sleep(delay)
+		<-release
 		return of.BoolResolutionDetail{
 			Value: defaultVal,
 			ProviderResolutionDetail: of.ProviderResolutionDetail{
@@ -784,15 +781,14 @@ func Test_ComparisonStrategy_NotFoundSendersDoNotOutliveEvaluation(t *testing.T)
 
 	ctrl := gomock.NewController(t)
 	fallback := of.NewMockFeatureProvider(ctrl)
+	release := make(chan struct{})
 
-	// the failing provider cancels the group while the not-found providers are still
-	// sleeping, so both reach the send after the listener loop has already returned
 	failing := of.NewMockFeatureProvider(ctrl)
 	configureComparisonProvider(failing, false, true, TestErrorError, false)
-	slowNotFound1 := of.NewMockFeatureProvider(ctrl)
-	configureDelayedNotFoundProvider(slowNotFound1, 50*time.Millisecond)
-	slowNotFound2 := of.NewMockFeatureProvider(ctrl)
-	configureDelayedNotFoundProvider(slowNotFound2, 50*time.Millisecond)
+	blockedNotFound1 := of.NewMockFeatureProvider(ctrl)
+	configureBlockedNotFoundProvider(blockedNotFound1, release)
+	blockedNotFound2 := of.NewMockFeatureProvider(ctrl)
+	configureBlockedNotFoundProvider(blockedNotFound2, release)
 
 	strategy := newComparisonStrategy([]NamedProvider{
 		&namedProvider{
@@ -800,16 +796,24 @@ func Test_ComparisonStrategy_NotFoundSendersDoNotOutliveEvaluation(t *testing.T)
 			FeatureProvider: failing,
 		},
 		&namedProvider{
-			name:            "slow-not-found-provider1",
-			FeatureProvider: slowNotFound1,
+			name:            "blocked-not-found-provider1",
+			FeatureProvider: blockedNotFound1,
 		},
 		&namedProvider{
-			name:            "slow-not-found-provider2",
-			FeatureProvider: slowNotFound2,
+			name:            "blocked-not-found-provider2",
+			FeatureProvider: blockedNotFound2,
 		},
 	}, fallback, nil)
 
-	result := strategy(t.Context(), testFlag, false, of.FlattenedContext{})
+	var result of.GenericResolutionDetail[FlagTypes]
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		result = strategy(t.Context(), testFlag, false, of.FlattenedContext{})
+	}()
+	<-done
+	close(release)
+
 	assert.Equal(t, false, result.Value)
 	assert.Equal(t, of.ErrorReason, result.Reason)
 	assert.True(t, result.FlagMetadata[MetadataIsDefaultValue].(bool))
