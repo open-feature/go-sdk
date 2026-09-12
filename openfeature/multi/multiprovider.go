@@ -103,7 +103,7 @@ func (n *namedProvider) unwrap() of.FeatureProvider {
 
 var (
 	stateValues      map[of.State]int
-	stateTable       [3]of.State
+	stateTable       [5]of.State
 	eventTypeToState map[of.EventType]of.State
 
 	// Compile-time interface compliance checks
@@ -118,15 +118,19 @@ var (
 func init() {
 	// used for mapping provider event types & provider states to comparable values for evaluation
 	stateValues = map[of.State]int{
-		of.ReadyState: 0,
-		of.StaleState: 1,
-		of.ErrorState: 2,
+		of.ReadyState:    0,
+		of.StaleState:    1,
+		of.ErrorState:    2,
+		of.NotReadyState: 3,
+		of.FatalState:    4,
 	}
 	// used for mapping
-	stateTable = [3]of.State{
-		of.ReadyState, // 0
-		of.StaleState, // 1
-		of.ErrorState, // 2
+	stateTable = [5]of.State{
+		of.ReadyState,
+		of.StaleState,
+		of.ErrorState,
+		of.NotReadyState,
+		of.FatalState,
 	}
 	eventTypeToState = map[of.EventType]of.State{
 		of.ProviderReady: of.ReadyState,
@@ -507,8 +511,16 @@ func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 	p.providerStatusLock.Lock()
 	previousState := p.providerStatus[e.providerName]
 	p.providerStatusLock.Unlock()
-	logProviderState(p.logger, e, previousState)
-	return p.updateProviderState(e.providerName, eventTypeToState[e.EventType])
+	state := stateFromEvent(e)
+	logProviderState(p.logger, e, state, previousState)
+	return p.updateProviderState(e.providerName, state)
+}
+
+func stateFromEvent(e namedEvent) of.State {
+	if e.EventType == of.ProviderError && e.ErrorCode == of.ProviderFatalCode {
+		return of.FatalState
+	}
+	return eventTypeToState[e.EventType]
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
@@ -524,8 +536,8 @@ func (p *Provider) evaluateState() of.State {
 	return stateTable[maxState]
 }
 
-func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
-	switch eventTypeToState[e.EventType] {
+func logProviderState(l *slog.Logger, e namedEvent, state, previousState of.State) {
+	switch state {
 	case of.ReadyState:
 		if previousState != of.NotReadyState {
 			l.LogAttrs(context.Background(), slog.LevelInfo, "provider has returned to ready state",
@@ -538,6 +550,9 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	case of.ErrorState:
 		l.LogAttrs(context.Background(), slog.LevelError, "provider is in an error state",
+			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
+	case of.FatalState:
+		l.LogAttrs(context.Background(), slog.LevelError, "provider is in a fatal state",
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	}
 }
