@@ -19,10 +19,12 @@ If there are changes needed to enable vendor specific behaviour in code or other
 This repo uses [mise](https://mise.jdx.dev) to manage its development tools and to run its tasks. [Install mise](https://mise.jdx.dev/installing-mise.html), then run
 
 ```
-mise install --locked
+mise install
 ```
 
-to get the toolchain pinned in `mise.toml` and `mise.lock` — Go, golangci-lint, mockgen, govulncheck and the release tooling. `mise tasks` lists everything you can run; `mise run <task>` runs one. CI runs the same tasks, so a green `mise run ci` locally is a good signal.
+to get the toolchain pinned in `mise.toml` and `mise.lock` — Go, golangci-lint, mockgen, govulncheck and the release tooling. `mise install` resolves through the lockfile, so you get the versions CI uses. CI additionally passes `--locked` to turn a missing lock entry into an error; don't use that flag locally, as it also applies to any tools in your personal global mise config.
+
+`mise tasks` lists everything you can run; `mise run <task>` runs one. CI runs the same tasks, so a green `mise run ci` locally is a good signal.
 
 `mise run ci` covers linting and both test suites. `mise run govulncheck` reports known vulnerabilities in the dependency tree; CI runs it advisory-only, so it never fails a PR.
 
