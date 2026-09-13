@@ -1,0 +1,72 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+# Single-purpose tools are pinned on the task that runs them, so nothing installs
+# goreleaser to run the tests.
+[tools]
+# Keep the release series in sync with the `go` directive in go.mod.
+go = "1.26"
+golangci-lint = "2.13.1"
+
+[settings]
+# Resolve every tool through mise.lock so CI and contributors install byte-for-byte
+# the same artifacts. `mise lock --bump <tool>` updates a resolution deliberately.
+lockfile = true
+
+[tasks.test]
+description = "Run the unit tests"
+run = "go test -tags testtools -short -race -timeout 1m -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./..."
+
+[tasks."test:e2e"]
+description = "Run the gherkin end-to-end tests"
+depends = ["submodules"]
+run = "go test -tags testtools -race -timeout 1m -coverpkg=./... -coverprofile=coverage-e2e.out -covermode=atomic ./e2e/..."
+
+[tasks.lint]
+description = "Run the linters"
+run = "golangci-lint run ./..."
+
+[tasks.fix]
+description = "Run the linters and apply the fixes they can make themselves"
+run = "golangci-lint run --fix ./..."
+
+[tasks.govulncheck]
+description = "Report known vulnerabilities in the module and its dependencies"
+tools = { "go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0" }
+run = "govulncheck ./..."
+
+[tasks.mockgen]
+description = "Regenerate the gomock test doubles"
+# Keep in sync with the go.uber.org/mock version in go.mod: mockgen stamps its
+# own version into the generated files.
+tools = { "go:go.uber.org/mock/mockgen" = "0.6.0" }
+sources = ["openfeature/provider.go", "openfeature/hooks.go", "openfeature/interfaces.go"]
+outputs = [
+  "openfeature/provider_mock.go",
+  "openfeature/hooks_mock.go",
+  "openfeature/interfaces_mock.go",
+]
+run = [
+  "mockgen -source=openfeature/provider.go -destination=openfeature/provider_mock.go -package=openfeature -build_constraint=testtools",
+  "mockgen -source=openfeature/hooks.go -destination=openfeature/hooks_mock.go -package=openfeature -build_constraint=testtools",
+  "mockgen -source=openfeature/interfaces.go -destination=openfeature/interfaces_mock.go -package=openfeature -build_constraint=testtools",
+]
+
+[tasks.docs]
+description = "Serve the package documentation locally"
+# `go doc -http` fetches pkgsite itself, so there is nothing to pin.
+run = "go doc -http"
+
+[tasks.release]
+description = "Publish the release artifacts (run by CI against a release tag)"
+# goreleaser's `sboms` hook shells out to cyclonedx-gomod, which mise puts on PATH.
+tools = { goreleaser = "2.18.1", "go:github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod" = "1.3.0" }
+run = "goreleaser release --clean"
+
+[tasks.submodules]
+description = "Check out the test-harness git submodule"
+hide = true
+run = "git submodule update --init --recursive"
+
+[tasks.ci]
+description = "Run everything the ci workflow runs"
+depends = ["lint", "test", "test:e2e"]

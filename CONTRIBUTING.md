@@ -14,6 +14,22 @@ If there are changes needed to enable vendor specific behaviour in code or other
 
 ## Development
 
+### Toolchain and tasks
+
+This repo uses [mise](https://mise.jdx.dev) to manage its development tools and to run its tasks. [Install mise](https://mise.jdx.dev/installing-mise.html), then run
+
+```
+mise install
+```
+
+to get Go and golangci-lint at the versions pinned in `mise.toml` and `mise.lock`. Single-purpose tools — mockgen, govulncheck and the release tooling — are declared on the task that runs them, so `mise run mockgen` fetches mockgen the first time you need it and a task you never run costs you nothing. Both `mise install` and `mise run` resolve through the lockfile, so you get the versions CI uses; CI additionally sets `MISE_LOCKED` to turn a missing lock entry into an error.
+
+`mise tasks` lists everything you can run; `mise run <task>` runs one. CI runs the same tasks, so a green `mise run ci` locally is a good signal.
+
+`mise run ci` covers linting and both test suites. `mise run govulncheck` reports known vulnerabilities in the dependency tree; CI runs it advisory-only, so it never fails a PR.
+
+If you'd rather not install mise, the tasks are thin wrappers around the underlying tools; read `mise.toml` and run the commands directly.
+
 ### Installation and Dependencies
 
 Install dependencies with `go get ./...`
@@ -22,7 +38,7 @@ We value having as few runtime dependencies as possible. The addition of any dep
 
 ### Testing
 
-Any contributions are expected to include unit tests. These can be validated with `make test` or the automated github workflow will run them on PR creation.
+Any contributions are expected to include unit tests. These can be validated with `mise run test` or the automated github workflow will run them on PR creation.
 
 The go version in the `go.mod` is the currently supported version of go.
 
@@ -30,22 +46,19 @@ When writing a test to cover a spec requirement use the test naming convention `
 
 #### Unit tests
 
-Run unit tests with `make test`.
+Run unit tests with `mise run test`.
 
 #### End-to-End tests
 
 The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features).
 
-If you'd like to run them locally, first pull the `test-harness` git submodule
+Run them locally with
 
 ```
-git submodule update --init --recursive
+mise run test:e2e
 ```
 
-and run tests with,
-```
-make e2e-test
-```
+which pulls the `test-harness` git submodule first.
 
 #### Fuzzing
 
@@ -56,7 +69,7 @@ The fuzzing tests are found in [./integration/evaluation_fuzz_test.go](./e2e/eva
 
 To execute a fuzzing test, run the following
 ```
-go test -fuzz=FuzzBooleanEvaluation ./e2e/evaluation_fuzz_test.go
+mise exec -- go test -fuzz=FuzzBooleanEvaluation ./e2e/evaluation_fuzz_test.go
 ```
 substituting the name of the fuzz as appropriate.
 
