@@ -6,16 +6,18 @@ on:
       - main
   pull_request:
 
+# Task tools install at run time, so lock every mise call, not just `mise install`.
+env:
+  MISE_LOCKED: "true"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Install mise and the pinned toolchain
+      - name: Install mise and the shared toolchain
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
-        with:
-          install_args: --locked
       - name: Module cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         env:
@@ -37,10 +39,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           submodules: recursive
-      - name: Install mise and the pinned toolchain
+      - name: Install mise and the shared toolchain
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
-        with:
-          install_args: --locked
       - name: Module cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         env:

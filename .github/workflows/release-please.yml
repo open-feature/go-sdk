@@ -26,16 +26,17 @@ jobs:
     needs: release-please
     runs-on: ubuntu-latest
     if: ${{ needs.release-please.outputs.release_created }}
+    # The release task installs its own tools, so lock every mise call.
+    env:
+      MISE_LOCKED: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.release-please.outputs.release_tag_name }}
 
-      - name: Install mise and the pinned toolchain
+      - name: Install mise and the shared toolchain
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
-        with:
-          install_args: --locked
 
       - name: Run GoReleaser
         run: mise run release

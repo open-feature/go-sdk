@@ -45,14 +45,6 @@ version = "0.6.0"
 backend = "go:go.uber.org/mock/mockgen"
 specifiers = ["0.6.0"]
 
-[[tools."go:golang.org/x/pkgsite/cmd/pkgsite"]]
-version = "0.5.0"
-backend = "go:golang.org/x/pkgsite/cmd/pkgsite"
-specifiers = [
-    "0.5.0",
-    "latest",
-]
-
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
 version = "1.8.0"
 backend = "go:golang.org/x/vuln/cmd/govulncheck"
