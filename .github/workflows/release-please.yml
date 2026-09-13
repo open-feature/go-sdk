@@ -37,16 +37,7 @@ jobs:
         with:
           install_args: --locked
 
-      - name: Install cyclonedx-gomod
-        uses: CycloneDX/gh-gomod-generate-sbom@efc74245d6802c8cefd925620515442756c70d8f # v2
-        with:
-          version: v1.3.0
-
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
-        with:
-          distribution: goreleaser
-          version: "~> v2"
-          args: release --clean
+        run: mise run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

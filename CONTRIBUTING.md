@@ -22,9 +22,11 @@ This repo uses [mise](https://mise.jdx.dev) to manage its development tools and 
 mise install --locked
 ```
 
-to get the Go toolchain and linter versions pinned in `mise.toml` and `mise.lock`. `mise tasks` lists everything you can run; `mise run <task>` runs one. CI runs the same tasks, so a green `mise run ci` locally is a good signal.
+to get the toolchain pinned in `mise.toml` and `mise.lock` — Go, golangci-lint, mockgen, govulncheck and the release tooling. `mise tasks` lists everything you can run; `mise run <task>` runs one. CI runs the same tasks, so a green `mise run ci` locally is a good signal.
 
-If you'd rather not install mise, the tasks are thin wrappers around `go` and `golangci-lint`; read `mise.toml` and run the commands directly.
+`mise run ci` covers linting and both test suites. `mise run govulncheck` reports known vulnerabilities in the dependency tree; CI runs it advisory-only, so it never fails a PR.
+
+If you'd rather not install mise, the tasks are thin wrappers around the underlying tools; read `mise.toml` and run the commands directly.
 
 ### Installation and Dependencies
 
