@@ -17,7 +17,6 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/^Makefile$/",
         "/^README.md$/",
         "/^.github/workflows/pr-checks.yml$/"
       ],

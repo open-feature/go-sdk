@@ -32,10 +32,10 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.release_tag_name }}
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - name: Install mise and the pinned toolchain
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
         with:
-          go-version-file: 'go.mod'
+          install_args: --locked
 
       - name: Install cyclonedx-gomod
         uses: CycloneDX/gh-gomod-generate-sbom@efc74245d6802c8cefd925620515442756c70d8f # v2
