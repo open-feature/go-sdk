@@ -3,6 +3,7 @@ package multi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -283,6 +284,79 @@ func TestMultiProvider_InitReportsNotReady(t *testing.T) {
 	assert.Equal(t, of.NotReadyState, mp.Status())
 	close(release)
 	require.NoError(t, <-initDone)
+}
+
+// TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in
+// InitWithContext: the aggregate status must not leave NOT_READY while any provider is still
+// initializing (#580).
+func TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain(t *testing.T) {
+	const fastProviders = 128
+
+	ctrl := gomock.NewController(t)
+	blocker := of.NewMockFeatureProvider(ctrl)
+	blocker.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+	blocker.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	blockerState := of.NewMockStateHandler(ctrl)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	blockerState.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		close(started)
+		<-release
+		return nil
+	})
+	blockerState.EXPECT().Shutdown().MaxTimes(1)
+	wrapped := struct {
+		of.FeatureProvider
+		of.StateHandler
+	}{blocker, blockerState}
+
+	opts := make([]Option, 0, fastProviders+1)
+	for i := range fastProviders {
+		opts = append(opts, WithProvider(fmt.Sprintf("fast-%d", i), imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
+	}
+	opts = append(opts, WithProvider("blocker", wrapped))
+
+	mp, err := NewProvider(StrategyFirstMatch, opts...)
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	// The blocking provider never reaches ready, so only close(release) may end NOT_READY.
+	violation := make(chan of.State, 1)
+	pollDone := make(chan struct{})
+	go func() {
+		defer close(pollDone)
+		for {
+			if s := mp.Status(); s != of.NotReadyState {
+				select {
+				case <-release:
+				default:
+					violation <- s
+				}
+				return
+			}
+			select {
+			case <-release:
+				return
+			default:
+			}
+		}
+	}()
+
+	initDone := make(chan error, 1)
+	go func() {
+		initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{})
+	}()
+
+	<-started
+	assert.Equal(t, of.NotReadyState, mp.Status())
+	close(release)
+	<-pollDone
+	require.NoError(t, <-initDone)
+	select {
+	case s := <-violation:
+		t.Fatalf("Status() reported %s while providers were still initializing", s)
+	default:
+	}
 }
 
 func TestMultiProvider_InitErrorWithProvider(t *testing.T) {

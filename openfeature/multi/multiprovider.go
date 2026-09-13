@@ -353,10 +353,14 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	// wrapper type used only for initialization of event listener workers
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
 	handlers := make(chan namedEventHandler, len(p.providers))
+	// Seed every provider before launching any worker, otherwise a fast provider reaching ready
+	// makes Status() report READY while later providers are still unseeded (#580).
+	for _, provider := range p.providers {
+		p.updateProviderState(provider.Name(), of.NotReadyState)
+	}
+
 	for _, provider := range p.providers {
 		name := provider.Name()
-		// Initialize each provider to not ready state. No locks required there are no workers running
-		p.updateProviderState(name, of.NotReadyState)
 		l := p.logger.With(slog.String(MetadataProviderName, name))
 		prov := provider
 		eg.Go(func() error {
