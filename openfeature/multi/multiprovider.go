@@ -375,7 +375,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 
 				if err != nil {
 					l.LogAttrs(ctx, slog.LevelError, "initialization failed", slog.Any("error", err))
-					p.updateProviderState(name, of.ErrorState)
+					p.updateProviderState(name, stateFromInitError(err))
 					return &ProviderError{
 						err:          err,
 						ProviderName: name,
@@ -403,7 +403,10 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 			}
 		}
 
-		p.setStatus(of.ErrorState)
+		p.providerStatusLock.Lock()
+		aggregate := p.evaluateState()
+		p.providerStatusLock.Unlock()
+		p.setStatus(aggregate)
 		return pErr
 	}
 	close(handlers)
@@ -524,7 +527,18 @@ func stateFromEvent(e namedEvent) of.State {
 	if e.EventType == of.ProviderError && e.ErrorCode == of.ProviderFatalCode {
 		return of.FatalState
 	}
-	return eventTypeToState[e.EventType]
+	state, ok := eventTypeToState[e.EventType]
+	if !ok {
+		return of.NotReadyState
+	}
+	return state
+}
+
+func stateFromInitError(err error) of.State {
+	if initErr, ok := errors.AsType[*of.ProviderInitError](err); ok && initErr.ErrorCode == of.ProviderFatalCode {
+		return of.FatalState
+	}
+	return of.ErrorState
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the

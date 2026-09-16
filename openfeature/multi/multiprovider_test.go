@@ -396,6 +396,51 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	assert.Equal(t, of.ErrorState, mp.overallStatus)
 }
 
+func TestMultiProvider_InitErrorUpdatesStatus(t *testing.T) {
+	tests := map[string]struct {
+		initError     error
+		expectedState of.State
+	}{
+		"fatal provider init error": {
+			initError:     &of.ProviderInitError{ErrorCode: of.ProviderFatalCode},
+			expectedState: of.FatalState,
+		},
+		"wrapped fatal provider init error": {
+			initError:     fmt.Errorf("wrapped: %w", &of.ProviderInitError{ErrorCode: of.ProviderFatalCode}),
+			expectedState: of.FatalState,
+		},
+		"non-fatal provider init error": {
+			initError:     &of.ProviderInitError{ErrorCode: of.GeneralCode},
+			expectedState: of.ErrorState,
+		},
+		"plain init error": {
+			initError:     errors.New("init failed"),
+			expectedState: of.ErrorState,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			provider := of.NewMockFeatureProvider(ctrl)
+			provider.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+			provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+			stateHandler := of.NewMockStateHandler(ctrl)
+			stateHandler.EXPECT().Init(gomock.Any()).Return(test.initError)
+			wrapped := struct {
+				of.FeatureProvider
+				of.StateHandler
+			}{provider, stateHandler}
+
+			mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", wrapped))
+			require.NoError(t, err)
+
+			require.Error(t, mp.Init(of.EvaluationContext{}))
+			assert.Equal(t, test.expectedState, mp.Status())
+		})
+	}
+}
+
 func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -574,6 +619,22 @@ func TestMultiProvider_FatalEventUpdatesStatus(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return mp.Status() == of.FatalState
 	}, time.Second, 10*time.Millisecond)
+}
+
+func TestMultiProvider_UnknownEventDefaultsToNotReady(t *testing.T) {
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	mp.updateProviderState("provider", of.ErrorState)
+	mp.updateProviderStateFromEvent(namedEvent{
+		Event:        of.Event{EventType: of.EventType("PROVIDER_CUSTOM")},
+		providerName: "provider",
+	})
+
+	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 
 func TestMultiProvider_ConfigurationChangedEventForwarding(t *testing.T) {
