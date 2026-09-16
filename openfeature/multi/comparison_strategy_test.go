@@ -7,6 +7,7 @@ import (
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 )
 
@@ -757,4 +758,63 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)
 		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
 	})
+}
+
+func configureBlockedNotFoundProvider(provider *of.MockFeatureProvider, release <-chan struct{}) {
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"}).MaxTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(c context.Context, flag string, defaultVal bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
+		<-release
+		return of.BoolResolutionDetail{
+			Value: defaultVal,
+			ProviderResolutionDetail: of.ProviderResolutionDetail{
+				ResolutionError: of.NewFlagNotFoundResolutionError("not found"),
+				Reason:          of.DefaultReason,
+				FlagMetadata:    make(of.FlagMetadata),
+			},
+		}
+	}).MaxTimes(1)
+}
+
+func Test_ComparisonStrategy_NotFoundSendersDoNotOutliveEvaluation(t *testing.T) {
+	// the multi package has no goleak TestMain, so this test verifies its own goroutines
+	defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+
+	ctrl := gomock.NewController(t)
+	fallback := of.NewMockFeatureProvider(ctrl)
+	release := make(chan struct{})
+
+	failing := of.NewMockFeatureProvider(ctrl)
+	configureComparisonProvider(failing, false, true, TestErrorError, false)
+	blockedNotFound1 := of.NewMockFeatureProvider(ctrl)
+	configureBlockedNotFoundProvider(blockedNotFound1, release)
+	blockedNotFound2 := of.NewMockFeatureProvider(ctrl)
+	configureBlockedNotFoundProvider(blockedNotFound2, release)
+
+	strategy := newComparisonStrategy([]NamedProvider{
+		&namedProvider{
+			name:            "failing-provider",
+			FeatureProvider: failing,
+		},
+		&namedProvider{
+			name:            "blocked-not-found-provider1",
+			FeatureProvider: blockedNotFound1,
+		},
+		&namedProvider{
+			name:            "blocked-not-found-provider2",
+			FeatureProvider: blockedNotFound2,
+		},
+	}, fallback, nil)
+
+	var result of.GenericResolutionDetail[FlagTypes]
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		result = strategy(t.Context(), testFlag, false, of.FlattenedContext{})
+	}()
+	<-done
+	close(release)
+
+	assert.Equal(t, false, result.Value)
+	assert.Equal(t, of.ErrorReason, result.Reason)
+	assert.True(t, result.FlagMetadata[MetadataIsDefaultValue].(bool))
 }
