@@ -2,6 +2,7 @@ package memprovider
 
 import (
 	"math"
+	"sync"
 	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
@@ -458,4 +459,19 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 func TestInMemoryProvider_Track(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
 	memoryProvider.Track(t.Context(), "example-event-name", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+}
+
+func TestInMemoryProvider_ConcurrentTrack(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+
+	const goroutines = 50
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func() {
+			defer wg.Done()
+			memoryProvider.Track(t.Context(), "example-event-name", openfeature.EvaluationContext{}, openfeature.NewTrackingEventDetails(1))
+		}()
+	}
+	wg.Wait()
 }
