@@ -202,6 +202,11 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) {
 	oldProvider := e.defaultProviderReference
 	e.defaultProviderReference = newProvider
 
+	// A registered provider is NOT_READY until its initialization emits an event. Seeding the
+	// state here keeps the window between registration and that event from reporting the
+	// previous provider's status.
+	e.states.Store(defaultDomain, NotReadyState)
+
 	e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
 
@@ -213,6 +218,10 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 
 	oldProvider := e.namedProviderReference[associatedClient]
 	e.namedProviderReference[associatedClient] = newProvider
+
+	// Seed NOT_READY so the domain does not fall back to the default provider's state while its
+	// own provider is still initializing. triggerEvent overwrites this once init completes.
+	e.states.Store(associatedClient, NotReadyState)
 
 	e.startListeningAndShutdownOld(newProvider, oldProvider)
 }
