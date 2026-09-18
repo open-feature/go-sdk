@@ -3,6 +3,7 @@ package openfeature_test
 import (
 	"reflect"
 	"slices"
+	"sync/atomic"
 	"testing"
 
 	"github.com/open-feature/go-sdk/openfeature"
@@ -89,4 +90,39 @@ func TestEvaluationAPIBreakingPreventer(t *testing.T) {
 	if err := api.Shutdown(ctx); err != nil {
 		t.Errorf("Shutdown: unexpected error: %v", err)
 	}
+}
+
+func TestProviderInitShutdown(t *testing.T) {
+	p := &ttprovider{t: t}
+	api := isolated.NewAPI()
+
+	if err := api.SetProvider(t.Context(), p); err != nil {
+		t.Fatalf("SetProvider: %v", err)
+	}
+	if err := api.Shutdown(t.Context()); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+
+	if !p.shutdownCalled.Load() {
+		t.Error("provider Shutdown was not called")
+	}
+}
+
+var _ openfeature.StateHandler = (*ttprovider)(nil)
+
+type ttprovider struct {
+	openfeature.NoopProvider
+	shutdownCalled atomic.Bool
+	t              testing.TB
+}
+
+func (a *ttprovider) Init(openfeature.EvaluationContext) error {
+	if a.shutdownCalled.Load() {
+		a.t.Error("unexpected init call after Shutdown")
+	}
+	return nil
+}
+
+func (a *ttprovider) Shutdown() {
+	a.shutdownCalled.Store(true)
 }
