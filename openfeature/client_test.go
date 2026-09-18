@@ -542,6 +542,91 @@ func TestRequirement_1_4_8(t *testing.T) {
 	}
 }
 
+// An invalid UTF-8 flag key short-circuits evaluation before a provider is bound, so 1.4.7 and
+// 1.4.8 have to be satisfied on that return rather than by the provider's resolution.
+func TestEvaluationDetails_InvalidUTF8FlagKey(t *testing.T) {
+	t.Cleanup(resetSingleton)
+	mocks := hydratedMocksForClientTests(t, 0)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+	defaultValue := true
+	res, err := client.evaluate(
+		t.Context(), string([]byte{0xff}), Boolean, defaultValue, EvaluationContext{}, EvaluationOptions{},
+	)
+	if err == nil {
+		t.Fatal("expected err, got nil")
+	}
+
+	if res.Value != defaultValue {
+		t.Errorf("expected default value %v, got %v", defaultValue, res.Value)
+	}
+	if res.Reason != ErrorReason {
+		t.Errorf("expected reason to be '%s', got '%s'", ErrorReason, res.Reason)
+	}
+	if res.ErrorCode != ParseErrorCode {
+		t.Errorf("expected error code to be '%s', got '%s'", ParseErrorCode, res.ErrorCode)
+	}
+	if res.ErrorMessage == "" {
+		t.Error("expected a non-empty error message")
+	}
+}
+
+// A before hook error is abnormal execution under 4.4.7, so 1.4.7 and 1.4.8 apply to the
+// evaluation details returned from that path. The code comes from the hook's own error when it
+// is a ResolutionError, and falls back to GENERAL otherwise.
+func TestEvaluationDetails_BeforeHookError(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		hookErr      error
+		expectedCode ErrorCode
+	}{
+		{
+			name:         "arbitrary error",
+			hookErr:      errors.New("forced"),
+			expectedCode: GeneralCode,
+		},
+		{
+			name:         "resolution error",
+			hookErr:      NewTargetingKeyMissingResolutionError("no targeting key"),
+			expectedCode: TargetingKeyMissingCode,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(resetSingleton)
+			ctrl := gomock.NewController(t)
+			mocks := hydratedMocksForClientTests(t, 1)
+			client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+			mockHook := NewMockHook(ctrl)
+			mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, tt.hookErr)
+			mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+			defaultValue := true
+			res, err := client.evaluate(
+				t.Context(), "foo", Boolean, defaultValue, EvaluationContext{},
+				EvaluationOptions{hooks: []Hook{mockHook}},
+			)
+			if err == nil {
+				t.Fatal("expected err, got nil")
+			}
+
+			if res.Value != defaultValue {
+				t.Errorf("expected default value %v, got %v", defaultValue, res.Value)
+			}
+			if res.Reason != ErrorReason {
+				t.Errorf("expected reason to be '%s', got '%s'", ErrorReason, res.Reason)
+			}
+			if res.ErrorCode != tt.expectedCode {
+				t.Errorf("expected error code to be '%s', got '%s'", tt.expectedCode, res.ErrorCode)
+			}
+			if res.ErrorMessage == "" {
+				t.Error("expected a non-empty error message")
+			}
+		})
+	}
+}
+
 // Methods, functions, or operations on the client MUST NOT throw exceptions, or otherwise abnormally terminate.
 // Flag evaluation calls must always return the `default value` in the event of abnormal execution.
 // Exceptions include functions or methods for the purposes for configuration or setup.
