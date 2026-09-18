@@ -12,5 +12,5 @@
 # pin, and let Renovate move it.
 [submodule "test-harness"]
 	path = test-harness
-	url = https://github.com/open-feature/test-harness.git
+	url = https://github.com/open-feature/flagd-testbed.git
 	branch = v3.10.1
