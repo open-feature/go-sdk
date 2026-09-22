@@ -164,6 +164,8 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 		message = "provider is in ready state"
 	} else if state == ErrorState && eventType == ProviderError {
 		message = "provider is in error state"
+	} else if state == FatalState && eventType == ProviderError {
+		message = "provider is in fatal state"
 	} else if state == StaleState && eventType == ProviderStale {
 		message = "provider is in stale state"
 	}
