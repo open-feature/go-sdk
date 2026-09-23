@@ -32,6 +32,12 @@ var (
 	providerBindingsMu    sync.Mutex
 	errNilProvider        = errors.New("provider cannot be set to nil")
 	errNilDefaultProvider = errors.New("default provider cannot be set to nil")
+	errAPIShutdown        = errors.New("api instance has been shut down")
+)
+
+const (
+	evaluationAPIStateActive uint32 = iota
+	evaluationAPIStateShutdown
 )
 
 // providerBindingKey returns a stable, hashable identity for provider suitable for use as a map key,
@@ -115,6 +121,8 @@ type EvaluationAPI struct {
 	evalCtx         EvaluationContext
 	eventExecutor   *eventExecutor
 	mu              sync.RWMutex
+	state           uint32
+	initWg          sync.WaitGroup
 }
 
 // newEvaluationAPI is a helper to generate an API. Used internally
@@ -126,6 +134,7 @@ func newEvaluationAPI(eventExecutor *eventExecutor) *EvaluationAPI {
 		evalCtx:         EvaluationContext{},
 		mu:              sync.RWMutex{},
 		eventExecutor:   eventExecutor,
+		state:           evaluationAPIStateActive,
 	}
 }
 
@@ -205,6 +214,10 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	if a.state == evaluationAPIStateShutdown {
+		return nil, errAPIShutdown
+	}
+
 	if err := bindProvider(provider, a); err != nil {
 		return nil, err
 	}
@@ -232,6 +245,10 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	if a.state == evaluationAPIStateShutdown {
+		return nil, errAPIShutdown
+	}
+
 	if err := bindProvider(provider, a); err != nil {
 		return nil, err
 	}
@@ -256,7 +273,9 @@ func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider 
 	errCh := make(chan error, 1)
 
 	// Initialize new provider async. The caller may wait on the channel.
+	a.initWg.Add(1)
 	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, domain string) {
+		defer a.initWg.Done()
 		event, err := initializerWithContext(ctx, provider, evalCtx)
 		executor.triggerEvent(event, provider)
 
@@ -385,6 +404,28 @@ func (a *EvaluationAPI) RemoveHandler(eventType EventType, callback EventCallbac
 func (a *EvaluationAPI) Shutdown(ctx context.Context) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if a.state == evaluationAPIStateShutdown {
+		return nil
+	}
+	a.state = evaluationAPIStateShutdown
+
+	// Wait for in-flight provider initializations to finish.
+	// sync.WaitGroup requires that if reused, all new Add calls happen
+	// after all previous Wait calls have returned. This ensures we can
+	// safely register new providers if shutdown is cancelled (ctx.Done).
+	a.initWg.Wait()
+
+	select {
+	case <-ctx.Done():
+		// Wait for in-flight initializations to finish before restoring state,
+		// preventing later provider registration from calling initWg.Add
+		// during an outstanding Wait.
+		a.state = evaluationAPIStateActive
+		return ctx.Err()
+	default:
+		// All in-flight initializations completed.
+	}
+
 	var errs []error
 
 	// Shutdown default provider
