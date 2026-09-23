@@ -953,15 +953,28 @@ func TestRequirement_1_4_14(t *testing.T) {
 				},
 			}).Times(1)
 
-		evDetails, err := client.BooleanValueDetails(t.Context(), flagKey, defaultValue, EvaluationContext{})
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ HookContext, details InterfaceEvaluationDetails, _ HookHints) error {
+				details.FlagMetadata["hook"] = true
+				return nil
+			})
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		evDetails, err := client.BooleanValueDetails(
+			t.Context(), flagKey, defaultValue, EvaluationContext{}, WithHooks(mockHook),
+		)
 		if err != nil {
 			t.Error(err)
 		}
-		if !reflect.DeepEqual(metadata, evDetails.FlagMetadata) {
-			t.Errorf(
-				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
-				evDetails.FlagMetadata, metadata,
-			)
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{"bing": "bong", "hook": true}) {
+			t.Errorf("unexpected flag metadata: %#v", evDetails.FlagMetadata)
+		}
+
+		evDetails.FlagMetadata["application"] = true
+		if !reflect.DeepEqual(metadata, FlagMetadata{"bing": "bong"}) {
+			t.Errorf("provider flag metadata was mutated: %#v", metadata)
 		}
 	})
 }
