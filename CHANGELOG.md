@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.18.1](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.18.1) (2026-09-23)
+
+
+### 🐛 Bug Fixes
+
+* coerce int types to float64 in memprovider float evaluation ([#565](https://github.com/open-feature/go-sdk/issues/565)) ([a0892c2](https://github.com/open-feature/go-sdk/commit/a0892c296bd8b6d55188687e49dcc7692594f015)), closes [#564](https://github.com/open-feature/go-sdk/issues/564)
+* copy flag metadata before returning evaluation details ([#601](https://github.com/open-feature/go-sdk/issues/601)) ([d8f757b](https://github.com/open-feature/go-sdk/commit/d8f757bf6ce4cd2efbdf4aed1d5887f1b9579f37))
+* copy the caller's map in NewHookHints ([#573](https://github.com/open-feature/go-sdk/issues/573)) ([fcc5227](https://github.com/open-feature/go-sdk/commit/fcc52277d7518d375931dc0dfb38d80423861485)), closes [#562](https://github.com/open-feature/go-sdk/issues/562)
+* merge before hook evaluation contexts instead of replacing them ([#569](https://github.com/open-feature/go-sdk/issues/569)) ([0f99e6d](https://github.com/open-feature/go-sdk/commit/0f99e6ddcb1ab341426d45a88b63a6789c5c639e))
+* **multi:** buffer the comparison strategy's not-found channel ([#579](https://github.com/open-feature/go-sdk/issues/579)) ([5d64ff9](https://github.com/open-feature/go-sdk/commit/5d64ff9c5b4f362bc26cb8732d589155e9c6e2bd))
+* **multi:** preserve fatal and not-ready provider states ([#580](https://github.com/open-feature/go-sdk/issues/580)) ([8f9f17d](https://github.com/open-feature/go-sdk/commit/8f9f17d56f469c34d2309aabdeb166c7424c9a23))
+* **multi:** stop unchecked type assertions panicking out of flag evaluation ([#578](https://github.com/open-feature/go-sdk/issues/578)) ([86d35ff](https://github.com/open-feature/go-sdk/commit/86d35ff846b87cfdd63903c9b9494cfc99bf459b))
+* populate EvaluationDetails on NOT_READY/FATAL short-circuit ([#541](https://github.com/open-feature/go-sdk/issues/541)) ([6b0824c](https://github.com/open-feature/go-sdk/commit/6b0824c6c7b9b69e40f26aedcc4406ad4d3a5cec))
+* resolve disabled flags without an error ([#574](https://github.com/open-feature/go-sdk/issues/574)) ([9853ca0](https://github.com/open-feature/go-sdk/commit/9853ca0d646819d29fcf4c98862eb5b7b3fca113)), closes [#552](https://github.com/open-feature/go-sdk/issues/552)
+* return an empty flag metadata record on evaluate's early returns ([#575](https://github.com/open-feature/go-sdk/issues/575)) ([5c9e08b](https://github.com/open-feature/go-sdk/commit/5c9e08b75303e88c1926de4c26dcdf53e699d16d))
+* return default value from ObjectValueDetails on abnormal execution ([#566](https://github.com/open-feature/go-sdk/issues/566)) ([7fbae18](https://github.com/open-feature/go-sdk/commit/7fbae183c958a7ebc09cc0fa02d96e4765f2b1d9))
+* set ErrorReason when typed accessors return TYPE_MISMATCH ([#538](https://github.com/open-feature/go-sdk/issues/538)) ([eef27af](https://github.com/open-feature/go-sdk/commit/eef27aff38ed6fd0ae7d18af005bcf46e80c9eeb))
+
+
+### 🧹 Chore
+
+* **deps:** update actions/cache action to v6.1.0 ([#588](https://github.com/open-feature/go-sdk/issues/588)) ([754400d](https://github.com/open-feature/go-sdk/commit/754400d96fcd8e45fb43884d2412a14bcfb993a9))
+* **deps:** update actions/checkout action to v7.0.1 ([#587](https://github.com/open-feature/go-sdk/issues/587)) ([6381089](https://github.com/open-feature/go-sdk/commit/6381089baae9f466e11606a72e4df429b7719412))
+* **deps:** update amannn/action-semantic-pull-request action to v6.1.1 ([#589](https://github.com/open-feature/go-sdk/issues/589)) ([4286156](https://github.com/open-feature/go-sdk/commit/4286156cc04c2a2c0e0a7734be2c8602aedcb2c6))
+* **deps:** update codecov/codecov-action action to v7.1.0 ([#590](https://github.com/open-feature/go-sdk/issues/590)) ([2c0c4cd](https://github.com/open-feature/go-sdk/commit/2c0c4cd05b152787f6320b061622dbe6ddfb6141))
+* **deps:** update codecov/codecov-action action to v7.1.1 ([#599](https://github.com/open-feature/go-sdk/issues/599)) ([213d8f7](https://github.com/open-feature/go-sdk/commit/213d8f7e0ecd72945ffc6e7b481f90fb96d1ece5))
+* **deps:** update golang/govulncheck-action action to v1.1.0 ([#585](https://github.com/open-feature/go-sdk/issues/585)) ([c60839e](https://github.com/open-feature/go-sdk/commit/c60839ed18a0d2a6952533dffc57ddd63a11e87a))
+* **deps:** update golang/govulncheck-action digest to 032d455 ([#583](https://github.com/open-feature/go-sdk/issues/583)) ([9d8bab6](https://github.com/open-feature/go-sdk/commit/9d8bab69419f5bd9593471df46f368a530e4da1c))
+* **deps:** update goreleaser/goreleaser-action action to v7 ([#534](https://github.com/open-feature/go-sdk/issues/534)) ([ffc9895](https://github.com/open-feature/go-sdk/commit/ffc98950d6bb707d02f1f78ea6c633f8a179ee4d))
+* **deps:** update goreleaser/goreleaser-action action to v7.2.3 ([#586](https://github.com/open-feature/go-sdk/issues/586)) ([e18af7b](https://github.com/open-feature/go-sdk/commit/e18af7bf728114f123de9f74f2d2654a76820168))
+* **deps:** update marocchino/sticky-pull-request-comment action to v3.0.5 ([#533](https://github.com/open-feature/go-sdk/issues/533)) ([65c97f1](https://github.com/open-feature/go-sdk/commit/65c97f128fd955e3c33a8fac0185df61bea1aa03))
+* **deps:** update module golang.org/x/sync to v0.23.0 ([#591](https://github.com/open-feature/go-sdk/issues/591)) ([bb4f41f](https://github.com/open-feature/go-sdk/commit/bb4f41fa73a7932f9b2b1c64033db714a5577872))
+* **deps:** update module golang.org/x/text to v0.42.0 ([#592](https://github.com/open-feature/go-sdk/issues/592)) ([f54203a](https://github.com/open-feature/go-sdk/commit/f54203a517761f74bb9e499ed1b74cdbf8b140f4))
+* **deps:** update test-harness digest to b308c1b ([#584](https://github.com/open-feature/go-sdk/issues/584)) ([93be1b4](https://github.com/open-feature/go-sdk/commit/93be1b468ecb707639f6ff4386a91edd670562f4))
+* upgrade Go to 1.26 and update dependencies ([#531](https://github.com/open-feature/go-sdk/issues/531)) ([3a6545b](https://github.com/open-feature/go-sdk/commit/3a6545be412dbe6b526a487eca96e692bede888f))
+
 ## [1.18.0](https://github.com/open-feature/go-sdk/compare/v1.17.2...v1.18.0) (2026-07-31)
 
 
