@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/open-feature/go-sdk/compare/v1.19.0...v1.19.1) (2026-09-23)
+
+
+### 🧹 Chore
+
+* standardize/update release please config ([#602](https://github.com/open-feature/go-sdk/issues/602)) ([2560258](https://github.com/open-feature/go-sdk/commit/256025846ea79ebea745bb6577234bab25d0d53e))
+
 ## [1.19.0](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.19.0) (2026-09-23)
 
 
