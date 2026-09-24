@@ -286,6 +286,59 @@ func TestMultiProvider_InitReportsNotReady(t *testing.T) {
 	require.NoError(t, <-initDone)
 }
 
+// TestMultiProvider_FailedInitCleansUp guards the error path in InitWithContext: a provider that
+// reached ready must still be shut down, and the outbound channel must be closed, since
+// ShutdownWithContext returns early on a provider that never finished initializing (#561).
+func TestMultiProvider_FailedInitCleansUp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	healthy := of.NewMockFeatureProvider(ctrl)
+	healthy.EXPECT().Metadata().Return(of.Metadata{Name: "healthy"})
+	healthy.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	healthyState := of.NewMockStateHandler(ctrl)
+	initialized := make(chan struct{})
+	healthyState.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		close(initialized)
+		return nil
+	})
+	healthyState.EXPECT().Shutdown().Times(1)
+
+	failing := of.NewMockFeatureProvider(ctrl)
+	failing.EXPECT().Metadata().Return(of.Metadata{Name: "failing"})
+	failing.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	failingState := of.NewMockStateHandler(ctrl)
+	// Fail only once the healthy provider is up, so "it did initialize" is ordered, not raced.
+	failingState.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		<-initialized
+		return errors.New("injected init failure")
+	})
+	failingState.EXPECT().Shutdown().Times(0)
+
+	wrap := func(p of.FeatureProvider, s of.StateHandler) of.FeatureProvider {
+		return struct {
+			of.FeatureProvider
+			of.StateHandler
+		}{p, s}
+	}
+
+	mp, err := NewProvider(StrategyFirstMatch,
+		WithProvider("healthy", wrap(healthy, healthyState)),
+		WithProvider("failing", wrap(failing, failingState)))
+	require.NoError(t, err)
+	// A second shutdown must stay a no-op; Times(1) above fails if cleanup runs twice.
+	t.Cleanup(mp.Shutdown)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	assert.Equal(t, of.ErrorState, mp.Status())
+
+	select {
+	case _, open := <-mp.EventChannel():
+		assert.False(t, open, "the outbound event channel should be closed after a failed init")
+	case <-time.After(time.Second):
+		t.Fatal("a consumer of EventChannel() was never released after a failed init")
+	}
+}
+
 // TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in
 // InitWithContext: the aggregate status must not leave NOT_READY while any provider is still
 // initializing (#580).
