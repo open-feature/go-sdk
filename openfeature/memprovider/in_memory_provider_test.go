@@ -461,7 +461,50 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 
 func TestInMemoryProvider_Track(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
-	memoryProvider.Track(t.Context(), "example-event-name", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+	evalCtx := openfeature.NewEvaluationContext("", map[string]any{"region": "eu"})
+
+	memoryProvider.Track(t.Context(), "example-event-name", evalCtx,
+		openfeature.NewTrackingEventDetails(1).Add("plan", "pro"))
+	memoryProvider.Track(t.Context(), "example-event-name", openfeature.EvaluationContext{},
+		openfeature.NewTrackingEventDetails(2))
+
+	events := memoryProvider.TrackingEvents("example-event-name")
+	if len(events) != 2 {
+		t.Fatalf("expected both tracked events to be recorded, got %d", len(events))
+	}
+
+	if events[0].Value != 1 || events[1].Value != 2 {
+		t.Errorf("expected values 1 and 2 in the order tracked, got %v and %v", events[0].Value, events[1].Value)
+	}
+
+	if events[0].Data["plan"] != "pro" {
+		t.Errorf("expected the event details to be recorded, got %v", events[0].Data)
+	}
+
+	if events[0].ContextAttributes["region"] != "eu" {
+		t.Errorf("expected the evaluation context to be recorded, got %v", events[0].ContextAttributes)
+	}
+
+	if recorded := memoryProvider.TrackingEvents("never-tracked-event-name"); len(recorded) != 0 {
+		t.Errorf("expected no events for a name never tracked, got %v", recorded)
+	}
+}
+
+func TestInMemoryProvider_TrackingEventsReturnsACopy(t *testing.T) {
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
+	memoryProvider.Track(t.Context(), "example-event-name",
+		openfeature.NewEvaluationContext("", map[string]any{"region": "eu"}),
+		openfeature.NewTrackingEventDetails(1).Add("plan", "pro"))
+
+	events := memoryProvider.TrackingEvents("example-event-name")
+	events[0].Value = 99
+	events[0].Data["plan"] = "free"
+	events[0].ContextAttributes["region"] = "us"
+
+	recorded := memoryProvider.TrackingEvents("example-event-name")
+	if recorded[0].Value != 1 || recorded[0].Data["plan"] != "pro" || recorded[0].ContextAttributes["region"] != "eu" {
+		t.Errorf("expected the recorded event to survive a caller mutating the one it was handed, got %+v", recorded[0])
+	}
 }
 
 func boolFlag(key, variant string) InMemoryFlag {
@@ -647,6 +690,11 @@ func TestInMemoryProvider_ConcurrentUpdateAndEvaluation(t *testing.T) {
 		wg.Go(func() {
 			for range 100 {
 				memoryProvider.Track(t.Context(), "event", openfeature.EvaluationContext{}, openfeature.TrackingEventDetails{})
+			}
+		})
+		wg.Go(func() {
+			for range 100 {
+				memoryProvider.TrackingEvents("event")
 			}
 		})
 	}
