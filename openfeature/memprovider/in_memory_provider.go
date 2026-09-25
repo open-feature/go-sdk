@@ -236,7 +236,7 @@ func (i *InMemoryProvider) EventChannel() <-chan openfeature.Event {
 // helpers
 
 // genericResolve is a helper to extract type verified evaluation and fill openfeature.ProviderResolutionDetail.
-// It coerces smaller numeric types to their canonical forms (int* -> int64, float32 -> float64)
+// It coerces smaller numeric types to their canonical forms (int* -> int64, int* | float32 -> float64)
 // to provide a more forgiving API for test flag configuration.
 //
 // Note: Only signed integer types are supported for conversion. Unsigned integer types
@@ -265,6 +265,16 @@ func genericResolve[T comparable](value any, defaultValue T, detail *openfeature
 		// Convert float32 to float64 and int types to float64
 		switch v := value.(type) {
 		case float32:
+			return any(float64(v)).(T)
+		case int8:
+			return any(float64(v)).(T)
+		case int16:
+			return any(float64(v)).(T)
+		case int32:
+			return any(float64(v)).(T)
+		case int:
+			return any(float64(v)).(T)
+		case int64:
 			return any(float64(v)).(T)
 		}
 	}
@@ -299,8 +309,7 @@ func (flag *InMemoryFlag) Resolve(defaultValue any, flatCtx openfeature.Flattene
 	// check the state
 	if flag.State == Disabled {
 		return defaultValue, openfeature.ProviderResolutionDetail{
-			ResolutionError: openfeature.NewGeneralResolutionError("flag is disabled"),
-			Reason:          openfeature.DisabledReason,
+			Reason: openfeature.DisabledReason,
 		}
 	}
 

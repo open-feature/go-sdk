@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -110,6 +112,63 @@ func TestRequirements_1_3(t *testing.T) {
 	}
 }
 
+// If the value returned by the underlying provider implementation does not match the expected type,
+// it's to be considered abnormal execution, and the supplied `default value` should be returned.
+// Abnormal execution means the `reason` indicates an error (requirement 1.4.9) rather than the
+// reason for the resolution whose value was discarded.
+//
+// The accessors' type assertions can't fail through a FeatureProvider, since evaluate takes its
+// value from the statically typed provider results, so the shared helper is exercised directly.
+func TestRequirement_1_3_4(t *testing.T) {
+	// A successful resolution carrying a value that is not of the accessor's type.
+	resolved := EvaluationDetails{
+		FlagKey:          "foo",
+		ResolutionDetail: ResolutionDetail{Variant: "mismatched", Reason: StaticReason},
+	}
+	mismatchErr := errors.New("evaluated value is of the wrong type")
+
+	tests := map[string]struct {
+		want     any
+		mismatch func() (InterfaceEvaluationDetails, error)
+	}{
+		"boolean": {booleanValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(booleanValue, resolved, mismatchErr))
+		}},
+		"string": {stringValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(stringValue, resolved, mismatchErr))
+		}},
+		"float64": {floatValue, func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(floatValue, resolved, mismatchErr))
+		}},
+		"int64": {int64(intValue), func() (InterfaceEvaluationDetails, error) {
+			return anyDetails(typeMismatchDetails(int64(intValue), resolved, mismatchErr))
+		}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			details, err := tt.mismatch()
+
+			require.ErrorIs(t, err, mismatchErr)
+			assert.Equal(t, tt.want, details.Value)
+			assert.Equal(t, EvaluationDetails{
+				FlagKey: resolved.FlagKey,
+				ResolutionDetail: ResolutionDetail{
+					Variant:      resolved.Variant,
+					Reason:       ErrorReason,
+					ErrorCode:    TypeMismatchCode,
+					ErrorMessage: mismatchErr.Error(),
+				},
+			}, details.EvaluationDetails)
+		})
+	}
+}
+
+// anyDetails erases the type parameter so cases for different types can share one table.
+func anyDetails[T any](details GenericEvaluationDetails[T], err error) (InterfaceEvaluationDetails, error) {
+	return InterfaceEvaluationDetails{Value: details.Value, EvaluationDetails: details.EvaluationDetails}, err
+}
+
 // The `client` MUST provide methods for detailed flag value evaluation with parameters `flag key` (string, required),
 // `default value` (boolean | number | string | structure, required), `evaluation context` (optional),
 // and `evaluation options` (optional), which returns an `evaluation details` structure.
@@ -186,7 +245,13 @@ func TestRequirement_1_4_2__1_4_5__1_4_6(t *testing.T) {
 			t.Error(err)
 		}
 		if evDetails.Value != booleanValue {
-			t.Error(err)
+			t.Error(incorrectValue)
+		}
+		if evDetails.Variant != booleanVariant {
+			t.Error(incorrectVariant)
+		}
+		if evDetails.Reason != testReason {
+			t.Error(incorrectReason)
 		}
 	})
 
@@ -654,6 +719,41 @@ func TestRequirement_1_4_9(t *testing.T) {
 			t.Errorf("expected default value from ObjectValueDetails, got %v", value)
 		}
 	})
+
+	// A hook error is abnormal execution too. The existing subtests above drive
+	// abnormal execution through a resolution error, which returns before the
+	// resolved value is assigned; a failing after hook returns after it.
+	t.Run("Object with erroring after hook", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 1)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		type obj struct {
+			foo string
+		}
+		defaultValue := obj{foo: "bar"}
+		resolvedValue := obj{foo: "resolved"}
+
+		mocks.providerAPI.EXPECT().ObjectEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+			Return(InterfaceResolutionDetail{Value: resolvedValue})
+
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			After(mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(errors.New("forced")))
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		valueDetails, err := client.ObjectValueDetails(t.Context(), flagKey, defaultValue, evalCtx, WithHooks(mockHook))
+		if err == nil {
+			t.Error("expected ObjectValueDetails to return an error, got nil")
+		}
+
+		if valueDetails.Value.(obj) != defaultValue {
+			t.Errorf("expected default value from ObjectValueDetails, got %v", valueDetails.Value)
+		}
+	})
 }
 
 // TODO Requirement_1_4_10
@@ -695,11 +795,11 @@ func TestRequirement_1_4_12(t *testing.T) {
 	}
 }
 
-// Requirement_1_4_13
+// Requirement_1_4_14
 // If the `flag metadata` field in the `flag resolution` structure returned by the configured `provider` is set,
 // the `evaluation details` structure's `flag metadata` field MUST contain that value. Otherwise,
 // it MUST contain an empty record.
-func TestRequirement_1_4_13(t *testing.T) {
+func TestRequirement_1_4_14(t *testing.T) {
 	flagKey := "flag-key"
 	evalCtx := EvaluationContext{}
 	flatCtx := flattenContext(evalCtx)
@@ -730,6 +830,112 @@ func TestRequirement_1_4_13(t *testing.T) {
 		}
 	})
 
+	// early returns that never reach a provider resolution, see #542
+	t.Run("No metadata on the invalid UTF-8 flag key return", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 0)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		evDetails, err := client.BooleanValueDetails(t.Context(), "invalid\xf0\x28", true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error for an invalid UTF-8 flag key, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			// %#v: nil and an empty map both print as "map[]"
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata on the before hook error return", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		mocks := hydratedMocksForClientTests(t, 1)
+		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("forced"))
+		mockHook.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		evDetails, err := client.BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{}, WithHooks(mockHook))
+		if err == nil {
+			t.Error("expected an error from the failing before hook, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata when the provider is NOT_READY", func(t *testing.T) {
+		api := newAPI()
+		t.Cleanup(func() {
+			_ = api.Shutdown(context.Background()) //nolint:usetesting
+		})
+
+		notReadyProvider := struct {
+			FeatureProvider
+			StateHandler
+			EventHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					// Block until test cleanup to keep provider in NOT_READY state
+					<-t.Context().Done()
+					return nil
+				},
+			},
+			&ProviderEventing{},
+		}
+
+		if err := api.SetProvider(t.Context(), notReadyProvider); err != nil {
+			t.Fatalf("failed to set up provider: %v", err)
+		}
+
+		evDetails, err := api.NewClient().BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error while the provider is NOT_READY, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
+	t.Run("No metadata when the provider is FATAL", func(t *testing.T) {
+		api := newAPI()
+		t.Cleanup(func() {
+			_ = api.Shutdown(context.Background()) //nolint:usetesting
+		})
+
+		fatalProvider := struct {
+			FeatureProvider
+			StateHandler
+			EventHandler
+		}{
+			NoopProvider{},
+			&stateHandlerForTests{
+				initF: func(e EvaluationContext) error {
+					return &ProviderInitError{ErrorCode: ProviderFatalCode}
+				},
+			},
+			&ProviderEventing{},
+		}
+
+		if err := api.SetProviderAndWait(t.Context(), fatalProvider, WithDomain(t.Name())); err == nil {
+			t.Error("provider registration was expected to fail but succeeded unexpectedly")
+		}
+
+		evDetails, err := api.NewClient(WithDomain(t.Name())).
+			BooleanValueDetails(t.Context(), flagKey, true, EvaluationContext{})
+		if err == nil {
+			t.Error("expected an error while the provider is FATAL, got nil")
+		}
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{}) {
+			t.Errorf("expected %#v, got %#v", FlagMetadata{}, evDetails.FlagMetadata)
+		}
+	})
+
 	t.Run("Metadata present", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
@@ -747,15 +953,28 @@ func TestRequirement_1_4_13(t *testing.T) {
 				},
 			}).Times(1)
 
-		evDetails, err := client.BooleanValueDetails(t.Context(), flagKey, defaultValue, EvaluationContext{})
+		mockHook := NewMockHook(gomock.NewController(t))
+		mockHook.EXPECT().Before(gomock.Any(), gomock.Any(), gomock.Any())
+		mockHook.EXPECT().After(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ HookContext, details InterfaceEvaluationDetails, _ HookHints) error {
+				details.FlagMetadata["hook"] = true
+				return nil
+			})
+		mockHook.EXPECT().Finally(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		evDetails, err := client.BooleanValueDetails(
+			t.Context(), flagKey, defaultValue, EvaluationContext{}, WithHooks(mockHook),
+		)
 		if err != nil {
 			t.Error(err)
 		}
-		if !reflect.DeepEqual(metadata, evDetails.FlagMetadata) {
-			t.Errorf(
-				"flag metadata is not as expected in EvaluationDetail, got %v, expected %v",
-				evDetails.FlagMetadata, metadata,
-			)
+		if !reflect.DeepEqual(evDetails.FlagMetadata, FlagMetadata{"bing": "bong", "hook": true}) {
+			t.Errorf("unexpected flag metadata: %#v", evDetails.FlagMetadata)
+		}
+
+		evDetails.FlagMetadata["application"] = true
+		if !reflect.DeepEqual(metadata, FlagMetadata{"bing": "bong"}) {
+			t.Errorf("provider flag metadata was mutated: %#v", metadata)
 		}
 	})
 }
@@ -1400,6 +1619,118 @@ func TestRequirement_1_7_7(t *testing.T) {
 
 	if res != defaultVal {
 		t.Fatalf("expected resolved boolean value to default to %t, got %t", defaultVal, res)
+	}
+}
+
+// BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is NOT_READY.
+func TestEvaluationDetails_NotReady(t *testing.T) {
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	notReadyProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				// Block until test cleanup to keep provider in NOT_READY state
+				<-t.Context().Done()
+				return nil
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	err := api.SetProvider(t.Context(), notReadyProvider)
+	if err != nil {
+		t.Fatalf("failed to set up provider: %v", err)
+	}
+
+	client := api.NewClient()
+
+	if client.State() != NotReadyState {
+		t.Fatalf("expected client to report NOT READY state")
+	}
+
+	defaultVal := true
+	details, err := client.BooleanValueDetails(t.Context(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if details.Value != defaultVal {
+		t.Fatalf("expected default value %t, got %t", defaultVal, details.Value)
+	}
+
+	if details.Reason != ErrorReason {
+		t.Errorf("expected Reason %q, got %q", ErrorReason, details.Reason)
+	}
+
+	if details.ErrorCode != ProviderNotReadyCode {
+		t.Errorf("expected ErrorCode %q, got %q", ProviderNotReadyCode, details.ErrorCode)
+	}
+
+	if details.ErrorMessage != ProviderNotReadyError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderNotReadyError.message, details.ErrorMessage)
+	}
+}
+
+// BooleanValueDetails MUST populate Reason, ErrorCode, and ErrorMessage when provider is FATAL.
+func TestEvaluationDetails_Fatal(t *testing.T) {
+	api := newAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	fatalProvider := struct {
+		FeatureProvider
+		StateHandler
+		EventHandler
+	}{
+		NoopProvider{},
+		&stateHandlerForTests{
+			initF: func(e EvaluationContext) error {
+				return &ProviderInitError{ErrorCode: ProviderFatalCode}
+			},
+		},
+		&ProviderEventing{},
+	}
+
+	err := api.SetProviderAndWait(t.Context(), fatalProvider, WithDomain(t.Name()))
+	if err == nil {
+		t.Errorf("provider registration was expected to fail but succeeded unexpectedly")
+	}
+
+	client := api.NewClient(WithDomain(t.Name()))
+
+	if client.State() != FatalState {
+		t.Fatalf("expected client to report FATAL state")
+	}
+
+	defaultVal := true
+	details, err := client.BooleanValueDetails(t.Context(), "a-flag", defaultVal, EvaluationContext{})
+	if err == nil {
+		t.Fatalf("expected client to report an error")
+	}
+
+	if details.Value != defaultVal {
+		t.Fatalf("expected default value %t, got %t", defaultVal, details.Value)
+	}
+
+	if details.Reason != ErrorReason {
+		t.Errorf("expected Reason %q, got %q", ErrorReason, details.Reason)
+	}
+
+	if details.ErrorCode != ProviderFatalCode {
+		t.Errorf("expected ErrorCode %q, got %q", ProviderFatalCode, details.ErrorCode)
+	}
+
+	if details.ErrorMessage != ProviderFatalError.message {
+		t.Errorf("expected ErrorMessage %q, got %q", ProviderFatalError.message, details.ErrorMessage)
 	}
 }
 

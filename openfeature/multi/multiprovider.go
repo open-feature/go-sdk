@@ -103,7 +103,7 @@ func (n *namedProvider) unwrap() of.FeatureProvider {
 
 var (
 	stateValues      map[of.State]int
-	stateTable       [3]of.State
+	stateTable       [5]of.State
 	eventTypeToState map[of.EventType]of.State
 
 	// Compile-time interface compliance checks
@@ -118,15 +118,19 @@ var (
 func init() {
 	// used for mapping provider event types & provider states to comparable values for evaluation
 	stateValues = map[of.State]int{
-		of.ReadyState: 0,
-		of.StaleState: 1,
-		of.ErrorState: 2,
+		of.ReadyState:    0,
+		of.StaleState:    1,
+		of.ErrorState:    2,
+		of.NotReadyState: 3,
+		of.FatalState:    4,
 	}
 	// used for mapping
-	stateTable = [3]of.State{
-		of.ReadyState, // 0
-		of.StaleState, // 1
-		of.ErrorState, // 2
+	stateTable = [5]of.State{
+		of.ReadyState,
+		of.StaleState,
+		of.ErrorState,
+		of.NotReadyState,
+		of.FatalState,
 	}
 	eventTypeToState = map[of.EventType]of.State{
 		of.ProviderReady: of.ReadyState,
@@ -308,37 +312,25 @@ func (p *Provider) Hooks() []of.Hook {
 // BooleanEvaluation evaluates the flag and returns a [of.BoolResolutionDetail].
 func (p *Provider) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.BoolResolutionDetail{
-		Value:                    res.Value.(bool),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // StringEvaluation evaluates the flag and returns a [of.StringResolutionDetail].
 func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.StringResolutionDetail{
-		Value:                    res.Value.(string),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // FloatEvaluation evaluates the flag and returns a [of.FloatResolutionDetail].
 func (p *Provider) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.FloatResolutionDetail{
-		Value:                    res.Value.(float64),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // IntEvaluation evaluates the flag and returns an [of.IntResolutionDetail].
 func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.IntResolutionDetail{
-		Value:                    res.Value.(int64),
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // ObjectEvaluation evaluates the flag and returns an [of.InterfaceResolutionDetail]. For the purposes of evaluation
@@ -347,10 +339,7 @@ func (p *Provider) IntEvaluation(ctx context.Context, flag string, defaultValue 
 // is not a comparable type unless the [WithCustomComparator] [Option] is configured.
 func (p *Provider) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
 	res := p.strategyFunc(ctx, flag, defaultValue, flatCtx)
-	return of.InterfaceResolutionDetail{
-		Value:                    res.Value,
-		ProviderResolutionDetail: res.ProviderResolutionDetail,
-	}
+	return resolveTyped(res.Value, res.ProviderResolutionDetail, defaultValue)
 }
 
 // Init will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
@@ -364,10 +353,14 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	// wrapper type used only for initialization of event listener workers
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
 	handlers := make(chan namedEventHandler, len(p.providers))
+	// Seed every provider before launching any worker, otherwise a fast provider reaching ready
+	// makes Status() report READY while later providers are still unseeded (#580).
+	for _, provider := range p.providers {
+		p.updateProviderState(provider.Name(), of.NotReadyState)
+	}
+
 	for _, provider := range p.providers {
 		name := provider.Name()
-		// Initialize each provider to not ready state. No locks required there are no workers running
-		p.updateProviderState(name, of.NotReadyState)
 		l := p.logger.With(slog.String(MetadataProviderName, name))
 		prov := provider
 		eg.Go(func() error {
@@ -382,7 +375,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 
 				if err != nil {
 					l.LogAttrs(ctx, slog.LevelError, "initialization failed", slog.Any("error", err))
-					p.updateProviderState(name, of.ErrorState)
+					p.updateProviderState(name, stateFromInitError(err))
 					return &ProviderError{
 						err:          err,
 						ProviderName: name,
@@ -410,7 +403,10 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 			}
 		}
 
-		p.setStatus(of.ErrorState)
+		p.providerStatusLock.Lock()
+		aggregate := p.evaluateState()
+		p.providerStatusLock.Unlock()
+		p.setStatus(aggregate)
 		return pErr
 	}
 	close(handlers)
@@ -522,8 +518,27 @@ func (p *Provider) updateProviderStateFromEvent(e namedEvent) bool {
 	p.providerStatusLock.Lock()
 	previousState := p.providerStatus[e.providerName]
 	p.providerStatusLock.Unlock()
-	logProviderState(p.logger, e, previousState)
-	return p.updateProviderState(e.providerName, eventTypeToState[e.EventType])
+	state := stateFromEvent(e)
+	logProviderState(p.logger, e, state, previousState)
+	return p.updateProviderState(e.providerName, state)
+}
+
+func stateFromEvent(e namedEvent) of.State {
+	if e.EventType == of.ProviderError && e.ErrorCode == of.ProviderFatalCode {
+		return of.FatalState
+	}
+	state, ok := eventTypeToState[e.EventType]
+	if !ok {
+		return of.NotReadyState
+	}
+	return state
+}
+
+func stateFromInitError(err error) of.State {
+	if initErr, ok := errors.AsType[*of.ProviderInitError](err); ok && initErr.ErrorCode == of.ProviderFatalCode {
+		return of.FatalState
+	}
+	return of.ErrorState
 }
 
 // evaluateState Determines the overall state of the provider using the weights specified in Appendix A of the
@@ -539,8 +554,8 @@ func (p *Provider) evaluateState() of.State {
 	return stateTable[maxState]
 }
 
-func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
-	switch eventTypeToState[e.EventType] {
+func logProviderState(l *slog.Logger, e namedEvent, state, previousState of.State) {
+	switch state {
 	case of.ReadyState:
 		if previousState != of.NotReadyState {
 			l.LogAttrs(context.Background(), slog.LevelInfo, "provider has returned to ready state",
@@ -553,6 +568,9 @@ func logProviderState(l *slog.Logger, e namedEvent, previousState of.State) {
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	case of.ErrorState:
 		l.LogAttrs(context.Background(), slog.LevelError, "provider is in an error state",
+			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
+	case of.FatalState:
+		l.LogAttrs(context.Background(), slog.LevelError, "provider is in a fatal state",
 			slog.String(MetadataProviderName, e.providerName), slog.String("event-message", e.Message))
 	}
 }

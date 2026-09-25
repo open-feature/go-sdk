@@ -49,6 +49,14 @@ type Client struct {
 // interface guard to ensure that Client implements IClient
 var _ IClient = (*Client)(nil)
 
+// errors returned by the typed accessors when the resolved value is not of their type
+var (
+	errNotBoolean = errors.New("evaluated value is not a boolean")
+	errNotString  = errors.New("evaluated value is not a string")
+	errNotFloat64 = errors.New("evaluated value is not a float64")
+	errNotInt64   = errors.New("evaluated value is not an int64")
+)
+
 // NewClient returns a new [Client] bound to the provider registered for the given domain.
 func NewClient(domain string) *Client {
 	return api().NewClient(WithDomain(domain))
@@ -373,15 +381,7 @@ func (c *Client) BooleanValueDetails(ctx context.Context, flag string, defaultVa
 
 	value, ok := evalDetails.Value.(bool)
 	if !ok {
-		err := errors.New("evaluated value is not a boolean")
-		boolEvalDetails := BooleanEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		boolEvalDetails.ErrorCode = TypeMismatchCode
-		boolEvalDetails.ErrorMessage = err.Error()
-
-		return boolEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotBoolean)
 	}
 
 	return BooleanEvaluationDetails{
@@ -417,15 +417,7 @@ func (c *Client) StringValueDetails(ctx context.Context, flag string, defaultVal
 
 	value, ok := evalDetails.Value.(string)
 	if !ok {
-		err := errors.New("evaluated value is not a string")
-		strEvalDetails := StringEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		strEvalDetails.ErrorCode = TypeMismatchCode
-		strEvalDetails.ErrorMessage = err.Error()
-
-		return strEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotString)
 	}
 
 	return StringEvaluationDetails{
@@ -461,15 +453,7 @@ func (c *Client) FloatValueDetails(ctx context.Context, flag string, defaultValu
 
 	value, ok := evalDetails.Value.(float64)
 	if !ok {
-		err := errors.New("evaluated value is not a float64")
-		floatEvalDetails := FloatEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		floatEvalDetails.ErrorCode = TypeMismatchCode
-		floatEvalDetails.ErrorMessage = err.Error()
-
-		return floatEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotFloat64)
 	}
 
 	return FloatEvaluationDetails{
@@ -505,15 +489,7 @@ func (c *Client) IntValueDetails(ctx context.Context, flag string, defaultValue 
 
 	value, ok := evalDetails.Value.(int64)
 	if !ok {
-		err := errors.New("evaluated value is not an int64")
-		intEvalDetails := IntEvaluationDetails{
-			Value:             defaultValue,
-			EvaluationDetails: evalDetails.EvaluationDetails,
-		}
-		intEvalDetails.ErrorCode = TypeMismatchCode
-		intEvalDetails.ErrorMessage = err.Error()
-
-		return intEvalDetails, err
+		return typeMismatchDetails(defaultValue, evalDetails.EvaluationDetails, errNotInt64)
 	}
 
 	return IntEvaluationDetails{
@@ -539,7 +515,30 @@ func (c *Client) ObjectValueDetails(ctx context.Context, flag string, defaultVal
 		option(evalOptions)
 	}
 
-	return c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+	evalDetails, err := c.evaluate(ctx, flag, Object, defaultValue, evalCtx, *evalOptions)
+	if err != nil {
+		return InterfaceEvaluationDetails{
+			Value:             defaultValue,
+			EvaluationDetails: evalDetails.EvaluationDetails,
+		}, err
+	}
+
+	return evalDetails, nil
+}
+
+// typeMismatchDetails builds the details a typed accessor returns when the resolved value is not of
+// its type. The default value replaces the resolved one, so the reason reports an error rather than
+// the provider's reason for a value that is not being returned.
+func typeMismatchDetails[T any](defaultValue T, resolved EvaluationDetails, err error) (GenericEvaluationDetails[T], error) {
+	details := GenericEvaluationDetails[T]{
+		Value:             defaultValue,
+		EvaluationDetails: resolved,
+	}
+	details.Reason = ErrorReason
+	details.ErrorCode = TypeMismatchCode
+	details.ErrorMessage = err.Error()
+
+	return details, err
 }
 
 // Boolean performs a flag evaluation that returns a boolean. Any error
@@ -659,6 +658,10 @@ func (c *Client) evaluate(
 		EvaluationDetails: EvaluationDetails{
 			FlagKey:  flag,
 			FlagType: flagType,
+			ResolutionDetail: ResolutionDetail{
+				// empty record rather than nil on the early returns, see #542
+				FlagMetadata: FlagMetadata{},
+			},
 		},
 	}
 
@@ -690,12 +693,18 @@ func (c *Client) evaluate(
 	if _, ok := provider.(NoopProvider); !ok {
 		// short circuit if provider is in NOT READY state
 		if c.State() == NotReadyState {
+			evalDetails.Reason = ErrorReason
+			evalDetails.ErrorCode = ProviderNotReadyCode
+			evalDetails.ErrorMessage = ProviderNotReadyError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderNotReadyError, options)
 			return evalDetails, ProviderNotReadyError
 		}
 
 		// short circuit if provider is in FATAL state
 		if c.State() == FatalState {
+			evalDetails.Reason = ErrorReason
+			evalDetails.ErrorCode = ProviderFatalCode
+			evalDetails.ErrorMessage = ProviderFatalError.message
 			c.errorHooks(ctx, hookCtx, hooks, ProviderFatalError, options)
 			return evalDetails, ProviderFatalError
 		}
@@ -775,7 +784,10 @@ func (c *Client) beforeHooks(
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(ctx, hookCtx, options.hookHints)
 		if resultEvalCtx != nil {
-			hookCtx.evaluationContext = *resultEvalCtx
+			// Merge rather than replace, so a hook's contribution is visible to every
+			// subsequent hook instead of being overwritten by it. The newest result takes
+			// precedence over what earlier hooks contributed.
+			hookCtx.evaluationContext = mergeContexts(*resultEvalCtx, hookCtx.evaluationContext)
 		}
 		if err != nil {
 			return mergeContexts(hookCtx.evaluationContext, evalCtx), err

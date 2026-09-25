@@ -105,6 +105,78 @@ func TestInMemoryProvider_Float(t *testing.T) {
 	})
 }
 
+func TestInMemoryProvider_FloatIntCoercion(t *testing.T) {
+	// Signed integer variants on a float flag should be coerced to float64,
+	// mirroring how the int64 branch of genericResolve accepts int types.
+	tests := []struct {
+		name     string
+		variant  any
+		expected float64
+	}{
+		{
+			name:     "plain int coerced to float64",
+			variant:  42,
+			expected: 42,
+		},
+		{
+			name:     "int8 coerced to float64",
+			variant:  int8(8),
+			expected: 8,
+		},
+		{
+			name:     "int16 coerced to float64",
+			variant:  int16(16),
+			expected: 16,
+		},
+		{
+			name:     "int32 coerced to float64",
+			variant:  int32(32),
+			expected: 32,
+		},
+		{
+			name:     "int64 coerced to float64",
+			variant:  int64(64),
+			expected: 64,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+				"floatFlag": {
+					State:          Enabled,
+					DefaultVariant: "value",
+					Variants:       map[string]any{"value": tt.variant},
+				},
+			})
+
+			evaluation := memoryProvider.FloatEvaluation(t.Context(), "floatFlag", 0, nil)
+
+			if evaluation.Value != tt.expected {
+				t.Errorf("expected %f, got %f", tt.expected, evaluation.Value)
+			}
+		})
+	}
+}
+
+func TestInMemoryProvider_FloatUnsignedIntTypeMismatch(t *testing.T) {
+	// genericResolve intentionally does not coerce unsigned integer types;
+	// keep that limitation visible as a TYPE_MISMATCH.
+	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+		"floatFlag": {
+			State:          Enabled,
+			DefaultVariant: "value",
+			Variants:       map[string]any{"value": uint64(7)},
+		},
+	})
+
+	evaluation := memoryProvider.FloatEvaluation(t.Context(), "floatFlag", 0, nil)
+
+	if evaluation.ResolutionDetail().ErrorCode != openfeature.TypeMismatchCode {
+		t.Errorf("expected TYPE_MISMATCH, got %q", evaluation.ResolutionDetail().ErrorCode)
+	}
+}
+
 func TestInMemoryProvider_Int(t *testing.T) {
 	// Test that both int and int64 variants work correctly.
 	// The provider coerces int to int64 internally to match the API contract.
@@ -339,7 +411,36 @@ func TestInMemoryProvider_Disabled(t *testing.T) {
 		}
 
 		if evaluation.Reason != openfeature.DisabledReason {
-			t.Errorf("incorrect reason, expected %v, got %v", openfeature.ErrorReason, evaluation.Reason)
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.DisabledReason, evaluation.Reason)
+		}
+
+		if err := evaluation.Error(); err != nil {
+			t.Errorf("expected no error for a disabled flag, got %v", err)
+		}
+	})
+
+	// The provider-level assertions above cannot observe the reason being
+	// overwritten, because that happens in the client. Drive it through an
+	// isolated API so the global singleton is untouched.
+	t.Run("test disabled flag through the client", func(t *testing.T) {
+		api := isolated.NewAPI()
+		t.Cleanup(func() { _ = api.Shutdown(ctx) })
+
+		if err := api.SetProviderAndWait(ctx, memoryProvider); err != nil {
+			t.Fatalf("failed to set provider: %v", err)
+		}
+
+		details, err := api.NewClient().BooleanValueDetails(ctx, "boolFlag", false, openfeature.EvaluationContext{})
+		if err != nil {
+			t.Errorf("expected no error for a disabled flag, got %v", err)
+		}
+
+		if details.Reason != openfeature.DisabledReason {
+			t.Errorf("incorrect reason, expected %v, got %v", openfeature.DisabledReason, details.Reason)
+		}
+
+		if details.Value != false {
+			t.Errorf("incorrect evaluation, expected %v, got %v", false, details.Value)
 		}
 	})
 }
