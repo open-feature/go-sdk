@@ -50,7 +50,8 @@ Run unit tests with `mise run test`.
 
 #### End-to-End tests
 
-The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features).
+The continuous integration runs the [gherkin e2e suites](https://github.com/open-feature/spec/blob/main/specification/appendix-b-gherkin-suites.md)
+defined in the OpenFeature specification, which this repository consumes through the `spec` git submodule.
 
 Run them locally with
 
@@ -58,7 +59,7 @@ Run them locally with
 mise run test:e2e
 ```
 
-which pulls the `test-harness` git submodule first.
+which pulls the submodule first.
 
 #### Fuzzing
 

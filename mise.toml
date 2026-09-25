@@ -63,7 +63,7 @@ tools = { goreleaser = "2.18.1", "go:github.com/CycloneDX/cyclonedx-gomod/cmd/cy
 run = "goreleaser release --clean"
 
 [tasks.submodules]
-description = "Check out the test-harness git submodule"
+description = "Check out the spec git submodule"
 hide = true
 run = "git submodule update --init --recursive"
 

@@ -24,8 +24,13 @@ func TestEvaluation(t *testing.T) {
 		Name:                "evaluation.feature",
 		ScenarioInitializer: initializeEvaluationScenario,
 		Options: &godog.Options{
-			Format:   "pretty",
-			Paths:    []string{"../test-harness/gherkin/evaluation.feature"},
+			Format: "pretty",
+			// Appendix B of the spec, via the `spec` submodule. The sibling suites
+			// (evaluation_v2, hooks, metadata, contextMerging) have no step
+			// definitions here yet and are tracked separately.
+			Paths: []string{"../spec/specification/assets/gherkin/evaluation.feature"},
+			// Strict, so an undefined step fails instead of silently passing.
+			Strict:   true,
 			TestingT: t, // Testing instance that will run subtests.
 		},
 	}
@@ -37,7 +42,7 @@ func TestEvaluation(t *testing.T) {
 
 func initializeEvaluationScenario(ctx *godog.ScenarioContext) {
 	// setup provider
-	ctx.Step(`^a provider is registered with cache disabled$`, aProviderIsRegisteredWithCacheDisabled)
+	ctx.Step(`^a stable provider$`, aStableProvider)
 
 	// basic evaluations
 	ctx.Step(`^a boolean flag with key "([^"]*)" is evaluated with default value "([^"]*)"$`, aBooleanFlagWithKeyIsEvaluatedWithDefaultValue)
@@ -81,24 +86,21 @@ func initializeEvaluationScenario(ctx *godog.ScenarioContext) {
 
 	// scenarios
 
-	ctx.Step(`^a non-existent string flag with key "([^"]*)" is evaluated with details and a default value "([^"]*)"$`, aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue)
+	ctx.Step(`^a non-existent string flag with key "([^"]*)" is evaluated with details and a fallback value "([^"]*)"$`, aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndAFallbackValue)
 	ctx.Step(`^the default string value should be returned$`, theDefaultStringValueShouldBeReturned)
 	ctx.Step(`^the reason should indicate an error and the error code should indicate a missing flag with "([^"]*)"$`, theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateAMissingFlagWith)
 
-	ctx.Step(`^a string flag with key "([^"]*)" is evaluated as an integer, with details and a default value (\d+)$`, aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue)
+	ctx.Step(`^a string flag with key "([^"]*)" is evaluated as an integer, with details and a fallback value (\d+)$`, aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndAFallbackValue)
 	ctx.Step(`^the default integer value should be returned$`, theDefaultIntegerValueShouldBeReturned)
 	ctx.Step(`^the reason should indicate an error and the error code should indicate a type mismatch with "([^"]*)"$`, theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateATypeMismatchWith)
 }
 
-func aProviderIsRegisteredWithCacheDisabled(ctx context.Context) error {
+func aStableProvider(ctx context.Context) error {
 	memoryProvider := memprovider.NewInMemoryProvider(memoryFlags)
 
-	err := openfeature.SetNamedProvider("evaluation-test", memoryProvider)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// AndWait, so the provider is READY before the first evaluation; the
+	// non-blocking variant races the scenario and yields PROVIDER_NOT_READY.
+	return openfeature.SetNamedProviderAndWait("evaluation-test", memoryProvider)
 }
 
 func aBooleanFlagWithKeyIsEvaluatedWithDefaultValue(
@@ -582,7 +584,7 @@ func theResolvedFlagValueIsWhenTheContextIsEmpty(ctx context.Context, expectedRe
 	return nil
 }
 
-func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndADefaultValue(
+func aNonexistentStringFlagWithKeyIsEvaluatedWithDetailsAndAFallbackValue(
 	ctx context.Context, flagKey, defaultValue string,
 ) (context.Context, error) {
 	got, err := openfeature.NewClient("evaluation-test").StringValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})
@@ -639,7 +641,7 @@ func theReasonShouldIndicateAnErrorAndTheErrorCodeShouldIndicateAMissingFlagWith
 	return nil
 }
 
-func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndADefaultValue(
+func aStringFlagWithKeyIsEvaluatedAsAnIntegerWithDetailsAndAFallbackValue(
 	ctx context.Context, flagKey string, defaultValue int64,
 ) (context.Context, error) {
 	got, err := openfeature.NewClient("evaluation-test").IntValueDetails(ctx, flagKey, defaultValue, openfeature.EvaluationContext{})

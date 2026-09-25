@@ -157,7 +157,7 @@ type ProviderResolutionDetail struct {
 func (p ProviderResolutionDetail) ResolutionDetail() ResolutionDetail {
 	metadata := FlagMetadata{}
 	if p.FlagMetadata != nil {
-		metadata = p.FlagMetadata
+		metadata = maps.Clone(p.FlagMetadata)
 	}
 	return ResolutionDetail{
 		Variant:      p.Variant,
