@@ -349,6 +349,8 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 
 // InitWithContext will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
 func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
+	// eg cancels ctx as soon as a provider fails, so cleanup cannot run on it, see #561
+	parentCtx := ctx
 	eg, ctx := errgroup.WithContext(ctx)
 	// wrapper type used only for initialization of event listener workers
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
@@ -403,6 +405,10 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 			}
 		}
 
+		// no worker is started on this path, so nothing else will ever close it, see #561
+		close(p.outboundEvents)
+		p.shutdownInitializedProviders(parentCtx)
+
 		p.providerStatusLock.Lock()
 		aggregate := p.evaluateState()
 		p.providerStatusLock.Unlock()
@@ -424,6 +430,45 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	p.setStatus(of.ReadyState)
 	p.initialized = true
 	return nil
+}
+
+// shutdownInitializedProviders shuts down the providers that reached ready before another provider's
+// initialization failed. ShutdownWithContext cannot do it afterwards, since a failed InitWithContext
+// never sets initialized and it returns early.
+func (p *Provider) shutdownInitializedProviders(ctx context.Context) {
+	p.providerStatusLock.Lock()
+	initialized := make(map[string]bool, len(p.providerStatus))
+	for name, state := range p.providerStatus {
+		initialized[name] = state == of.ReadyState
+	}
+	p.providerStatusLock.Unlock()
+
+	meg := multiErrGroup{}
+	for _, provider := range p.providers {
+		name := provider.Name()
+		if !initialized[name] {
+			continue
+		}
+		stateHandle, ok := tryAs[of.StateHandler](provider)
+		if !ok {
+			continue
+		}
+		meg.Go(func() error {
+			if contextAwareHandle, ok := stateHandle.(of.ContextAwareStateHandler); ok {
+				if err := contextAwareHandle.ShutdownWithContext(ctx); err != nil {
+					return &ProviderError{ProviderName: name, err: err}
+				}
+				return nil
+			}
+			stateHandle.Shutdown()
+			return nil
+		})
+	}
+
+	if err := meg.Wait(); err != nil {
+		p.logger.LogAttrs(ctx, slog.LevelWarn, "error shutting down providers after a failed initialization",
+			slog.Any("error", err))
+	}
 }
 
 // forwardProviderEvents establishes an event forwarding pipeline that collects events from multiple provider
