@@ -339,6 +339,98 @@ func TestMultiProvider_FailedInitCleansUp(t *testing.T) {
 	}
 }
 
+// contextAwareHandlerForTests is a StateHandler that also implements the context-aware
+// interface, so the multi-provider takes the ShutdownWithContext branch.
+type contextAwareHandlerForTests struct {
+	initWithContext     func(context.Context, of.EvaluationContext) error
+	shutdownWithContext func(context.Context) error
+}
+
+var _ of.ContextAwareStateHandler = (*contextAwareHandlerForTests)(nil)
+
+func (s *contextAwareHandlerForTests) Init(e of.EvaluationContext) error {
+	return s.InitWithContext(context.Background(), e)
+}
+
+func (s *contextAwareHandlerForTests) InitWithContext(ctx context.Context, e of.EvaluationContext) error {
+	return s.initWithContext(ctx, e)
+}
+
+func (s *contextAwareHandlerForTests) Shutdown() { _ = s.ShutdownWithContext(context.Background()) }
+
+func (s *contextAwareHandlerForTests) ShutdownWithContext(ctx context.Context) error {
+	return s.shutdownWithContext(ctx)
+}
+
+// TestMultiProvider_FailedInitShutsDownContextAwareProviders covers the context-aware half of
+// the cleanup in #561. The context matters here: the errgroup's context is already cancelled by
+// the failure, so cleanup has to run on the caller's or every context-aware shutdown is handed a
+// dead context. A shutdown error must also stay inside InitWithContext rather than replacing the
+// initialization error the caller needs.
+func TestMultiProvider_FailedInitShutsDownContextAwareProviders(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	newReady := func(name string, shutdown func(context.Context) error) (of.FeatureProvider, chan struct{}) {
+		provider := of.NewMockFeatureProvider(ctrl)
+		provider.EXPECT().Metadata().Return(of.Metadata{Name: name})
+		provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+		ready := make(chan struct{})
+		handler := &contextAwareHandlerForTests{
+			initWithContext: func(context.Context, of.EvaluationContext) error {
+				close(ready)
+				return nil
+			},
+			shutdownWithContext: shutdown,
+		}
+		return struct {
+			of.FeatureProvider
+			of.ContextAwareStateHandler
+		}{provider, handler}, ready
+	}
+
+	shutdownCtxErr := make(chan error, 1)
+	clean, cleanReady := newReady("clean", func(ctx context.Context) error {
+		shutdownCtxErr <- ctx.Err()
+		return nil
+	})
+	erroring, erroringReady := newReady("erroring", func(context.Context) error {
+		return errors.New("injected shutdown failure")
+	})
+
+	failing := of.NewMockFeatureProvider(ctrl)
+	failing.EXPECT().Metadata().Return(of.Metadata{Name: "failing"})
+	failing.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	failingState := of.NewMockStateHandler(ctrl)
+	failingState.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		<-cleanReady
+		<-erroringReady
+		return errors.New("injected init failure")
+	})
+	failingState.EXPECT().Shutdown().Times(0)
+
+	mp, err := NewProvider(StrategyFirstMatch,
+		WithProvider("clean", clean),
+		WithProvider("erroring", erroring),
+		WithProvider("failing", struct {
+			of.FeatureProvider
+			of.StateHandler
+		}{failing, failingState}))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	initErr := mp.InitWithContext(t.Context(), of.EvaluationContext{})
+	require.ErrorContains(t, initErr, "injected init failure",
+		"a shutdown failure during cleanup must not replace the initialization error")
+
+	select {
+	case ctxErr := <-shutdownCtxErr:
+		require.NoError(t, ctxErr,
+			"cleanup must run on the caller's context; the errgroup's is cancelled by the failure")
+	default:
+		t.Fatal("the context-aware provider that reached ready was never shut down")
+	}
+}
+
 // TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in
 // InitWithContext: the aggregate status must not leave NOT_READY while any provider is still
 // initializing (#580).
