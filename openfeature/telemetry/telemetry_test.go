@@ -257,3 +257,40 @@ func TestCreateEvaluationEvent_1_4_7_WithUnknownReason(t *testing.T) {
 		t.Errorf("Expected evaluation reason to be '%s', got '%s'", strings.ToLower(string(openfeature.UnknownReason)), event.Attributes[ResultReasonKey])
 	}
 }
+
+func TestCreateEvaluationEvent_NoTargetingKey_NoContextId_InFlagMetadata(t *testing.T) {
+	flagKey := "test-flag"
+
+	mockProviderMetadata := openfeature.Metadata{
+		Name: "test-provider",
+	}
+
+	mockClientMetadata := openfeature.NewClientMetadata("test-client")
+
+	// Empty targeting key
+	mockEvalCtx := openfeature.NewEvaluationContext(
+		"", map[string]any{
+			"is": "a test",
+		})
+
+	mockHookContext := openfeature.NewHookContext(flagKey, openfeature.Boolean, true, mockClientMetadata, mockProviderMetadata, mockEvalCtx)
+
+	mockDetails := openfeature.InterfaceEvaluationDetails{
+		Value: true,
+		EvaluationDetails: openfeature.EvaluationDetails{
+			FlagKey: flagKey,
+			FlagType: openfeature.Boolean,
+			ResolutionDetail: openfeature.ResolutionDetail{
+				Reason:       openfeature.StaticReason,
+				FlagMetadata: openfeature.FlagMetadata{},
+			},
+		},
+	}
+
+	event := CreateEvaluationEvent(mockHookContext, mockDetails)
+
+	// feature_flag.context.id should be omitted when there's no targeting key and no contextId in flag metadata
+	if _, ok := event.Attributes[ContextIDKey]; ok {
+		t.Errorf("Expected feature_flag.context.id attribute to be omitted, but it was present with value %q", event.Attributes[ContextIDKey])
+	}
+}
