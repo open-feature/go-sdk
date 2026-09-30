@@ -4,6 +4,7 @@ package memprovider
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/open-feature/go-sdk/openfeature"
 )
@@ -16,12 +17,14 @@ const (
 type InMemoryProvider struct {
 	flags          map[string]InMemoryFlag
 	trackingEvents map[string][]InMemoryEvent
+	trackingMu     *sync.Mutex
 }
 
 func NewInMemoryProvider(from map[string]InMemoryFlag) InMemoryProvider {
 	return InMemoryProvider{
 		flags:          from,
 		trackingEvents: map[string][]InMemoryEvent{},
+		trackingMu:     &sync.Mutex{},
 	}
 }
 
@@ -134,6 +137,8 @@ func (i InMemoryProvider) Hooks() []openfeature.Hook {
 }
 
 func (i InMemoryProvider) Track(ctx context.Context, trackingEventName string, evalCtx openfeature.EvaluationContext, details openfeature.TrackingEventDetails) {
+	i.trackingMu.Lock()
+	defer i.trackingMu.Unlock()
 	i.trackingEvents[trackingEventName] = append(i.trackingEvents[trackingEventName], InMemoryEvent{
 		Value:             details.Value(),
 		Data:              details.Attributes(),
