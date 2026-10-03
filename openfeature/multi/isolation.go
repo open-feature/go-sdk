@@ -132,10 +132,10 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 		reason = of.ErrorReason
 	case of.FlagNotFoundCode:
 		resolutionErr = of.NewFlagNotFoundResolutionError(evalDetails.ErrorMessage)
-		reason = of.DefaultReason
+		reason = of.ErrorReason
 	case of.TargetingKeyMissingCode:
 		resolutionErr = of.NewTargetingKeyMissingResolutionError(evalDetails.ErrorMessage)
-		reason = of.TargetingMatchReason
+		reason = of.ErrorReason
 	case of.TypeMismatchCode:
 		resolutionErr = of.NewTypeMismatchResolutionError(evalDetails.ErrorMessage)
 		reason = of.ErrorReason
