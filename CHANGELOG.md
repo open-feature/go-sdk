@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/open-feature/go-sdk/compare/v1.19.0...v2.0.0) (2026-10-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* NewInMemoryProvider now returns *InMemoryProvider, and all methods are on pointer receivers. The provider has to be a pointer type: providerReference.equals falls back to reflect.DeepEqual for non-pointer providers, so two providers holding equal flag sets compared as the same provider, and that same DeepEqual walks the flag map unsynchronised while UpdateFlags mutates it.
+
+### 🐛 Bug Fixes
+
+* run PROVIDER_ERROR handlers on registration when the provider is FATAL ([#600](https://github.com/open-feature/go-sdk/issues/600)) ([3c2b77b](https://github.com/open-feature/go-sdk/commit/3c2b77ba66520b80b11d00380a5d2a3e68a74bfb)), closes [#559](https://github.com/open-feature/go-sdk/issues/559)
+
+
+### ✨ New Features
+
+* support updating the in-memory provider's flag set ([#539](https://github.com/open-feature/go-sdk/issues/539)) ([3c83cde](https://github.com/open-feature/go-sdk/commit/3c83cdeaccbe319858c4a938e2e699ddcd8769f9))
+
+
+### 🧹 Chore
+
+* standardize/update release please config ([#602](https://github.com/open-feature/go-sdk/issues/602)) ([2560258](https://github.com/open-feature/go-sdk/commit/256025846ea79ebea745bb6577234bab25d0d53e))
+
 ## [1.19.0](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.19.0) (2026-09-23)
 
 
