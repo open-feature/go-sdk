@@ -138,7 +138,7 @@ func BuildDefaultResult[R FlagTypes](strategy EvaluationStrategy, defaultValue R
 		reason = of.ErrorReason
 	} else {
 		rErr = of.NewFlagNotFoundResolutionError("not found in any provider")
-		reason = of.DefaultReason
+		reason = of.ErrorReason
 	}
 
 	return of.GenericResolutionDetail[R]{

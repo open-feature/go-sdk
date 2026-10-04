@@ -116,3 +116,28 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T
 	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
 	assert.False(t, result.Value)
 }
+
+func Test_toProviderResolutionDetail_ErrorCodesMapToErrorReason(t *testing.T) {
+	cases := []struct {
+		name string
+		code of.ErrorCode
+	}{
+		{"general", of.GeneralCode},
+		{"flag not found", of.FlagNotFoundCode},
+		{"targeting key missing", of.TargetingKeyMissingCode},
+		{"type mismatch", of.TypeMismatchCode},
+		{"parse error", of.ParseErrorCode},
+		{"invalid context", of.InvalidContextCode},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			prd := toProviderResolutionDetail(of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{ErrorCode: tc.code},
+				},
+			})
+			assert.Equal(t, of.ErrorReason, prd.Reason)
+			assert.Error(t, prd.Error())
+		})
+	}
+}
