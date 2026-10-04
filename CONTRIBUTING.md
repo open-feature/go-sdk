@@ -34,9 +34,10 @@ Run unit tests with `make test`.
 
 #### End-to-End tests
 
-The continuous integration runs a set of [gherkin e2e tests](https://github.com/open-feature/test-harness/blob/main/features).
+The continuous integration runs the [gherkin e2e suites](https://github.com/open-feature/spec/blob/main/specification/appendix-b-gherkin-suites.md)
+defined in the OpenFeature specification, which this repository consumes through the `spec` git submodule.
 
-If you'd like to run them locally, first pull the `test-harness` git submodule
+If you'd like to run them locally, first pull the submodule
 
 ```
 git submodule update --init --recursive
