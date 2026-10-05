@@ -1755,3 +1755,36 @@ func TestBasicShutdown(t *testing.T) {
 		t.Fatal("shutdown() hung and did not complete within 2 seconds")
 	}
 }
+
+// Requirement 5.3.5: configuration changes leave provider status unchanged.
+func TestRequirement_5_3_5_ConfigurationChangePreservesState(t *testing.T) {
+	for _, domain := range []string{defaultDomain, "named"} {
+		for _, state := range []State{FatalState, ErrorState, StaleState, NotReadyState, ReadyState} {
+			t.Run(domain+string(state), func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				provider := NewMockFeatureProvider(ctrl)
+				executor := newEventExecutor()
+				defer executor.shutdown()
+				if domain == defaultDomain {
+					executor.registerDefaultProvider(provider)
+				} else {
+					executor.registerNamedEventingProvider(domain, provider)
+				}
+				executor.states.Store(domain, state)
+				observed := make(chan State, 1)
+				callback := func(EventDetails) { observed <- executor.State(domain) }
+				executor.AddHandler(ProviderConfigChange, &callback)
+				executor.triggerEvent(Event{EventType: ProviderConfigChange}, provider)
+				require.Equal(t, state, executor.State(domain))
+				select {
+				case got := <-observed:
+					require.Equal(t, state, got)
+				case <-time.After(time.Second):
+					t.Fatal("handler did not run")
+				}
+				executor.triggerEvent(Event{EventType: ProviderReady}, provider)
+				require.Equal(t, ReadyState, executor.State(domain))
+			})
+		}
+	}
+}
