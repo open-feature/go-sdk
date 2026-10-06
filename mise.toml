@@ -5,7 +5,7 @@
 [tools]
 # Keep the release series in sync with the `go` directive in go.mod.
 go = "1.26"
-golangci-lint = "2.13.1"
+golangci-lint = "2.14.0"
 
 [settings]
 # Resolve every tool through mise.lock so CI and contributors install byte-for-byte
