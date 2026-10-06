@@ -35,6 +35,7 @@ type (
 	Provider struct {
 		providers          []NamedProvider
 		metadata           of.Metadata
+		lifecycleLock      sync.Mutex
 		initialized        bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
@@ -353,6 +354,9 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 // forwarder running: per the spec a provider in ERROR can still recover (§1.7, 5.3.2), and the SDK
 // calls Shutdown regardless of state (1.6.1), so all cleanup belongs there. See #561.
 func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
+	p.lifecycleLock.Lock()
+	defer p.lifecycleLock.Unlock()
+
 	// Stop a forwarder left over from an earlier attempt, so a retry does not run two of them
 	// against the same provider channels.
 	if p.shutdownFunc != nil {
@@ -448,6 +452,11 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 // events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
 // channels are closed. It does not close the outbound channel: that channel outlives a single
 // initialization attempt so a retry can keep using it, and only ShutdownWithContext closes it (#561).
+//
+// Every send is guarded by workerCtx. The outbound channel is buffered to len(providers), so with
+// no consumer on EventChannel() a plain send blocks once the buffer fills, and both the
+// workerGroup.Wait() in ShutdownWithContext and the one that stops a stale forwarder in
+// InitWithContext would then wait forever.
 func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers chan namedEventHandler) {
 	defer p.workerGroup.Done()
 
@@ -473,9 +482,13 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 					if p, ok := h.(of.FeatureProvider); ok {
 						e.EventMetadata[MetadataProviderType] = p.Metadata().Name
 					}
-					out <- namedEvent{
+					select {
+					case out <- namedEvent{
 						Event:        e,
 						providerName: name,
+					}:
+					case <-ctx.Done():
+						return
 					}
 				}
 			}
@@ -498,14 +511,22 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 		// This matches the JS SDK reference behavior where ConfigurationChanged is re-emitted as a direct
 		// pass-through, independent of status change logic.
 		if e.EventType == of.ProviderConfigChange {
-			p.outboundEvents <- e.Event
-			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
+			select {
+			case p.outboundEvents <- e.Event:
+				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
+			case <-workerCtx.Done():
+				return
+			}
 			continue
 		}
 
 		if p.updateProviderStateFromEvent(e) {
-			p.outboundEvents <- e.Event
-			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
+			select {
+			case p.outboundEvents <- e.Event:
+				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
+			case <-workerCtx.Done():
+				return
+			}
 		} else {
 			l.LogAttrs(workerCtx, slog.LevelDebug, "total state not updated, inbound event will not be emitted")
 		}
@@ -604,6 +625,9 @@ func (p *Provider) Shutdown() {
 // and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
 // providers that did initialize are shut down and blocked EventChannel() consumers are released (#561).
 func (p *Provider) ShutdownWithContext(ctx context.Context) error {
+	p.lifecycleLock.Lock()
+	defer p.lifecycleLock.Unlock()
+
 	if !p.initialized {
 		// Don't do anything if we were never initialized
 		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping shutdown")

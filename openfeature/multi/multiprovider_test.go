@@ -480,6 +480,85 @@ func TestMultiProvider_RecoveryAfterFailedInit(t *testing.T) {
 	assert.Equal(t, of.ReadyState, mp.Status())
 }
 
+// emitConfigChange sends a ProviderConfigChange, which forwardProviderEvents passes through
+// unconditionally — unlike a state event, it needs outbound buffer space every time.
+func (p *eventingProvider) emitConfigChange() {
+	p.events <- of.Event{
+		ProviderName: p.Metadata().Name,
+		EventType:    of.ProviderConfigChange,
+		ProviderEventDetails: of.ProviderEventDetails{
+			EventMetadata: make(map[string]any),
+		},
+	}
+}
+
+// fillOutboundBuffer pushes more pass-through events than the outbound channel can hold, with
+// nothing reading EventChannel(), so the forwarder is parked on a send.
+func fillOutboundBuffer(t *testing.T, p *eventingProvider, n int) {
+	t.Helper()
+	for range n {
+		p.emitConfigChange()
+	}
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestMultiProvider_ShutdownDoesNotHangOnABlockedForwarder covers a forwarder parked on a send
+// because nobody is reading EventChannel(). ShutdownWithContext waits on workerGroup, so an
+// unguarded send there waits forever.
+func TestMultiProvider_ShutdownDoesNotHangOnABlockedForwarder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	// A single provider, so the outbound buffer holds exactly one event.
+	provider := newEventingProvider(ctrl, "provider", nil)
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+
+	fillOutboundBuffer(t, provider, 4)
+
+	done := make(chan error, 1)
+	go func() { done <- mp.ShutdownWithContext(t.Context()) }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("ShutdownWithContext hung on a forwarder parked on an unguarded send")
+	}
+}
+
+// TestMultiProvider_RetryDoesNotHangOnABlockedForwarder is the same hazard reached through
+// InitWithContext, which waits on the previous attempt's forwarder before starting a new one.
+func TestMultiProvider_RetryDoesNotHangOnABlockedForwarder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	var attempts atomic.Int32
+	flaky := newEventingProvider(ctrl, "flaky", func() error {
+		if attempts.Add(1) == 1 {
+			return errors.New("injected init failure")
+		}
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("flaky", flaky))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+
+	fillOutboundBuffer(t, flaky, 4)
+
+	done := make(chan error, 1)
+	go func() { done <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+		assert.Equal(t, of.ReadyState, mp.Status())
+	case <-time.After(5 * time.Second):
+		t.Fatal("a retry hung waiting on a forwarder parked on an unguarded send")
+	}
+}
+
 // TestMultiProvider_ShutdownTwiceIsNoOp guards the close that moved into ShutdownWithContext: a
 // second shutdown must neither shut the inner providers down again nor close the outbound channel
 // twice (#561).
@@ -495,6 +574,39 @@ func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	require.NoError(t, mp.ShutdownWithContext(t.Context()))
 	require.NoError(t, mp.ShutdownWithContext(t.Context()))
 
+	assert.Equal(t, int32(1), provider.shutdowns.Load())
+	assert.Equal(t, of.NotReadyState, mp.Status())
+}
+
+func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	provider := newEventingProvider(ctrl, "provider", func() error {
+		close(started)
+		<-release
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	initDone := make(chan error, 1)
+	go func() { initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	<-started
+
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- mp.ShutdownWithContext(t.Context()) }()
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+		t.Fatal("ShutdownWithContext returned while InitWithContext was still running")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	close(release)
+	require.NoError(t, <-initDone)
+	require.NoError(t, <-shutdownDone)
 	assert.Equal(t, int32(1), provider.shutdowns.Load())
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
