@@ -369,6 +369,16 @@ func (p *eventingProvider) emitReady() {
 	}
 }
 
+func (p *eventingProvider) emitError() {
+	p.events <- of.Event{
+		ProviderName: p.Metadata().Name,
+		EventType:    of.ProviderError,
+		ProviderEventDetails: of.ProviderEventDetails{
+			EventMetadata: make(map[string]any),
+		},
+	}
+}
+
 // TestMultiProvider_ShutdownAfterFailedInitCleansUp pins where cleanup happens after a failed
 // initialization. Init leaves everything running, because a provider in ERROR can still recover
 // (spec §1.7, 5.3.2); Shutdown is what releases EventChannel() consumers and shuts the inner
@@ -609,6 +619,61 @@ func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
 	require.NoError(t, <-shutdownDone)
 	assert.Equal(t, int32(1), provider.shutdowns.Load())
 	assert.Equal(t, of.NotReadyState, mp.Status())
+}
+
+func TestMultiProvider_ShutdownLifecycleWaitObservesContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	provider := newEventingProvider(ctrl, "provider", func() error {
+		close(started)
+		<-release
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	initDone := make(chan error, 1)
+	go func() { initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	<-started
+
+	ctx, cancel := context.WithCancel(t.Context())
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- mp.ShutdownWithContext(ctx) }()
+	cancel()
+	select {
+	case err := <-shutdownDone:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("ShutdownWithContext did not observe cancellation while waiting for initialization")
+	}
+
+	close(release)
+	require.NoError(t, <-initDone)
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+}
+
+func TestMultiProvider_QueuedInitEventOverridesInitialStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	var provider *eventingProvider
+	provider = newEventingProvider(ctrl, "provider", func() error {
+		provider.emitError()
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	select {
+	case event := <-mp.EventChannel():
+		require.Equal(t, of.ProviderError, event.EventType)
+	case <-time.After(time.Second):
+		t.Fatal("queued provider error was never forwarded")
+	}
+	assert.Equal(t, of.ErrorState, mp.Status())
 }
 
 // TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in

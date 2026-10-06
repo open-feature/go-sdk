@@ -35,7 +35,7 @@ type (
 	Provider struct {
 		providers          []NamedProvider
 		metadata           of.Metadata
-		lifecycleLock      sync.Mutex
+		lifecycleLock      chan struct{}
 		initialized        bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
@@ -260,8 +260,11 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		collectedHooks = slices.Concat(collectedHooks, wrappedProvider.Hooks())
 	}
 
+	lifecycleLock := make(chan struct{}, 1)
+	lifecycleLock <- struct{}{}
 	multiProvider := &Provider{
 		providers:      providers,
+		lifecycleLock:  lifecycleLock,
 		outboundEvents: make(chan of.Event, len(providers)),
 		logger:         config.logger,
 		metadata:       buildMetadata(providers),
@@ -354,8 +357,10 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 // forwarder running: per the spec a provider in ERROR can still recover (§1.7, 5.3.2), and the SDK
 // calls Shutdown regardless of state (1.6.1), so all cleanup belongs there. See #561.
 func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
-	p.lifecycleLock.Lock()
-	defer p.lifecycleLock.Unlock()
+	if err := p.lockLifecycle(ctx); err != nil {
+		return err
+	}
+	defer p.unlockLifecycle()
 
 	// Stop a forwarder left over from an earlier attempt, so a retry does not run two of them
 	// against the same provider channels.
@@ -420,10 +425,6 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	// provider is still heard.
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
 	p.shutdownFunc = shutdownFunc
-	if len(handlers) > 0 {
-		p.workerGroup.Add(1)
-		go p.forwardProviderEvents(workerCtx, handlers)
-	}
 	p.initialized = true
 
 	if err != nil {
@@ -439,11 +440,33 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 		aggregate := p.evaluateState()
 		p.providerStatusLock.Unlock()
 		p.setStatus(aggregate)
-		return pErr
+		err = pErr
+	} else {
+		p.setStatus(of.ReadyState)
 	}
 
-	p.setStatus(of.ReadyState)
-	return nil
+	if len(handlers) > 0 {
+		p.workerGroup.Add(1)
+		go p.forwardProviderEvents(workerCtx, handlers)
+	}
+	return err
+}
+
+func (p *Provider) lockLifecycle(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-p.lifecycleLock:
+		if err := ctx.Err(); err != nil {
+			p.unlockLifecycle()
+			return err
+		}
+		return nil
+	}
+}
+
+func (p *Provider) unlockLifecycle() {
+	p.lifecycleLock <- struct{}{}
 }
 
 // forwardProviderEvents establishes an event forwarding pipeline that collects events from multiple provider
@@ -625,8 +648,10 @@ func (p *Provider) Shutdown() {
 // and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
 // providers that did initialize are shut down and blocked EventChannel() consumers are released (#561).
 func (p *Provider) ShutdownWithContext(ctx context.Context) error {
-	p.lifecycleLock.Lock()
-	defer p.lifecycleLock.Unlock()
+	if err := p.lockLifecycle(ctx); err != nil {
+		return err
+	}
+	defer p.unlockLifecycle()
 
 	if !p.initialized {
 		// Don't do anything if we were never initialized
