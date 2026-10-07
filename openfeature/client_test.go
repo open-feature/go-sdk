@@ -525,6 +525,11 @@ func TestEvaluationDetails_BeforeHookError(t *testing.T) {
 			hookErr:      NewTargetingKeyMissingResolutionError("no targeting key"),
 			expectedCode: TargetingKeyMissingCode,
 		},
+		{
+			name:         "resolution error pointer",
+			hookErr:      new(NewTargetingKeyMissingResolutionError("no targeting key")),
+			expectedCode: TargetingKeyMissingCode,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Cleanup(resetSingleton)

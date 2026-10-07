@@ -831,8 +831,6 @@ func (c *Client) finallyHooks(ctx context.Context, hookCtx HookContext, hooks []
 	}
 }
 
-// merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in case
-// of any conflicts with the (n+1)th EvaluationContext
 // errorCodeOf returns the ErrorCode carried by err, or GeneralCode when err is
 // not a ResolutionError. Hooks are free to return an arbitrary error, so the
 // code is only as specific as the error the hook chose to return.
@@ -840,10 +838,15 @@ func errorCodeOf(err error) ErrorCode {
 	if resolutionErr, ok := errors.AsType[ResolutionError](err); ok {
 		return resolutionErr.code
 	}
+	if resolutionErr, ok := errors.AsType[*ResolutionError](err); ok && resolutionErr != nil {
+		return resolutionErr.code
+	}
 
 	return GeneralCode
 }
 
+// merges attributes from the given EvaluationContexts with the nth EvaluationContext taking precedence in case
+// of any conflicts with the (n+1)th EvaluationContext
 func mergeContexts(evaluationContexts ...EvaluationContext) EvaluationContext {
 	if len(evaluationContexts) == 0 {
 		return EvaluationContext{}
