@@ -641,6 +641,12 @@ func TestMultiProvider_ShutdownLifecycleWaitObservesContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	shutdownDone := make(chan error, 1)
 	go func() { shutdownDone <- mp.ShutdownWithContext(ctx) }()
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+		t.Fatal("ShutdownWithContext returned while InitWithContext held the lifecycle lock")
+	case <-time.After(100 * time.Millisecond):
+	}
 	cancel()
 	select {
 	case err := <-shutdownDone:
@@ -652,6 +658,18 @@ func TestMultiProvider_ShutdownLifecycleWaitObservesContext(t *testing.T) {
 	close(release)
 	require.NoError(t, <-initDone)
 	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+}
+
+func TestMultiProvider_InitLifecycleWaitObservesContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := newEventingProvider(ctrl, "provider", nil)
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	require.ErrorIs(t, mp.InitWithContext(ctx, of.EvaluationContext{}), context.Canceled)
+	assert.Zero(t, provider.initCalls.Load())
 }
 
 func TestMultiProvider_QueuedInitEventOverridesInitialStatus(t *testing.T) {

@@ -453,14 +453,13 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 }
 
 func (p *Provider) lockLifecycle(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-p.lifecycleLock:
-		if err := ctx.Err(); err != nil {
-			p.unlockLifecycle()
-			return err
-		}
 		return nil
 	}
 }
