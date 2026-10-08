@@ -461,7 +461,7 @@ func TestInMemoryProvider_Metadata(t *testing.T) {
 
 func TestInMemoryProvider_Track(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
-	evalCtx := openfeature.NewEvaluationContext("", map[string]any{"region": "eu"})
+	evalCtx := openfeature.NewTargetlessEvaluationContext(map[string]any{"region": "eu"})
 
 	memoryProvider.Track(t.Context(), "example-event-name", evalCtx,
 		openfeature.NewTrackingEventDetails(1).Add("plan", "pro"))
@@ -493,15 +493,23 @@ func TestInMemoryProvider_Track(t *testing.T) {
 func TestInMemoryProvider_TrackingEventsReturnsACopy(t *testing.T) {
 	memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{})
 	memoryProvider.Track(t.Context(), "example-event-name",
-		openfeature.NewEvaluationContext("", map[string]any{"region": "eu"}),
+		openfeature.NewTargetlessEvaluationContext(map[string]any{"region": "eu"}),
 		openfeature.NewTrackingEventDetails(1).Add("plan", "pro"))
 
 	events := memoryProvider.TrackingEvents("example-event-name")
+	if len(events) != 1 {
+		t.Fatalf("expected the tracked event to be recorded, got %d", len(events))
+	}
+
 	events[0].Value = 99
 	events[0].Data["plan"] = "free"
 	events[0].ContextAttributes["region"] = "us"
 
 	recorded := memoryProvider.TrackingEvents("example-event-name")
+	if len(recorded) != 1 {
+		t.Fatalf("expected the recorded event to survive the caller's mutation, got %d", len(recorded))
+	}
+
 	if recorded[0].Value != 1 || recorded[0].Data["plan"] != "pro" || recorded[0].ContextAttributes["region"] != "eu" {
 		t.Errorf("expected the recorded event to survive a caller mutating the one it was handed, got %+v", recorded[0])
 	}
