@@ -2,3 +2,5 @@
 .cursor
 
 dist/
+
+coverage-*.out
