@@ -884,6 +884,54 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 	})
 
+	t.Run("error handler runs when provider fatal", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
+		provider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		if err := SetProviderAndWait(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		// Reach FATAL before registering, so the handler can only fire
+		// via emitOnRegistration (spec 5.3.3).
+		eventingImpl.Invoke(Event{
+			EventType: ProviderError,
+			ProviderEventDetails: ProviderEventDetails{
+				ErrorCode: ProviderFatalCode,
+			},
+		})
+		eventually(t, func() bool {
+			return NewDefaultClient().State() == FatalState
+		}, time.Second, time.Millisecond*100, "provider did not transition to FATAL state")
+
+		rsp := make(chan EventDetails, 1)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderError, &callback)
+
+		select {
+		case details := <-rsp:
+			if details.Message != "provider is in fatal state" {
+				t.Errorf("got message %q, want %q", details.Message, "provider is in fatal state")
+			}
+		case <-time.After(200 * time.Millisecond):
+			t.Errorf("timed out waiting for callback")
+		}
+	})
+
 	t.Run("stale handler runs when provider stale", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 
@@ -1705,5 +1753,38 @@ func TestBasicShutdown(t *testing.T) {
 		// Success - shutdown completed
 	case <-time.After(2 * time.Second):
 		t.Fatal("shutdown() hung and did not complete within 2 seconds")
+	}
+}
+
+// Requirement 5.3.5: configuration changes leave provider status unchanged.
+func TestRequirement_5_3_5_ConfigurationChangePreservesState(t *testing.T) {
+	for _, domain := range []string{defaultDomain, "named"} {
+		for _, state := range []State{FatalState, ErrorState, StaleState, NotReadyState, ReadyState} {
+			t.Run(domain+string(state), func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				provider := NewMockFeatureProvider(ctrl)
+				executor := newEventExecutor()
+				defer executor.shutdown()
+				if domain == defaultDomain {
+					executor.registerDefaultProvider(provider)
+				} else {
+					executor.registerNamedEventingProvider(domain, provider)
+				}
+				executor.states.Store(domain, state)
+				observed := make(chan State, 1)
+				callback := func(EventDetails) { observed <- executor.State(domain) }
+				executor.AddHandler(ProviderConfigChange, &callback)
+				executor.triggerEvent(Event{EventType: ProviderConfigChange}, provider)
+				require.Equal(t, state, executor.State(domain))
+				select {
+				case got := <-observed:
+					require.Equal(t, state, got)
+				case <-time.After(time.Second):
+					t.Fatal("handler did not run")
+				}
+				executor.triggerEvent(Event{EventType: ProviderReady}, provider)
+				require.Equal(t, ReadyState, executor.State(domain))
+			})
+		}
 	}
 }

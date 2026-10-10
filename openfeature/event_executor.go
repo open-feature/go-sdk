@@ -164,6 +164,8 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 		message = "provider is in ready state"
 	} else if state == ErrorState && eventType == ProviderError {
 		message = "provider is in error state"
+	} else if state == FatalState && eventType == ProviderError {
+		message = "provider is in fatal state"
 	} else if state == StaleState && eventType == ProviderStale {
 		message = "provider is in stale state"
 	}
@@ -335,10 +337,12 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	for domain, reference := range e.namedProviderReference {
 		if reference.equals(handlerRef) {
 			namedDomains = append(namedDomains, domain)
-			e.states.Store(domain, newState)
+			if event.EventType != ProviderConfigChange {
+				e.states.Store(domain, newState)
+			}
 		}
 	}
-	if isDefault {
+	if isDefault && event.EventType != ProviderConfigChange {
 		e.states.Store(defaultDomain, newState)
 	}
 
