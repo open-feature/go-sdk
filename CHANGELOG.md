@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.20.0](https://github.com/open-feature/go-sdk/compare/v1.19.0...v1.20.0) (2026-10-10)
+
+
+### 🐛 Bug Fixes
+
+* **multi:** map FLAG_NOT_FOUND and TARGETING_KEY_MISSING to ErrorReason ([#593](https://github.com/open-feature/go-sdk/issues/593)) ([5cc3ba2](https://github.com/open-feature/go-sdk/commit/5cc3ba2cd123825efa196e0b5aa0b71282625790))
+* preserve provider state on configuration changes ([#606](https://github.com/open-feature/go-sdk/issues/606)) ([136a6fe](https://github.com/open-feature/go-sdk/commit/136a6fe655a7ff0fe2bbe68687e8e88037e94803))
+* report NOT_READY for a domain whose provider is initializing ([#570](https://github.com/open-feature/go-sdk/issues/570)) ([8641ee6](https://github.com/open-feature/go-sdk/commit/8641ee6d091e46137d0a7aa315337b6848bf813c)), closes [#550](https://github.com/open-feature/go-sdk/issues/550)
+* run PROVIDER_ERROR handlers on registration when the provider is FATAL ([#600](https://github.com/open-feature/go-sdk/issues/600)) ([3c2b77b](https://github.com/open-feature/go-sdk/commit/3c2b77ba66520b80b11d00380a5d2a3e68a74bfb)), closes [#559](https://github.com/open-feature/go-sdk/issues/559)
+
+
+### ✨ New Features
+
+* **memprovider:** add a TrackingEvents accessor for recorded events ([#613](https://github.com/open-feature/go-sdk/issues/613)) ([37beb12](https://github.com/open-feature/go-sdk/commit/37beb124b02d5ea64dd4c03a496c46fb971a910d))
+* support updating the in-memory provider's flag set ([#539](https://github.com/open-feature/go-sdk/issues/539)) ([3c83cde](https://github.com/open-feature/go-sdk/commit/3c83cdeaccbe319858c4a938e2e699ddcd8769f9))
+
+
+### 🧹 Chore
+
+* **deps:** update dependency golangci-lint to v2.14.0 ([#608](https://github.com/open-feature/go-sdk/issues/608)) ([9420328](https://github.com/open-feature/go-sdk/commit/9420328836cbf78d94e552ab457b708646370af8))
+* **deps:** update dependency goreleaser to v2.18.2 ([#607](https://github.com/open-feature/go-sdk/issues/607)) ([1ff295a](https://github.com/open-feature/go-sdk/commit/1ff295a7064433d69b82e71c3a84d3b4f1ed868e))
+* **deps:** update jdx/mise-action action to v4.3.0 ([#609](https://github.com/open-feature/go-sdk/issues/609)) ([dbf5061](https://github.com/open-feature/go-sdk/commit/dbf506170e3c0b130319e77e706f32f306ecf771))
+* **deps:** update jdx/mise-action action to v5 ([#611](https://github.com/open-feature/go-sdk/issues/611)) ([cd6fb9b](https://github.com/open-feature/go-sdk/commit/cd6fb9b002307cf8966b944a4be1318b15fae45c))
+* **deps:** update jdx/mise-action action to v5.1.1 ([#612](https://github.com/open-feature/go-sdk/issues/612)) ([34162a2](https://github.com/open-feature/go-sdk/commit/34162a29c9095768d048c85b94e2d0a3fb369b6e))
+* **deps:** update module go:github.com/cyclonedx/cyclonedx-gomod/cmd/cyclonedx-gomod to v1.12.0 ([#610](https://github.com/open-feature/go-sdk/issues/610)) ([7407dca](https://github.com/open-feature/go-sdk/commit/7407dcaad9a8de92c238e2b44c6107a94c48063c))
+* **deps:** update module golang.org/x/sync to v0.24.0 ([#614](https://github.com/open-feature/go-sdk/issues/614)) ([08c718e](https://github.com/open-feature/go-sdk/commit/08c718e448b3e896537d0a23db02fa9ca4118b4e))
+* standardize/update release please config ([#602](https://github.com/open-feature/go-sdk/issues/602)) ([2560258](https://github.com/open-feature/go-sdk/commit/256025846ea79ebea745bb6577234bab25d0d53e))
+
 ## [1.19.0](https://github.com/open-feature/go-sdk/compare/v1.18.0...v1.19.0) (2026-09-23)
 
 
