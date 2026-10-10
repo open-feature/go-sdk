@@ -169,6 +169,27 @@ func (i *InMemoryProvider) Track(ctx context.Context, trackingEventName string, 
 	})
 }
 
+// TrackingEvents returns the events Track recorded for trackingEventName, in
+// the order they were recorded, and an empty slice for a name never tracked.
+//
+// The returned slice and each event's Data and ContextAttributes maps are
+// copied. Values within those maps and the event Value are not cloned.
+func (i *InMemoryProvider) TrackingEvents(trackingEventName string) []InMemoryEvent {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+
+	recorded := i.trackingEvents[trackingEventName]
+
+	events := make([]InMemoryEvent, len(recorded))
+	for n, event := range recorded {
+		event.Data = maps.Clone(event.Data)
+		event.ContextAttributes = maps.Clone(event.ContextAttributes)
+		events[n] = event
+	}
+
+	return events
+}
+
 func (i *InMemoryProvider) find(flag string) (*InMemoryFlag, *openfeature.ProviderResolutionDetail, bool) {
 	i.mu.RLock()
 	memoryFlag, ok := i.flags[flag]
