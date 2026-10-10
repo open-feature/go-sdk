@@ -328,10 +328,12 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	for domain, reference := range e.namedProviderReference {
 		if reference.equals(handlerRef) {
 			namedDomains = append(namedDomains, domain)
-			e.states.Store(domain, newState)
+			if event.EventType != ProviderConfigChange {
+				e.states.Store(domain, newState)
+			}
 		}
 	}
-	if isDefault {
+	if isDefault && event.EventType != ProviderConfigChange {
 		e.states.Store(defaultDomain, newState)
 	}
 
