@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -284,6 +285,413 @@ func TestMultiProvider_InitReportsNotReady(t *testing.T) {
 	assert.Equal(t, of.NotReadyState, mp.Status())
 	close(release)
 	require.NoError(t, <-initDone)
+}
+
+// eventingProvider implements both [of.StateHandler] and [of.EventHandler] with a scriptable
+// initialization and an event channel the test drives, which is what the retry and recovery paths
+// after a failed initialization need (#561).
+type eventingProvider struct {
+	of.FeatureProvider
+	events    chan of.Event
+	init      func() error
+	initCalls atomic.Int32
+	shutdowns atomic.Int32
+}
+
+var (
+	_ of.StateHandler = (*eventingProvider)(nil)
+	_ of.EventHandler = (*eventingProvider)(nil)
+)
+
+func newEventingProvider(ctrl *gomock.Controller, name string, init func() error) *eventingProvider {
+	mock := of.NewMockFeatureProvider(ctrl)
+	mock.EXPECT().Metadata().Return(of.Metadata{Name: name}).AnyTimes()
+	mock.EXPECT().Hooks().Return([]of.Hook{}).AnyTimes()
+
+	return &eventingProvider{
+		FeatureProvider: mock,
+		events:          make(chan of.Event, 10),
+		init:            init,
+	}
+}
+
+func (p *eventingProvider) Init(of.EvaluationContext) error {
+	p.initCalls.Add(1)
+	if p.init == nil {
+		return nil
+	}
+	return p.init()
+}
+
+// Shutdown deliberately leaves the event channel open: the forwarder's listener exits on the
+// worker context, and a retry has to be able to keep reading from the same provider.
+func (p *eventingProvider) Shutdown() { p.shutdowns.Add(1) }
+
+func (p *eventingProvider) EventChannel() <-chan of.Event { return p.events }
+
+// contextAwareEventingProvider is an eventingProvider that also implements
+// [of.ContextAwareStateHandler], so the multi-provider takes the ShutdownWithContext branch and
+// the context handed to a provider during cleanup can be asserted on.
+type contextAwareEventingProvider struct {
+	*eventingProvider
+	shutdownCtxErr chan error
+}
+
+var _ of.ContextAwareStateHandler = (*contextAwareEventingProvider)(nil)
+
+func newContextAwareEventingProvider(ctrl *gomock.Controller, name string, init func() error) *contextAwareEventingProvider {
+	return &contextAwareEventingProvider{
+		eventingProvider: newEventingProvider(ctrl, name, init),
+		shutdownCtxErr:   make(chan error, 1),
+	}
+}
+
+func (p *contextAwareEventingProvider) InitWithContext(_ context.Context, evalCtx of.EvaluationContext) error {
+	return p.Init(evalCtx)
+}
+
+func (p *contextAwareEventingProvider) ShutdownWithContext(ctx context.Context) error {
+	p.shutdowns.Add(1)
+	select {
+	case p.shutdownCtxErr <- ctx.Err():
+	default:
+	}
+	return nil
+}
+
+func (p *eventingProvider) emitReady() {
+	p.events <- of.Event{
+		ProviderName: p.Metadata().Name,
+		EventType:    of.ProviderReady,
+		ProviderEventDetails: of.ProviderEventDetails{
+			EventMetadata: make(map[string]any),
+		},
+	}
+}
+
+func (p *eventingProvider) emitError() {
+	p.events <- of.Event{
+		ProviderName: p.Metadata().Name,
+		EventType:    of.ProviderError,
+		ProviderEventDetails: of.ProviderEventDetails{
+			EventMetadata: make(map[string]any),
+		},
+	}
+}
+
+// TestMultiProvider_ShutdownAfterFailedInitCleansUp pins where cleanup happens after a failed
+// initialization. Init leaves everything running, because a provider in ERROR can still recover
+// (spec §1.7, 5.3.2); Shutdown is what releases EventChannel() consumers and shuts the inner
+// providers down, and the SDK calls it regardless of state (1.6.1). See #561.
+func TestMultiProvider_ShutdownAfterFailedInitCleansUp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	initialized := make(chan struct{})
+	// Context-aware, so cleanup goes through ShutdownWithContext and the context it is handed
+	// can be checked: the errgroup's context is already cancelled by the failure, and shutting a
+	// provider down on a dead context would silently skip its teardown.
+	healthy := newContextAwareEventingProvider(ctrl, "healthy", func() error {
+		close(initialized)
+		return nil
+	})
+	// Fail only once the healthy provider is up, so "it did initialize" is ordered, not raced.
+	failing := newEventingProvider(ctrl, "failing", func() error {
+		<-initialized
+		return errors.New("injected init failure")
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch,
+		WithProvider("healthy", healthy),
+		WithProvider("failing", failing))
+	require.NoError(t, err)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	assert.Equal(t, of.ErrorState, mp.Status())
+	assert.Zero(t, healthy.shutdowns.Load(),
+		"a failed init must leave the providers that did initialize running, so they can recover")
+
+	released := make(chan bool, 1)
+	go func() {
+		_, open := <-mp.EventChannel()
+		released <- open
+	}()
+
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+
+	select {
+	case open := <-released:
+		assert.False(t, open, "shutdown should close the outbound event channel")
+	case <-time.After(time.Second):
+		t.Fatal("a consumer of EventChannel() was never released by shutdown after a failed init")
+	}
+	assert.Equal(t, int32(1), healthy.shutdowns.Load(), "shutdown must reach the provider that initialized")
+	assert.Equal(t, int32(1), failing.shutdowns.Load(), "shutdown must reach the provider whose init failed")
+	assert.Equal(t, of.NotReadyState, mp.Status())
+
+	select {
+	case ctxErr := <-healthy.shutdownCtxErr:
+		require.NoError(t, ctxErr, "a context-aware provider must be shut down on a live context")
+	default:
+		t.Fatal("the context-aware provider was never shut down")
+	}
+}
+
+// TestMultiProvider_RetryAfterFailedInit covers re-initializing after a failure. The outbound
+// channel is created once in NewProvider, so closing it on the failure path made this second
+// attempt panic with "close of closed channel" (#561).
+func TestMultiProvider_RetryAfterFailedInit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	var attempts atomic.Int32
+	flaky := newEventingProvider(ctrl, "flaky", func() error {
+		if attempts.Add(1) == 1 {
+			return errors.New("injected init failure")
+		}
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("flaky", flaky))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	assert.Equal(t, of.ErrorState, mp.Status())
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	assert.Equal(t, of.ReadyState, mp.Status())
+	assert.Equal(t, int32(2), flaky.initCalls.Load())
+}
+
+// TestMultiProvider_RecoveryAfterFailedInit covers a provider that recovers on its own after its
+// initialization failed. Its event handler is registered before init can fail, so the READY it
+// emits is still heard and the aggregate status follows it back (#561).
+func TestMultiProvider_RecoveryAfterFailedInit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	failing := newEventingProvider(ctrl, "failing", func() error {
+		return errors.New("injected init failure")
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("failing", failing))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	assert.Equal(t, of.ErrorState, mp.Status())
+
+	failing.emitReady()
+
+	select {
+	case e := <-mp.EventChannel():
+		assert.Equal(t, of.ProviderReady, e.EventType)
+	case <-time.After(time.Second):
+		t.Fatal("a READY event from a recovered provider was never forwarded")
+	}
+	assert.Equal(t, of.ReadyState, mp.Status())
+}
+
+// emitConfigChange sends a ProviderConfigChange, which forwardProviderEvents passes through
+// unconditionally — unlike a state event, it needs outbound buffer space every time.
+func (p *eventingProvider) emitConfigChange() {
+	p.events <- of.Event{
+		ProviderName: p.Metadata().Name,
+		EventType:    of.ProviderConfigChange,
+		ProviderEventDetails: of.ProviderEventDetails{
+			EventMetadata: make(map[string]any),
+		},
+	}
+}
+
+// fillOutboundBuffer pushes more pass-through events than the outbound channel can hold, with
+// nothing reading EventChannel(), so the forwarder is parked on a send.
+func fillOutboundBuffer(t *testing.T, p *eventingProvider, n int) {
+	t.Helper()
+	for range n {
+		p.emitConfigChange()
+	}
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestMultiProvider_ShutdownDoesNotHangOnABlockedForwarder covers a forwarder parked on a send
+// because nobody is reading EventChannel(). ShutdownWithContext waits on workerGroup, so an
+// unguarded send there waits forever.
+func TestMultiProvider_ShutdownDoesNotHangOnABlockedForwarder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	// A single provider, so the outbound buffer holds exactly one event.
+	provider := newEventingProvider(ctrl, "provider", nil)
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+
+	fillOutboundBuffer(t, provider, 4)
+
+	done := make(chan error, 1)
+	go func() { done <- mp.ShutdownWithContext(t.Context()) }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("ShutdownWithContext hung on a forwarder parked on an unguarded send")
+	}
+}
+
+// TestMultiProvider_RetryDoesNotHangOnABlockedForwarder is the same hazard reached through
+// InitWithContext, which waits on the previous attempt's forwarder before starting a new one.
+func TestMultiProvider_RetryDoesNotHangOnABlockedForwarder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	var attempts atomic.Int32
+	flaky := newEventingProvider(ctrl, "flaky", func() error {
+		if attempts.Add(1) == 1 {
+			return errors.New("injected init failure")
+		}
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("flaky", flaky))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.Error(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+
+	fillOutboundBuffer(t, flaky, 4)
+
+	done := make(chan error, 1)
+	go func() { done <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+		assert.Equal(t, of.ReadyState, mp.Status())
+	case <-time.After(5 * time.Second):
+		t.Fatal("a retry hung waiting on a forwarder parked on an unguarded send")
+	}
+}
+
+// TestMultiProvider_ShutdownTwiceIsNoOp guards the close that moved into ShutdownWithContext: a
+// second shutdown must neither shut the inner providers down again nor close the outbound channel
+// twice (#561).
+func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	provider := newEventingProvider(ctrl, "provider", nil)
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+
+	assert.Equal(t, int32(1), provider.shutdowns.Load())
+	assert.Equal(t, of.NotReadyState, mp.Status())
+}
+
+func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	provider := newEventingProvider(ctrl, "provider", func() error {
+		close(started)
+		<-release
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	initDone := make(chan error, 1)
+	go func() { initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	<-started
+
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- mp.ShutdownWithContext(t.Context()) }()
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+		t.Fatal("ShutdownWithContext returned while InitWithContext was still running")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	close(release)
+	require.NoError(t, <-initDone)
+	require.NoError(t, <-shutdownDone)
+	assert.Equal(t, int32(1), provider.shutdowns.Load())
+	assert.Equal(t, of.NotReadyState, mp.Status())
+}
+
+func TestMultiProvider_ShutdownLifecycleWaitObservesContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	provider := newEventingProvider(ctrl, "provider", func() error {
+		close(started)
+		<-release
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	initDone := make(chan error, 1)
+	go func() { initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	<-started
+
+	ctx, cancel := context.WithCancel(t.Context())
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- mp.ShutdownWithContext(ctx) }()
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+		t.Fatal("ShutdownWithContext returned while InitWithContext held the lifecycle lock")
+	case <-time.After(100 * time.Millisecond):
+	}
+	cancel()
+	select {
+	case err := <-shutdownDone:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("ShutdownWithContext did not observe cancellation while waiting for initialization")
+	}
+
+	close(release)
+	require.NoError(t, <-initDone)
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+}
+
+func TestMultiProvider_InitLifecycleWaitObservesContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := newEventingProvider(ctrl, "provider", nil)
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	require.ErrorIs(t, mp.InitWithContext(ctx, of.EvaluationContext{}), context.Canceled)
+	assert.Zero(t, provider.initCalls.Load())
+}
+
+func TestMultiProvider_QueuedInitEventOverridesInitialStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	var provider *eventingProvider
+	provider = newEventingProvider(ctrl, "provider", func() error {
+		provider.emitError()
+		return nil
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	select {
+	case event := <-mp.EventChannel():
+		require.Equal(t, of.ProviderError, event.EventType)
+	case <-time.After(time.Second):
+		t.Fatal("queued provider error was never forwarded")
+	}
+	assert.Equal(t, of.ErrorState, mp.Status())
 }
 
 // TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in

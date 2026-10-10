@@ -35,6 +35,7 @@ type (
 	Provider struct {
 		providers          []NamedProvider
 		metadata           of.Metadata
+		lifecycleLock      chan struct{}
 		initialized        bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
@@ -259,8 +260,11 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		collectedHooks = slices.Concat(collectedHooks, wrappedProvider.Hooks())
 	}
 
+	lifecycleLock := make(chan struct{}, 1)
+	lifecycleLock <- struct{}{}
 	multiProvider := &Provider{
 		providers:      providers,
+		lifecycleLock:  lifecycleLock,
 		outboundEvents: make(chan of.Event, len(providers)),
 		logger:         config.logger,
 		metadata:       buildMetadata(providers),
@@ -348,7 +352,24 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 }
 
 // InitWithContext will run the initialize method for all internal [of.FeatureProvider] instances and aggregate any errors.
+//
+// A failed initialization leaves the provider in ERROR and keeps the inner providers and the event
+// forwarder running: per the spec a provider in ERROR can still recover (§1.7, 5.3.2), and the SDK
+// calls Shutdown regardless of state (1.6.1), so all cleanup belongs there. See #561.
 func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
+	if err := p.lockLifecycle(ctx); err != nil {
+		return err
+	}
+	defer p.unlockLifecycle()
+
+	// Stop a forwarder left over from an earlier attempt, so a retry does not run two of them
+	// against the same provider channels.
+	if p.shutdownFunc != nil {
+		p.shutdownFunc()
+		p.workerGroup.Wait()
+		p.shutdownFunc = nil
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
 	// wrapper type used only for initialization of event listener workers
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
@@ -365,6 +386,12 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 		prov := provider
 		eg.Go(func() error {
 			l.LogAttrs(ctx, slog.LevelDebug, "starting initialization")
+			// Registered before initialization can fail, so a provider that recovers and emits
+			// READY is still heard. The channel is sized to len(providers), so this never blocks.
+			if eventer, ok := tryAs[of.EventHandler](prov); ok {
+				l.LogAttrs(ctx, slog.LevelDebug, "detected EventHandler implementation")
+				handlers <- namedEventHandler{eventer, name}
+			}
 			if stateHandle, ok := tryAs[of.StateHandler](prov); ok {
 				var err error
 				if contextAwareHandle, ok := stateHandle.(of.ContextAwareStateHandler); ok {
@@ -385,16 +412,22 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 				l.LogAttrs(ctx, slog.LevelDebug, "StateHandle not implemented, skipping initialization")
 			}
 			l.LogAttrs(ctx, slog.LevelDebug, "initialization successful")
-			if eventer, ok := tryAs[of.EventHandler](prov); ok {
-				l.LogAttrs(ctx, slog.LevelDebug, "detected EventHandler implementation")
-				handlers <- namedEventHandler{eventer, name}
-			}
 			p.updateProviderState(name, of.ReadyState)
 			return nil
 		})
 	}
 
-	if err := eg.Wait(); err != nil {
+	err := eg.Wait()
+	close(handlers)
+
+	// The forwarder starts and the provider counts as initialized whether or not initialization
+	// succeeded, so ShutdownWithContext always has something to tear down and a recovering
+	// provider is still heard.
+	workerCtx, shutdownFunc := context.WithCancel(context.Background())
+	p.shutdownFunc = shutdownFunc
+	p.initialized = true
+
+	if err != nil {
 		var pErr *ProviderError
 		if !errors.As(err, &pErr) {
 			pErr = &ProviderError{
@@ -407,33 +440,47 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 		aggregate := p.evaluateState()
 		p.providerStatusLock.Unlock()
 		p.setStatus(aggregate)
-		return pErr
+		err = pErr
+	} else {
+		p.setStatus(of.ReadyState)
 	}
-	close(handlers)
-	workerCtx, shutdownFunc := context.WithCancel(context.Background())
-	p.shutdownFunc = shutdownFunc
 
 	if len(handlers) > 0 {
 		p.workerGroup.Add(1)
 		go p.forwardProviderEvents(workerCtx, handlers)
-	} else {
-		// we don't emit any events so we can just close the channel
-		close(p.outboundEvents)
 	}
+	return err
+}
 
-	p.setStatus(of.ReadyState)
-	p.initialized = true
-	return nil
+func (p *Provider) lockLifecycle(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-p.lifecycleLock:
+		return nil
+	}
+}
+
+func (p *Provider) unlockLifecycle() {
+	p.lifecycleLock <- struct{}{}
 }
 
 // forwardProviderEvents establishes an event forwarding pipeline that collects events from multiple provider
 // event handlers and forwards them to the multiprovider's outbound event channel. It spawns a goroutine for
 // each provider handler to listen for events, aggregates them through an internal pipe, and selectively forwards
 // events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
-// channels are closed, ensuring proper cleanup by closing the outbound channel when complete.
+// channels are closed. It does not close the outbound channel: that channel outlives a single
+// initialization attempt so a retry can keep using it, and only ShutdownWithContext closes it (#561).
+//
+// Every send is guarded by workerCtx. The outbound channel is buffered to len(providers), so with
+// no consumer on EventChannel() a plain send blocks once the buffer fills, and both the
+// workerGroup.Wait() in ShutdownWithContext and the one that stops a stale forwarder in
+// InitWithContext would then wait forever.
 func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers chan namedEventHandler) {
 	defer p.workerGroup.Done()
-	defer close(p.outboundEvents)
 
 	workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 	pipe := make(chan namedEvent)
@@ -457,9 +504,13 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 					if p, ok := h.(of.FeatureProvider); ok {
 						e.EventMetadata[MetadataProviderType] = p.Metadata().Name
 					}
-					out <- namedEvent{
+					select {
+					case out <- namedEvent{
 						Event:        e,
 						providerName: name,
+					}:
+					case <-ctx.Done():
+						return
 					}
 				}
 			}
@@ -482,14 +533,22 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 		// This matches the JS SDK reference behavior where ConfigurationChanged is re-emitted as a direct
 		// pass-through, independent of status change logic.
 		if e.EventType == of.ProviderConfigChange {
-			p.outboundEvents <- e.Event
-			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
+			select {
+			case p.outboundEvents <- e.Event:
+				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
+			case <-workerCtx.Done():
+				return
+			}
 			continue
 		}
 
 		if p.updateProviderStateFromEvent(e) {
-			p.outboundEvents <- e.Event
-			l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
+			select {
+			case p.outboundEvents <- e.Event:
+				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
+			case <-workerCtx.Done():
+				return
+			}
 		} else {
 			l.LogAttrs(workerCtx, slog.LevelDebug, "total state not updated, inbound event will not be emitted")
 		}
@@ -584,8 +643,15 @@ func (p *Provider) Shutdown() {
 	}
 }
 
-// ShutdownWithContext shuts down all internal [of.FeatureProvider] instances and internal event listeners
+// ShutdownWithContext shuts down all internal [of.FeatureProvider] instances and internal event listeners,
+// and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
+// providers that did initialize are shut down and blocked EventChannel() consumers are released (#561).
 func (p *Provider) ShutdownWithContext(ctx context.Context) error {
+	if err := p.lockLifecycle(ctx); err != nil {
+		return err
+	}
+	defer p.unlockLifecycle()
+
 	if !p.initialized {
 		// Don't do anything if we were never initialized
 		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping shutdown")
@@ -620,8 +686,12 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	// Wait for workers to stop
 	p.workerGroup.Wait()
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "worker shutdown completed")
+	// Safe only here: every worker that could still send on the channel has stopped. The
+	// initialized guard above makes a second shutdown a no-op, so this cannot double-close.
+	close(p.outboundEvents)
 	p.setStatus(of.NotReadyState)
 	p.initialized = false
+	p.shutdownFunc = nil
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "provider shutdown completed")
 
 	return errs
