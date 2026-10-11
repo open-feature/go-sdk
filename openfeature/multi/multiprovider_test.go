@@ -289,7 +289,7 @@ func TestMultiProvider_InitReportsNotReady(t *testing.T) {
 
 // eventingProvider implements both [of.StateHandler] and [of.EventHandler] with a scriptable
 // initialization and an event channel the test drives, which is what the retry and recovery paths
-// after a failed initialization need (#561).
+// after a failed initialization need.
 type eventingProvider struct {
 	of.FeatureProvider
 	events    chan of.Event
@@ -382,7 +382,7 @@ func (p *eventingProvider) emitError() {
 // TestMultiProvider_ShutdownAfterFailedInitCleansUp pins where cleanup happens after a failed
 // initialization. Init leaves everything running, because a provider in ERROR can still recover
 // (spec §1.7, 5.3.2); Shutdown is what releases EventChannel() consumers and shuts the inner
-// providers down, and the SDK calls it regardless of state (1.6.1). See #561.
+// providers down, and the SDK calls it regardless of state (1.6.1).
 func TestMultiProvider_ShutdownAfterFailedInitCleansUp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -438,7 +438,7 @@ func TestMultiProvider_ShutdownAfterFailedInitCleansUp(t *testing.T) {
 
 // TestMultiProvider_RetryAfterFailedInit covers re-initializing after a failure. The outbound
 // channel is created once in NewProvider, so closing it on the failure path made this second
-// attempt panic with "close of closed channel" (#561).
+// attempt panic with "close of closed channel".
 func TestMultiProvider_RetryAfterFailedInit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -464,7 +464,7 @@ func TestMultiProvider_RetryAfterFailedInit(t *testing.T) {
 
 // TestMultiProvider_RecoveryAfterFailedInit covers a provider that recovers on its own after its
 // initialization failed. Its event handler is registered before init can fail, so the READY it
-// emits is still heard and the aggregate status follows it back (#561).
+// emits is still heard and the aggregate status follows it back.
 func TestMultiProvider_RecoveryAfterFailedInit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -571,7 +571,7 @@ func TestMultiProvider_RetryDoesNotHangOnABlockedForwarder(t *testing.T) {
 
 // TestMultiProvider_ShutdownTwiceIsNoOp guards the close that moved into ShutdownWithContext: a
 // second shutdown must neither shut the inner providers down again nor close the outbound channel
-// twice (#561).
+// twice.
 func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -588,6 +588,8 @@ func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 
+// TestMultiProvider_InitAndShutdownAreSerialized uses a provider whose Init takes no context, so
+// there is nothing for a shutdown to cancel and it has to wait its turn.
 func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	started := make(chan struct{})
@@ -618,6 +620,67 @@ func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
 	require.NoError(t, <-initDone)
 	require.NoError(t, <-shutdownDone)
 	assert.Equal(t, int32(1), provider.shutdowns.Load())
+	assert.Equal(t, of.NotReadyState, mp.Status())
+}
+
+// blockingInitProvider is a [of.ContextAwareStateHandler] whose initialization returns only once its
+// context is done. A provider that waits on something external behaves this way, and it is the case
+// where a shutdown must not queue behind the initialization.
+type blockingInitProvider struct {
+	*eventingProvider
+	started chan struct{}
+}
+
+var _ of.ContextAwareStateHandler = (*blockingInitProvider)(nil)
+
+func newBlockingInitProvider(ctrl *gomock.Controller, name string) *blockingInitProvider {
+	return &blockingInitProvider{
+		eventingProvider: newEventingProvider(ctrl, name, nil),
+		started:          make(chan struct{}, 1),
+	}
+}
+
+func (p *blockingInitProvider) InitWithContext(ctx context.Context, _ of.EvaluationContext) error {
+	p.initCalls.Add(1)
+	select {
+	case p.started <- struct{}{}:
+	default:
+	}
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (p *blockingInitProvider) ShutdownWithContext(context.Context) error {
+	p.shutdowns.Add(1)
+	return nil
+}
+
+// TestMultiProvider_ShutdownCancelsAnInFlightInit pins that a shutdown cancels an initialization it
+// would otherwise wait for. openfeature.Shutdown runs this while holding the API lock that every
+// evaluation takes, so waiting here stalls the whole SDK; a caller that passed a deadline instead
+// gets its context error back having cleaned up nothing.
+func TestMultiProvider_ShutdownCancelsAnInFlightInit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := newBlockingInitProvider(ctrl, "provider")
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	initDone := make(chan error, 1)
+	go func() { initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{}) }()
+	<-provider.started
+
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- mp.ShutdownWithContext(t.Context()) }()
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("ShutdownWithContext waited for an initialization it could have cancelled")
+	}
+
+	require.ErrorIs(t, <-initDone, context.Canceled)
+	assert.Equal(t, int32(1), provider.shutdowns.Load(), "shutdown must still reach the inner provider")
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 

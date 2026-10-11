@@ -36,6 +36,8 @@ type (
 		providers          []NamedProvider
 		metadata           of.Metadata
 		lifecycleLock      chan struct{}
+		initCancel         context.CancelFunc
+		initCancelLock     sync.Mutex
 		initialized        bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
@@ -355,12 +357,20 @@ func (p *Provider) Init(evalCtx of.EvaluationContext) error {
 //
 // A failed initialization leaves the provider in ERROR and keeps the inner providers and the event
 // forwarder running: per the spec a provider in ERROR can still recover (§1.7, 5.3.2), and the SDK
-// calls Shutdown regardless of state (1.6.1), so all cleanup belongs there. See #561.
+// calls Shutdown regardless of state (1.6.1), so all cleanup belongs there.
 func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationContext) error {
 	if err := p.lockLifecycle(ctx); err != nil {
 		return err
 	}
 	defer p.unlockLifecycle()
+
+	// Published for ShutdownWithContext, which cancels it instead of waiting for the lifecycle
+	// lock. Without that it would block until the inner Init returns, and the SDK calls it while
+	// holding the lock every evaluation needs.
+	initCtx, cancelInit := context.WithCancel(ctx)
+	defer cancelInit()
+	p.publishInitCancel(cancelInit)
+	defer p.publishInitCancel(nil)
 
 	// Stop a forwarder left over from an earlier attempt, so a retry does not run two of them
 	// against the same provider channels.
@@ -370,7 +380,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 		p.shutdownFunc = nil
 	}
 
-	eg, ctx := errgroup.WithContext(ctx)
+	eg, ctx := errgroup.WithContext(initCtx)
 	// wrapper type used only for initialization of event listener workers
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "start initialization")
 	handlers := make(chan namedEventHandler, len(p.providers))
@@ -468,12 +478,34 @@ func (p *Provider) unlockLifecycle() {
 	p.lifecycleLock <- struct{}{}
 }
 
+// publishInitCancel records the cancel func of the initialization currently holding the lifecycle
+// lock, or clears it with nil. Its own lock keeps it reachable while the lifecycle lock is held.
+func (p *Provider) publishInitCancel(cancel context.CancelFunc) {
+	p.initCancelLock.Lock()
+	defer p.initCancelLock.Unlock()
+	p.initCancel = cancel
+}
+
+// cancelInflightInit cancels the context of an initialization still in flight, so it returns and
+// releases the lifecycle lock rather than being waited on.
+func (p *Provider) cancelInflightInit() {
+	p.initCancelLock.Lock()
+	cancel := p.initCancel
+	p.initCancelLock.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
 // forwardProviderEvents establishes an event forwarding pipeline that collects events from multiple provider
 // event handlers and forwards them to the multiprovider's outbound event channel. It spawns a goroutine for
 // each provider handler to listen for events, aggregates them through an internal pipe, and selectively forwards
 // events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
-// channels are closed. It does not close the outbound channel: that channel outlives a single
-// initialization attempt so a retry can keep using it, and only ShutdownWithContext closes it (#561).
+// channels are closed, and does not return before its own listeners have stopped.
+//
+// It does not close the outbound channel. That channel is created once per Provider, so a retry after a failed
+// initialization keeps using it; ShutdownWithContext is what closes it, and a Provider cannot be initialized
+// again after that.
 //
 // Every send is guarded by workerCtx. The outbound channel is buffered to len(providers), so with
 // no consumer on EventChannel() a plain send blocks once the buffer fills, and both the
@@ -485,6 +517,10 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 	workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 	pipe := make(chan namedEvent)
 	var wg sync.WaitGroup
+	// Runs before workerGroup.Done(). Returning on workerCtx without this leaves listeners alive,
+	// and one of them can then take an inner provider's event away from the retry's forwarder and
+	// drop it, which strands the aggregate status.
+	defer wg.Wait()
 	for ch := range handlers {
 		wg.Add(1)
 		go func(ctx context.Context, h of.EventHandler, name string, out chan<- namedEvent) {
@@ -645,8 +681,13 @@ func (p *Provider) Shutdown() {
 
 // ShutdownWithContext shuts down all internal [of.FeatureProvider] instances and internal event listeners,
 // and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
-// providers that did initialize are shut down and blocked EventChannel() consumers are released (#561).
+// providers that did initialize are shut down and blocked EventChannel() consumers are released.
+//
+// An initialization still in flight is cancelled first, so this does not wait for an inner Init to finish on
+// its own. The SDK calls it while holding the lock that every evaluation takes, and a caller that passed a
+// deadline would otherwise return without having cleaned anything up.
 func (p *Provider) ShutdownWithContext(ctx context.Context) error {
+	p.cancelInflightInit()
 	if err := p.lockLifecycle(ctx); err != nil {
 		return err
 	}
