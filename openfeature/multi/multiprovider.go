@@ -364,9 +364,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	}
 	defer p.unlockLifecycle()
 
-	// Published for ShutdownWithContext, which cancels it instead of waiting for the lifecycle
-	// lock. Without that it would block until the inner Init returns, and the SDK calls it while
-	// holding the lock every evaluation needs.
+	// Published so ShutdownWithContext can cancel this attempt instead of waiting for it.
 	initCtx, cancelInit := context.WithCancel(ctx)
 	defer cancelInit()
 	p.publishInitCancel(cancelInit)
@@ -430,9 +428,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	err := eg.Wait()
 	close(handlers)
 
-	// The forwarder starts and the provider counts as initialized whether or not initialization
-	// succeeded, so ShutdownWithContext always has something to tear down and a recovering
-	// provider is still heard.
+	// Set on the failure path too, so ShutdownWithContext always has something to tear down.
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
 	p.shutdownFunc = shutdownFunc
 	p.initialized = true
@@ -478,16 +474,15 @@ func (p *Provider) unlockLifecycle() {
 	p.lifecycleLock <- struct{}{}
 }
 
-// publishInitCancel records the cancel func of the initialization currently holding the lifecycle
-// lock, or clears it with nil. Its own lock keeps it reachable while the lifecycle lock is held.
+// publishInitCancel stores the in-flight initialization's cancel func, or nil to clear it. It has
+// its own lock so ShutdownWithContext can reach it while the lifecycle lock is held.
 func (p *Provider) publishInitCancel(cancel context.CancelFunc) {
 	p.initCancelLock.Lock()
 	defer p.initCancelLock.Unlock()
 	p.initCancel = cancel
 }
 
-// cancelInflightInit cancels the context of an initialization still in flight, so it returns and
-// releases the lifecycle lock rather than being waited on.
+// cancelInflightInit stops an initialization in flight so it releases the lifecycle lock.
 func (p *Provider) cancelInflightInit() {
 	p.initCancelLock.Lock()
 	cancel := p.initCancel
@@ -517,9 +512,8 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 	workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 	pipe := make(chan namedEvent)
 	var wg sync.WaitGroup
-	// Runs before workerGroup.Done(). Returning on workerCtx without this leaves listeners alive,
-	// and one of them can then take an inner provider's event away from the retry's forwarder and
-	// drop it, which strands the aggregate status.
+	// Runs before workerGroup.Done(): a listener that outlives the forwarder can take an inner
+	// provider's event away from the retry's listener and drop it.
 	defer wg.Wait()
 	for ch := range handlers {
 		wg.Add(1)
@@ -683,9 +677,9 @@ func (p *Provider) Shutdown() {
 // and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
 // providers that did initialize are shut down and blocked EventChannel() consumers are released.
 //
-// An initialization still in flight is cancelled first, so this does not wait for an inner Init to finish on
-// its own. The SDK calls it while holding the lock that every evaluation takes, and a caller that passed a
-// deadline would otherwise return without having cleaned anything up.
+// An initialization still in flight is cancelled first. The SDK calls this while holding the lock every
+// evaluation takes, so waiting for the inner Init would stall them all, and a caller that passed a deadline
+// would return having cleaned nothing up.
 func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	p.cancelInflightInit()
 	if err := p.lockLifecycle(ctx); err != nil {
@@ -727,8 +721,8 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	// Wait for workers to stop
 	p.workerGroup.Wait()
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "worker shutdown completed")
-	// Safe only here: every worker that could still send on the channel has stopped. The
-	// initialized guard above makes a second shutdown a no-op, so this cannot double-close.
+	// Safe only here: every worker that could still send has stopped, and the initialized guard
+	// above makes a second shutdown a no-op.
 	close(p.outboundEvents)
 	p.setStatus(of.NotReadyState)
 	p.initialized = false

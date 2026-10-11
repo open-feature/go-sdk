@@ -287,9 +287,8 @@ func TestMultiProvider_InitReportsNotReady(t *testing.T) {
 	require.NoError(t, <-initDone)
 }
 
-// eventingProvider implements both [of.StateHandler] and [of.EventHandler] with a scriptable
-// initialization and an event channel the test drives, which is what the retry and recovery paths
-// after a failed initialization need.
+// eventingProvider implements both [of.StateHandler] and [of.EventHandler], with a scriptable
+// initialization and an event channel the test drives.
 type eventingProvider struct {
 	of.FeatureProvider
 	events    chan of.Event
@@ -379,17 +378,14 @@ func (p *eventingProvider) emitError() {
 	}
 }
 
-// TestMultiProvider_ShutdownAfterFailedInitCleansUp pins where cleanup happens after a failed
-// initialization. Init leaves everything running, because a provider in ERROR can still recover
-// (spec §1.7, 5.3.2); Shutdown is what releases EventChannel() consumers and shuts the inner
-// providers down, and the SDK calls it regardless of state (1.6.1).
+// TestMultiProvider_ShutdownAfterFailedInitCleansUp pins that Init leaves everything running after
+// a failure, and Shutdown is what releases EventChannel() consumers and shuts the providers down.
 func TestMultiProvider_ShutdownAfterFailedInitCleansUp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	initialized := make(chan struct{})
-	// Context-aware, so cleanup goes through ShutdownWithContext and the context it is handed
-	// can be checked: the errgroup's context is already cancelled by the failure, and shutting a
-	// provider down on a dead context would silently skip its teardown.
+	// Context-aware, so cleanup takes the ShutdownWithContext branch and the context it receives
+	// can be asserted live rather than one already cancelled by the failure.
 	healthy := newContextAwareEventingProvider(ctrl, "healthy", func() error {
 		close(initialized)
 		return nil
@@ -491,7 +487,7 @@ func TestMultiProvider_RecoveryAfterFailedInit(t *testing.T) {
 }
 
 // emitConfigChange sends a ProviderConfigChange, which forwardProviderEvents passes through
-// unconditionally — unlike a state event, it needs outbound buffer space every time.
+// unconditionally, so unlike a state event it needs outbound buffer space every time.
 func (p *eventingProvider) emitConfigChange() {
 	p.events <- of.Event{
 		ProviderName: p.Metadata().Name,
@@ -570,8 +566,7 @@ func TestMultiProvider_RetryDoesNotHangOnABlockedForwarder(t *testing.T) {
 }
 
 // TestMultiProvider_ShutdownTwiceIsNoOp guards the close that moved into ShutdownWithContext: a
-// second shutdown must neither shut the inner providers down again nor close the outbound channel
-// twice.
+// second shutdown must neither shut the providers down again nor close the outbound channel twice.
 func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -624,8 +619,7 @@ func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
 }
 
 // blockingInitProvider is a [of.ContextAwareStateHandler] whose initialization returns only once its
-// context is done. A provider that waits on something external behaves this way, and it is the case
-// where a shutdown must not queue behind the initialization.
+// context is done, the way a provider waiting on something external behaves.
 type blockingInitProvider struct {
 	*eventingProvider
 	started chan struct{}
@@ -655,10 +649,8 @@ func (p *blockingInitProvider) ShutdownWithContext(context.Context) error {
 	return nil
 }
 
-// TestMultiProvider_ShutdownCancelsAnInFlightInit pins that a shutdown cancels an initialization it
-// would otherwise wait for. openfeature.Shutdown runs this while holding the API lock that every
-// evaluation takes, so waiting here stalls the whole SDK; a caller that passed a deadline instead
-// gets its context error back having cleaned up nothing.
+// TestMultiProvider_ShutdownCancelsAnInFlightInit pins that a shutdown cancels an initialization
+// rather than waiting for it, which would stall every evaluation behind the SDK's API lock.
 func TestMultiProvider_ShutdownCancelsAnInFlightInit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := newBlockingInitProvider(ctrl, "provider")
