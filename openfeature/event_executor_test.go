@@ -884,6 +884,54 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 	})
 
+	t.Run("error handler runs when provider fatal", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
+		provider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		if err := SetProviderAndWait(provider); err != nil {
+			t.Fatal(err)
+		}
+
+		// Reach FATAL before registering, so the handler can only fire
+		// via emitOnRegistration (spec 5.3.3).
+		eventingImpl.Invoke(Event{
+			EventType: ProviderError,
+			ProviderEventDetails: ProviderEventDetails{
+				ErrorCode: ProviderFatalCode,
+			},
+		})
+		eventually(t, func() bool {
+			return NewDefaultClient().State() == FatalState
+		}, time.Second, time.Millisecond*100, "provider did not transition to FATAL state")
+
+		rsp := make(chan EventDetails, 1)
+		callback := func(e EventDetails) {
+			rsp <- e
+		}
+
+		AddHandler(ProviderError, &callback)
+
+		select {
+		case details := <-rsp:
+			if details.Message != "provider is in fatal state" {
+				t.Errorf("got message %q, want %q", details.Message, "provider is in fatal state")
+			}
+		case <-time.After(200 * time.Millisecond):
+			t.Errorf("timed out waiting for callback")
+		}
+	})
+
 	t.Run("stale handler runs when provider stale", func(t *testing.T) {
 		t.Cleanup(resetSingleton)
 

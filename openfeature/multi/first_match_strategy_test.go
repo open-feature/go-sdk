@@ -55,7 +55,7 @@ func Test_FirstMatchStrategy_Evaluation(t *testing.T) {
 				strategy := newFirstMatchStrategy(providers)
 				result := strategy(t.Context(), "test-string", tt.defaultVal, of.FlattenedContext{})
 				assert.Equal(t, tt.defaultVal, result.Value)
-				assert.Equal(t, of.DefaultReason, result.Reason)
+				assert.Equal(t, of.ErrorReason, result.Reason)
 				assert.Equal(t, of.NewFlagNotFoundResolutionError("not found in any provider").Error(), result.ResolutionError.Error())
 				assert.Equal(t, "none", result.FlagMetadata[MetadataSuccessfulProviderName])
 				assert.Equal(t, StrategyFirstMatch, result.FlagMetadata[MetadataStrategyUsed])

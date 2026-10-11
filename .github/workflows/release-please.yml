@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - main
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -15,38 +20,28 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
         with:
-          command: manifest
-          token: ${{secrets.GITHUB_TOKEN}}
-          default-branch: main
+          token: ${{secrets.RELEASE_PLEASE_ACTION_TOKEN}}
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
+      release_created: ${{ steps.release.outputs.releases_created }}
       release_tag_name: ${{ steps.release.outputs.tag_name }}
 
   go-release:
     needs: release-please
     runs-on: ubuntu-latest
-    if: ${{ needs.release-please.outputs.release_created }}
+    if: ${{ fromJSON(needs.release-please.outputs.release_created || false) }}
+    # The release task installs its own tools, so lock every mise call.
+    env:
+      MISE_LOCKED: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.release-please.outputs.release_tag_name }}
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-        with:
-          go-version-file: 'go.mod'
-
-      - name: Install cyclonedx-gomod
-        uses: CycloneDX/gh-gomod-generate-sbom@efc74245d6802c8cefd925620515442756c70d8f # v2
-        with:
-          version: v1.3.0
+      - name: Install mise and the shared toolchain
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
-        with:
-          distribution: goreleaser
-          version: "~> v2"
-          args: release --clean
+        run: mise run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

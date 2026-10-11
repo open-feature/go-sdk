@@ -3,6 +3,7 @@ package multi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -76,6 +77,83 @@ func TestMultiProvider_NewMultiProvider(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotZero(t, mp)
 	})
+}
+
+// A custom strategy may return a zero-value result, and the typed accessors asserted on it
+// without checking, so an unset Value took the calling process down.
+func TestMultiProvider_TypedAccessorsWithUnsetStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	assert.True(t, mp.BooleanEvaluation(t.Context(), "flag", true, of.FlattenedContext{}).Value)
+	assert.Equal(t, "fallback", mp.StringEvaluation(t.Context(), "flag", "fallback", of.FlattenedContext{}).Value)
+	assert.Equal(t, 1.5, mp.FloatEvaluation(t.Context(), "flag", 1.5, of.FlattenedContext{}).Value)
+	assert.Equal(t, int64(7), mp.IntEvaluation(t.Context(), "flag", 7, of.FlattenedContext{}).Value)
+}
+
+// An inner provider may resolve an object flag to a nil value, and nil has no type to assert
+// against, so the strategy's object branch panicked rather than resolving.
+func TestMultiProvider_ObjectEvaluationWithNilProviderValue(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: "nil-object"}).AnyTimes()
+	provider.EXPECT().Hooks().Return(nil).AnyTimes()
+	provider.EXPECT().ObjectEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(of.InterfaceResolutionDetail{
+			ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.StaticReason},
+		})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("nil-object", provider))
+	require.NoError(t, err)
+
+	defaultValue := map[string]any{"enabled": true}
+	res := mp.ObjectEvaluation(t.Context(), "flag", defaultValue, of.FlattenedContext{})
+	assert.Equal(t, defaultValue, res.Value)
+}
+
+// The object accessor asserted nothing at all, so a strategy that resolved no value
+// returned nil to the caller in place of their default.
+func TestMultiProvider_ObjectEvaluationWithUnsetStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	defaultValue := map[string]any{"enabled": true}
+	assert.Equal(t, defaultValue, mp.ObjectEvaluation(t.Context(), "flag", defaultValue, of.FlattenedContext{}).Value)
+}
+
+// A strategy that resolves the wrong type is a bug in the strategy, and reporting it as a
+// successful resolution of the default leaves the caller nothing to diagnose it with.
+func TestMultiProvider_TypedAccessorsWithWrongTypedStrategyValue(t *testing.T) {
+	mp, err := NewProvider(StrategyCustom, WithCustomStrategy(func(providers []NamedProvider) StrategyFn[FlagTypes] {
+		return func(ctx context.Context, flag string, defaultValue FlagTypes, evalCtx of.FlattenedContext) of.GenericResolutionDetail[FlagTypes] {
+			return of.GenericResolutionDetail[FlagTypes]{
+				Value:                    "not-a-bool",
+				ProviderResolutionDetail: of.ProviderResolutionDetail{Reason: of.StaticReason},
+			}
+		}
+	}),
+		WithProvider("provider1", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	res := mp.BooleanEvaluation(t.Context(), "flag", true, of.FlattenedContext{})
+	assert.True(t, res.Value)
+	assert.Equal(t, of.ErrorReason, res.Reason)
+	assert.Equal(t,
+		of.NewTypeMismatchResolutionError("strategy resolved string, expected bool").Error(),
+		res.ResolutionError.Error())
 }
 
 func TestMultiProvider_MetaData(t *testing.T) {
@@ -175,6 +253,112 @@ func TestMultiProvider_Init(t *testing.T) {
 	assert.Equal(t, of.ReadyState, mp.Status())
 }
 
+func TestMultiProvider_InitReportsNotReady(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	stateHandler := of.NewMockStateHandler(ctrl)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	stateHandler.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		close(started)
+		<-release
+		return nil
+	})
+	stateHandler.EXPECT().Shutdown().MaxTimes(1)
+	wrapped := struct {
+		of.FeatureProvider
+		of.StateHandler
+	}{provider, stateHandler}
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", wrapped))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	initDone := make(chan error, 1)
+	go func() {
+		initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{})
+	}()
+	<-started
+	assert.Equal(t, of.NotReadyState, mp.Status())
+	close(release)
+	require.NoError(t, <-initDone)
+}
+
+// TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain guards the seeding order in
+// InitWithContext: the aggregate status must not leave NOT_READY while any provider is still
+// initializing (#580).
+func TestMultiProvider_InitDoesNotReportReadyWhileProvidersRemain(t *testing.T) {
+	const fastProviders = 128
+
+	ctrl := gomock.NewController(t)
+	blocker := of.NewMockFeatureProvider(ctrl)
+	blocker.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+	blocker.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	blockerState := of.NewMockStateHandler(ctrl)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	blockerState.EXPECT().Init(gomock.Any()).DoAndReturn(func(of.EvaluationContext) error {
+		close(started)
+		<-release
+		return nil
+	})
+	blockerState.EXPECT().Shutdown().MaxTimes(1)
+	wrapped := struct {
+		of.FeatureProvider
+		of.StateHandler
+	}{blocker, blockerState}
+
+	opts := make([]Option, 0, fastProviders+1)
+	for i := range fastProviders {
+		opts = append(opts, WithProvider(fmt.Sprintf("fast-%d", i), imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
+	}
+	opts = append(opts, WithProvider("blocker", wrapped))
+
+	mp, err := NewProvider(StrategyFirstMatch, opts...)
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+
+	// The blocking provider never reaches ready, so only close(release) may end NOT_READY.
+	violation := make(chan of.State, 1)
+	pollDone := make(chan struct{})
+	go func() {
+		defer close(pollDone)
+		for {
+			if s := mp.Status(); s != of.NotReadyState {
+				select {
+				case <-release:
+				default:
+					violation <- s
+				}
+				return
+			}
+			select {
+			case <-release:
+				return
+			default:
+			}
+		}
+	}()
+
+	initDone := make(chan error, 1)
+	go func() {
+		initDone <- mp.InitWithContext(t.Context(), of.EvaluationContext{})
+	}()
+
+	<-started
+	assert.Equal(t, of.NotReadyState, mp.Status())
+	close(release)
+	<-pollDone
+	require.NoError(t, <-initDone)
+	select {
+	case s := <-violation:
+		t.Fatalf("Status() reported %s while providers were still initializing", s)
+	default:
+	}
+}
+
 func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	errProvider := of.NewMockFeatureProvider(ctrl)
@@ -210,6 +394,51 @@ func TestMultiProvider_InitErrorWithProvider(t *testing.T) {
 	err = mp.Init(evalCtx)
 	require.Errorf(t, err, "Provider provider3: test error")
 	assert.Equal(t, of.ErrorState, mp.overallStatus)
+}
+
+func TestMultiProvider_InitErrorUpdatesStatus(t *testing.T) {
+	tests := map[string]struct {
+		initError     error
+		expectedState of.State
+	}{
+		"fatal provider init error": {
+			initError:     &of.ProviderInitError{ErrorCode: of.ProviderFatalCode},
+			expectedState: of.FatalState,
+		},
+		"wrapped fatal provider init error": {
+			initError:     fmt.Errorf("wrapped: %w", &of.ProviderInitError{ErrorCode: of.ProviderFatalCode}),
+			expectedState: of.FatalState,
+		},
+		"non-fatal provider init error": {
+			initError:     &of.ProviderInitError{ErrorCode: of.GeneralCode},
+			expectedState: of.ErrorState,
+		},
+		"plain init error": {
+			initError:     errors.New("init failed"),
+			expectedState: of.ErrorState,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			provider := of.NewMockFeatureProvider(ctrl)
+			provider.EXPECT().Metadata().Return(of.Metadata{Name: "MockProvider"})
+			provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+			stateHandler := of.NewMockStateHandler(ctrl)
+			stateHandler.EXPECT().Init(gomock.Any()).Return(test.initError)
+			wrapped := struct {
+				of.FeatureProvider
+				of.StateHandler
+			}{provider, stateHandler}
+
+			mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", wrapped))
+			require.NoError(t, err)
+
+			require.Error(t, mp.Init(of.EvaluationContext{}))
+			assert.Equal(t, test.expectedState, mp.Status())
+		})
+	}
 }
 
 func TestMultiProvider_Shutdown_WithoutInit(t *testing.T) {
@@ -369,6 +598,43 @@ func TestMultiProvider_StateUpdateWithSameTypeProviders(t *testing.T) {
 	if numProviders != 2 {
 		t.Errorf("Expected 2 providers in status map, got %d", numProviders)
 	}
+}
+
+func TestMultiProvider_FatalEventUpdatesStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := newMockProviderWithEvents(ctrl, "fatal-provider")
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("fatal-provider", provider))
+	require.NoError(t, err)
+	t.Cleanup(mp.Shutdown)
+	require.NoError(t, mp.Init(of.EvaluationContext{}))
+
+	provider.eventChannel <- of.Event{
+		EventType: of.ProviderError,
+		ProviderEventDetails: of.ProviderEventDetails{
+			ErrorCode:     of.ProviderFatalCode,
+			EventMetadata: map[string]any{},
+		},
+	}
+
+	require.Eventually(t, func() bool {
+		return mp.Status() == of.FatalState
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestMultiProvider_UnknownEventDefaultsToNotReady(t *testing.T) {
+	mp, err := NewProvider(
+		StrategyFirstMatch,
+		WithProvider("provider", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})),
+	)
+	require.NoError(t, err)
+
+	mp.updateProviderState("provider", of.ErrorState)
+	mp.updateProviderStateFromEvent(namedEvent{
+		Event:        of.Event{EventType: of.EventType("PROVIDER_CUSTOM")},
+		providerName: "provider",
+	})
+
+	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 
 func TestMultiProvider_ConfigurationChangedEventForwarding(t *testing.T) {

@@ -1,5 +1,6 @@
 {
   "bootstrap-sha": "95df901b104dadc8902117c87d2e412d78d6a620",
+  "signoff": "OpenFeature Bot <109696520+openfeaturebot@users.noreply.github.com>",
   "packages": {
     ".": {
       "release-type": "go",
