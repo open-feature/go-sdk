@@ -70,6 +70,13 @@ type eventPayload struct {
 
 // AddHandler adds an API(global) level handler
 func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
+	details, emit := e.addHandler(t, c)
+	if emit {
+		runHandler(*c, details)
+	}
+}
+
+func (e *eventExecutor) addHandler(t EventType, c EventCallback) (EventDetails, bool) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -79,7 +86,7 @@ func (e *eventExecutor) AddHandler(t EventType, c EventCallback) {
 		e.apiRegistry[t] = append(e.apiRegistry[t], c)
 	}
 
-	e.emitOnRegistration(defaultDomain, e.defaultProviderReference, t, c)
+	return e.registrationEvent(defaultDomain, e.defaultProviderReference, t)
 }
 
 // RemoveHandler removes an API(global) level handler
@@ -100,6 +107,13 @@ func (e *eventExecutor) RemoveHandler(t EventType, c EventCallback) {
 
 // AddClientHandler registers a client level handler
 func (e *eventExecutor) AddClientHandler(domain string, t EventType, c EventCallback) {
+	details, emit := e.addClientHandler(domain, t, c)
+	if emit {
+		runHandler(*c, details)
+	}
+}
+
+func (e *eventExecutor) addClientHandler(domain string, t EventType, c EventCallback) (EventDetails, bool) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -122,7 +136,7 @@ func (e *eventExecutor) AddClientHandler(domain string, t EventType, c EventCall
 		reference = e.defaultProviderReference
 	}
 
-	e.emitOnRegistration(domain, reference, t, c)
+	return e.registrationEvent(domain, reference, t)
 }
 
 // RemoveClientHandler removes a client level handler
@@ -151,12 +165,13 @@ func (e *eventExecutor) GetClientRegistry(client string) scopedCallback {
 	return e.scopedRegistry[client]
 }
 
-// emitOnRegistration fulfils the spec requirement to fire events if the
-// event type and the state of the associated provider are compatible.
-func (e *eventExecutor) emitOnRegistration(domain string, providerReference providerReference, eventType EventType, callback EventCallback) {
+// registrationEvent reports the event a handler must receive immediately on
+// registration, per spec 5.3.3. The caller invokes the handler after releasing
+// e.mu, so a handler that registers another handler cannot deadlock on it.
+func (e *eventExecutor) registrationEvent(domain string, providerReference providerReference, eventType EventType) (EventDetails, bool) {
 	state, ok := e.loadState(domain)
 	if !ok {
-		return
+		return EventDetails{}, false
 	}
 
 	var message string
@@ -170,14 +185,16 @@ func (e *eventExecutor) emitOnRegistration(domain string, providerReference prov
 		message = "provider is in stale state"
 	}
 
-	if message != "" {
-		(*callback)(EventDetails{
-			ProviderName: providerReference.featureProvider.Metadata().Name,
-			ProviderEventDetails: ProviderEventDetails{
-				Message: message,
-			},
-		})
+	if message == "" {
+		return EventDetails{}, false
 	}
+
+	return EventDetails{
+		ProviderName: providerReference.featureProvider.Metadata().Name,
+		ProviderEventDetails: ProviderEventDetails{
+			Message: message,
+		},
+	}, true
 }
 
 func (e *eventExecutor) loadState(domain string) (State, bool) {
@@ -377,22 +394,26 @@ func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 
 // executeHandler is a helper which performs the actual invocation of the callback
 func (e *eventExecutor) executeHandler(f func(details EventDetails), event Event) {
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				slog.Info("recovered from a panic")
-			}
-		}()
+	go runHandler(f, EventDetails{
+		ProviderName: event.ProviderName,
+		ProviderEventDetails: ProviderEventDetails{
+			Message:       event.Message,
+			FlagChanges:   event.FlagChanges,
+			EventMetadata: event.EventMetadata,
+		},
+	})
+}
 
-		f(EventDetails{
-			ProviderName: event.ProviderName,
-			ProviderEventDetails: ProviderEventDetails{
-				Message:       event.Message,
-				FlagChanges:   event.FlagChanges,
-				EventMetadata: event.EventMetadata,
-			},
-		})
+// runHandler invokes a handler, absorbing a panic so it cannot reach whoever
+// triggered the event.
+func runHandler(f func(details EventDetails), details EventDetails) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Info("recovered from a panic")
+		}
 	}()
+
+	f(details)
 }
 
 // isRunning is a helper to check if the given provider is in the given list of providers
