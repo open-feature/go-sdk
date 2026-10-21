@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
-	"slices"
 	"strings"
 	"sync"
 
@@ -235,7 +234,6 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	}
 
 	providers := make([]NamedProvider, 0, len(config.providers))
-	collectedHooks := make([]of.Hook, 0, len(config.providers))
 	for i, provider := range config.providers {
 		// Validate Providers
 		if provider.FeatureProvider == nil {
@@ -259,7 +257,6 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		}
 
 		providers = append(providers, wrappedProvider)
-		collectedHooks = slices.Concat(collectedHooks, wrappedProvider.Hooks())
 	}
 
 	lifecycleLock := make(chan struct{}, 1)
@@ -272,7 +269,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 		metadata:       buildMetadata(providers),
 		overallStatus:  of.NotReadyState,
 		providerStatus: make(map[string]of.State, len(providers)),
-		globalHooks:    append(config.hooks, collectedHooks...),
+		globalHooks:    config.hooks,
 	}
 
 	var strategy StrategyFn[FlagTypes]

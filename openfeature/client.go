@@ -7,6 +7,8 @@ import (
 	"slices"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
 // ClientMetadata provides a client's metadata
@@ -684,6 +686,11 @@ func (c *Client) evaluate(
 		providerMetadata:  provider.Metadata(),
 		evaluationContext: evalCtx,
 	}
+	ctx = internal.WithEvaluationMetadata(ctx, internal.EvaluationMetadata{
+		ClientDomain: hookCtx.ClientMetadata().Domain(),
+		ProviderName: hookCtx.ProviderMetadata().Name,
+		HookHints:    options.hookHints,
+	})
 
 	defer func() {
 		c.finallyHooks(ctx, hookCtx, hooks, evalDetails, options)

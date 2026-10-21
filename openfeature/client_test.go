@@ -19,6 +19,16 @@ type clientMocks struct {
 	providerAPI      *MockFeatureProvider
 }
 
+// Evaluations can derive a context while preserving the caller's cancellation and deadline.
+func inheritsContext(parent context.Context) gomock.Matcher {
+	return gomock.Cond(func(ctx context.Context) bool {
+		deadline, hasDeadline := ctx.Deadline()
+		parentDeadline, parentHasDeadline := parent.Deadline()
+		return ctx.Done() == parent.Done() && ctx.Err() == parent.Err() &&
+			deadline.Equal(parentDeadline) && hasDeadline == parentHasDeadline
+	})
+}
+
 func hydratedMocksForClientTests(t *testing.T, expectedEvaluations int) clientMocks {
 	ctrl := gomock.NewController(t)
 	mockClientAPI := NewMockclientEvent(ctrl)
@@ -561,7 +571,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := true
-		mocks.providerAPI.EXPECT().BooleanEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().BooleanEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(BoolResolutionDetail{
 				Value: false,
 				ProviderResolutionDetail: ProviderResolutionDetail{
@@ -595,7 +605,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := "default"
-		mocks.providerAPI.EXPECT().StringEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().StringEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(StringResolutionDetail{
 				Value: "foo",
 				ProviderResolutionDetail: ProviderResolutionDetail{
@@ -628,7 +638,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 
 		defaultValue := 3.14159
-		mocks.providerAPI.EXPECT().FloatEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().FloatEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(FloatResolutionDetail{
 				Value: 0,
 				ProviderResolutionDetail: ProviderResolutionDetail{
@@ -660,7 +670,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 2)
 		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		var defaultValue int64 = 3
-		mocks.providerAPI.EXPECT().IntEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().IntEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(IntResolutionDetail{
 				Value: 0,
 				ProviderResolutionDetail: ProviderResolutionDetail{
@@ -695,7 +705,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 			foo string
 		}
 		defaultValue := obj{foo: "bar"}
-		mocks.providerAPI.EXPECT().ObjectEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().ObjectEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(InterfaceResolutionDetail{
 				ProviderResolutionDetail: ProviderResolutionDetail{
 					ResolutionError: NewGeneralResolutionError("test"),
@@ -735,7 +745,7 @@ func TestRequirement_1_4_9(t *testing.T) {
 		defaultValue := obj{foo: "bar"}
 		resolvedValue := obj{foo: "resolved"}
 
-		mocks.providerAPI.EXPECT().ObjectEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().ObjectEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(InterfaceResolutionDetail{Value: resolvedValue})
 
 		mockHook := NewMockHook(gomock.NewController(t))
@@ -810,7 +820,7 @@ func TestRequirement_1_4_14(t *testing.T) {
 		mocks := hydratedMocksForClientTests(t, 1)
 		client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 		defaultValue := true
-		mocks.providerAPI.EXPECT().BooleanEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().BooleanEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(BoolResolutionDetail{
 				Value: true,
 				ProviderResolutionDetail: ProviderResolutionDetail{
@@ -945,7 +955,7 @@ func TestRequirement_1_4_14(t *testing.T) {
 		metadata := FlagMetadata{
 			"bing": "bong",
 		}
-		mocks.providerAPI.EXPECT().BooleanEvaluation(t.Context(), flagKey, defaultValue, flatCtx).
+		mocks.providerAPI.EXPECT().BooleanEvaluation(inheritsContext(t.Context()), flagKey, defaultValue, flatCtx).
 			Return(BoolResolutionDetail{
 				Value: true,
 				ProviderResolutionDetail: ProviderResolutionDetail{

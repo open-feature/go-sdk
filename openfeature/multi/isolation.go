@@ -3,22 +3,18 @@ package multi
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	of "github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/internal"
 )
 
 type (
 	// hookIsolator is used as a wrapper around a provider that prevents context changes from leaking between providers
 	// during evaluation
 	hookIsolator struct {
-		of.UnimplementedHook
-		mu sync.Mutex
 		of.FeatureProvider
-		hooks           []of.Hook
-		capturedContext of.HookContext
-		capturedHints   of.HookHints
-		name            string
+		hooks []of.Hook
+		name  string
 	}
 
 	// eventHandlingHookIsolator is equivalent to hookIsolator, but also implements [of.EventHandler]
@@ -31,7 +27,6 @@ type (
 var (
 	_ NamedProvider      = (*hookIsolator)(nil)
 	_ of.FeatureProvider = (*hookIsolator)(nil)
-	_ of.Hook            = (*hookIsolator)(nil)
 	_ of.EventHandler    = (*eventHandlingHookIsolator)(nil)
 )
 
@@ -60,17 +55,6 @@ func (h *hookIsolator) Name() string {
 
 func (h *hookIsolator) unwrap() of.FeatureProvider {
 	return h.FeatureProvider
-}
-
-func (h *hookIsolator) Before(_ context.Context, hookContext of.HookContext, hookHints of.HookHints) (*of.EvaluationContext, error) {
-	// Used for capturing the context and hints
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.capturedContext = hookContext
-	h.capturedHints = hookHints
-	// Return copy of original evaluation context so any changes are isolated to each provider's hooks
-	evalCtx := h.capturedContext.EvaluationContext()
-	return &evalCtx, nil
 }
 
 func (h *hookIsolator) Metadata() of.Metadata {
@@ -155,12 +139,23 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 }
 
 func (h *hookIsolator) Hooks() []of.Hook {
-	// return self as hook to capture contexts
-	return []of.Hook{h}
+	// These hooks run inside evaluation, not in the client's shared hook chain.
+	return nil
 }
 
 // evaluate Executes evaluation of the flag wrapped by executing hooks.
 func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Type, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceEvaluationDetails {
+	var clientMetadata of.ClientMetadata
+	var hints of.HookHints
+	var providerMetadata of.Metadata
+	if metadata, ok := internal.EvaluationMetadataFromContext(ctx); ok {
+		clientMetadata = of.NewClientMetadata(metadata.ClientDomain)
+		providerMetadata = of.Metadata{Name: metadata.ProviderName}
+		hints, _ = metadata.HookHints.(of.HookHints)
+	} else {
+		providerMetadata = h.Metadata()
+	}
+	hookCtx := of.NewHookContext(flag, flagType, defaultValue, clientMetadata, providerMetadata, deepenContext(flatCtx))
 	evalDetails := of.InterfaceEvaluationDetails{
 		Value: defaultValue,
 		EvaluationDetails: of.EvaluationDetails{
@@ -170,15 +165,15 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 	}
 
 	defer func() {
-		h.finallyHooks(ctx, evalDetails)
+		h.finallyHooks(ctx, hookCtx, hints, evalDetails)
 	}()
 
-	evalCtx, err := h.beforeHooks(ctx)
+	evalCtx, err := h.beforeHooks(ctx, hookCtx, hints)
 	// Update hook context unconditionally
-	h.updateEvalContext(evalCtx)
+	hookCtx = updateEvalContext(hookCtx, evalCtx)
 	if err != nil {
 		err = fmt.Errorf("before hook: %w", err)
-		h.errorHooks(ctx, err)
+		h.errorHooks(ctx, hookCtx, hints, err)
 		evalDetails.ResolutionDetail = of.ResolutionDetail{
 			Reason:       of.ErrorReason,
 			ErrorCode:    of.GeneralCode,
@@ -188,9 +183,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 		return evalDetails
 	}
 
-	// Merge together the passed in flat context and the captured evaluation context and transform back into a flattened
-	// context for evaluation
-	flatCtx = flattenContext(mergeContexts(h.capturedContext.EvaluationContext(), deepenContext(flatCtx)))
+	flatCtx = flattenContext(evalCtx)
 
 	var resolution of.InterfaceResolutionDetail
 	switch flagType {
@@ -221,7 +214,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 	err = resolution.Error()
 	if err != nil {
 		err = fmt.Errorf("error code: %w", err)
-		h.errorHooks(ctx, err)
+		h.errorHooks(ctx, hookCtx, hints, err)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = of.ErrorReason
 		return evalDetails
@@ -229,9 +222,9 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 	evalDetails.Value = resolution.Value
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 
-	if err := h.afterHooks(ctx, evalDetails); err != nil {
+	if err := h.afterHooks(ctx, hookCtx, hints, evalDetails); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
-		h.errorHooks(ctx, err)
+		h.errorHooks(ctx, hookCtx, hints, err)
 		return evalDetails
 	}
 
@@ -240,10 +233,10 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 
 // beforeHooks Executes all before hooks together, merging the changes to the [of.EvaluationContext] as it goes. The
 // return of this function is a merged version of the evaluation context
-func (h *hookIsolator) beforeHooks(ctx context.Context) (of.EvaluationContext, error) {
-	contexts := []of.EvaluationContext{h.capturedContext.EvaluationContext()}
+func (h *hookIsolator) beforeHooks(ctx context.Context, hookCtx of.HookContext, hints of.HookHints) (of.EvaluationContext, error) {
+	contexts := []of.EvaluationContext{hookCtx.EvaluationContext()}
 	for _, hook := range h.hooks {
-		resultEvalCtx, err := hook.Before(ctx, h.capturedContext, h.capturedHints)
+		resultEvalCtx, err := hook.Before(ctx, hookCtx, hints)
 		if resultEvalCtx != nil {
 			contexts = append(contexts, *resultEvalCtx)
 		}
@@ -256,9 +249,9 @@ func (h *hookIsolator) beforeHooks(ctx context.Context) (of.EvaluationContext, e
 }
 
 // afterHooks executes all after [of.Hook] instances together.
-func (h *hookIsolator) afterHooks(ctx context.Context, evalDetails of.InterfaceEvaluationDetails) error {
+func (h *hookIsolator) afterHooks(ctx context.Context, hookCtx of.HookContext, hints of.HookHints, evalDetails of.InterfaceEvaluationDetails) error {
 	for _, hook := range h.hooks {
-		if err := hook.After(ctx, h.capturedContext, evalDetails, h.capturedHints); err != nil {
+		if err := hook.After(ctx, hookCtx, evalDetails, hints); err != nil {
 			return err
 		}
 	}
@@ -267,33 +260,30 @@ func (h *hookIsolator) afterHooks(ctx context.Context, evalDetails of.InterfaceE
 }
 
 // errorHooks executes all error [of.Hook] instances together.
-func (h *hookIsolator) errorHooks(ctx context.Context, err error) {
+func (h *hookIsolator) errorHooks(ctx context.Context, hookCtx of.HookContext, hints of.HookHints, err error) {
 	for _, hook := range h.hooks {
-		hook.Error(ctx, h.capturedContext, err, h.capturedHints)
+		hook.Error(ctx, hookCtx, err, hints)
 	}
 }
 
 // finallyHooks execute all finally [of.Hook] instances together.
-func (h *hookIsolator) finallyHooks(ctx context.Context, details of.InterfaceEvaluationDetails) {
+func (h *hookIsolator) finallyHooks(ctx context.Context, hookCtx of.HookContext, hints of.HookHints, details of.InterfaceEvaluationDetails) {
 	for _, hook := range h.hooks {
-		hook.Finally(ctx, h.capturedContext, details, h.capturedHints)
+		hook.Finally(ctx, hookCtx, details, hints)
 	}
 }
 
 // updateEvalContext returns a new [of.HookContext] with an updated [of.EvaluationContext] value. [of.HookContext] is
 // immutable, and this returns a new [of.HookContext] with all other values copied
-func (h *hookIsolator) updateEvalContext(evalCtx of.EvaluationContext) {
-	hookCtx := of.NewHookContext(
-		h.capturedContext.FlagKey(),
-		h.capturedContext.FlagType(),
-		h.capturedContext.DefaultValue(),
-		h.capturedContext.ClientMetadata(),
-		h.capturedContext.ProviderMetadata(),
+func updateEvalContext(hookCtx of.HookContext, evalCtx of.EvaluationContext) of.HookContext {
+	return of.NewHookContext(
+		hookCtx.FlagKey(),
+		hookCtx.FlagType(),
+		hookCtx.DefaultValue(),
+		hookCtx.ClientMetadata(),
+		hookCtx.ProviderMetadata(),
 		evalCtx,
 	)
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.capturedContext = hookCtx
 }
 
 // deepenContext converts a [of.FlattenedContext] to a [of.EvaluationContext].
