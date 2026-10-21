@@ -381,6 +381,8 @@ func (a *EvaluationAPI) RemoveHandler(eventType EventType, callback EventCallbac
 
 // Shutdown calls context-aware shutdown on all registered providers.
 // If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
+// It then resets the state of the API, removing all hooks, event handlers, evaluation context and providers,
+// so the instance can be used again.
 // Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
 func (a *EvaluationAPI) Shutdown(ctx context.Context) error {
 	a.mu.Lock()
@@ -412,6 +414,14 @@ func (a *EvaluationAPI) Shutdown(ctx context.Context) error {
 	a.eventExecutor.shutdown()
 	// Release all provider bindings so providers can be re-registered elsewhere.
 	a.unbindAllProvidersLocked()
+
+	// Reset the state in place (spec 1.6.2). Callers of isolated instances hold this
+	// *EvaluationAPI directly, and clients keep a reference to it and its executor.
+	a.defaultProvider = NoopProvider{}
+	a.domainProviders = map[string]FeatureProvider{}
+	a.hks = []Hook{}
+	a.evalCtx = EvaluationContext{}
+	a.eventExecutor.reset()
 
 	return errors.Join(errs...)
 }

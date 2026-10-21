@@ -430,3 +430,22 @@ func (e *eventExecutor) shutdown() {
 		}
 	})
 }
+
+// reset returns a shut down executor to its initial state so it can be used again.
+// It removes all handlers, provider references and states, and re-arms the event
+// listener and shutdown. eventChan is kept, since shutdown has drained it. It must
+// only be called after shutdown has returned, and not concurrently with shutdown.
+func (e *eventExecutor) reset() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.states.Clear()
+	e.defaultProviderReference = providerReference{}
+	e.namedProviderReference = map[string]providerReference{}
+	e.activeSubscriptions = []providerReference{}
+	e.apiRegistry = map[EventType][]EventCallback{}
+	e.scopedRegistry = map[string]scopedCallback{}
+	e.done = make(chan struct{})
+	e.once = sync.Once{}
+	e.shutdownOnce = sync.Once{}
+}
