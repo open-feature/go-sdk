@@ -515,9 +515,16 @@ func TestIsolatedAPI_ReplacedValueProviderStopsForwardingEvents(t *testing.T) {
 	if err := instance.SetProviderAndWait(t.Context(), old); err != nil {
 		t.Fatalf("SetProviderAndWait: %v", err)
 	}
+	stop := instance.eventExecutor.defaultProviderReference.shutdownSemaphore
 	if err := instance.SetProviderAndWait(t.Context(), NoopProvider{}); err != nil {
 		t.Fatalf("SetProviderAndWait (replacement): %v", err)
 	}
+
+	// The replacement sends the stop signal to the old event goroutine but does
+	// not wait for it. Until the goroutine takes the signal, it can still forward
+	// an event, so wait for that first. If no signal was sent, this returns at once.
+	eventually(t, func() bool { return len(stop) == 0 },
+		time.Second, time.Millisecond, "the old event goroutine did not take the stop signal")
 
 	received := make(chan EventDetails, 1)
 	callback := func(details EventDetails) { received <- details }
