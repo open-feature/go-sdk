@@ -1,14 +1,31 @@
 package multi
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	of "github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/isolated"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
+
+// neverReadyStateHandler blocks in InitWithContext until the init context is
+// cancelled (e.g. by Shutdown), keeping the multi provider in NOT_READY.
+type neverReadyStateHandler struct{}
+
+func (neverReadyStateHandler) Init(of.EvaluationContext) error { return nil }
+
+func (neverReadyStateHandler) Shutdown() {}
+
+func (neverReadyStateHandler) InitWithContext(ctx context.Context, _ of.EvaluationContext) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (neverReadyStateHandler) ShutdownWithContext(context.Context) error { return nil }
 
 func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	hookCtx := of.NewHookContext(
@@ -92,6 +109,269 @@ func Test_HookIsolator_ExecutesHooksDuringEvaluation_BeforeErrorAbortsExecution(
 	assert.False(t, result.Value)
 	// empty record rather than nil, see #542
 	assert.Equal(t, of.FlagMetadata{}, result.FlagMetadata)
+}
+
+func Test_toProviderResolutionDetail(t *testing.T) {
+	tests := []struct {
+		name             string
+		input            of.InterfaceEvaluationDetails
+		wantErrorCode    of.ErrorCode
+		wantReason       of.Reason
+		wantErr          bool
+		wantVariant      string
+		wantFlagMetadata of.FlagMetadata
+	}{
+		{
+			name: "ProviderNotReadyCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.ProviderNotReadyCode,
+						ErrorMessage: "not ready",
+					},
+				},
+			},
+			wantErrorCode: of.ProviderNotReadyCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "ProviderFatalCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.ProviderFatalCode,
+						ErrorMessage: "fatal error",
+					},
+				},
+			},
+			wantErrorCode: of.ProviderFatalCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "GeneralCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.GeneralCode,
+						ErrorMessage: "general error",
+					},
+				},
+			},
+			wantErrorCode: of.GeneralCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "FlagNotFoundCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.FlagNotFoundCode,
+						ErrorMessage: "flag not found",
+					},
+				},
+			},
+			wantErrorCode: of.FlagNotFoundCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "TargetingKeyMissingCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.TargetingKeyMissingCode,
+						ErrorMessage: "targeting key missing",
+					},
+				},
+			},
+			wantErrorCode: of.TargetingKeyMissingCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "TypeMismatchCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.TypeMismatchCode,
+						ErrorMessage: "type mismatch",
+					},
+				},
+			},
+			wantErrorCode: of.TypeMismatchCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "ParseErrorCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.ParseErrorCode,
+						ErrorMessage: "parse error",
+					},
+				},
+			},
+			wantErrorCode: of.ParseErrorCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "InvalidContextCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.InvalidContextCode,
+						ErrorMessage: "invalid context",
+					},
+				},
+			},
+			wantErrorCode: of.InvalidContextCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "unknown non-empty error code defaults to GeneralCode",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.ErrorCode("UNKNOWN_CODE"),
+						ErrorMessage: "some unknown error",
+					},
+				},
+			},
+			wantErrorCode: of.GeneralCode,
+			wantReason:    of.ErrorReason,
+			wantErr:       true,
+		},
+		{
+			name: "empty error code produces no error",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode: "",
+					},
+				},
+			},
+			wantErrorCode: "",
+			wantReason:    "",
+			wantErr:       false,
+		},
+		{
+			name: "variant and flag metadata are preserved",
+			input: of.InterfaceEvaluationDetails{
+				EvaluationDetails: of.EvaluationDetails{
+					ResolutionDetail: of.ResolutionDetail{
+						ErrorCode:    of.ProviderFatalCode,
+						ErrorMessage: "fatal",
+						Variant:      "variant-a",
+						FlagMetadata: of.FlagMetadata{"key": "value"},
+					},
+				},
+			},
+			wantErrorCode:    of.ProviderFatalCode,
+			wantReason:       of.ErrorReason,
+			wantErr:          true,
+			wantVariant:      "variant-a",
+			wantFlagMetadata: of.FlagMetadata{"key": "value"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := toProviderResolutionDetail(tt.input)
+			assert.Equal(t, tt.wantReason, result.Reason)
+			assert.Equal(t, tt.wantVariant, result.Variant)
+			assert.Equal(t, tt.wantFlagMetadata, result.FlagMetadata)
+
+			err := result.Error()
+			if tt.wantErr {
+				require.Error(t, err)
+				detail := result.ResolutionDetail()
+				assert.Equal(t, tt.wantErrorCode, detail.ErrorCode)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func newTestOnlyFirstProviderStrategy(providers []NamedProvider) StrategyFn[FlagTypes] {
+	return newTestOnlyFirstProviderStrategyFn[FlagTypes](providers)
+}
+
+func newTestOnlyFirstProviderStrategyFn[T FlagTypes](providers []NamedProvider) StrategyFn[T] {
+	return func(ctx context.Context, flag string, defaultValue T, flatCtx of.FlattenedContext) of.GenericResolutionDetail[T] {
+		return Evaluate(ctx, providers[0], flag, defaultValue, flatCtx)
+	}
+}
+
+func Test_HookIsolator_Evaluation_ProviderNotReadyCode(t *testing.T) {
+	api := isolated.NewAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	p := struct {
+		of.FeatureProvider
+		of.ContextAwareStateHandler
+	}{
+		FeatureProvider:          of.NoopProvider{},
+		ContextAwareStateHandler: neverReadyStateHandler{},
+	}
+
+	mp, err := NewProvider(
+		StrategyCustom,
+		WithProvider("never-ready", p),
+		WithCustomStrategy(newTestOnlyFirstProviderStrategy),
+	)
+	require.NoError(t, err)
+	err = api.SetProvider(t.Context(), mp)
+	require.NoError(t, err)
+
+	client := api.NewClient()
+	result, err := client.BooleanValueDetails(t.Context(), "test-flag", false, of.NewEvaluationContext("test", nil))
+	require.Error(t, err)
+	assert.False(t, result.Value)
+	assert.Equal(t, of.ProviderNotReadyCode, result.ErrorCode)
+	assert.Equal(t, of.ErrorReason, result.Reason)
+}
+
+func Test_HookIsolator_Evaluation_ProviderFatalCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: t.Name()}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: false,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			ResolutionError: of.NewProviderFatalResolutionError("fatal"),
+			Reason:          of.ErrorReason,
+		},
+	})
+
+	api := isolated.NewAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+	mp, err := NewProvider(
+		StrategyCustom,
+		WithProvider("fatal", provider),
+		WithCustomStrategy(newTestOnlyFirstProviderStrategy),
+	)
+	require.NoError(t, err)
+	err = api.SetProviderAndWait(t.Context(), mp)
+	require.NoError(t, err)
+
+	client := api.NewClient()
+	result, err := client.BooleanValueDetails(t.Context(), "test-flag", false, of.NewEvaluationContext("test", nil))
+	require.Error(t, err)
+	assert.False(t, result.Value)
+	assert.Equal(t, of.ProviderFatalCode, result.ErrorCode)
+	assert.Equal(t, of.ErrorReason, result.Reason)
 }
 
 func Test_HookIsolator_ExecutesHooksDuringEvaluation_WithAfterError(t *testing.T) {
