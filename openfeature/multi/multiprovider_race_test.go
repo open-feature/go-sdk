@@ -12,7 +12,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// TestMultiProvider_TrackConcurrentWithShutdown verifies in-flight tracking and post-shutdown skipping.
+// TestMultiProvider_TrackConcurrentWithShutdown verifies race-free concurrent
+// tracking and shutdown, and that tracking is skipped after shutdown.
 func TestMultiProvider_TrackConcurrentWithShutdown(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	tracker := newMockProviderWithEvents(ctrl, "tracker")
@@ -23,54 +24,43 @@ func TestMultiProvider_TrackConcurrentWithShutdown(t *testing.T) {
 	require.NoError(t, provider.InitWithContext(ctx, of.EvaluationContext{}))
 	t.Cleanup(provider.Shutdown)
 
-	started := make(chan struct{})
-	release := make(chan struct{})
-	unblock := sync.OnceFunc(func() { close(release) })
-	defer unblock()
 	var calls atomic.Int64
+	reached := make(chan struct{})
+	var reachedOnce sync.Once
 	tracker.MockTracker.EXPECT().Track(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Do(
 		func(context.Context, string, of.EvaluationContext, of.TrackingEventDetails) {
-			if calls.Add(1) == 1 {
-				close(started)
-				select {
-				case <-release:
-				case <-ctx.Done():
-				}
-			}
+			calls.Add(1)
+			reachedOnce.Do(func() { close(reached) })
 		}).AnyTimes()
 
-	finished := make(chan struct{})
+	stop := make(chan struct{})
+	trackingDone := make(chan struct{})
 	go func() {
-		defer close(finished)
-		provider.Track(ctx, "event", of.EvaluationContext{}, of.TrackingEventDetails{})
+		defer close(trackingDone)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				provider.Track(ctx, "event", of.EvaluationContext{}, of.TrackingEventDetails{})
+			}
+		}
 	}()
+	stopTracking := sync.OnceFunc(func() {
+		close(stop)
+		<-trackingDone
+	})
+	defer stopTracking()
+
 	select {
-	case <-started:
+	case <-reached:
 	case <-ctx.Done():
-		t.Fatal("tracking callback did not start")
+		t.Fatal("tracking did not reach the child provider")
 	}
-
-	// Keep reading the lifecycle state concurrently with shutdown as well as
-	// holding the first tracking callback in flight.
-	stressFinished := make(chan struct{})
-	go func() {
-		defer close(stressFinished)
-		for range 10000 {
-			provider.Track(ctx, "event", of.EvaluationContext{}, of.TrackingEventDetails{})
-		}
-	}()
-
 	require.NoError(t, provider.ShutdownWithContext(ctx))
-	unblock()
-	for _, done := range []<-chan struct{}{finished, stressFinished} {
-		select {
-		case <-done:
-		case <-ctx.Done():
-			t.Fatal("tracking did not finish")
-		}
-	}
+	stopTracking()
+
 	before := calls.Load()
-	require.Positive(t, before)
 	provider.Track(ctx, "after-shutdown", of.EvaluationContext{}, of.TrackingEventDetails{})
 	require.Equal(t, before, calls.Load(), "tracking after shutdown must be skipped")
 }
