@@ -222,7 +222,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 		h.errorHooks(ctx, err)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = of.ErrorReason
-		return evalDetails, resolution.ProviderResolutionDetail.ResolutionError.Unwrap()
+		return evalDetails, resolution.ResolutionError.Unwrap()
 	}
 	evalDetails.Value = resolution.Value
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
