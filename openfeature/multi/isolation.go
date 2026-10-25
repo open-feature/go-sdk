@@ -78,92 +78,73 @@ func (h *hookIsolator) Metadata() of.Metadata {
 }
 
 func (h *hookIsolator) BooleanEvaluation(ctx context.Context, flag string, defaultValue bool, flatCtx of.FlattenedContext) of.BoolResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Boolean, defaultValue, flatCtx)
+	completeEval, wrappedErr := h.evaluate(ctx, flag, of.Boolean, defaultValue, flatCtx)
 
 	return of.BoolResolutionDetail{
 		Value:                    completeEval.Value.(bool),
-		ProviderResolutionDetail: toProviderResolutionDetail(completeEval),
+		ProviderResolutionDetail: toProviderResolutionDetail(completeEval, wrappedErr),
 	}
 }
 
 func (h *hookIsolator) StringEvaluation(ctx context.Context, flag string, defaultValue string, flatCtx of.FlattenedContext) of.StringResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.String, defaultValue, flatCtx)
+	completeEval, wrappedErr := h.evaluate(ctx, flag, of.String, defaultValue, flatCtx)
 
 	return of.StringResolutionDetail{
 		Value:                    completeEval.Value.(string),
-		ProviderResolutionDetail: toProviderResolutionDetail(completeEval),
+		ProviderResolutionDetail: toProviderResolutionDetail(completeEval, wrappedErr),
 	}
 }
 
 func (h *hookIsolator) FloatEvaluation(ctx context.Context, flag string, defaultValue float64, flatCtx of.FlattenedContext) of.FloatResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Float, defaultValue, flatCtx)
+	completeEval, wrappedErr := h.evaluate(ctx, flag, of.Float, defaultValue, flatCtx)
 
 	return of.FloatResolutionDetail{
 		Value:                    completeEval.Value.(float64),
-		ProviderResolutionDetail: toProviderResolutionDetail(completeEval),
+		ProviderResolutionDetail: toProviderResolutionDetail(completeEval, wrappedErr),
 	}
 }
 
 func (h *hookIsolator) IntEvaluation(ctx context.Context, flag string, defaultValue int64, flatCtx of.FlattenedContext) of.IntResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Int, defaultValue, flatCtx)
+	completeEval, wrappedErr := h.evaluate(ctx, flag, of.Int, defaultValue, flatCtx)
 
 	return of.IntResolutionDetail{
 		Value:                    completeEval.Value.(int64),
-		ProviderResolutionDetail: toProviderResolutionDetail(completeEval),
+		ProviderResolutionDetail: toProviderResolutionDetail(completeEval, wrappedErr),
 	}
 }
 
 func (h *hookIsolator) ObjectEvaluation(ctx context.Context, flag string, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceResolutionDetail {
-	completeEval := h.evaluate(ctx, flag, of.Object, defaultValue, flatCtx)
+	completeEval, wrappedErr := h.evaluate(ctx, flag, of.Object, defaultValue, flatCtx)
 
 	return of.InterfaceResolutionDetail{
 		Value:                    completeEval.Value,
-		ProviderResolutionDetail: toProviderResolutionDetail(completeEval),
+		ProviderResolutionDetail: toProviderResolutionDetail(completeEval, wrappedErr),
 	}
 }
 
 // toProviderResolutionDetail Converts a [of.InterfaceEvaluationDetails] to a [of.ProviderResolutionDetail].
-func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.ProviderResolutionDetail {
-	var (
-		resolutionErr of.ResolutionError
-		reason        of.Reason
-	)
+// The error code is preserved verbatim (including unknown/future codes) via
+// [of.NewResolutionError], and an optional wrapped cause is re-attached so
+// errors.Is/errors.As keep working. A nil wrappedErr is ignored.
+func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails, wrappedErr ...error) of.ProviderResolutionDetail {
+	if evalDetails.ErrorCode == "" {
+		return of.ProviderResolutionDetail{
+			Reason:       evalDetails.Reason,
+			Variant:      evalDetails.Variant,
+			FlagMetadata: evalDetails.FlagMetadata,
+		}
+	}
 
-	switch evalDetails.ErrorCode {
-	case of.GeneralCode:
-		resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.FlagNotFoundCode:
-		resolutionErr = of.NewFlagNotFoundResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.TargetingKeyMissingCode:
-		resolutionErr = of.NewTargetingKeyMissingResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.TypeMismatchCode:
-		resolutionErr = of.NewTypeMismatchResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.ParseErrorCode:
-		resolutionErr = of.NewParseErrorResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.InvalidContextCode:
-		resolutionErr = of.NewInvalidContextResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.ProviderNotReadyCode:
-		resolutionErr = of.NewProviderNotReadyResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	case of.ProviderFatalCode:
-		resolutionErr = of.NewProviderFatalResolutionError(evalDetails.ErrorMessage)
-		reason = of.ErrorReason
-	default:
-		if evalDetails.ErrorCode != "" {
-			resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
-			reason = of.ErrorReason
+	var nonNil []error
+	for _, err := range wrappedErr {
+		if err != nil {
+			nonNil = append(nonNil, err)
 		}
 	}
 
 	return of.ProviderResolutionDetail{
-		ResolutionError: resolutionErr,
-		Reason:          reason,
+		ResolutionError: of.NewResolutionError(evalDetails.ErrorCode, evalDetails.ErrorMessage, nonNil...),
+		Reason:          of.ErrorReason,
 		Variant:         evalDetails.Variant,
 		FlagMetadata:    evalDetails.FlagMetadata,
 	}
@@ -175,7 +156,9 @@ func (h *hookIsolator) Hooks() []of.Hook {
 }
 
 // evaluate Executes evaluation of the flag wrapped by executing hooks.
-func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Type, defaultValue any, flatCtx of.FlattenedContext) of.InterfaceEvaluationDetails {
+// The second return value is the wrapped cause to re-attach in
+// toProviderResolutionDetail (nil when there is no underlying cause).
+func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Type, defaultValue any, flatCtx of.FlattenedContext) (of.InterfaceEvaluationDetails, error) {
 	evalDetails := of.InterfaceEvaluationDetails{
 		Value: defaultValue,
 		EvaluationDetails: of.EvaluationDetails{
@@ -200,7 +183,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 			ErrorMessage: err.Error(),
 			FlagMetadata: of.FlagMetadata{},
 		}
-		return evalDetails
+		return evalDetails, err
 	}
 
 	// Merge together the passed in flat context and the captured evaluation context and transform back into a flattened
@@ -239,7 +222,7 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 		h.errorHooks(ctx, err)
 		evalDetails.ResolutionDetail = resolution.ResolutionDetail()
 		evalDetails.Reason = of.ErrorReason
-		return evalDetails
+		return evalDetails, resolution.ProviderResolutionDetail.ResolutionError.Unwrap()
 	}
 	evalDetails.Value = resolution.Value
 	evalDetails.ResolutionDetail = resolution.ResolutionDetail()
@@ -247,10 +230,10 @@ func (h *hookIsolator) evaluate(ctx context.Context, flag string, flagType of.Ty
 	if err := h.afterHooks(ctx, evalDetails); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
 		h.errorHooks(ctx, err)
-		return evalDetails
+		return evalDetails, nil
 	}
 
-	return evalDetails
+	return evalDetails, nil
 }
 
 // beforeHooks Executes all before hooks together, merging the changes to the [of.EvaluationContext] as it goes. The

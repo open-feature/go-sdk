@@ -12,21 +12,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// neverReadyStateHandler blocks in InitWithContext until the init context is
-// cancelled (e.g. by Shutdown), keeping the multi provider in NOT_READY.
-type neverReadyStateHandler struct{}
-
-func (neverReadyStateHandler) Init(of.EvaluationContext) error { return nil }
-
-func (neverReadyStateHandler) Shutdown() {}
-
-func (neverReadyStateHandler) InitWithContext(ctx context.Context, _ of.EvaluationContext) error {
-	<-ctx.Done()
-	return ctx.Err()
-}
-
-func (neverReadyStateHandler) ShutdownWithContext(context.Context) error { return nil }
-
 func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	hookCtx := of.NewHookContext(
 		"test-key",
@@ -234,7 +219,7 @@ func Test_toProviderResolutionDetail(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name: "unknown non-empty error code defaults to GeneralCode",
+			name: "unknown non-empty error code is preserved verbatim",
 			input: of.InterfaceEvaluationDetails{
 				EvaluationDetails: of.EvaluationDetails{
 					ResolutionDetail: of.ResolutionDetail{
@@ -243,7 +228,7 @@ func Test_toProviderResolutionDetail(t *testing.T) {
 					},
 				},
 			},
-			wantErrorCode: of.GeneralCode,
+			wantErrorCode: of.ErrorCode("UNKNOWN_CODE"),
 			wantReason:    of.ErrorReason,
 			wantErr:       true,
 		},
@@ -310,26 +295,30 @@ func newTestOnlyFirstProviderStrategyFn[T FlagTypes](providers []NamedProvider) 
 }
 
 func Test_HookIsolator_Evaluation_ProviderNotReadyCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: t.Name()}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: false,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			ResolutionError: of.NewProviderNotReadyResolutionError("not ready"),
+			Reason:          of.ErrorReason,
+		},
+	})
+
 	api := isolated.NewAPI()
 	t.Cleanup(func() {
 		_ = api.Shutdown(context.Background()) //nolint:usetesting
 	})
 
-	p := struct {
-		of.FeatureProvider
-		of.ContextAwareStateHandler
-	}{
-		FeatureProvider:          of.NoopProvider{},
-		ContextAwareStateHandler: neverReadyStateHandler{},
-	}
-
 	mp, err := NewProvider(
 		StrategyCustom,
-		WithProvider("never-ready", p),
+		WithProvider("not-ready", provider),
 		WithCustomStrategy(newTestOnlyFirstProviderStrategy),
 	)
 	require.NoError(t, err)
-	err = api.SetProvider(t.Context(), mp)
+	err = api.SetProviderAndWait(t.Context(), mp)
 	require.NoError(t, err)
 
 	client := api.NewClient()
@@ -420,4 +409,43 @@ func Test_toProviderResolutionDetail_ErrorCodesMapToErrorReason(t *testing.T) {
 			assert.Error(t, prd.Error())
 		})
 	}
+}
+
+func Test_toProviderResolutionDetail_PreservesWrappedError(t *testing.T) {
+	sentinel := errors.New("sentinel cause")
+	input := of.InterfaceEvaluationDetails{
+		EvaluationDetails: of.EvaluationDetails{
+			ResolutionDetail: of.ResolutionDetail{
+				ErrorCode:    of.GeneralCode,
+				ErrorMessage: "wrapped",
+			},
+		},
+	}
+	prd := toProviderResolutionDetail(input, sentinel)
+	require.Error(t, prd.Error())
+	assert.ErrorIs(t, prd.Error(), sentinel)
+	assert.Equal(t, of.GeneralCode, prd.ResolutionDetail().ErrorCode)
+}
+
+func Test_HookIsolator_PreservesWrappedError(t *testing.T) {
+	sentinel := errors.New("io eof sentinel")
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: false,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			ResolutionError: of.NewGeneralResolutionError("x", sentinel),
+			Reason:          of.ErrorReason,
+		},
+	})
+
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, nil)
+	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
+	require.Error(t, result.Error())
+	assert.ErrorIs(t, result.Error(), sentinel)
+	assert.Equal(t, of.GeneralCode, result.ResolutionDetail().ErrorCode)
 }
