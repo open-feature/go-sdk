@@ -449,3 +449,45 @@ func Test_HookIsolator_PreservesWrappedError(t *testing.T) {
 	assert.ErrorIs(t, result.Error(), sentinel)
 	assert.Equal(t, of.GeneralCode, result.ResolutionDetail().ErrorCode)
 }
+
+func Test_toProviderResolutionDetail_PreservesSuccessReason(t *testing.T) {
+	input := of.InterfaceEvaluationDetails{
+		EvaluationDetails: of.EvaluationDetails{
+			ResolutionDetail: of.ResolutionDetail{
+				Reason:       of.TargetingMatchReason,
+				Variant:      "variant-a",
+				FlagMetadata: of.FlagMetadata{"key": "value"},
+			},
+		},
+	}
+	prd := toProviderResolutionDetail(input)
+	assert.NoError(t, prd.Error())
+	assert.Equal(t, of.TargetingMatchReason, prd.Reason)
+	assert.Equal(t, "variant-a", prd.Variant)
+	assert.Equal(t, of.FlagMetadata{"key": "value"}, prd.FlagMetadata)
+}
+
+func Test_HookIsolator_PreservesSuccessReason(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: true,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			Reason:       of.TargetingMatchReason,
+			Variant:      "variant-a",
+			FlagMetadata: of.FlagMetadata{"key": "value"},
+		},
+	})
+
+	isolator := isolateProvider(&namedProvider{
+		FeatureProvider: provider,
+		name:            "test-provider",
+	}, nil)
+	result := isolator.BooleanEvaluation(t.Context(), "test-flag", false, of.FlattenedContext{"targetingKey": "anon"})
+	assert.NoError(t, result.Error())
+	assert.True(t, result.Value)
+	assert.Equal(t, of.TargetingMatchReason, result.Reason)
+	assert.Equal(t, "variant-a", result.Variant)
+	assert.Equal(t, of.FlagMetadata{"key": "value"}, result.FlagMetadata)
+}
