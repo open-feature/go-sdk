@@ -161,6 +161,11 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 		}
 	}
 
+	// Preserve the provider's reason on success; ERROR is set only above when an error code is present.
+	if evalDetails.ErrorCode == "" {
+		reason = evalDetails.Reason
+	}
+
 	return of.ProviderResolutionDetail{
 		ResolutionError: resolutionErr,
 		Reason:          reason,
