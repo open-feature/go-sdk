@@ -583,6 +583,52 @@ func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 
+// TestMultiProvider_ReinitAfterShutdown covers an Init → Shutdown → Init cycle (#548). The outbound
+// channel closed by the first shutdown used to be reused, so the second shutdown panicked with
+// "close of closed channel".
+func TestMultiProvider_ReinitAfterShutdown(t *testing.T) {
+	mp, err := NewProvider(StrategyFirstMatch,
+		WithProvider("provider", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
+	require.NoError(t, err)
+
+	for range 2 {
+		require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+		assert.Equal(t, of.ReadyState, mp.Status())
+		require.NoError(t, mp.ShutdownWithContext(t.Context()))
+		assert.Equal(t, of.NotReadyState, mp.Status())
+	}
+}
+
+// TestMultiProvider_ReinitAfterShutdownForwardsEvents is the same cycle with an event-emitting
+// provider, where the forwarder sending on the closed channel panicked on a background goroutine.
+func TestMultiProvider_ReinitAfterShutdownForwardsEvents(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	provider := newEventingProvider(ctrl, "provider", nil)
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	closed := mp.EventChannel()
+	require.NoError(t, mp.ShutdownWithContext(t.Context()))
+	_, open := <-closed
+	assert.False(t, open, "shutdown should close the outbound channel it handed out")
+
+	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+	t.Cleanup(mp.Shutdown)
+	assert.Equal(t, of.ReadyState, mp.Status())
+
+	provider.emitConfigChange()
+	select {
+	case e, ok := <-mp.EventChannel():
+		require.True(t, ok, "the outbound channel of a re-initialized provider must be open")
+		assert.Equal(t, of.ProviderConfigChange, e.EventType)
+	case <-time.After(time.Second):
+		t.Fatal("an event from a re-initialized provider was never forwarded")
+	}
+}
+
 // TestMultiProvider_InitAndShutdownAreSerialized uses a provider whose Init takes no context, so
 // there is nothing for a shutdown to cancel and it has to wait its turn.
 func TestMultiProvider_InitAndShutdownAreSerialized(t *testing.T) {
