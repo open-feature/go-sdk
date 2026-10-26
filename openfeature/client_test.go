@@ -171,8 +171,6 @@ func anyDetails[T any](details GenericEvaluationDetails[T], err error) (Interfac
 }
 
 func TestClient_PreservesWrappedProviderError(t *testing.T) {
-	t.Cleanup(resetSingleton)
-
 	mocks := hydratedMocksForClientTests(t, 1)
 	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
 	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
