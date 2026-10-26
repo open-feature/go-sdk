@@ -269,7 +269,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	multiProvider := &Provider{
 		providers:      providers,
 		lifecycleLock:  lifecycleLock,
-		outboundEvents: make(chan of.Event, len(providers)),
+		outboundEvents: newOutboundEvents(providers),
 		logger:         config.logger,
 		metadata:       buildMetadata(providers),
 		overallStatus:  of.NotReadyState,
@@ -730,7 +730,7 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	// lets a later InitWithContext forward events again instead of closing this channel twice.
 	p.outboundEventsLock.Lock()
 	close(p.outboundEvents)
-	p.outboundEvents = make(chan of.Event, len(p.providers))
+	p.outboundEvents = newOutboundEvents(p.providers)
 	p.outboundEventsLock.Unlock()
 	p.setStatus(of.NotReadyState)
 	p.initialized.Store(false)
@@ -755,9 +755,16 @@ func (p *Provider) setStatus(state of.State) {
 }
 
 // EventChannel is the channel that all events are emitted on. ShutdownWithContext closes it and replaces
-// it with a fresh one, so a consumer should call EventChannel again after a re-initialization.
+// it with a fresh one for the next initialization. A consumer should therefore call EventChannel once per
+// initialization and stop when that channel closes: one that calls it again after a shutdown gets the
+// fresh channel, which stays open until the Provider is initialized and shut down again.
 func (p *Provider) EventChannel() <-chan of.Event {
 	return p.outboundChannel()
+}
+
+// newOutboundEvents sizes the outbound channel so every inner provider can have one event in flight.
+func newOutboundEvents(providers []NamedProvider) chan of.Event {
+	return make(chan of.Event, len(providers))
 }
 
 func (p *Provider) outboundChannel() chan of.Event {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
+	"github.com/open-feature/go-sdk/openfeature/isolated"
 	imp "github.com/open-feature/go-sdk/openfeature/memprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -583,12 +584,16 @@ func TestMultiProvider_ShutdownTwiceIsNoOp(t *testing.T) {
 	assert.Equal(t, of.NotReadyState, mp.Status())
 }
 
-// TestMultiProvider_ReinitAfterShutdown covers an Init → Shutdown → Init cycle (#548). The outbound
-// channel closed by the first shutdown used to be reused, so the second shutdown panicked with
-// "close of closed channel".
+// TestMultiProvider_ReinitAfterShutdown covers an Init → Shutdown → Init cycle (#548) with a provider
+// that emits no events, so no forwarder runs. The outbound channel closed by the first shutdown used
+// to be reused, so the second shutdown panicked with "close of closed channel".
 func TestMultiProvider_ReinitAfterShutdown(t *testing.T) {
-	mp, err := NewProvider(StrategyFirstMatch,
-		WithProvider("provider", imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: "provider"}).AnyTimes()
+	provider.EXPECT().Hooks().Return([]of.Hook{}).AnyTimes()
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
 	require.NoError(t, err)
 
 	for range 2 {
@@ -600,7 +605,7 @@ func TestMultiProvider_ReinitAfterShutdown(t *testing.T) {
 }
 
 // TestMultiProvider_ReinitAfterShutdownForwardsEvents is the same cycle with an event-emitting
-// provider, where the forwarder sending on the closed channel panicked on a background goroutine.
+// provider, where the forwarder panicked with "send on closed channel" on a background goroutine.
 func TestMultiProvider_ReinitAfterShutdownForwardsEvents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -612,8 +617,12 @@ func TestMultiProvider_ReinitAfterShutdownForwardsEvents(t *testing.T) {
 	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
 	closed := mp.EventChannel()
 	require.NoError(t, mp.ShutdownWithContext(t.Context()))
-	_, open := <-closed
-	assert.False(t, open, "shutdown should close the outbound channel it handed out")
+	select {
+	case _, open := <-closed:
+		assert.False(t, open, "shutdown should close the outbound channel it handed out")
+	case <-time.After(time.Second):
+		t.Fatal("shutdown never closed the outbound channel it handed out")
+	}
 
 	require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
 	t.Cleanup(mp.Shutdown)
@@ -626,6 +635,50 @@ func TestMultiProvider_ReinitAfterShutdownForwardsEvents(t *testing.T) {
 		assert.Equal(t, of.ProviderConfigChange, e.EventType)
 	case <-time.After(time.Second):
 		t.Fatal("an event from a re-initialized provider was never forwarded")
+	}
+}
+
+// TestMultiProvider_ReinitThroughSDK re-sets the same Provider through the SDK after another provider
+// replaced it, and checks its events still reach API handlers.
+//
+// It waits for the SDK's background shutdown of the first registration before re-setting. Without that
+// wait the SDK can subscribe to the outbound channel that shutdown is about to close, and later events
+// are lost; ordering that shutdown before the re-initialization is an SDK concern outside this package.
+func TestMultiProvider_ReinitThroughSDK(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	provider := newEventingProvider(ctrl, "provider", nil)
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	api := isolated.NewAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+	configChanged := make(chan struct{}, 1)
+	callback := func(of.EventDetails) {
+		select {
+		case configChanged <- struct{}{}:
+		default:
+		}
+	}
+	api.AddHandler(of.ProviderConfigChange, &callback)
+
+	require.NoError(t, api.SetProviderAndWait(t.Context(), mp))
+	require.NoError(t, api.SetProviderAndWait(t.Context(),
+		imp.NewInMemoryProvider(map[string]imp.InMemoryFlag{})))
+	// Shutdown reports NOT_READY only once it has closed and replaced the outbound channel.
+	require.Eventually(t, func() bool { return mp.Status() == of.NotReadyState },
+		time.Second, 10*time.Millisecond, "the SDK never shut down the replaced provider")
+
+	require.NoError(t, api.SetProviderAndWait(t.Context(), mp))
+	assert.Equal(t, of.ReadyState, mp.Status())
+
+	provider.emitConfigChange()
+	select {
+	case <-configChanged:
+	case <-time.After(time.Second):
+		t.Fatal("an event from a provider re-set through the SDK never reached the API handler")
 	}
 }
 
