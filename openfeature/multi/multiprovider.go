@@ -728,6 +728,8 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	// Safe only here: every worker that could still send has stopped, and the initialized guard
 	// above makes a second shutdown a no-op. Closing releases current consumers; the replacement
 	// lets a later InitWithContext forward events again instead of closing this channel twice.
+	// NOT_READY is set only after the swap: a caller that waits for it before re-initializing
+	// (as TestMultiProvider_ReinitThroughSDK does) must never see the channel about to close.
 	p.outboundEventsLock.Lock()
 	close(p.outboundEvents)
 	p.outboundEvents = newOutboundEvents(p.providers)

@@ -86,11 +86,14 @@ func TestMultiProvider_EventChannelConcurrentWithReinit(t *testing.T) {
 			}
 		}
 	}()
+	// Deferred so a failed require below still stops the reader instead of leaving it spinning.
+	defer func() {
+		close(stop)
+		<-readerDone
+	}()
 
 	for range 5 {
 		require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
 		require.NoError(t, mp.ShutdownWithContext(t.Context()))
 	}
-	close(stop)
-	<-readerDone
 }
