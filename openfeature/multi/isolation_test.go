@@ -3,6 +3,7 @@ package multi
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	of "github.com/open-feature/go-sdk/openfeature"
@@ -11,21 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
-
-// neverReadyStateHandler blocks in InitWithContext until the init context is
-// cancelled (e.g. by Shutdown), keeping the multi provider in NOT_READY.
-type neverReadyStateHandler struct{}
-
-func (neverReadyStateHandler) Init(of.EvaluationContext) error { return nil }
-
-func (neverReadyStateHandler) Shutdown() {}
-
-func (neverReadyStateHandler) InitWithContext(ctx context.Context, _ of.EvaluationContext) error {
-	<-ctx.Done()
-	return ctx.Err()
-}
-
-func (neverReadyStateHandler) ShutdownWithContext(context.Context) error { return nil }
 
 func Test_HookIsolator_BeforeCapturesData(t *testing.T) {
 	hookCtx := of.NewHookContext(
@@ -234,7 +220,7 @@ func Test_toProviderResolutionDetail(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name: "unknown non-empty error code defaults to GeneralCode",
+			name: "unknown non-empty error code falls back to GENERAL",
 			input: of.InterfaceEvaluationDetails{
 				EvaluationDetails: of.EvaluationDetails{
 					ResolutionDetail: of.ResolutionDetail{
@@ -282,7 +268,7 @@ func Test_toProviderResolutionDetail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toProviderResolutionDetail(tt.input)
+			result := toProviderResolutionDetail(tt.input, nil)
 			assert.Equal(t, tt.wantReason, result.Reason)
 			assert.Equal(t, tt.wantVariant, result.Variant)
 			assert.Equal(t, tt.wantFlagMetadata, result.FlagMetadata)
@@ -310,26 +296,30 @@ func newTestOnlyFirstProviderStrategyFn[T FlagTypes](providers []NamedProvider) 
 }
 
 func Test_HookIsolator_Evaluation_ProviderNotReadyCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: t.Name()}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: false,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			ResolutionError: of.NewProviderNotReadyResolutionError("not ready"),
+			Reason:          of.ErrorReason,
+		},
+	})
+
 	api := isolated.NewAPI()
 	t.Cleanup(func() {
 		_ = api.Shutdown(context.Background()) //nolint:usetesting
 	})
 
-	p := struct {
-		of.FeatureProvider
-		of.ContextAwareStateHandler
-	}{
-		FeatureProvider:          of.NoopProvider{},
-		ContextAwareStateHandler: neverReadyStateHandler{},
-	}
-
 	mp, err := NewProvider(
 		StrategyCustom,
-		WithProvider("never-ready", p),
+		WithProvider("not-ready", provider),
 		WithCustomStrategy(newTestOnlyFirstProviderStrategy),
 	)
 	require.NoError(t, err)
-	err = api.SetProvider(t.Context(), mp)
+	err = api.SetProviderAndWait(t.Context(), mp)
 	require.NoError(t, err)
 
 	client := api.NewClient()
@@ -415,7 +405,7 @@ func Test_toProviderResolutionDetail_ErrorCodesMapToErrorReason(t *testing.T) {
 				EvaluationDetails: of.EvaluationDetails{
 					ResolutionDetail: of.ResolutionDetail{ErrorCode: tc.code},
 				},
-			})
+			}, nil)
 			assert.Equal(t, of.ErrorReason, prd.Reason)
 			assert.Error(t, prd.Error())
 		})
@@ -432,7 +422,7 @@ func Test_toProviderResolutionDetail_PreservesSuccessReason(t *testing.T) {
 			},
 		},
 	}
-	prd := toProviderResolutionDetail(input)
+	prd := toProviderResolutionDetail(input, nil)
 	assert.NoError(t, prd.Error())
 	assert.Equal(t, of.TargetingMatchReason, prd.Reason)
 	assert.Equal(t, "variant-a", prd.Variant)
@@ -462,4 +452,46 @@ func Test_HookIsolator_PreservesSuccessReason(t *testing.T) {
 	assert.Equal(t, of.TargetingMatchReason, result.Reason)
 	assert.Equal(t, "variant-a", result.Variant)
 	assert.Equal(t, of.FlagMetadata{"key": "value"}, result.FlagMetadata)
+}
+
+func Test_toProviderResolutionDetail_PreservesWrappedError(t *testing.T) {
+	input := of.InterfaceEvaluationDetails{
+		EvaluationDetails: of.EvaluationDetails{
+			ResolutionDetail: of.ResolutionDetail{
+				ErrorCode:    of.GeneralCode,
+				ErrorMessage: "wrapped",
+			},
+		},
+	}
+	prd := toProviderResolutionDetail(input, io.EOF)
+	require.ErrorIs(t, prd.Error(), io.EOF)
+	assert.Equal(t, of.GeneralCode, prd.ResolutionDetail().ErrorCode)
+}
+
+func Test_MultiProvider_FirstMatch_PreservesWrappedError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := of.NewMockFeatureProvider(ctrl)
+	provider.EXPECT().Hooks().Return([]of.Hook{}).MinTimes(1)
+	provider.EXPECT().Metadata().Return(of.Metadata{Name: t.Name()}).MinTimes(1)
+	provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(of.BoolResolutionDetail{
+		Value: false,
+		ProviderResolutionDetail: of.ProviderResolutionDetail{
+			ResolutionError: of.NewResolutionError(of.GeneralCode, "x", io.EOF),
+			Reason:          of.ErrorReason,
+		},
+	})
+
+	api := isolated.NewAPI()
+	t.Cleanup(func() {
+		_ = api.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("wrapped", provider))
+	require.NoError(t, err)
+	require.NoError(t, api.SetProviderAndWait(t.Context(), mp))
+
+	result, err := api.NewClient().BooleanValueDetails(t.Context(), "test-flag", false, of.NewEvaluationContext("test", nil))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, io.EOF)
+	assert.Equal(t, of.GeneralCode, result.ErrorCode)
 }
