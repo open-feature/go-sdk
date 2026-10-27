@@ -102,13 +102,26 @@ func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
 	return newResolutionError(GeneralCode, msg, errs...)
 }
 
-// NewResolutionError constructs a resolution error with an arbitrary code.
-// Unlike the code-specific constructors, it preserves the given code as-is,
-// which allows providers to report codes this version does not enumerate.
+// NewResolutionError constructs a resolution error with the given code.
+// Codes that are not part of the specification are replaced with GENERAL,
+// so providers cannot expose invalid codes to end users.
 // An optional wrapped cause can be supplied so errors.Is/errors.As keep
 // working across conversions.
 func NewResolutionError(code ErrorCode, msg string, errs ...error) ResolutionError {
+	if !isValidErrorCode(code) {
+		code = GeneralCode
+	}
 	return newResolutionError(code, msg, errs...)
+}
+
+func isValidErrorCode(code ErrorCode) bool {
+	switch code {
+	case ProviderNotReadyCode, ProviderFatalCode, FlagNotFoundCode, ParseErrorCode,
+		TypeMismatchCode, TargetingKeyMissingCode, InvalidContextCode, GeneralCode:
+		return true
+	default:
+		return false
+	}
 }
 
 // newResolutionError is a helper to create a ResolutionError with an optional original error.
