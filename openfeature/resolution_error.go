@@ -63,8 +63,8 @@ func NewFlagNotFoundResolutionError(msg string) ResolutionError {
 // NewParseErrorResolutionError constructs a resolution error with code PARSE_ERROR
 //
 // Explanation - An error was encountered parsing data, such as a flag configuration.
-func NewParseErrorResolutionError(msg string) ResolutionError {
-	return newResolutionError(ParseErrorCode, msg)
+func NewParseErrorResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(ParseErrorCode, msg, errs...)
 }
 
 // NewTypeMismatchResolutionError constructs a resolution error with code TYPE_MISMATCH
@@ -98,8 +98,8 @@ func NewProviderFatalResolutionError(msg string) ResolutionError {
 // NewGeneralResolutionError constructs a resolution error with code GENERAL
 //
 // Explanation - The error was for a reason not enumerated above.
-func NewGeneralResolutionError(msg string) ResolutionError {
-	return newResolutionError(GeneralCode, msg)
+func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
+	return newResolutionError(GeneralCode, msg, errs...)
 }
 
 // NewResolutionError constructs a resolution error with the given code.

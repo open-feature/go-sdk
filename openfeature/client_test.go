@@ -177,7 +177,7 @@ func TestClient_PreservesWrappedProviderError(t *testing.T) {
 		Return(BoolResolutionDetail{
 			Value: false,
 			ProviderResolutionDetail: ProviderResolutionDetail{
-				ResolutionError: NewResolutionError(GeneralCode, "provider failed", io.EOF),
+				ResolutionError: NewGeneralResolutionError("provider failed", io.EOF),
 				Reason:          ErrorReason,
 			},
 		})
