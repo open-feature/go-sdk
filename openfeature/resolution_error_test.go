@@ -91,8 +91,8 @@ func TestResolutionErrorWithOriginal(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"general", NewGeneralResolutionError("flag not found", io.ErrNoProgress)},
-		{"parse", NewParseErrorResolutionError("flag not found", io.ErrNoProgress)},
+		{"general", NewResolutionError(GeneralCode, "flag not found", io.ErrNoProgress)},
+		{"parse", NewResolutionError(ParseErrorCode, "flag not found", io.ErrNoProgress)},
 	}
 
 	for _, tt := range tests {

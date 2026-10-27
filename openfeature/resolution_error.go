@@ -49,57 +49,57 @@ func (r ResolutionError) Unwrap() error {
 // NewProviderNotReadyResolutionError constructs a resolution error with code PROVIDER_NOT_READY
 //
 // Explanation - The value was resolved before the provider was ready.
-func NewProviderNotReadyResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(ProviderNotReadyCode, msg, errs...)
+func NewProviderNotReadyResolutionError(msg string) ResolutionError {
+	return newResolutionError(ProviderNotReadyCode, msg)
 }
 
 // NewFlagNotFoundResolutionError constructs a resolution error with code FLAG_NOT_FOUND
 //
 // Explanation - The flag could not be found.
-func NewFlagNotFoundResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(FlagNotFoundCode, msg, errs...)
+func NewFlagNotFoundResolutionError(msg string) ResolutionError {
+	return newResolutionError(FlagNotFoundCode, msg)
 }
 
 // NewParseErrorResolutionError constructs a resolution error with code PARSE_ERROR
 //
 // Explanation - An error was encountered parsing data, such as a flag configuration.
-func NewParseErrorResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(ParseErrorCode, msg, errs...)
+func NewParseErrorResolutionError(msg string) ResolutionError {
+	return newResolutionError(ParseErrorCode, msg)
 }
 
 // NewTypeMismatchResolutionError constructs a resolution error with code TYPE_MISMATCH
 //
 // Explanation - The type of the flag value does not match the expected type.
-func NewTypeMismatchResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(TypeMismatchCode, msg, errs...)
+func NewTypeMismatchResolutionError(msg string) ResolutionError {
+	return newResolutionError(TypeMismatchCode, msg)
 }
 
 // NewTargetingKeyMissingResolutionError constructs a resolution error with code TARGETING_KEY_MISSING
 //
 // Explanation - The provider requires a targeting key and one was not provided in the evaluation context.
-func NewTargetingKeyMissingResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(TargetingKeyMissingCode, msg, errs...)
+func NewTargetingKeyMissingResolutionError(msg string) ResolutionError {
+	return newResolutionError(TargetingKeyMissingCode, msg)
 }
 
 // NewInvalidContextResolutionError constructs a resolution error with code INVALID_CONTEXT
 //
 // Explanation - The evaluation context does not meet provider requirements.
-func NewInvalidContextResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(InvalidContextCode, msg, errs...)
+func NewInvalidContextResolutionError(msg string) ResolutionError {
+	return newResolutionError(InvalidContextCode, msg)
 }
 
 // NewProviderFatalResolutionError constructs a resolution error with code PROVIDER_FATAL
 //
 // Explanation - The provider is in an irrecoverable error state.
-func NewProviderFatalResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(ProviderFatalCode, msg, errs...)
+func NewProviderFatalResolutionError(msg string) ResolutionError {
+	return newResolutionError(ProviderFatalCode, msg)
 }
 
 // NewGeneralResolutionError constructs a resolution error with code GENERAL
 //
 // Explanation - The error was for a reason not enumerated above.
-func NewGeneralResolutionError(msg string, errs ...error) ResolutionError {
-	return newResolutionError(GeneralCode, msg, errs...)
+func NewGeneralResolutionError(msg string) ResolutionError {
+	return newResolutionError(GeneralCode, msg)
 }
 
 // NewResolutionError constructs a resolution error with the given code.
