@@ -28,6 +28,9 @@ type eventExecutor struct {
 	mu                       sync.Mutex
 	done                     chan struct{}
 	wg                       sync.WaitGroup
+	// generation is incremented by reset, so the result of a provider initialization
+	// that started before a reset can be told apart from one that started after it.
+	generation uint64
 }
 
 func newEventExecutor() *eventExecutor {
@@ -195,8 +198,9 @@ func (e *eventExecutor) State(domain string) State {
 	return state
 }
 
-// registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available
-func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) {
+// registerDefaultProvider registers the default FeatureProvider and remove the old default provider if available.
+// It returns the generation of the executor, see triggerInitEvent.
+func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) uint64 {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -210,10 +214,12 @@ func (e *eventExecutor) registerDefaultProvider(provider FeatureProvider) {
 	e.states.Store(defaultDomain, NotReadyState)
 
 	e.startListeningAndShutdownOld(newProvider, oldProvider)
+	return e.generation
 }
 
-// registerNamedEventingProvider registers a named FeatureProvider and remove event listener for old named provider
-func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) {
+// registerNamedEventingProvider registers a named FeatureProvider and remove event listener for old named provider.
+// It returns the generation of the executor, see triggerInitEvent.
+func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, provider FeatureProvider) uint64 {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	newProvider := newProviderRef(provider)
@@ -226,6 +232,7 @@ func (e *eventExecutor) registerNamedEventingProvider(associatedClient string, p
 	e.states.Store(associatedClient, NotReadyState)
 
 	e.startListeningAndShutdownOld(newProvider, oldProvider)
+	return e.generation
 }
 
 // startListeningAndShutdownOld is a helper to start concurrent listening to new provider events and  invoke shutdown
@@ -327,7 +334,24 @@ func (e *eventExecutor) startEventListener() {
 func (e *eventExecutor) triggerEvent(event Event, handler FeatureProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	e.triggerEventLocked(event, handler)
+}
 
+// triggerInitEvent is triggerEvent for the result of a provider initialization. It drops
+// the event if the executor was reset after the initialization started, so a provider
+// that was still initializing when the API was shut down does not reach the handlers or
+// states set up after the shutdown.
+func (e *eventExecutor) triggerInitEvent(event Event, handler FeatureProvider, generation uint64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.generation != generation {
+		return
+	}
+	e.triggerEventLocked(event, handler)
+}
+
+// triggerEventLocked is triggerEvent without locking. It must be called with e.mu held.
+func (e *eventExecutor) triggerEventLocked(event Event, handler FeatureProvider) {
 	// Per spec 5.3.5, write provider status BEFORE handlers run so every
 	// handler — including API-level — sees the new state.
 	handlerRef := newProviderRef(handler)
@@ -433,8 +457,9 @@ func (e *eventExecutor) shutdown() {
 
 // reset returns a shut down executor to its initial state so it can be used again.
 // It removes all handlers, provider references and states, and re-arms the event
-// listener and shutdown. eventChan is kept, since shutdown has drained it. It must
-// only be called after shutdown has returned, and not concurrently with shutdown.
+// listener and shutdown. eventChan is kept, since shutdown has drained it. It also
+// starts a new generation, so the results of initializations still running are dropped.
+// It must only be called after shutdown has returned, and not concurrently with shutdown.
 func (e *eventExecutor) reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -448,4 +473,5 @@ func (e *eventExecutor) reset() {
 	e.done = make(chan struct{})
 	e.once = sync.Once{}
 	e.shutdownOnce = sync.Once{}
+	e.generation++
 }

@@ -212,7 +212,7 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 	oldProvider := a.defaultProvider
 	a.defaultProvider = provider
 
-	a.eventExecutor.registerDefaultProvider(provider)
+	generation := a.eventExecutor.registerDefaultProvider(provider)
 
 	a.shutdownOld(ctx, oldProvider)
 
@@ -221,7 +221,7 @@ func (a *EvaluationAPI) setProvider(ctx context.Context, provider FeatureProvide
 		a.unbindIfUnreferenced(oldProvider)
 	}
 
-	return a.initNew(ctx, "", provider), nil
+	return a.initNew(ctx, "", provider, generation), nil
 }
 
 func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, provider FeatureProvider) (<-chan error, error) {
@@ -240,7 +240,7 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 	oldProvider := a.domainProviders[domain]
 	a.domainProviders[domain] = provider
 
-	a.eventExecutor.registerNamedEventingProvider(domain, provider)
+	generation := a.eventExecutor.registerNamedEventingProvider(domain, provider)
 
 	a.shutdownOld(ctx, oldProvider)
 
@@ -249,16 +249,17 @@ func (a *EvaluationAPI) setDomainProvider(ctx context.Context, domain string, pr
 		a.unbindIfUnreferenced(oldProvider)
 	}
 
-	return a.initNew(ctx, domain, provider), nil
+	return a.initNew(ctx, domain, provider, generation), nil
 }
 
-func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider FeatureProvider) <-chan error {
+func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider FeatureProvider, generation uint64) <-chan error {
 	errCh := make(chan error, 1)
 
 	// Initialize new provider async. The caller may wait on the channel.
-	go func(executor *eventExecutor, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, domain string) {
+	// If Shutdown resets the API before the initialization returns, its event is dropped.
+	go func(executor *eventExecutor, generation uint64, evalCtx EvaluationContext, ctx context.Context, provider FeatureProvider, domain string) {
 		event, err := initializerWithContext(ctx, provider, evalCtx)
-		executor.triggerEvent(event, provider)
+		executor.triggerInitEvent(event, provider, generation)
 
 		if err != nil {
 			if domain == "" {
@@ -268,7 +269,7 @@ func (a *EvaluationAPI) initNew(ctx context.Context, domain string, newProvider 
 			}
 		}
 		errCh <- err
-	}(a.eventExecutor, a.evalCtx, ctx, newProvider, domain)
+	}(a.eventExecutor, generation, a.evalCtx, ctx, newProvider, domain)
 
 	return errCh
 }
