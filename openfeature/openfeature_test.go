@@ -544,8 +544,8 @@ func TestRequirement_1_6_1(t *testing.T) {
 func TestRequirement_1_6_2(t *testing.T) {
 	t.Cleanup(resetSingleton)
 
-	// TODO: test that hooks and event handlers are removed as well. This only
-	// tests that providers are removed.
+	// This only tests that providers are removed. TestShutdownResetsGlobalAPIInPlace
+	// tests that hooks, event handlers and the evaluation context are removed.
 
 	provider1, _, shutdownSem1 := setupProviderWithSemaphores()
 
@@ -585,6 +585,58 @@ func TestRequirement_1_6_2(t *testing.T) {
 	}
 
 	expectTimeout(t, shutdownSem1, "provider1 should not have been shut down again, since it is unregistered")
+}
+
+// Shutdown resets the global API in place. Hooks, event handlers and the
+// evaluation context are removed, and a client created before Shutdown uses
+// the provider set after it.
+func TestShutdownResetsGlobalAPIInPlace(t *testing.T) {
+	t.Cleanup(resetSingleton)
+
+	client := NewDefaultClient()
+	if err := SetProviderAndWait(newResetTestProvider("first")); err != nil {
+		t.Fatalf("SetProviderAndWait: %v", err)
+	}
+	hook := &countingHook{}
+	AddHooks(hook)
+	SetEvaluationContext(NewEvaluationContext("global-key", map[string]any{"global": "yes"}))
+	handler := func(EventDetails) {}
+	AddHandler(ProviderReady, &handler)
+	client.AddHandler(ProviderReady, &handler)
+
+	instance := api()
+	Shutdown()
+
+	if api() != instance {
+		t.Fatal("expected Shutdown to reset the global API in place, not replace it")
+	}
+	if got := client.State(); got != NotReadyState {
+		t.Errorf("expected client state %q after Shutdown, got %q", NotReadyState, got)
+	}
+	_, hooks, evalCtx := instance.resolveBinding("")
+	if len(hooks) != 0 {
+		t.Errorf("expected no API hooks after Shutdown, got %d", len(hooks))
+	}
+	if evalCtx.TargetingKey() != "" || len(evalCtx.Attributes()) != 0 {
+		t.Errorf("expected an empty evaluation context after Shutdown, got %v", evalCtx)
+	}
+	if got := len(instance.eventExecutor.GetAPIRegistry()[ProviderReady]); got != 0 {
+		t.Errorf("expected no API handlers after Shutdown, got %d", got)
+	}
+	if got := len(instance.eventExecutor.GetClientRegistry("").callbacks[ProviderReady]); got != 0 {
+		t.Errorf("expected no client handlers after Shutdown, got %d", got)
+	}
+
+	if err := SetProviderAndWait(newResetTestProvider("second")); err != nil {
+		t.Fatalf("SetProviderAndWait after Shutdown: %v", err)
+	}
+	before := hook.calls.Load()
+	if !client.Boolean(t.Context(), "flag", false, EvaluationContext{}) {
+		t.Error("expected a client created before Shutdown to use the provider set after it")
+	}
+	if hook.calls.Load() != before {
+		t.Error("API hook added before Shutdown still runs after Shutdown")
+	}
 }
 
 func TestRequirement_EventCompliance(t *testing.T) {
