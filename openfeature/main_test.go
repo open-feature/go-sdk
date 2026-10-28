@@ -43,8 +43,8 @@ func installIsolatedAPI(t *testing.T) *EvaluationAPI {
 	originalAPI := apiInstance.Swap(testAPI)
 
 	t.Cleanup(func() {
-		// ShutdownWithContext (and similar) can reinitialize the global event
-		// executor via resetSingleton; shut that replacement down too so it
+		// Shutdown resets testAPI in place. If the test replaced the global API
+		// (for example with resetSingleton), shut that replacement down too so it
 		// doesn't leak.
 		_ = testAPI.Shutdown(context.Background()) //nolint:usetesting
 		if current := apiInstance.Swap(originalAPI); current != testAPI {
