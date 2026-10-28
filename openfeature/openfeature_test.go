@@ -3,6 +3,8 @@ package openfeature
 import (
 	"errors"
 	"reflect"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -638,6 +640,169 @@ func TestShutdownResetsGlobalAPIInPlace(t *testing.T) {
 		t.Error("API hook added before Shutdown still runs after Shutdown")
 	}
 }
+
+// A provider that is still initializing when Shutdown resets the API finishes its
+// Init later. Its event must not reach the handlers or states set up after Shutdown.
+func TestShutdownDropsEventOfInitStartedBeforeIt(t *testing.T) {
+	t.Run("handler added after Shutdown", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		provider := newGatedInitProvider(1)
+		initDone, err := api().setProvider(t.Context(), provider)
+		if err != nil {
+			t.Fatalf("setProvider: %v", err)
+		}
+		<-provider.started
+
+		Shutdown()
+
+		ready := make(chan any, 1)
+		handler := func(EventDetails) { ready <- "" }
+		AddHandler(ProviderReady, &handler)
+
+		close(provider.release[0])
+		if err := <-initDone; err != nil {
+			t.Fatalf("Init: %v", err)
+		}
+		expectTimeout(t, ready, "handler added after Shutdown received the event of an Init that started before it")
+	})
+
+	t.Run("same provider set again after Shutdown", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		provider := newGatedInitProvider(2)
+		firstInitDone, err := api().setProvider(t.Context(), provider)
+		if err != nil {
+			t.Fatalf("setProvider: %v", err)
+		}
+		<-provider.started
+
+		Shutdown()
+
+		secondInitDone, err := api().setProvider(t.Context(), provider)
+		if err != nil {
+			t.Fatalf("setProvider after Shutdown: %v", err)
+		}
+		<-provider.started
+		client := NewDefaultClient()
+
+		close(provider.release[0])
+		if err := <-firstInitDone; err != nil {
+			t.Fatalf("first Init: %v", err)
+		}
+		if got := client.State(); got != NotReadyState {
+			t.Errorf("expected client state %q while the Init started after Shutdown runs, got %q", NotReadyState, got)
+		}
+
+		close(provider.release[1])
+		if err := <-secondInitDone; err != nil {
+			t.Fatalf("second Init: %v", err)
+		}
+		if got := client.State(); got != ReadyState {
+			t.Errorf("expected client state %q after the Init started after Shutdown returned, got %q", ReadyState, got)
+		}
+	})
+}
+
+// A provider that is still initializing when Shutdown begins can finish its Init while
+// another provider is still shutting down. Its event must not reach the handlers, or set
+// the state, of the API that is shutting down.
+func TestShutdownDropsEventOfInitFinishingDuringIt(t *testing.T) {
+	for name, newTarget := range map[string]func() *EvaluationAPI{"global": api, "isolated": newAPI} {
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(resetSingleton)
+			instance := newTarget()
+
+			ready := make(chan any, 2)
+			handler := func(EventDetails) { ready <- "" }
+			instance.AddHandler(ProviderReady, &handler)
+
+			slow := &gatedShutdownProvider{started: make(chan any, 1), release: make(chan struct{})}
+			releaseSlow := sync.OnceFunc(func() { close(slow.release) })
+			defer releaseSlow()
+			slowInitDone, err := instance.setDomainProvider(t.Context(), "slow", slow)
+			if err != nil {
+				t.Fatalf("setDomainProvider: %v", err)
+			}
+			if err := <-slowInitDone; err != nil {
+				t.Fatalf("Init of the slow provider: %v", err)
+			}
+			select {
+			case <-ready:
+			case <-time.After(5 * time.Second):
+				t.Fatal("handler did not receive the event of the slow provider")
+			}
+
+			provider := newGatedInitProvider(1)
+			initDone, err := instance.setProvider(t.Context(), provider)
+			if err != nil {
+				t.Fatalf("setProvider: %v", err)
+			}
+			<-provider.started
+
+			shutdownDone := make(chan error, 1)
+			go func() { shutdownDone <- instance.Shutdown(t.Context()) }()
+			// Shutdown has begun, and waits for the slow provider.
+			<-slow.started
+
+			close(provider.release[0])
+			if err := <-initDone; err != nil {
+				t.Fatalf("Init: %v", err)
+			}
+			expectTimeout(t, ready, "handler received the event of an Init that finished while Shutdown was running")
+			if got := instance.eventExecutor.State(""); got != NotReadyState {
+				t.Errorf("expected state %q while Shutdown runs, got %q", NotReadyState, got)
+			}
+
+			releaseSlow()
+			if err := <-shutdownDone; err != nil {
+				t.Fatalf("Shutdown: %v", err)
+			}
+		})
+	}
+}
+
+// gatedShutdownProvider is a pointer-type provider whose Shutdown blocks until release
+// is closed. started receives a value when Shutdown starts.
+type gatedShutdownProvider struct {
+	NoopProvider
+	release chan struct{}
+	started chan any
+}
+
+func (p *gatedShutdownProvider) Init(EvaluationContext) error { return nil }
+
+func (p *gatedShutdownProvider) Shutdown() {
+	p.started <- ""
+	<-p.release
+}
+
+// gatedInitProvider is a pointer-type provider whose Init calls block, in order,
+// until the matching release channel is closed. started receives a value when an
+// Init call starts.
+type gatedInitProvider struct {
+	NoopProvider
+	release []chan struct{}
+	started chan any
+	inits   atomic.Int32
+}
+
+func newGatedInitProvider(inits int) *gatedInitProvider {
+	p := &gatedInitProvider{started: make(chan any, inits)}
+	for range inits {
+		p.release = append(p.release, make(chan struct{}))
+	}
+	return p
+}
+
+func (p *gatedInitProvider) Init(EvaluationContext) error {
+	i := p.inits.Add(1) - 1
+	p.started <- ""
+	<-p.release[i]
+	return nil
+}
+
+func (p *gatedInitProvider) Shutdown() {}
 
 func TestRequirement_EventCompliance(t *testing.T) {
 	// The client MUST provide a function for associating handler functions with a particular provider event type.
