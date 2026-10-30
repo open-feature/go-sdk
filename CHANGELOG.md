@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.20.1](https://github.com/open-feature/go-sdk/compare/v1.20.0...v1.20.1) (2026-10-30)
+
+
+### 🐛 Bug Fixes
+
+* **multi:** preserve provider reason on successful evaluations ([#632](https://github.com/open-feature/go-sdk/issues/632)) ([b20d284](https://github.com/open-feature/go-sdk/commit/b20d2849797ee7a59bb0556f56d46942d5198804))
+
+
+### 🧹 Chore
+
+* **deps:** update dependency goreleaser to v2.19.0 ([#633](https://github.com/open-feature/go-sdk/issues/633)) ([28127ef](https://github.com/open-feature/go-sdk/commit/28127ef981f1ee4790f9aa0e1422646524676c49))
+* **deps:** update jdx/mise-action action to v5.2.3 ([#639](https://github.com/open-feature/go-sdk/issues/639)) ([1804a4b](https://github.com/open-feature/go-sdk/commit/1804a4b59007c2b195f13fe9dbf239030ec869ed))
+* **deps:** update jdx/mise-action action to v5.2.4 ([#641](https://github.com/open-feature/go-sdk/issues/641)) ([578a89d](https://github.com/open-feature/go-sdk/commit/578a89df55257fd854044d5f07b8325546aadc81))
+
 ## [1.20.0](https://github.com/open-feature/go-sdk/compare/v1.19.0...v1.20.0) (2026-10-24)
 
 
