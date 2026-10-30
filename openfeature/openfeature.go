@@ -24,19 +24,11 @@ func init() {
 	resetSingleton()
 }
 
-// resetSingleton stops (if running) the event executor and starts a new one.
+// resetSingleton replaces the singleton with a new instance and shuts the old one down.
 func resetSingleton() {
-	_ = resetSingletonWithContext(context.Background())
-}
-
-// resetSingletonWithContext stops (if running) the event executor and starts a new one.
-func resetSingletonWithContext(ctx context.Context) error {
-	nextAPI := newAPI()
-	oldAPI := apiInstance.Swap(nextAPI)
-	if oldAPI != nil {
-		return oldAPI.Shutdown(ctx)
+	if oldAPI := apiInstance.Swap(newAPI()); oldAPI != nil {
+		_ = oldAPI.Shutdown(context.Background())
 	}
-	return nil
 }
 
 // api returns the current singleton [EvaluationAPI].
@@ -162,16 +154,17 @@ func RemoveHandler(eventType EventType, callback EventCallback) {
 
 // Shutdown unconditionally calls shutdown on all registered providers,
 // regardless of their state. It resets the state of the API, removing all
-// hooks, event handlers, and providers.
+// hooks, event handlers, evaluation context and providers.
 func Shutdown() {
 	_ = ShutdownWithContext(context.Background())
 }
 
 // ShutdownWithContext calls context-aware shutdown on all registered providers.
 // If providers implement ContextAwareStateHandler, ShutdownWithContext will be called with the provided context.
-// It resets the state of the API, removing all hooks, event handlers, and providers.
+// It resets the state of the API, removing all hooks, event handlers, evaluation context and providers.
+// The API is reset in place, so clients created before the shutdown use the providers set after it.
 // This is intended to be called when your application is terminating.
 // Returns an error if any provider shutdown fails or if context is cancelled during shutdown.
 func ShutdownWithContext(ctx context.Context) error {
-	return resetSingletonWithContext(ctx)
+	return api().Shutdown(ctx)
 }

@@ -3,6 +3,7 @@ package openfeature
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -431,4 +432,184 @@ func TestDomainStateWhileProviderInitializing(t *testing.T) {
 	if got := api.eventExecutor.State("foo"); got != NotReadyState {
 		t.Errorf("expected domain \"foo\" to report NOT_READY while its provider initializes, got %q", got)
 	}
+}
+
+// Requirement 1.6.2 and 1.8.2: Shutdown on an isolated instance MUST reset the
+// state of that instance, removing all hooks, event handlers, evaluation context
+// and providers, just as Shutdown does for the global singleton.
+func TestRequirement_1_8_2_ShutdownResetsState(t *testing.T) {
+	instance := newAPI()
+	t.Cleanup(func() {
+		_ = instance.Shutdown(context.Background()) //nolint:usetesting
+	})
+
+	defaultProvider := newResetTestProvider("default-provider")
+	domainProvider := newResetTestProvider("domain-provider")
+	if err := instance.SetProviderAndWait(t.Context(), defaultProvider); err != nil {
+		t.Fatalf("SetProviderAndWait: %v", err)
+	}
+	if err := instance.SetProviderAndWait(t.Context(), domainProvider, WithDomain("domain")); err != nil {
+		t.Fatalf("SetProviderAndWait with domain: %v", err)
+	}
+
+	hook := &countingHook{}
+	instance.AddHooks(hook)
+	instance.SetEvaluationContext(NewEvaluationContext("global-key", map[string]any{"global": "yes"}))
+
+	handler := func(EventDetails) {}
+	instance.AddHandler(ProviderReady, &handler)
+	client := instance.NewClient(WithDomain("domain"))
+	client.AddHandler(ProviderReady, &handler)
+
+	if err := instance.Shutdown(t.Context()); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+	// A second Shutdown must not shut down the providers again: they are no longer registered.
+	if err := instance.Shutdown(t.Context()); err != nil {
+		t.Fatalf("second Shutdown: %v", err)
+	}
+	if got := defaultProvider.shutdowns.Load(); got != 1 {
+		t.Errorf("expected the default provider to be shut down once, got %d", got)
+	}
+	if got := domainProvider.shutdowns.Load(); got != 1 {
+		t.Errorf("expected the domain provider to be shut down once, got %d", got)
+	}
+
+	// Providers: every domain resolves to the no-op provider again.
+	for _, domain := range []string{"", "domain"} {
+		provider, hooks, evalCtx := instance.resolveBinding(domain)
+		if _, ok := provider.(NoopProvider); !ok {
+			t.Errorf("domain %q: expected NoopProvider after Shutdown, got %q", domain, provider.Metadata().Name)
+		}
+		// Hooks and evaluation context.
+		if len(hooks) != 0 {
+			t.Errorf("domain %q: expected no API hooks after Shutdown, got %d", domain, len(hooks))
+		}
+		if evalCtx.TargetingKey() != "" || len(evalCtx.Attributes()) != 0 {
+			t.Errorf("domain %q: expected an empty evaluation context after Shutdown, got %v", domain, evalCtx)
+		}
+	}
+	if got := len(instance.getDomainProviders()); got != 0 {
+		t.Errorf("expected no domain providers after Shutdown, got %d", got)
+	}
+
+	// Event handlers.
+	if got := len(instance.eventExecutor.GetAPIRegistry()[ProviderReady]); got != 0 {
+		t.Errorf("expected no API handlers after Shutdown, got %d", got)
+	}
+	if got := len(instance.eventExecutor.GetClientRegistry("domain").callbacks[ProviderReady]); got != 0 {
+		t.Errorf("expected no client handlers after Shutdown, got %d", got)
+	}
+
+	// A client created before Shutdown sees the reset instance.
+	if got := client.State(); got != NotReadyState {
+		t.Errorf("expected client state %q after Shutdown, got %q", NotReadyState, got)
+	}
+	before := hook.calls.Load()
+	details, err := client.BooleanValueDetails(t.Context(), "flag", false, EvaluationContext{})
+	if err != nil {
+		t.Fatalf("BooleanValueDetails: %v", err)
+	}
+	if details.Value || details.Reason != DefaultReason {
+		t.Errorf("expected the default value from the no-op provider, got %v (reason %q)", details.Value, details.Reason)
+	}
+	if hook.calls.Load() != before {
+		t.Error("API hook added before Shutdown still runs after Shutdown")
+	}
+}
+
+// Requirement 1.6.2 and 1.8.2: Shutdown resets an isolated instance rather than
+// closing it, so the instance can be used again. Providers registered after
+// Shutdown must work and their events must reach handlers.
+func TestRequirement_1_8_2_ReuseAfterShutdown(t *testing.T) {
+	domain := []APIOption{WithDomain("domain")}
+	tests := map[string]struct {
+		first, second []APIOption
+	}{
+		"default provider after default provider": {},
+		"domain provider after default provider":  {second: domain},
+		"domain provider after domain provider":   {first: domain, second: domain},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			instance := newAPI()
+			t.Cleanup(func() {
+				_ = instance.Shutdown(context.Background()) //nolint:usetesting
+			})
+			// Created before Shutdown, so it must keep working with the reset instance.
+			client := instance.NewClient(tt.second...)
+
+			if err := instance.SetProviderAndWait(t.Context(), newResetTestProvider("first"), tt.first...); err != nil {
+				t.Fatalf("SetProviderAndWait: %v", err)
+			}
+			if err := instance.Shutdown(t.Context()); err != nil {
+				t.Fatalf("Shutdown: %v", err)
+			}
+
+			second := newResetTestProvider("second")
+			if err := instance.SetProviderAndWait(t.Context(), second, tt.second...); err != nil {
+				t.Fatalf("SetProviderAndWait after Shutdown: %v", err)
+			}
+
+			if !client.Boolean(t.Context(), "flag", false, EvaluationContext{}) {
+				t.Error("expected the provider set after Shutdown to be used")
+			}
+
+			received := make(chan EventDetails, 1)
+			handler := func(details EventDetails) { received <- details }
+			client.AddHandler(ProviderConfigChange, &handler)
+
+			second.events <- Event{ProviderName: "second", EventType: ProviderConfigChange}
+			select {
+			case details := <-received:
+				if details.ProviderName != "second" {
+					t.Errorf("expected an event from %q, got one from %q", "second", details.ProviderName)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("event from the provider set after Shutdown never reached the handler")
+			}
+		})
+	}
+}
+
+// resetTestProvider is a pointer-type provider that returns the opposite of the
+// default value for boolean flags, counts Shutdown calls and emits events.
+type resetTestProvider struct {
+	NoopProvider
+	name      string
+	events    chan Event
+	shutdowns atomic.Int32
+}
+
+func newResetTestProvider(name string) *resetTestProvider {
+	return &resetTestProvider{name: name, events: make(chan Event, 1)}
+}
+
+func (p *resetTestProvider) Metadata() Metadata {
+	return Metadata{Name: p.name}
+}
+
+func (p *resetTestProvider) BooleanEvaluation(_ context.Context, _ string, defaultValue bool, _ FlattenedContext) BoolResolutionDetail {
+	return BoolResolutionDetail{
+		Value:                    !defaultValue,
+		ProviderResolutionDetail: ProviderResolutionDetail{Reason: StaticReason},
+	}
+}
+
+func (p *resetTestProvider) Init(EvaluationContext) error { return nil }
+
+func (p *resetTestProvider) Shutdown() { p.shutdowns.Add(1) }
+
+func (p *resetTestProvider) EventChannel() <-chan Event { return p.events }
+
+// countingHook counts how many times its Before stage runs.
+type countingHook struct {
+	UnimplementedHook
+	calls atomic.Int32
+}
+
+func (h *countingHook) Before(context.Context, HookContext, HookHints) (*EvaluationContext, error) {
+	h.calls.Add(1)
+	return nil, nil
 }
