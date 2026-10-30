@@ -271,12 +271,20 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		return
 	}
 
-	// drop from active references
-	e.activeSubscriptions = slices.DeleteFunc(e.activeSubscriptions, func(r providerReference) bool {
-		return oldReference.equals(r)
+	// Drop the old provider's subscription. With a 1:N binding, the subscription can belong
+	// to another reference to the same provider, and its goroutine waits on that reference's
+	// semaphore. Matching the semaphore as well covers providers that equals does not match
+	// with themselves, such as a value type with a func field.
+	i := slices.IndexFunc(e.activeSubscriptions, func(r providerReference) bool {
+		return r.shutdownSemaphore == oldReference.shutdownSemaphore || oldReference.equals(r)
 	})
+	if i < 0 {
+		return
+	}
+	subscription := e.activeSubscriptions[i]
+	e.activeSubscriptions = slices.Delete(e.activeSubscriptions, i, i+1)
 
-	_, ok := oldReference.featureProvider.(EventHandler)
+	_, ok := subscription.featureProvider.(EventHandler)
 	if !ok {
 		// no shutdown for non event handling provider
 		return
@@ -284,7 +292,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 
 	// avoid shutdown lockouts
 	select {
-	case oldReference.shutdownSemaphore <- "":
+	case subscription.shutdownSemaphore <- "":
 	default:
 		// This should never happen:
 		//
@@ -300,7 +308,7 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		// the handler should be able to receive at least one
 		// shutdown signal later.
 		slog.Info("OF BUG: failed to send shutdown to old event handler",
-			"provider", oldReference.featureProvider.Metadata().Name)
+			"provider", subscription.featureProvider.Metadata().Name)
 	}
 }
 
