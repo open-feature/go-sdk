@@ -117,7 +117,10 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 		resultChan := make(chan *namedResult, len(providers))
 		// buffered so a sender never outlives the listener loop, see #547
 		notFoundChan := make(chan any, len(providers))
-		errGrp, grpCtx := errgroup.WithContext(ctx)
+		// cancelled on every return, so the group's context does not stay registered on ctx
+		groupCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		errGrp, grpCtx := errgroup.WithContext(groupCtx)
 		for _, provider := range providers {
 			closedProvider := provider
 			errGrp.Go(func() error {

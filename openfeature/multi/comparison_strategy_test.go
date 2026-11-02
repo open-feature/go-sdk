@@ -3,6 +3,7 @@ package multi
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	of "github.com/open-feature/go-sdk/openfeature"
@@ -817,4 +818,58 @@ func Test_ComparisonStrategy_NotFoundSendersDoNotOutliveEvaluation(t *testing.T)
 	assert.Equal(t, false, result.Value)
 	assert.Equal(t, of.ErrorReason, result.Reason)
 	assert.True(t, result.FlagMetadata[MetadataIsDefaultValue].(bool))
+}
+
+func Test_ComparisonStrategy_CancelsProviderContextOnReturn(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fallback := of.NewMockFeatureProvider(ctrl)
+
+	var mu sync.Mutex
+	var providerCtxs []context.Context
+	configure := func(provider *of.MockFeatureProvider) {
+		provider.EXPECT().Metadata().Return(of.Metadata{Name: "mock provider"}).MaxTimes(1)
+		provider.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(c context.Context, flag string, defaultVal bool, evalCtx of.FlattenedContext) of.BoolResolutionDetail {
+			mu.Lock()
+			providerCtxs = append(providerCtxs, c)
+			mu.Unlock()
+			return of.BoolResolutionDetail{
+				Value: true,
+				ProviderResolutionDetail: of.ProviderResolutionDetail{
+					Reason:       of.StaticReason,
+					Variant:      "on",
+					FlagMetadata: make(of.FlagMetadata),
+				},
+			}
+		}).Times(1)
+	}
+
+	provider1 := of.NewMockFeatureProvider(ctrl)
+	configure(provider1)
+	provider2 := of.NewMockFeatureProvider(ctrl)
+	configure(provider2)
+
+	strategy := newComparisonStrategy([]NamedProvider{
+		&namedProvider{
+			name:            "test-provider1",
+			FeatureProvider: provider1,
+		},
+		&namedProvider{
+			name:            "test-provider2",
+			FeatureProvider: provider2,
+		},
+	}, fallback, nil)
+
+	// a cancellable parent that outlives the evaluation, such as an application-wide context
+	parent := t.Context()
+
+	result := strategy(parent, testFlag, false, of.FlattenedContext{})
+	assert.Equal(t, true, result.Value)
+	assert.Equal(t, ReasonAggregated, result.Reason)
+
+	assert.NoError(t, parent.Err())
+	assert.Len(t, providerCtxs, 2)
+	for _, c := range providerCtxs {
+		// a context that is never cancelled stays registered on the parent until the parent ends
+		assert.ErrorIs(t, c.Err(), context.Canceled, "provider context should be cancelled once the evaluation returns")
+	}
 }
