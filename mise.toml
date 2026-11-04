@@ -12,6 +12,10 @@ golangci-lint = "2.15.0"
 # the same artifacts. `mise lock --bump <tool>` updates a resolution deliberately.
 lockfile = true
 
+# Hold back new tool releases for the same 3 days that the Renovate community
+# preset requires. Renovate cannot check release age when mise bumps mise.lock.
+minimum_release_age = "3d"
+
 [tasks.test]
 description = "Run the unit tests"
 run = "go test -tags testtools -short -race -timeout 1m -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic ./..."
