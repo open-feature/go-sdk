@@ -248,6 +248,13 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 						if !ok {
 							return
 						}
+						// A select picks at random among ready cases, so check for the close
+						// first: a replaced provider must not forward an event it sends later.
+						select {
+						case <-newProvider.shutdownSemaphore:
+							return
+						default:
+						}
 						select {
 						case e.eventChan <- eventPayload{
 							event:   event,
