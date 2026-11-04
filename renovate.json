@@ -11,6 +11,16 @@
       ],
       "matchCurrentVersion": "!/^0/",
       "automerge": true
+    },
+    {
+      "description": "Lock file maintenance has no release timestamp. mise enforces minimum_release_age when it bumps mise.lock.",
+      "matchManagers": [
+        "mise"
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "minimumReleaseAge": null
     }
   ]
 }

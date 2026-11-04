@@ -130,6 +130,9 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 	)
 
 	switch evalDetails.ErrorCode {
+	case "":
+		// Preserve the provider's reason on success; ERROR is set only above when an error code is present.
+		reason = evalDetails.Reason
 	case of.GeneralCode:
 		resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
 		reason = of.ErrorReason
@@ -155,10 +158,8 @@ func toProviderResolutionDetail(evalDetails of.InterfaceEvaluationDetails) of.Pr
 		resolutionErr = of.NewProviderFatalResolutionError(evalDetails.ErrorMessage)
 		reason = of.ErrorReason
 	default:
-		if evalDetails.ErrorCode != "" {
-			resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
-			reason = of.ErrorReason
-		}
+		resolutionErr = of.NewGeneralResolutionError(evalDetails.ErrorMessage)
+		reason = of.ErrorReason
 	}
 
 	return of.ProviderResolutionDetail{
