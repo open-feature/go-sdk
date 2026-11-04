@@ -444,7 +444,8 @@ func newEventingProviderForTests() *eventingProviderForTests {
 }
 
 // Replacing a provider that is bound in two places must stop its event
-// goroutine, so that Shutdown does not wait for it forever.
+// goroutine, so that its events stop reaching handlers and Shutdown does
+// not wait for it forever.
 func TestIsolatedAPI_ShutdownAfterSharedProviderReplaced(t *testing.T) {
 	tests := map[string]struct {
 		first, second []APIOption
@@ -476,6 +477,18 @@ func TestIsolatedAPI_ShutdownAfterSharedProviderReplaced(t *testing.T) {
 				if err := instance.SetProviderAndWait(t.Context(), step.provider, step.opts...); err != nil {
 					t.Fatalf("SetProviderAndWait (step %d): %v", i, err)
 				}
+			}
+
+			received := make(chan EventDetails, 1)
+			callback := func(details EventDetails) { received <- details }
+			instance.AddHandler(ProviderConfigChange, &callback)
+
+			shared.Invoke(Event{ProviderName: "shared", EventType: ProviderConfigChange})
+
+			select {
+			case details := <-received:
+				t.Errorf("the event of a replaced shared provider reached the handler: %q", details.ProviderName)
+			case <-time.After(200 * time.Millisecond):
 			}
 
 			done := make(chan error, 1)
