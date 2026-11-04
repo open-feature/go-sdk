@@ -520,11 +520,8 @@ func TestIsolatedAPI_ReplacedValueProviderStopsForwardingEvents(t *testing.T) {
 		t.Fatalf("SetProviderAndWait (replacement): %v", err)
 	}
 
-	// The replacement sends the stop signal to the old event goroutine but does
-	// not wait for it. Until the goroutine takes the signal, it can still forward
-	// an event, so wait for that first. If no signal was sent, this returns at once.
-	eventually(t, func() bool { return len(stop) == 0 },
-		time.Second, time.Millisecond, "the old event goroutine did not take the stop signal")
+	eventually(t, func() bool { _, ok := <-stop; return !ok },
+		time.Second, time.Millisecond, "the stop channel of the old subscription was not closed")
 
 	received := make(chan EventDetails, 1)
 	callback := func(details EventDetails) { received <- details }

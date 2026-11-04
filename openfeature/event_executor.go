@@ -290,26 +290,8 @@ func (e *eventExecutor) startListeningAndShutdownOld(newProvider providerReferen
 		return
 	}
 
-	// avoid shutdown lockouts
-	select {
-	case subscription.shutdownSemaphore <- "":
-	default:
-		// This should never happen:
-		//
-		// providerReference.shutdownSemaphore is created with
-		// a buffer size of 1, so it should allow sending at
-		// least one shutdown signal without blocking. Locking
-		// should prevent us from sending more than one
-		// signal.
-		//
-		// In the unlikely case that it does not, this
-		// shouldn't be a big deal: we have already swapped
-		// references in eventExecutor and openfeatureAPI, and
-		// the handler should be able to receive at least one
-		// shutdown signal later.
-		slog.Info("OF BUG: failed to send shutdown to old event handler",
-			"provider", subscription.featureProvider.Metadata().Name)
-	}
+	// The subscription was removed above, so no later replacement closes its semaphore again.
+	close(subscription.shutdownSemaphore)
 }
 
 // startEventListener triggers the event listening of this executor.
