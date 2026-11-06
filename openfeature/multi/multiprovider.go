@@ -48,6 +48,7 @@ type (
 		strategyFunc       StrategyFn[FlagTypes] // used for evaluating strategies
 		logger             *slog.Logger
 		outboundEvents     chan of.Event
+		outboundEventsLock sync.RWMutex
 		workerGroup        sync.WaitGroup
 		shutdownFunc       context.CancelFunc
 		globalHooks        []of.Hook
@@ -268,7 +269,7 @@ func NewProvider(evaluationStrategy EvaluationStrategy, options ...Option) (*Pro
 	multiProvider := &Provider{
 		providers:      providers,
 		lifecycleLock:  lifecycleLock,
-		outboundEvents: make(chan of.Event, len(providers)),
+		outboundEvents: newOutboundEvents(providers),
 		logger:         config.logger,
 		metadata:       buildMetadata(providers),
 		overallStatus:  of.NotReadyState,
@@ -499,9 +500,9 @@ func (p *Provider) cancelInflightInit() {
 // events that result in state changes. The function blocks until workerCtx is cancelled or all provider event
 // channels are closed, and does not return before its own listeners have stopped.
 //
-// It does not close the outbound channel. That channel is created once per Provider, so a retry after a failed
-// initialization keeps using it; ShutdownWithContext is what closes it, and a Provider cannot be initialized
-// again after that.
+// It does not close the outbound channel. A retry after a failed initialization keeps using it;
+// ShutdownWithContext is what closes it, and it replaces it with a fresh one so the Provider can be
+// initialized again.
 //
 // Every send is guarded by workerCtx. The outbound channel is buffered to len(providers), so with
 // no consumer on EventChannel() a plain send blocks once the buffer fills, and both the
@@ -510,6 +511,7 @@ func (p *Provider) cancelInflightInit() {
 func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers chan namedEventHandler) {
 	defer p.workerGroup.Done()
 
+	outbound := p.outboundChannel()
 	workerLogger := p.logger.With(slog.String("multiprovider-worker", "event-forwarder-worker"))
 	pipe := make(chan namedEvent)
 	var wg sync.WaitGroup
@@ -565,7 +567,7 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 		// pass-through, independent of status change logic.
 		if e.EventType == of.ProviderConfigChange {
 			select {
-			case p.outboundEvents <- e.Event:
+			case outbound <- e.Event:
 				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded configuration changed event")
 			case <-workerCtx.Done():
 				return
@@ -575,7 +577,7 @@ func (p *Provider) forwardProviderEvents(workerCtx context.Context, handlers cha
 
 		if p.updateProviderStateFromEvent(e) {
 			select {
-			case p.outboundEvents <- e.Event:
+			case outbound <- e.Event:
 				l.LogAttrs(workerCtx, slog.LevelDebug, "forwarded state update event")
 			case <-workerCtx.Done():
 				return
@@ -675,8 +677,9 @@ func (p *Provider) Shutdown() {
 }
 
 // ShutdownWithContext shuts down all internal [of.FeatureProvider] instances and internal event listeners,
-// and closes the outbound event channel. It runs after a failed InitWithContext too, which is where the
-// providers that did initialize are shut down and blocked EventChannel() consumers are released.
+// and closes the outbound event channel, replacing it with a fresh one so the Provider can be initialized
+// again. It runs after a failed InitWithContext too, which is where the providers that did initialize
+// are shut down and blocked EventChannel() consumers are released.
 //
 // An initialization still in flight is cancelled first. The SDK calls this while holding the lock every
 // evaluation takes, so waiting for the inner Init would stall them all, and a caller that passed a deadline
@@ -723,8 +726,14 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	p.workerGroup.Wait()
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "worker shutdown completed")
 	// Safe only here: every worker that could still send has stopped, and the initialized guard
-	// above makes a second shutdown a no-op.
+	// above makes a second shutdown a no-op. Closing releases current consumers; the replacement
+	// lets a later InitWithContext forward events again instead of closing this channel twice.
+	// NOT_READY is set only after the swap: a caller that waits for it before re-initializing
+	// (as TestMultiProvider_ReinitThroughSDK does) must never see the channel about to close.
+	p.outboundEventsLock.Lock()
 	close(p.outboundEvents)
+	p.outboundEvents = newOutboundEvents(p.providers)
+	p.outboundEventsLock.Unlock()
 	p.setStatus(of.NotReadyState)
 	p.initialized.Store(false)
 	p.shutdownFunc = nil
@@ -747,8 +756,22 @@ func (p *Provider) setStatus(state of.State) {
 	p.logger.LogAttrs(context.Background(), slog.LevelDebug, "state updated", slog.String("state", string(state)))
 }
 
-// EventChannel is the channel that all events are emitted on.
+// EventChannel is the channel that all events are emitted on. ShutdownWithContext closes it and replaces
+// it with a fresh one for the next initialization. A consumer should therefore call EventChannel once per
+// initialization and stop when that channel closes: one that calls it again after a shutdown gets the
+// fresh channel, which stays open until the Provider is initialized and shut down again.
 func (p *Provider) EventChannel() <-chan of.Event {
+	return p.outboundChannel()
+}
+
+// newOutboundEvents sizes the outbound channel so every inner provider can have one event in flight.
+func newOutboundEvents(providers []NamedProvider) chan of.Event {
+	return make(chan of.Event, len(providers))
+}
+
+func (p *Provider) outboundChannel() chan of.Event {
+	p.outboundEventsLock.RLock()
+	defer p.outboundEventsLock.RUnlock()
 	return p.outboundEvents
 }
 
