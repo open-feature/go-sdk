@@ -758,6 +758,11 @@ func (c *Client) evaluate(
 
 	if err := c.afterHooks(ctx, hookCtx, hooks, evalDetails, options); err != nil {
 		err = fmt.Errorf("after hook: %w", err)
+		// Finally hooks must observe the same failed evaluation as the caller.
+		evalDetails.Value = defaultValue
+		evalDetails.Reason = ErrorReason
+		evalDetails.ErrorCode = GeneralCode
+		evalDetails.ErrorMessage = "after hook failed"
 		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
