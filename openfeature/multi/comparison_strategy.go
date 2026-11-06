@@ -117,7 +117,13 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 		resultChan := make(chan *namedResult, len(providers))
 		// buffered so a sender never outlives the listener loop, see #547
 		notFoundChan := make(chan any, len(providers))
-		// cancelled on every return, so the group's context does not stay registered on ctx
+		// cancelled on every return, so the group's context does not stay registered on ctx.
+		// errgroup cancels its context only in Wait or on the first error, and this
+		// strategy returns without Wait. Without this cancel, the group context stays
+		// registered on the caller's parent (one entry per evaluation, so a long-lived
+		// parent grows without bound) and providers never observe Done. Waiting instead
+		// would block on the slowest provider after a failed evaluation; a deferred
+		// cancel costs no latency.
 		groupCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		errGrp, grpCtx := errgroup.WithContext(groupCtx)
