@@ -83,6 +83,26 @@ func main() {
 
 Try this example in the [Go Playground](https://go.dev/play/p/fSSK8s42hA2).
 
+#### Object flags
+
+Object flags can be evaluated directly into a struct with `GetObject`, `GetObjectValue`, and `GetObjectValueDetails`,
+which avoids having to convert the `any` returned by `Client.ObjectValue` yourself:
+
+```go
+type RolloutConfig struct {
+    Text       string `json:"text"`
+    Percentage int    `json:"percentage"`
+}
+
+config, err := openfeature.GetObjectValue(
+    context.TODO(), client, "rollout-config",
+    RolloutConfig{Text: "N/A", Percentage: 75}, openfeature.EvaluationContext{},
+)
+```
+
+If the provider returns a value that cannot be deserialized into the target type, the supplied default value is
+returned along with a `TYPE_MISMATCH` error, consistent with the other typed accessors.
+
 ### API Reference
 
 See [here](https://pkg.go.dev/github.com/open-feature/go-sdk/openfeature) for the complete API documentation.
