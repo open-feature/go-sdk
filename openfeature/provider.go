@@ -2,7 +2,6 @@ package openfeature
 
 import (
 	"context"
-	"errors"
 	"maps"
 )
 
@@ -172,7 +171,7 @@ func (p ProviderResolutionDetail) Error() error {
 	if p.ResolutionError.code == "" {
 		return nil
 	}
-	return errors.New(p.ResolutionError.Error())
+	return p.ResolutionError
 }
 
 // GenericResolutionDetail represents the result of the provider's flag resolution process.
