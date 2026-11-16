@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -319,6 +320,103 @@ func TestEventHandler_ErrorHandling(t *testing.T) {
 	case <-time.After(200 * time.Millisecond):
 		t.Error("client callback timeout - executor recovery was not successful")
 	}
+}
+
+// Requirement 5.2.5 If a handler function terminates abnormally, other handler functions MUST run.
+// Covers the handler run on registration, which does not reach the event channel.
+func TestEventHandler_ErrorHandlingOnRegistration(t *testing.T) {
+	readyProvider := func() FeatureProvider {
+		return struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			&ProviderEventing{c: make(chan Event, 1)},
+		}
+	}
+
+	t.Run("panic in an api handler does not reach the caller", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+		require.NoError(t, SetProviderAndWait(readyProvider()))
+
+		entered := make(chan struct{})
+		panicking := func(e EventDetails) {
+			close(entered)
+			panic("api registration handler panic")
+		}
+		AddHandler(ProviderReady, &panicking)
+
+		select {
+		case <-entered:
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("timed out waiting for the panicking handler to run")
+		}
+
+		rsp := make(chan EventDetails, 1)
+		surviving := func(e EventDetails) {
+			rsp <- e
+		}
+		AddHandler(ProviderReady, &surviving)
+
+		select {
+		case <-rsp:
+		case <-time.After(200 * time.Millisecond):
+			t.Error("handler registered after the panicking one did not run")
+		}
+	})
+
+	t.Run("panic in a client handler does not reach the caller", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+		require.NoError(t, SetProviderAndWait(readyProvider()))
+
+		client := NewClient("domainA")
+
+		entered := make(chan struct{})
+		panicking := func(e EventDetails) {
+			close(entered)
+			panic("client registration handler panic")
+		}
+		client.AddHandler(ProviderReady, &panicking)
+
+		select {
+		case <-entered:
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("timed out waiting for the panicking handler to run")
+		}
+
+		rsp := make(chan EventDetails, 1)
+		surviving := func(e EventDetails) {
+			rsp <- e
+		}
+		client.AddHandler(ProviderReady, &surviving)
+
+		select {
+		case <-rsp:
+		case <-time.After(200 * time.Millisecond):
+			t.Error("handler registered after the panicking one did not run")
+		}
+	})
+
+	t.Run("a handler may register another handler", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+		require.NoError(t, SetProviderAndWait(readyProvider()))
+
+		registered := make(chan struct{})
+		inner := func(e EventDetails) {}
+		outer := func(e EventDetails) {
+			AddHandler(ProviderStale, &inner)
+			close(registered)
+		}
+		// on its own goroutine so the assertion below still reports if the
+		// deadlock returns
+		go AddHandler(ProviderReady, &outer)
+
+		select {
+		case <-registered:
+		case <-time.After(time.Second):
+			t.Error("re-entrant registration did not complete")
+		}
+	})
 }
 
 // Requirement 5.3.1 If the provider's initialize function terminates normally, PROVIDER_READY handlers MUST run.
@@ -863,7 +961,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 
 		// Emit error event and wait for state transition before registering handler,
-		// so that AddHandler fires via emitOnRegistration (spec 5.3.3).
+		// so that AddHandler fires on registration (spec 5.3.3).
 		eventingImpl.Invoke(Event{EventType: ProviderError})
 		eventually(t, func() bool {
 			return NewDefaultClient().State() == ErrorState
@@ -904,7 +1002,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 
 		// Reach FATAL before registering, so the handler can only fire
-		// via emitOnRegistration (spec 5.3.3).
+		// on registration (spec 5.3.3).
 		eventingImpl.Invoke(Event{
 			EventType: ProviderError,
 			ProviderEventDetails: ProviderEventDetails{
@@ -952,7 +1050,7 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		}
 
 		// Emit stale event and wait for state transition before registering handler,
-		// so that AddHandler fires via emitOnRegistration (spec 5.3.3).
+		// so that AddHandler fires on registration (spec 5.3.3).
 		eventingImpl.Invoke(Event{EventType: ProviderStale})
 		eventually(t, func() bool {
 			return NewDefaultClient().State() == StaleState
@@ -1097,6 +1195,40 @@ func TestEventHandler_HandlersRunImmediately(t *testing.T) {
 		case <-time.After(200 * time.Millisecond):
 			break
 		}
+	})
+
+	t.Run("handler has run before registration returns", func(t *testing.T) {
+		t.Cleanup(resetSingleton)
+
+		eventingImpl := &ProviderEventing{
+			c: make(chan Event, 1),
+		}
+
+		provider := struct {
+			FeatureProvider
+			EventHandler
+		}{
+			NoopProvider{},
+			eventingImpl,
+		}
+
+		require.NoError(t, SetProviderAndWait(provider))
+
+		var mu sync.Mutex
+		var seen []string
+		callback := func(e EventDetails) {
+			mu.Lock()
+			defer mu.Unlock()
+			seen = append(seen, e.Message)
+		}
+
+		AddHandler(ProviderReady, &callback)
+
+		// Running the handler on its own goroutine would leave this empty and
+		// let a later event overtake the registration event.
+		mu.Lock()
+		require.Equal(t, []string{"provider is in ready state"}, seen)
+		mu.Unlock()
 	})
 }
 
