@@ -3,6 +3,7 @@ package openfeature
 import (
 	"context"
 	"errors"
+	"io"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -167,6 +168,22 @@ func TestRequirement_1_3_4(t *testing.T) {
 // anyDetails erases the type parameter so cases for different types can share one table.
 func anyDetails[T any](details GenericEvaluationDetails[T], err error) (InterfaceEvaluationDetails, error) {
 	return InterfaceEvaluationDetails{Value: details.Value, EvaluationDetails: details.EvaluationDetails}, err
+}
+
+func TestClient_PreservesWrappedProviderError(t *testing.T) {
+	mocks := hydratedMocksForClientTests(t, 1)
+	client := newClient("test-client", mocks.providerBinding, mocks.clientHandlerAPI)
+	mocks.providerAPI.EXPECT().BooleanEvaluation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(BoolResolutionDetail{
+			Value: false,
+			ProviderResolutionDetail: ProviderResolutionDetail{
+				ResolutionError: NewGeneralResolutionError("provider failed", io.EOF),
+				Reason:          ErrorReason,
+			},
+		})
+
+	_, err := client.BooleanValueDetails(t.Context(), "test-flag", false, EvaluationContext{})
+	require.ErrorIs(t, err, io.EOF)
 }
 
 // The `client` MUST provide methods for detailed flag value evaluation with parameters `flag key` (string, required),
