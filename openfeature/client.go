@@ -763,6 +763,7 @@ func (c *Client) evaluate(
 		evalDetails.Reason = ErrorReason
 		evalDetails.ErrorCode = GeneralCode
 		evalDetails.ErrorMessage = "after hook failed"
+		evalDetails.Variant = ""
 		c.errorHooks(ctx, hookCtx, hooks, err, options)
 		return evalDetails, err
 	}
