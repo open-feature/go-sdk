@@ -16,8 +16,8 @@
     <img alt="Specification" src="https://img.shields.io/static/v1?label=specification&message=v0.7.0&color=yellow&style=for-the-badge" />
   </a>
   <!-- x-release-please-start-version -->
-  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.19.0">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.19.0&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/go-sdk/releases/tag/v1.20.0">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v1.20.0&color=blue&style=for-the-badge" />
   </a>
   <!-- x-release-please-end -->
   <br/>
@@ -277,6 +277,8 @@ Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure)
 Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGED`.
 
 Please refer to the documentation of the provider you're using to see what events are supported.
+
+Handler order is not guaranteed. Use `client.State()` if you need the current provider state.
 
 ```go
 import "github.com/open-feature/go-sdk/openfeature"

@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 	"golang.org/x/sync/errgroup"
@@ -38,7 +39,7 @@ type (
 		lifecycleLock      chan struct{}
 		initCancel         context.CancelFunc
 		initCancelLock     sync.Mutex
-		initialized        bool
+		initialized        atomic.Bool
 		overallStatus      of.State
 		overallStatusLock  sync.RWMutex
 		providerStatus     map[string]of.State
@@ -431,7 +432,7 @@ func (p *Provider) InitWithContext(ctx context.Context, evalCtx of.EvaluationCon
 	// Set on the failure path too, so ShutdownWithContext always has something to tear down.
 	workerCtx, shutdownFunc := context.WithCancel(context.Background())
 	p.shutdownFunc = shutdownFunc
-	p.initialized = true
+	p.initialized.Store(true)
 
 	if err != nil {
 		var pErr *ProviderError
@@ -687,7 +688,7 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	}
 	defer p.unlockLifecycle()
 
-	if !p.initialized {
+	if !p.initialized.Load() {
 		// Don't do anything if we were never initialized
 		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping shutdown")
 		return nil
@@ -725,7 +726,7 @@ func (p *Provider) ShutdownWithContext(ctx context.Context) error {
 	// above makes a second shutdown a no-op.
 	close(p.outboundEvents)
 	p.setStatus(of.NotReadyState)
-	p.initialized = false
+	p.initialized.Store(false)
 	p.shutdownFunc = nil
 	p.logger.LogAttrs(ctx, slog.LevelDebug, "provider shutdown completed")
 
@@ -754,7 +755,7 @@ func (p *Provider) EventChannel() <-chan of.Event {
 // Track implements the [of.Tracker] interface by forwarding tracking calls to all internal providers that
 // are in ready state and implement the [of.Tracker] interface.
 func (p *Provider) Track(ctx context.Context, trackingEventName string, evaluationContext of.EvaluationContext, details of.TrackingEventDetails) {
-	if !p.initialized {
+	if !p.initialized.Load() {
 		// Don't do anything if we were never initialized
 		p.logger.LogAttrs(ctx, slog.LevelDebug, "provider not initialized, skipping tracking", slog.String("tracking-event", trackingEventName))
 		return

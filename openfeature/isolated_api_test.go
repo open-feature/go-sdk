@@ -432,3 +432,123 @@ func TestDomainStateWhileProviderInitializing(t *testing.T) {
 		t.Errorf("expected domain \"foo\" to report NOT_READY while its provider initializes, got %q", got)
 	}
 }
+
+// eventingProviderForTests is an event-emitting provider compared by pointer identity.
+type eventingProviderForTests struct {
+	NoopProvider
+	ProviderEventing
+}
+
+func newEventingProviderForTests() *eventingProviderForTests {
+	return &eventingProviderForTests{ProviderEventing: ProviderEventing{c: make(chan Event, 1)}}
+}
+
+// Replacing a provider that is bound in two places must stop its event
+// goroutine, so that its events stop reaching handlers and Shutdown does
+// not wait for it forever.
+func TestIsolatedAPI_ShutdownAfterSharedProviderReplaced(t *testing.T) {
+	tests := map[string]struct {
+		first, second []APIOption
+	}{
+		"default, then a domain": {second: []APIOption{WithDomain("b")}},
+		"a domain, then default": {first: []APIOption{WithDomain("a")}},
+		"two domains":            {first: []APIOption{WithDomain("a")}, second: []APIOption{WithDomain("b")}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			startLeakTest(t)
+			defer goleak.VerifyNone(t)
+
+			instance := newAPI()
+			shared := newEventingProviderForTests()
+
+			// Bind shared in two places, then replace it in the same order.
+			steps := []struct {
+				provider FeatureProvider
+				opts     []APIOption
+			}{
+				{shared, tt.first},
+				{shared, tt.second},
+				{newEventingProviderForTests(), tt.first},
+				{newEventingProviderForTests(), tt.second},
+			}
+			for i, step := range steps {
+				if err := instance.SetProviderAndWait(t.Context(), step.provider, step.opts...); err != nil {
+					t.Fatalf("SetProviderAndWait (step %d): %v", i, err)
+				}
+			}
+
+			received := make(chan EventDetails, 1)
+			callback := func(details EventDetails) { received <- details }
+			instance.AddHandler(ProviderConfigChange, &callback)
+
+			shared.Invoke(Event{ProviderName: "shared", EventType: ProviderConfigChange})
+
+			select {
+			case details := <-received:
+				t.Errorf("the event of a replaced shared provider reached the handler: %q", details.ProviderName)
+			case <-time.After(200 * time.Millisecond):
+			}
+
+			done := make(chan error, 1)
+			go func() { done <- instance.Shutdown(t.Context()) }()
+
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Errorf("Shutdown: %v", err)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("Shutdown did not return")
+			}
+		})
+	}
+}
+
+// funcFieldEventingProvider is an event-emitting value type with a func field.
+// reflect.DeepEqual, and so providerReference.equals, does not match it with itself.
+type funcFieldEventingProvider struct {
+	NoopProvider
+	ProviderEventing
+	hook func()
+}
+
+// A replaced provider must stop forwarding its events, also when
+// providerReference.equals does not match it with itself.
+func TestIsolatedAPI_ReplacedValueProviderStopsForwardingEvents(t *testing.T) {
+	startLeakTest(t)
+	defer goleak.VerifyNone(t)
+
+	instance := newAPI()
+	old := funcFieldEventingProvider{
+		ProviderEventing: ProviderEventing{c: make(chan Event, 1)},
+		hook:             func() {},
+	}
+	if err := instance.SetProviderAndWait(t.Context(), old); err != nil {
+		t.Fatalf("SetProviderAndWait: %v", err)
+	}
+	stop := instance.eventExecutor.defaultProviderReference.shutdownSemaphore
+	if err := instance.SetProviderAndWait(t.Context(), NoopProvider{}); err != nil {
+		t.Fatalf("SetProviderAndWait (replacement): %v", err)
+	}
+
+	eventually(t, func() bool { _, ok := <-stop; return !ok },
+		time.Second, time.Millisecond, "the stop channel of the old subscription was not closed")
+
+	received := make(chan EventDetails, 1)
+	callback := func(details EventDetails) { received <- details }
+	instance.AddHandler(ProviderConfigChange, &callback)
+
+	old.Invoke(Event{ProviderName: "old", EventType: ProviderConfigChange})
+
+	select {
+	case details := <-received:
+		t.Errorf("the event of a replaced provider reached the handler: %q", details.ProviderName)
+	case <-time.After(200 * time.Millisecond):
+	}
+
+	if err := instance.Shutdown(t.Context()); err != nil {
+		t.Errorf("Shutdown: %v", err)
+	}
+}

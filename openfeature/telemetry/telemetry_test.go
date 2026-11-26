@@ -7,6 +7,47 @@ import (
 	"github.com/open-feature/go-sdk/openfeature"
 )
 
+func TestCreateEvaluationEvent_InvalidFlagMetadataTypes(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value any
+	}{
+		{"nil", nil},
+		{"integer", 3},
+		{"boolean", true},
+		{"slice", []string{"value"}},
+		{"map", map[string]string{"key": "value"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			hookContext := openfeature.NewHookContext(
+				"flag", openfeature.Boolean, false,
+				openfeature.NewClientMetadata("client"), openfeature.Metadata{Name: "provider"},
+				openfeature.NewEvaluationContext("target", nil),
+			)
+			details := openfeature.InterfaceEvaluationDetails{
+				EvaluationDetails: openfeature.EvaluationDetails{
+					ResolutionDetail: openfeature.ResolutionDetail{
+						FlagMetadata: openfeature.FlagMetadata{
+							flagMetaContextIDKey: test.value,
+							flagMetaFlagSetIDKey: test.value,
+							flagMetaVersionKey:   test.value,
+						},
+					},
+				},
+			}
+			event := CreateEvaluationEvent(hookContext, details)
+			if got := event.Attributes[ContextIDKey]; got != "target" {
+				t.Errorf("invalid contextId should fall back to targeting key, got %#v", got)
+			}
+			for _, key := range []string{FlagSetIDKey, VersionKey} {
+				if got, ok := event.Attributes[key]; ok {
+					t.Errorf("invalid metadata should omit %s, got %#v", key, got)
+				}
+			}
+		})
+	}
+}
+
 func TestCreateEvaluationEvent_1_3_1_BasicEvent(t *testing.T) {
 	flagKey := "test-flag"
 

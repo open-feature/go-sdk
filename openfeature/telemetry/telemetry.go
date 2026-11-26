@@ -65,15 +65,15 @@ func CreateEvaluationEvent(hookContext openfeature.HookContext, details openfeat
 	}
 
 	attributes[ContextIDKey] = hookContext.EvaluationContext().TargetingKey()
-	if contextID, ok := details.FlagMetadata[flagMetaContextIDKey]; ok {
+	if contextID, ok := details.FlagMetadata[flagMetaContextIDKey].(string); ok {
 		attributes[ContextIDKey] = contextID
 	}
 
-	if setID, ok := details.FlagMetadata[flagMetaFlagSetIDKey]; ok {
+	if setID, ok := details.FlagMetadata[flagMetaFlagSetIDKey].(string); ok {
 		attributes[FlagSetIDKey] = setID
 	}
 
-	if version, ok := details.FlagMetadata[flagMetaVersionKey]; ok {
+	if version, ok := details.FlagMetadata[flagMetaVersionKey].(string); ok {
 		attributes[VersionKey] = version
 	}
 
