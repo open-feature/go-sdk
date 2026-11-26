@@ -278,6 +278,8 @@ Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGE
 
 Please refer to the documentation of the provider you're using to see what events are supported.
 
+Handler order is not guaranteed. Use `client.State()` if you need the current provider state.
+
 ```go
 import "github.com/open-feature/go-sdk/openfeature"
 
