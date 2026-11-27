@@ -104,7 +104,7 @@ func TestTestAwareProvider(t *testing.T) {
 			State:          memprovider.Enabled,
 			DefaultVariant: "variant_1",
 			Variants: map[string]any{
-				"variant_1": "obj",
+				"variant_1": map[string]any{"name": "obj"},
 			},
 		},
 	}
@@ -142,10 +142,8 @@ func TestTestAwareProvider(t *testing.T) {
 	})
 	t.Run("test obj evaluation", func(t *testing.T) {
 		taw.UsingFlags(t, flags)
-		result := taw.ObjectEvaluation(t.Context(), "ff-obj", "stringobj", openfeature.FlattenedContext{})
-		if result.Value != "obj" {
-			t.Errorf("got %v, want %v", result, true)
-		}
+		result := taw.ObjectEvaluation(t.Context(), "ff-obj", map[string]any{}, openfeature.FlattenedContext{})
+		assert.Equal(t, map[string]any{"name": "obj"}, result.Value)
 	})
 }
 

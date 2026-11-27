@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"sync"
 
@@ -140,7 +141,8 @@ func (i *InMemoryProvider) ObjectEvaluation(ctx context.Context, flag string, de
 	resolveFlag, detail := memoryFlag.Resolve(defaultValue, flatCtx)
 
 	var result any
-	if resolveFlag != nil {
+	// A disabled flag resolves to the caller's default, whatever its type.
+	if detail.Reason == openfeature.DisabledReason || isObject(resolveFlag) {
 		result = resolveFlag
 	} else {
 		result = defaultValue
@@ -304,6 +306,24 @@ func genericResolve[T comparable](value any, defaultValue T, detail *openfeature
 	detail.Reason = openfeature.ErrorReason
 	detail.ResolutionError = openfeature.NewTypeMismatchResolutionError("incorrect type association")
 	return defaultValue
+}
+
+// isObject reports whether value can be returned from an object evaluation.
+// Scalars (booleans, strings and numbers) have their own typed evaluations, so
+// resolving one as an object is a type mismatch.
+func isObject(value any) bool {
+	if value == nil {
+		return false
+	}
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Bool, reflect.String,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
+		return false
+	default:
+		return true
+	}
 }
 
 // Type Definitions for InMemoryProvider flag
