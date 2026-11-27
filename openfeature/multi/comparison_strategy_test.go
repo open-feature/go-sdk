@@ -759,6 +759,120 @@ func Test_ComparisonStrategy_ObjectEvaluation(t *testing.T) {
 		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)
 		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
 	})
+
+	t.Run("mixed comparable and uncomparable provider values fall back instead of panicking", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		fallback := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(fallback, successVal, true, TestErrorNone, true)
+		provider1 := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(provider1, successVal, true, TestErrorNone, true)
+		provider2 := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(provider2, map[string]any{"Name": "test"}, true, TestErrorNone, true)
+
+		strategy := newComparisonStrategy([]NamedProvider{
+			&namedProvider{
+				name:            "test-provider1",
+				FeatureProvider: provider1,
+			},
+			&namedProvider{
+				name:            "test-provider2",
+				FeatureProvider: provider2,
+			},
+		}, fallback, nil)
+
+		var result of.GenericResolutionDetail[FlagTypes]
+		assert.NotPanics(t, func() {
+			result = strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		})
+		assert.Equal(t, successVal, result.Value)
+		assert.NoError(t, result.Error())
+		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
+		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
+		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+	})
+
+	t.Run("dynamically uncomparable struct values fall back instead of panicking", func(t *testing.T) {
+		type envelope struct {
+			Payload any
+		}
+		uncomparableStruct := envelope{Payload: []string{"a"}}
+
+		ctrl := gomock.NewController(t)
+		fallback := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(fallback, successVal, true, TestErrorNone, true)
+		provider1 := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(provider1, uncomparableStruct, true, TestErrorNone, true)
+		provider2 := of.NewMockFeatureProvider(ctrl)
+		configureComparisonProvider(provider2, uncomparableStruct, true, TestErrorNone, true)
+
+		strategy := newComparisonStrategy([]NamedProvider{
+			&namedProvider{
+				name:            "test-provider1",
+				FeatureProvider: provider1,
+			},
+			&namedProvider{
+				name:            "test-provider2",
+				FeatureProvider: provider2,
+			},
+		}, fallback, nil)
+
+		var result of.GenericResolutionDetail[FlagTypes]
+		assert.NotPanics(t, func() {
+			result = strategy(t.Context(), testFlag, defaultVal, of.FlattenedContext{})
+		})
+		assert.Equal(t, successVal, result.Value)
+		assert.NoError(t, result.Error())
+		assert.Equal(t, ReasonAggregatedFallback, result.Reason)
+		assert.Equal(t, "fallback", result.FlagMetadata[MetadataSuccessfulProviderName])
+		assert.True(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+	})
+
+	t.Run("dynamically uncomparable struct default returns ErrAggregationNotAllowed", func(t *testing.T) {
+		type envelope struct {
+			Payload any
+		}
+		uncomparableDefault := envelope{Payload: map[string]any{"k": "v"}}
+
+		ctrl := gomock.NewController(t)
+		fallback := of.NewMockFeatureProvider(ctrl)
+		provider1 := of.NewMockFeatureProvider(ctrl)
+		provider2 := of.NewMockFeatureProvider(ctrl)
+
+		strategy := newComparisonStrategy([]NamedProvider{
+			&namedProvider{
+				name:            "test-provider1",
+				FeatureProvider: provider1,
+			},
+			&namedProvider{
+				name:            "test-provider2",
+				FeatureProvider: provider2,
+			},
+		}, fallback, nil)
+
+		var result of.GenericResolutionDetail[FlagTypes]
+		assert.NotPanics(t, func() {
+			result = strategy(t.Context(), testFlag, uncomparableDefault, of.FlattenedContext{})
+		})
+		assert.Equal(t, uncomparableDefault, result.Value)
+		assert.Equal(t, of.ErrorReason, result.Reason)
+		assert.Equal(t, of.NewGeneralResolutionError(ErrAggregationNotAllowed.Error()), result.ResolutionError)
+		assert.False(t, result.FlagMetadata[MetadataFallbackUsed].(bool))
+	})
+}
+
+func Test_defaultComparator_UncomparableValues(t *testing.T) {
+	type envelope struct {
+		Payload any
+	}
+
+	assert.NotPanics(t, func() {
+		assert.False(t, defaultComparator([]any{struct{ Name string }{Name: "a"}, map[string]any{"Name": "a"}}))
+		assert.False(t, defaultComparator([]any{struct{ Name string }{Name: "a"}, []string{"a"}}))
+		assert.False(t, defaultComparator([]any{envelope{Payload: []int{1}}, envelope{Payload: []int{1}}}))
+		assert.False(t, defaultComparator([]any{envelope{Payload: 1}, envelope{Payload: []int{1}}}))
+		assert.True(t, defaultComparator([]any{envelope{Payload: "ok"}, envelope{Payload: "ok"}}))
+		assert.True(t, defaultComparator([]any{envelope{Payload: nil}, envelope{Payload: nil}}))
+	})
 }
 
 func configureBlockedNotFoundProvider(provider *of.MockFeatureProvider, release <-chan struct{}) {

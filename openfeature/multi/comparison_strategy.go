@@ -46,22 +46,17 @@ func defaultComparator(values []any) bool {
 		}
 		return true
 	default:
-		if current == nil {
-			return false // nilable values are not comparable
+		curVal := reflect.ValueOf(current)
+		if !curVal.IsValid() || !curVal.Comparable() {
+			return false
 		}
-		t := reflect.TypeOf(current)
-		if t.Comparable() {
-			set := map[any]struct{}{}
-			for _, v := range values {
-				if v == nil {
-					return false // nil is not comparable
-				}
-				set[v] = struct{}{}
+		for _, v := range values[1:] {
+			rv := reflect.ValueOf(v)
+			if !rv.IsValid() || !rv.Comparable() || v != current {
+				return false
 			}
-
-			return len(set) == 1
 		}
-		return false
+		return true
 	}
 }
 
@@ -89,8 +84,8 @@ func evaluateComparison[T FlagTypes](providers []NamedProvider, fallbackProvider
 			case int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint, uintptr, float32, float64, string, bool:
 				break
 			default:
-				// a nil default has no type to compare, see #546
-				if t := reflect.TypeOf(defaultValue); t == nil || !t.Comparable() {
+				// a nil or dynamically uncomparable default cannot be compared, see #546
+				if v := reflect.ValueOf(defaultValue); !v.IsValid() || !v.Comparable() {
 					// Impossible to evaluate strategy with expected result type
 					defaultResult := BuildDefaultResult(StrategyComparison, defaultValue, ErrAggregationNotAllowed)
 					defaultResult.FlagMetadata[MetadataFallbackUsed] = false
