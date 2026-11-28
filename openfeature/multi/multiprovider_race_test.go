@@ -64,3 +64,36 @@ func TestMultiProvider_TrackConcurrentWithShutdown(t *testing.T) {
 	provider.Track(ctx, "after-shutdown", of.EvaluationContext{}, of.TrackingEventDetails{})
 	require.Equal(t, before, calls.Load(), "tracking after shutdown must be skipped")
 }
+
+// TestMultiProvider_EventChannelConcurrentWithReinit reads EventChannel() while Init/Shutdown cycles
+// replace the outbound channel, so -race catches an unguarded swap.
+func TestMultiProvider_EventChannelConcurrentWithReinit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := newEventingProvider(ctrl, "provider", nil)
+	mp, err := NewProvider(StrategyFirstMatch, WithProvider("provider", provider))
+	require.NoError(t, err)
+
+	stop := make(chan struct{})
+	readerDone := make(chan struct{})
+	go func() {
+		defer close(readerDone)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				_ = mp.EventChannel()
+			}
+		}
+	}()
+	// Deferred so a failed require below still stops the reader instead of leaving it spinning.
+	defer func() {
+		close(stop)
+		<-readerDone
+	}()
+
+	for range 5 {
+		require.NoError(t, mp.InitWithContext(t.Context(), of.EvaluationContext{}))
+		require.NoError(t, mp.ShutdownWithContext(t.Context()))
+	}
+}
