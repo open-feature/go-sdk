@@ -3,6 +3,7 @@ package memprovider
 import (
 	"context"
 	"math"
+	"reflect"
 	"slices"
 	"sync"
 	"testing"
@@ -250,8 +251,8 @@ func TestInMemoryProvider_Object(t *testing.T) {
 			State:          Enabled,
 			DefaultVariant: "A",
 			Variants: map[string]any{
-				"A": "SomeResult",
-				"B": "OtherResult",
+				"A": map[string]any{"result": "SomeResult"},
+				"B": map[string]any{"result": "OtherResult"},
 			},
 		},
 	})
@@ -261,10 +262,94 @@ func TestInMemoryProvider_Object(t *testing.T) {
 	t.Run("test object success", func(t *testing.T) {
 		evaluation := memoryProvider.ObjectEvaluation(ctx, "objectFlag", "unknown", nil)
 
-		if evaluation.Value != "SomeResult" {
-			t.Errorf("incorrect evaluation, expected %v, got %v", "SomeResult", evaluation.Value)
+		want := map[string]any{"result": "SomeResult"}
+		if !reflect.DeepEqual(evaluation.Value, want) {
+			t.Errorf("incorrect evaluation, expected %v, got %v", want, evaluation.Value)
+		}
+		if evaluation.Error() != nil {
+			t.Errorf("expected no error, got %v", evaluation.Error())
 		}
 	})
+
+	t.Run("disabled flag returns any default", func(t *testing.T) {
+		disabled := NewInMemoryProvider(map[string]InMemoryFlag{
+			"objectFlag": {
+				Key:            "objectFlag",
+				State:          Disabled,
+				DefaultVariant: "A",
+				Variants:       map[string]any{"A": map[string]any{"result": "SomeResult"}},
+			},
+		})
+
+		evaluation := disabled.ObjectEvaluation(ctx, "objectFlag", "unknown", nil)
+
+		if evaluation.Value != "unknown" {
+			t.Errorf("expected default value %v, got %v", "unknown", evaluation.Value)
+		}
+		if evaluation.Reason != openfeature.DisabledReason {
+			t.Errorf("expected reason %s, got %s", openfeature.DisabledReason, evaluation.Reason)
+		}
+		if evaluation.Error() != nil {
+			t.Errorf("expected no error, got %v", evaluation.Error())
+		}
+	})
+}
+
+func TestInMemoryProvider_ObjectTypeMismatch(t *testing.T) {
+	type config struct{ Name string }
+
+	tests := map[string]struct {
+		variant  any
+		mismatch bool
+	}{
+		"bool":           {variant: true, mismatch: true},
+		"string":         {variant: "value", mismatch: true},
+		"int":            {variant: 1, mismatch: true},
+		"int64":          {variant: int64(1), mismatch: true},
+		"uint":           {variant: uint(1), mismatch: true},
+		"float64":        {variant: 1.5, mismatch: true},
+		"nil":            {variant: nil, mismatch: true},
+		"map":            {variant: map[string]any{"a": 1}},
+		"slice":          {variant: []any{1, 2}},
+		"struct":         {variant: config{Name: "x"}},
+		"struct pointer": {variant: &config{Name: "x"}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			memoryProvider := NewInMemoryProvider(map[string]InMemoryFlag{
+				"flag": {
+					Key:            "flag",
+					State:          Enabled,
+					DefaultVariant: "on",
+					Variants:       map[string]any{"on": tt.variant},
+				},
+			})
+			defaultValue := map[string]any{"default": true}
+
+			evaluation := memoryProvider.ObjectEvaluation(t.Context(), "flag", defaultValue, nil)
+
+			if !tt.mismatch {
+				if evaluation.Error() != nil {
+					t.Fatalf("expected no error, got %v", evaluation.Error())
+				}
+				if !reflect.DeepEqual(evaluation.Value, tt.variant) {
+					t.Errorf("expected %v, got %v", tt.variant, evaluation.Value)
+				}
+				return
+			}
+
+			if !reflect.DeepEqual(evaluation.Value, defaultValue) {
+				t.Errorf("expected default value %v, got %v", defaultValue, evaluation.Value)
+			}
+			if evaluation.Reason != openfeature.ErrorReason {
+				t.Errorf("expected reason %s, got %s", openfeature.ErrorReason, evaluation.Reason)
+			}
+			if code := evaluation.ResolutionDetail().ErrorCode; code != openfeature.TypeMismatchCode {
+				t.Errorf("expected error code %s, got %s", openfeature.TypeMismatchCode, code)
+			}
+		})
+	}
 }
 
 func TestInMemoryProvider_WithContext(t *testing.T) {
