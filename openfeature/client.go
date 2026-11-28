@@ -710,7 +710,7 @@ func (c *Client) evaluate(
 		}
 	}
 
-	evalCtx, err = c.beforeHooks(ctx, hookCtx, hooks, evalCtx, options)
+	evalCtx, err = c.beforeHooks(ctx, hookCtx, hooks, options)
 	hookCtx.evaluationContext = evalCtx
 	if err != nil {
 		err = fmt.Errorf("before hook: %w", err)
@@ -779,7 +779,7 @@ func flattenContext(evalCtx EvaluationContext) FlattenedContext {
 // beforeHooks executes the Before hook for each hook in the collection.
 // Hooks are executed in forward order: API → Client → Invocation → Provider.
 func (c *Client) beforeHooks(
-	ctx context.Context, hookCtx HookContext, hooks []Hook, evalCtx EvaluationContext, options EvaluationOptions,
+	ctx context.Context, hookCtx HookContext, hooks []Hook, options EvaluationOptions,
 ) (EvaluationContext, error) {
 	for _, hook := range hooks {
 		resultEvalCtx, err := hook.Before(ctx, hookCtx, options.hookHints)
@@ -790,11 +790,11 @@ func (c *Client) beforeHooks(
 			hookCtx.evaluationContext = mergeContexts(*resultEvalCtx, hookCtx.evaluationContext)
 		}
 		if err != nil {
-			return mergeContexts(hookCtx.evaluationContext, evalCtx), err
+			return hookCtx.evaluationContext, err
 		}
 	}
 
-	return mergeContexts(hookCtx.evaluationContext, evalCtx), nil
+	return hookCtx.evaluationContext, nil
 }
 
 // afterHooks executes the After hook for each hook in the collection.
