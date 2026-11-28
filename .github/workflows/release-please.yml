@@ -29,6 +29,8 @@ jobs:
     needs: release-please
     runs-on: ubuntu-latest
     if: ${{ fromJSON(needs.release-please.outputs.release_created || false) }}
+    permissions:
+      contents: write
     # The release task installs its own tools, so lock every mise call.
     env:
       MISE_LOCKED: "true"

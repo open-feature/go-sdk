@@ -13,6 +13,9 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+release:
+  use_existing_draft: true
+  replace_existing_artifacts: true
 sboms:
   - documents:
       - bom.json
