@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.20.1](https://github.com/open-feature/go-sdk/compare/v1.20.0...v1.20.1) (2026-11-28)
+
+
+### 🐛 Bug Fixes
+
+* **multi:** cancel the comparison strategy's group context on return ([#643](https://github.com/open-feature/go-sdk/issues/643)) ([d9be7cd](https://github.com/open-feature/go-sdk/commit/d9be7cd52fe2a939e73b8e39aa853fccd0c5b757))
+* **multi:** preserve provider reason on successful evaluations ([#632](https://github.com/open-feature/go-sdk/issues/632)) ([b20d284](https://github.com/open-feature/go-sdk/commit/b20d2849797ee7a59bb0556f56d46942d5198804))
+* run handlers added on registration outside the executor lock ([#618](https://github.com/open-feature/go-sdk/issues/618)) ([c25d0ae](https://github.com/open-feature/go-sdk/commit/c25d0ae6d4980564078776291b7e8a3ea0706a07))
+* stop the event goroutine of a replaced shared provider ([#628](https://github.com/open-feature/go-sdk/issues/628)) ([346f1f8](https://github.com/open-feature/go-sdk/commit/346f1f8e9ba62192010caeefe280af83b6b38382))
+
+
+### 🧹 Chore
+
+* **deps:** lock file maintenance ([#635](https://github.com/open-feature/go-sdk/issues/635)) ([37dc7b2](https://github.com/open-feature/go-sdk/commit/37dc7b22569afea993aef15c54eb11303cedb837))
+* **deps:** update amannn/action-semantic-pull-request action to v6.1.2 ([#647](https://github.com/open-feature/go-sdk/issues/647)) ([398b2b7](https://github.com/open-feature/go-sdk/commit/398b2b776fe965b5b6d5179140d70ec7b320ecac))
+* **deps:** update amannn/action-semantic-pull-request action to v6.1.3 ([#662](https://github.com/open-feature/go-sdk/issues/662)) ([18826ea](https://github.com/open-feature/go-sdk/commit/18826ea8426fc2cb75dd3bce67bb1a8358a1c935))
+* **deps:** update amannn/action-semantic-pull-request action to v6.1.4 ([#668](https://github.com/open-feature/go-sdk/issues/668)) ([9339c71](https://github.com/open-feature/go-sdk/commit/9339c710ede896c508d68926923b73d4c0a099d6))
+* **deps:** update dependency goreleaser to v2.19.0 ([#633](https://github.com/open-feature/go-sdk/issues/633)) ([28127ef](https://github.com/open-feature/go-sdk/commit/28127ef981f1ee4790f9aa0e1422646524676c49))
+* **deps:** update dependency goreleaser to v2.20.0 ([#646](https://github.com/open-feature/go-sdk/issues/646)) ([199feb0](https://github.com/open-feature/go-sdk/commit/199feb01cfa900c956253232238a3d91b86e619e))
+* **deps:** update dependency goreleaser to v2.20.1 ([#653](https://github.com/open-feature/go-sdk/issues/653)) ([2c08961](https://github.com/open-feature/go-sdk/commit/2c0896134c44159b08c7a684560b6fd2efa918bc))
+* **deps:** update dependency goreleaser to v2.20.2 ([#654](https://github.com/open-feature/go-sdk/issues/654)) ([f282b1d](https://github.com/open-feature/go-sdk/commit/f282b1d5ab81a8974f216d2f43fb74ad14461ae4))
+* **deps:** update dependency goreleaser to v2.20.3 ([#660](https://github.com/open-feature/go-sdk/issues/660)) ([a8c33c5](https://github.com/open-feature/go-sdk/commit/a8c33c584144d871f81f733a4d2080eb86ac6c50))
+* **deps:** update jdx/mise-action action to v5.2.10 ([#657](https://github.com/open-feature/go-sdk/issues/657)) ([6a2a9fb](https://github.com/open-feature/go-sdk/commit/6a2a9fb3b05c86f727033d56218b9b9ccdf9cbcf))
+* **deps:** update jdx/mise-action action to v5.2.3 ([#639](https://github.com/open-feature/go-sdk/issues/639)) ([1804a4b](https://github.com/open-feature/go-sdk/commit/1804a4b59007c2b195f13fe9dbf239030ec869ed))
+* **deps:** update jdx/mise-action action to v5.2.4 ([#641](https://github.com/open-feature/go-sdk/issues/641)) ([578a89d](https://github.com/open-feature/go-sdk/commit/578a89df55257fd854044d5f07b8325546aadc81))
+* **deps:** update jdx/mise-action action to v5.2.5 ([#644](https://github.com/open-feature/go-sdk/issues/644)) ([86bd27c](https://github.com/open-feature/go-sdk/commit/86bd27c81172f7a6dae9abed67d264eddb2aed9b))
+* **deps:** update jdx/mise-action action to v5.2.6 ([#645](https://github.com/open-feature/go-sdk/issues/645)) ([a2a5b4f](https://github.com/open-feature/go-sdk/commit/a2a5b4f0206841479283e0a826275ca6a604a9f0))
+* **deps:** update jdx/mise-action action to v5.2.7 ([#650](https://github.com/open-feature/go-sdk/issues/650)) ([bb9889d](https://github.com/open-feature/go-sdk/commit/bb9889dd33bad2cf5fd9bc97c3e6994fdc49ca3c))
+* **deps:** update jdx/mise-action action to v5.2.8 ([#655](https://github.com/open-feature/go-sdk/issues/655)) ([b90a98f](https://github.com/open-feature/go-sdk/commit/b90a98fac6e6e1ad74b16534774fe4ecb7ceaf37))
+* **deps:** update jdx/mise-action action to v5.2.9 ([#656](https://github.com/open-feature/go-sdk/issues/656)) ([3bcf508](https://github.com/open-feature/go-sdk/commit/3bcf508df410c18f7f6d485da30e887d896dd5f0))
+* **deps:** update jdx/mise-action action to v5.3.0 ([#663](https://github.com/open-feature/go-sdk/issues/663)) ([1d525e9](https://github.com/open-feature/go-sdk/commit/1d525e9e3b0c312cc988c5b63d0f479d00750ac9))
+* **deps:** update module golang.org/x/sync to v0.25.0 ([#651](https://github.com/open-feature/go-sdk/issues/651)) ([e60a125](https://github.com/open-feature/go-sdk/commit/e60a125749e6705917af8a1393179e01a91e5639))
+* **deps:** update module golang.org/x/text to v0.44.0 ([#652](https://github.com/open-feature/go-sdk/issues/652)) ([79fc933](https://github.com/open-feature/go-sdk/commit/79fc933c0a53e0ea97cfb7624c9246db651d761e))
+
+
+### 📚 Documentation
+
+* note that event handler order is not guaranteed ([#658](https://github.com/open-feature/go-sdk/issues/658)) ([e0f368f](https://github.com/open-feature/go-sdk/commit/e0f368f18000b29f6741a96d9ee157c5f1670985))
+
 ## [1.20.0](https://github.com/open-feature/go-sdk/compare/v1.19.0...v1.20.0) (2026-10-24)
 
 
